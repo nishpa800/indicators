@@ -1,6 +1,16 @@
 // ══════════════════════════════════════════════════════════════════════════════
-// B2B PUP Combined 4.31 — All Detections Unified
+// B2B PUP Combined 4.32 — All Detections Unified
 // ══════════════════════════════════════════════════════════════════════════════
+// CHANGELOG v4.31 → v4.32
+// ──────────────────────────────────────────────────────────────────────────────
+//   • CHARGE LADDER FIX. When a Charge violates an opposing ChargeLevel, push
+//     a NEW ChargeLevel in the same direction (bull → low[1], bear → high[1]).
+//     This was missing in v4.30/v4.31; it broke the alternating-direction
+//     Charge chain that TNT OD has always supported. Napalm and Charge are the
+//     same conceptual signal in Anish's framework — losing the ladder silently
+//     suppressed CONT (S14) and TNT 2.0-driven plots (S15+) downstream.
+//     Patched both bull and bear Charge blocks. One line added per direction.
+// ──────────────────────────────────────────────────────────────────────────────
 // CHANGELOG v4.30 → v4.31
 // ──────────────────────────────────────────────────────────────────────────────
 //   • Plot A / Plot B naming dropped. Renamed to S19 / S20 to fit the
@@ -27,7 +37,7 @@
 //          most recently completed (offset=-1).
 // ══════════════════════════════════════════════════════════════════════════════
 //@version=5
-indicator("B2B PUP Combined 4.31", shorttitle="B2B PUP", overlay=true, max_bars_back=3000, max_labels_count=500)
+indicator("B2B PUP Combined 4.32", shorttitle="B2B PUP", overlay=true, max_bars_back=3000, max_labels_count=500)
 import TradingView/ta/7 as tv_ta
 
 // ── MASTER ──
@@ -598,6 +608,7 @@ if conf and tnt_dBull and charge_lvls.size()>0
             if not cl.isBull and not cl.violated and close[1]>cl.level
                 cl.violated:=true
                 det_bullCharge:=true
+                charge_lvls.push(ChargeLvl.new(low[1],true,bar_index,false))
                 break
 if conf and tnt_dBear and charge_lvls.size()>0
     for i=charge_lvls.size()-1 to 0
@@ -606,6 +617,7 @@ if conf and tnt_dBear and charge_lvls.size()>0
             if cl.isBull and not cl.violated and close[1]<cl.level
                 cl.violated:=true
                 det_bearCharge:=true
+                charge_lvls.push(ChargeLvl.new(high[1],false,bar_index,false))
                 break
 
 while charge_lvls.size()>100

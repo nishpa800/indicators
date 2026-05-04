@@ -4,8 +4,19 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
-## v4.31 — 2026-05-04 (current)
-**File:** `versions/B2B_PUP_v4.31.pine` (1247 lines)
+## v4.32 — 2026-05-04 (current)
+**File:** `versions/B2B_PUP_v4.32.pine` (1259 lines)
+**Trigger:** Audit against the *real* (newer) TNT OD revealed v4.31 was missing the Charge-ladder push. Anish flagged Napalm and Charge as conceptually equivalent — losing the ladder broke a load-bearing piece.
+
+**Changes from v4.31:**
+- **Charge ladder fix.** When a bull Charge violates a bear ChargeLevel, the code now pushes a new bull ChargeLevel at `low[1]` (and the symmetric case for bear). This restores the alternating-direction chain that TNT OD has always had.
+- **Why it mattered:** without the push, Charge state was static after the first violation. CONT (S14) and TNT 2.0-driven plots (S15+ via super-TNT and the event log) silently under-fired in any tape with chained alternating displacements.
+- **Patch size:** one line per direction (bull + bear), inside the existing Charge `if` blocks.
+
+---
+
+## v4.31 — 2026-05-04 (superseded by v4.32 same session)
+**File:** not preserved as separate file; v4.32 is a one-line bug fix on top.
 **Compiled clean in TradingView:** yes (v4.30 compiled, v4.31 follow-up was UI/naming-only — same compile path).
 
 **Changes from v4.30:**

@@ -1,6 +1,6 @@
 # B2B PUP Combined
 
-**Current version:** `v4.31` → `versions/B2B_PUP_v4.31.pine`
+**Current version:** `v4.32` → `versions/B2B_PUP_v4.32.pine`
 
 ## What it is
 
@@ -50,6 +50,6 @@ Napalm / TNT / CONT definitions in B2B PUP must stay in sync with **TNT OD** (`.
 ## Deploy
 
 ```bash
-pbcopy < ~/code/anish/indicators/b2b-pup/versions/B2B_PUP_v4.31.pine
+pbcopy < ~/code/anish/indicators/b2b-pup/versions/B2B_PUP_v4.32.pine
 # Then: TradingView Desktop → Pine Editor → Cmd+A → Cmd+V → Cmd+S → Add to Chart
 ```
