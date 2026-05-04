@@ -1,0 +1,215 @@
+// VOB LADDER WATCH v1 — Pine v5
+// ════════════════════════════════════════════════════════════════════════════
+// Purpose: detect Anish's "zF then zE then zD..." ascending bull-zone ladder
+// thesis. When VOB-style bullish zones from sensitivity tiers F→A form
+// sequentially in ASCENDING price (each new tier higher than the previous
+// recent zones), the ticker enters a tiered "watch" state. Each additional
+// tier higher escalates conviction.
+//
+// Logic:
+//   1. Six sensitivity tiers (A=highest, F=lowest), each with its own EMA-cross
+//      bull-zone engine — same mechanic as VOB Asym T3.
+//   2. Each tier exposes "most recent active bull zone midpoint price".
+//   3. Per confirmed bar, check the strict ascending sequence of the F-anchored
+//      ladder: take the F zone price (must exist), then E zone (must exist and
+//      be > F), then D (> E), etc. Count length.
+//   4. ladder_depth = how many consecutive tiers from F upward are ascending.
+//      depth 2 → WATCH, depth 3-5 → escalating tiers, depth 6 → FULL LADDER.
+//
+// This is a READ-ONLY companion to VOB Asym T3. No trade/strategy logic —
+// just labels + alerts for your eyes.
+// ════════════════════════════════════════════════════════════════════════════
+//@version=5
+indicator("VOB Ladder Watch v1", shorttitle="VOB LDR", overlay=true,
+     max_labels_count=500, max_lines_count=500, max_bars_back=5000)
+
+// ─── UDT ─────────────────────────────────────────────────────────────────────
+type level
+    int   indx
+    float upper
+    float lower
+    float mid
+    float vol
+
+// ─── INPUTS ──────────────────────────────────────────────────────────────────
+int sens_a = input.int(2500, "Sensitivity A (highest)", group="Sensitivities", minval=1)
+int sens_b = input.int(2250, "Sensitivity B",            group="Sensitivities", minval=1)
+int sens_c = input.int(2000, "Sensitivity C",            group="Sensitivities", minval=1)
+int sens_d = input.int(1500, "Sensitivity D",            group="Sensitivities", minval=1)
+int sens_e = input.int(1250, "Sensitivity E",            group="Sensitivities", minval=1)
+int sens_f = input.int(1000, "Sensitivity F (lowest)",   group="Sensitivities", minval=1)
+
+bool show_labels = input.bool(true, "Show ladder-depth labels at right edge", group="Display")
+bool show_alerts = input.bool(true, "Fire alerts on ladder escalation",       group="Display")
+
+// ─── SHARED ──────────────────────────────────────────────────────────────────
+float atr_base      = ta.highest(ta.atr(200), 200)
+float atr_proximity = atr_base * 3
+float atr_adjust    = atr_base * 2
+
+// ─── PER-TIER STATE ──────────────────────────────────────────────────────────
+var array<level> bull_a = array.new<level>()
+var array<level> bull_b = array.new<level>()
+var array<level> bull_c = array.new<level>()
+var array<level> bull_d = array.new<level>()
+var array<level> bull_e = array.new<level>()
+var array<level> bull_f = array.new<level>()
+
+// ─── CORE BULL VOB ENGINE (mirrors VOB Asym T3's bull half) ──────────────────
+f_bull_vob(int len1, array<level> arr, float atr_prox, float atr_adj) =>
+    int   len2    = len1 + 13
+    float ema1    = ta.ema(close, len1)
+    float ema2    = ta.ema(close, len2)
+    bool  cup     = ta.crossover(ema1, ema2) and barstate.isconfirmed
+    float lowest  = ta.lowest(len2)
+    if cup
+        float vol = 0.0
+        for i = 1 to len2
+            if low[i] == lowest
+                int idx = time[i]
+                for k = 0 to i
+                    vol += volume[k]
+                float src = math.min(open[i], close[i])
+                src := (src - lowest) < atr_adj * 0.5 ? lowest + atr_adj * 0.5 : src
+                float mid = math.avg(src, lowest)
+                arr.push(level.new(idx, src, lowest, mid, vol))
+    if arr.size() > 0
+        for i = 0 to arr.size() - 1
+            level l  = arr.get(i)
+            level l1 = arr.get(i - 1)
+            if not na(l.mid) and not na(l1.mid) and math.abs(l.mid - l1.mid) < atr_prox
+                arr.set(i - 1, level.new(na, na, na, na, na))
+            if not na(l.lower) and close < l.lower
+                arr.set(i, level.new(na, na, na, na, na))
+        if arr.size() > 15
+            arr.shift()
+
+f_bull_vob(sens_a, bull_a, atr_proximity, atr_adjust)
+f_bull_vob(sens_b, bull_b, atr_proximity, atr_adjust)
+f_bull_vob(sens_c, bull_c, atr_proximity, atr_adjust)
+f_bull_vob(sens_d, bull_d, atr_proximity, atr_adjust)
+f_bull_vob(sens_e, bull_e, atr_proximity, atr_adjust)
+f_bull_vob(sens_f, bull_f, atr_proximity, atr_adjust)
+
+// ─── MOST-RECENT ACTIVE ZONE PRICE PER TIER ──────────────────────────────────
+// Pick the highest-priced active zone (most recent floor) per tier.
+f_top_active(array<level> arr) =>
+    float best = na
+    if arr.size() > 0
+        for i = 0 to arr.size() - 1
+            level l = arr.get(i)
+            if not na(l.mid)
+                if na(best) or l.mid > best
+                    best := l.mid
+    best
+
+float p_a = f_top_active(bull_a)
+float p_b = f_top_active(bull_b)
+float p_c = f_top_active(bull_c)
+float p_d = f_top_active(bull_d)
+float p_e = f_top_active(bull_e)
+float p_f = f_top_active(bull_f)
+
+// ─── LADDER DEPTH ───────────────────────────────────────────────────────────
+// Walk F → E → D → C → B → A. Count consecutive tiers (from F upward) that
+// have a strictly higher zone price than the previous tier. Missing tier
+// (na) breaks the ladder.
+int ladder_depth = 0
+float prev_p     = na
+if not na(p_f)
+    ladder_depth := 1
+    prev_p       := p_f
+    if not na(p_e) and p_e > prev_p
+        ladder_depth := 2
+        prev_p       := p_e
+        if not na(p_d) and p_d > prev_p
+            ladder_depth := 3
+            prev_p       := p_d
+            if not na(p_c) and p_c > prev_p
+                ladder_depth := 4
+                prev_p       := p_c
+                if not na(p_b) and p_b > prev_p
+                    ladder_depth := 5
+                    prev_p       := p_b
+                    if not na(p_a) and p_a > prev_p
+                        ladder_depth := 6
+
+// ─── ESCALATION DETECTION ────────────────────────────────────────────────────
+var int prev_depth = 0
+bool escalated = ladder_depth > prev_depth and barstate.isconfirmed
+bool de_escalated = ladder_depth < prev_depth and barstate.isconfirmed
+if barstate.isconfirmed
+    prev_depth := ladder_depth
+
+// ─── PLOTTING ────────────────────────────────────────────────────────────────
+color c_watch    = color.new(#FFFF00, 0)
+color c_tier3    = color.new(#FF9800, 0)
+color c_tier4    = color.new(#FF6D00, 0)
+color c_tier5    = color.new(#E91E63, 0)
+color c_full     = color.new(#FFD700, 0)
+
+bool fire_watch  = escalated and ladder_depth == 2
+bool fire_tier3  = escalated and ladder_depth == 3
+bool fire_tier4  = escalated and ladder_depth == 4
+bool fire_tier5  = escalated and ladder_depth == 5
+bool fire_full   = escalated and ladder_depth == 6
+
+plotshape(fire_watch and show_labels, "WATCH (zF+zE)", shape.labelup, location.belowbar,
+     c_watch, size=size.small, text="WATCH\nF+E", textcolor=color.black)
+plotshape(fire_tier3 and show_labels, "TIER 3 (+zD)", shape.labelup, location.belowbar,
+     c_tier3, size=size.normal, text="LDR3\n+D", textcolor=color.white)
+plotshape(fire_tier4 and show_labels, "TIER 4 (+zC)", shape.labelup, location.belowbar,
+     c_tier4, size=size.normal, text="LDR4\n+C", textcolor=color.white)
+plotshape(fire_tier5 and show_labels, "TIER 5 (+zB)", shape.labelup, location.belowbar,
+     c_tier5, size=size.large,  text="LDR5\n+B", textcolor=color.white)
+plotshape(fire_full  and show_labels, "FULL LADDER (+zA)", shape.flag,    location.bottom,
+     c_full,  size=size.huge,   text="FULL\nLDR", textcolor=color.black)
+
+// ─── ALERTS ──────────────────────────────────────────────────────────────────
+alertcondition(fire_watch, "VOB Ladder WATCH (depth 2)",
+     "VOB Ladder reached depth 2 (zF + zE ascending). Ticker on watch.")
+alertcondition(fire_tier3, "VOB Ladder TIER 3",
+     "VOB Ladder reached depth 3 (zF + zE + zD ascending). Escalating.")
+alertcondition(fire_tier4, "VOB Ladder TIER 4",
+     "VOB Ladder reached depth 4 (zF..zC ascending). High conviction.")
+alertcondition(fire_tier5, "VOB Ladder TIER 5",
+     "VOB Ladder reached depth 5 (zF..zB ascending). Strong trend.")
+alertcondition(fire_full,  "VOB Ladder FULL (depth 6)",
+     "VOB Ladder FULL — all 6 tiers ascending zF→zA. Drop everything.")
+
+if show_alerts and escalated
+    string msg = "VOB_LADDER|TICKER=" + syminfo.ticker + "|TF=" + timeframe.period
+              + "|TIME=" + str.format_time(time, "yyyy-MM-dd HH:mm:ss", "America/New_York")
+              + "|DEPTH=" + str.tostring(ladder_depth)
+              + "|F=" + (na(p_f) ? "na" : str.tostring(math.round(p_f * 100) / 100))
+              + "|E=" + (na(p_e) ? "na" : str.tostring(math.round(p_e * 100) / 100))
+              + "|D=" + (na(p_d) ? "na" : str.tostring(math.round(p_d * 100) / 100))
+              + "|C=" + (na(p_c) ? "na" : str.tostring(math.round(p_c * 100) / 100))
+              + "|B=" + (na(p_b) ? "na" : str.tostring(math.round(p_b * 100) / 100))
+              + "|A=" + (na(p_a) ? "na" : str.tostring(math.round(p_a * 100) / 100))
+              + "|CLOSE=" + str.tostring(math.round(close * 100) / 100)
+    alert(msg, alert.freq_once_per_bar_close)
+
+// ─── DEPTH GAUGE TABLE (right corner) ────────────────────────────────────────
+// Function defs must be at global scope in Pine v5.
+f_zone_cell(table t, int row, string lbl, float p, color tc) =>
+    table.cell(t, 0, row, lbl, text_color=tc, bgcolor=color.new(#1A1A1A, 30),
+         text_halign=text.align_center, text_size=size.tiny)
+    table.cell(t, 1, row, na(p) ? "—" : str.tostring(math.round(p * 100) / 100),
+         text_color=na(p) ? color.gray : color.white,
+         bgcolor=color.new(#1A1A1A, 30),
+         text_halign=text.align_right, text_size=size.tiny)
+
+if barstate.islast
+    var table tbl = table.new(position.top_right, 2, 8, border_color=color.new(#444, 50), border_width=1)
+    table.cell(tbl, 0, 0, "VOB Ladder", text_color=color.white,
+         bgcolor=color.new(#222, 0), text_halign=text.align_center, text_size=size.small)
+    table.cell(tbl, 1, 0, "Depth " + str.tostring(ladder_depth) + "/6",
+         text_color=ladder_depth >= 4 ? color.lime : ladder_depth >= 2 ? color.yellow : color.gray,
+         bgcolor=color.new(#222, 0), text_halign=text.align_center, text_size=size.small)
+    f_zone_cell(tbl, 1, "zF", p_f, #FFFFFF)
+    f_zone_cell(tbl, 2, "zE", p_e, #00E5FF)
+    f_zone_cell(tbl, 3, "zD", p_d, #81C784)
+    f_zone_cell(tbl, 4, "zC", p_c, #1B5E20)
+    f_zone_cell(tbl, 5, "zB", p_b, #64B5F6)
+    f_zone_cell(tbl, 6, "zA", p_a, #0D47A1)
