@@ -2438,6 +2438,37 @@ if ta.change(time("D")) != 0
 else if barstate.isconfirmed
     stats_sessBar += 1
 
+// ─── First-bar geometry + gap (Anish's theory: gap >> first-bar body needs
+//     a massive plot to sustain). Captured on session-bar 1, persisted via var.
+//     close[1] = previous bar's close = prior-day close on intraday RTH bar.
+var float stats_prevClose       = na
+var float stats_firstBarOpen    = na
+var float stats_firstBarHigh    = na
+var float stats_firstBarLow     = na
+var float stats_firstBarClose   = na
+var float stats_gapPct          = na
+var float stats_fbBodyPct       = na   // |close - open| / open * 100
+var float stats_fbRangePct      = na   // (high - low) / open * 100
+var float stats_fbBodyDir       = na   // +1 green, -1 red, 0 doji
+var float stats_gapToBodyRatio  = na   // gap_abs / fb_body  (Anish's key ratio)
+var float stats_gapToRangeRatio = na   // gap_abs / fb_range
+var float stats_bodyToRangePct  = na   // body / range — bar fullness
+
+if stats_sessBar == 1 and barstate.isconfirmed
+    stats_prevClose     := close[1]
+    stats_firstBarOpen  := open
+    stats_firstBarHigh  := high
+    stats_firstBarLow   := low
+    stats_firstBarClose := close
+    stats_gapPct        := nz(stats_prevClose) > 0 ? (open - stats_prevClose) / stats_prevClose * 100 : 0.0
+    stats_fbBodyPct     := stats_firstBarOpen > 0 ? math.abs(close - open) / stats_firstBarOpen * 100 : 0.0
+    stats_fbRangePct    := stats_firstBarOpen > 0 ? (high - low) / stats_firstBarOpen * 100 : 0.0
+    stats_fbBodyDir     := close > open ? 1.0 : close < open ? -1.0 : 0.0
+    float gap_abs        = math.abs(stats_gapPct)
+    stats_gapToBodyRatio  := stats_fbBodyPct > 0 ? gap_abs / stats_fbBodyPct : 0.0
+    stats_gapToRangeRatio := stats_fbRangePct > 0 ? gap_abs / stats_fbRangePct : 0.0
+    stats_bodyToRangePct  := stats_fbRangePct > 0 ? stats_fbBodyPct / stats_fbRangePct * 100 : 0.0
+
 // Forward returns: at this bar, look BACK N bars and compute return
 // (this bar's close - close[N]) / close[N] * 100.
 // To know forward return at +N bars from a fire bar, we evaluate this same
@@ -2473,6 +2504,13 @@ if barstate.isconfirmed and stats_inWindow
                 + "|FWD10=" + f_n(f_fwd_ret(10), 2)
                 + "|FWD20=" + f_n(f_fwd_ret(20), 2)
                 + "|FWD40=" + f_n(f_fwd_ret(40), 2)
+                + "|GAP_PCT=" + f_n(nz(stats_gapPct), 3)
+                + "|FB_BODY_PCT=" + f_n(nz(stats_fbBodyPct), 3)
+                + "|FB_RANGE_PCT=" + f_n(nz(stats_fbRangePct), 3)
+                + "|FB_BODY_DIR=" + f_n(nz(stats_fbBodyDir), 0)
+                + "|GAP_BODY_RATIO=" + f_n(nz(stats_gapToBodyRatio), 2)
+                + "|GAP_RANGE_RATIO=" + f_n(nz(stats_gapToRangeRatio), 2)
+                + "|BODY_RANGE_PCT=" + f_n(nz(stats_bodyToRangePct), 1)
     string fires = "|F1_SDUPER=" + f_b(sduperBull)
                  + "|F2_SUPER=" + f_b(superBull and not sduperBull)
                  + "|F3_HW=" + f_b(hwBull)
