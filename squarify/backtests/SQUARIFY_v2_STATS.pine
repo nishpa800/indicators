@@ -2501,6 +2501,35 @@ if tier1_opening_conflu_bull
          + "|RVOL_MULT=" + str.tostring(math.round(bb_normalizedPrice * 100) / 100),
          alert.freq_once_per_bar_close)
 
+// ─── TIER 2 OPENING CONFLUENCE (Anish's CRWV 2m setup recipe) ────────────────
+//     First 2 bars of session AND B2B PUP active AND UU family fired (UUUU or
+//     UUU or UU). Anish flagged CRWV 2m had this exact combo today; he missed
+//     the entry. This catches it next time.
+bool tier2_opening_conflu_bull = stats_sessBar <= 2
+                              and stats_sessBar >= 1
+                              and det_b2bPUP
+                              and uu_any
+                              and barstate.isconfirmed
+
+plotshape(tier2_opening_conflu_bull, "T2 OPENING CONFLU",
+     shape.flag, location.top, color.new(#00E5FF, 0),
+     size=size.huge, text="T2\nFIRE",
+     textcolor=color.new(color.black, 0))
+
+alertcondition(tier2_opening_conflu_bull, "T2 OPENING CONFLUENCE BULL",
+     "TIER 2 OPENING CONFLUENCE: first 2 session bars with B2B PUP + UU family. CRWV 2m-style setup. Drop everything.")
+
+if tier2_opening_conflu_bull
+    alert("TIER2_OPENING_CONFLU|TICKER=" + syminfo.ticker + "|TF=" + timeframe.period
+         + "|TIME=" + str.format_time(time, "yyyy-MM-dd HH:mm:ss", "America/New_York")
+         + "|SESSBAR=" + str.tostring(stats_sessBar)
+         + "|CLOSE=" + str.tostring(math.round(close * 10000) / 10000)
+         + "|UU_TIER=" + (sigP21BullUUUU ? "UUUU" : sigP21BullUUU ? "UUU" : "UU")
+         + "|GAP_PCT=" + str.tostring(math.round(nz(stats_gapPct) * 1000) / 1000)
+         + "|GAP_BODY_RATIO=" + str.tostring(math.round(nz(stats_gapToBodyRatio) * 100) / 100)
+         + "|RVOL_MULT=" + str.tostring(math.round(bb_normalizedPrice * 100) / 100),
+         alert.freq_once_per_bar_close)
+
 // Forward returns: at this bar, look BACK N bars and compute return
 // (this bar's close - close[N]) / close[N] * 100.
 // To know forward return at +N bars from a fire bar, we evaluate this same
