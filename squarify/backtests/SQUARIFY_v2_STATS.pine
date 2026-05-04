@@ -2469,6 +2469,38 @@ if stats_sessBar == 1 and barstate.isconfirmed
     stats_gapToRangeRatio := stats_fbRangePct > 0 ? gap_abs / stats_fbRangePct : 0.0
     stats_bodyToRangePct  := stats_fbRangePct > 0 ? stats_fbBodyPct / stats_fbRangePct * 100 : 0.0
 
+// ─── TIER 1 OPENING CONFLUENCE (Anish's CRWV missed-setup recipe) ────────────
+//     First bar of session AND displacement ≥ N std AND UC combo (csNew3_Bull)
+//     AND HV+D (hvd_fire_bull) AND RVOL 1x. When this hits — drop everything.
+float t1_disp_thresh = input.float(8.0, "T1 Conflu — Displacement Std Multiple ≥",
+     minval=1.0, step=0.5, group="★ TIER 1 OPENING CONFLUENCE ★",
+     tooltip="CRWV had 9 on first 45s bar. Default 8 catches that and similar.")
+float stats_dispStdMult_t1 = disp_std > 0 ? disp_rng / disp_std : 0.0
+bool tier1_opening_conflu_bull = stats_sessBar == 1
+                              and stats_dispStdMult_t1 >= t1_disp_thresh
+                              and csNew3_Bull
+                              and hvd_fire_bull
+                              and sigBullRVOL1x
+                              and barstate.isconfirmed
+
+plotshape(tier1_opening_conflu_bull, "T1 OPENING CONFLU",
+     shape.flag, location.top, color.new(#FFD700, 0),
+     size=size.huge, text="T1\nFIRE",
+     textcolor=color.new(color.black, 0))
+
+alertcondition(tier1_opening_conflu_bull, "T1 OPENING CONFLUENCE BULL",
+     "TIER 1 OPENING CONFLUENCE: first session bar with disp≥8std + UC combo + HV+D + RVOL1x. CRWV-style setup. Drop everything.")
+
+if tier1_opening_conflu_bull
+    alert("TIER1_OPENING_CONFLU|TICKER=" + syminfo.ticker + "|TF=" + timeframe.period
+         + "|TIME=" + str.format_time(time, "yyyy-MM-dd HH:mm:ss", "America/New_York")
+         + "|CLOSE=" + str.tostring(math.round(close * 10000) / 10000)
+         + "|DISP_STD_MULT=" + str.tostring(math.round(stats_dispStdMult_t1 * 100) / 100)
+         + "|GAP_PCT=" + str.tostring(math.round(nz(stats_gapPct) * 1000) / 1000)
+         + "|GAP_BODY_RATIO=" + str.tostring(math.round(nz(stats_gapToBodyRatio) * 100) / 100)
+         + "|RVOL_MULT=" + str.tostring(math.round(bb_normalizedPrice * 100) / 100),
+         alert.freq_once_per_bar_close)
+
 // Forward returns: at this bar, look BACK N bars and compute return
 // (this bar's close - close[N]) / close[N] * 100.
 // To know forward return at +N bars from a fire bar, we evaluate this same
