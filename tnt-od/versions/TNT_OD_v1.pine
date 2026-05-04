@@ -1,0 +1,183 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TNT OPENING DRIVE (OD) — Extreme Anomaly Detection
+// ══════════════════════════════════════════════════════════════════════════════
+// TIER 1: Fire as-is (no enrichment needed)
+// TIER 2: Hard-gated — NEVER fires without enrichment co-signal
+// DYNAMITE: Auto-promote — B2B displacement + FAUNA on both bars
+// UU/UUU/UUUU + TNT INDICATOR ANY SIGNAL: U-streak overlap
+// ══════════════════════════════════════════════════════════════════════════════
+
+//@version=5
+indicator("TNT Opening Drive OD", "TNT OD", overlay = true,
+     max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500, max_bars_back=2500)
+
+import TradingView/ta/7 as tv_ta
+
+// ─── MASTER ─────────────────────────────────────────────────────────────────
+grpM = "★ MASTER ★"
+bool masterFirstBar = input.bool(true, "First Bar Only Alerts", group = grpM)
+
+// ─── ENGINE INPUTS ──────────────────────────────────────────────────────────
+grpE = "Engine"
+int   SENS      = input.int(100, "Sensitivity", minval = 1, group = grpE)
+int   SWING_LEN = input.int(10, "Swing Length", minval = 3, group = grpE)
+string DISP_TYPE = input.string("Open to Close", "Range Type", options = ["Open to Close", "High to Low"], group = grpE)
+int   DISP_STD_LEN = input.int(100, "Disp Std Dev Length", minval = 1, group = grpE)
+int   DISP_STD_X   = input.int(5, "Disp Std Dev Mult", minval = 0, group = grpE)
+float RET_TNT_PCT = input.float(100.0, "Return to TNT %", minval = -10, step = 0.1, group = grpE)
+float RET_SUPER_PCT = input.float(50.0, "Return to TNT 2.0 %", minval = -10, step = 0.1, group = grpE)
+int   SUDDEN_PROX = input.int(3, "Sudden Change Max Bar Distance", minval = 1, group = grpE)
+
+// ─── DYNAMITE INPUTS ────────────────────────────────────────────────────────
+grpDyn = "★ DYNAMITE ★"
+float dynStdMult = input.float(5.0, "Displacement Std Dev Multiplier", minval = 1.0, step = 0.5, group = grpDyn,
+     tooltip = "Displacement range must exceed stdev(100) × this value on BOTH consecutive bars. Adjust per timeframe.")
+
+// ─── TIER 1 ENABLES ─────────────────────────────────────────────────────────
+grpT1 = "Tier 1 Signals"
+bool en_b2bBull    = input.bool(true, "✓ B2B Napalm Bull",      group = grpT1)
+bool en_b2bBear    = input.bool(true, "✓ B2B Napalm Bear",      group = grpT1)
+bool en_rcNTBull   = input.bool(true, "✓ RC NPM+TNT Bull",      group = grpT1)
+bool en_rcNTBear   = input.bool(true, "✓ RC NPM+TNT Bear",      group = grpT1)
+bool en_fuseBull   = input.bool(true, "✓ FUSE Bull",            group = grpT1)
+bool en_fuseBear   = input.bool(true, "✓ FUSE Bear",            group = grpT1)
+bool en_catBull    = input.bool(true, "✓ CATALYST Bull",        group = grpT1)
+bool en_catBear    = input.bool(true, "✓ CATALYST Bear",        group = grpT1)
+bool en_pnBull     = input.bool(true, "✓ PBJ+NPM Bull",        group = grpT1)
+bool en_pnBear     = input.bool(true, "✓ PBJ+NPM Bear",        group = grpT1)
+bool en_ptBull     = input.bool(true, "✓ PBJ+TNT Bull",        group = grpT1)
+bool en_ptBear     = input.bool(true, "✓ PBJ+TNT Bear",        group = grpT1)
+bool en_npbBull    = input.bool(true, "✓ NPM+PBJ Unsup Bull",  group = grpT1)
+bool en_npbBear    = input.bool(true, "✓ NPM+PBJ Unsup Bear",  group = grpT1)
+bool en_ignBull    = input.bool(true, "✓ IGNITE Bull",          group = grpT1)
+bool en_ignBear    = input.bool(true, "✓ IGNITE Bear",          group = grpT1)
+bool en_dynBull    = input.bool(true, "✓ DYNAMITE Bull",        group = grpT1)
+bool en_dynBear    = input.bool(true, "✓ DYNAMITE Bear",        group = grpT1)
+
+// ─── TIER 2 ENABLES ─────────────────────────────────────────────────────────
+grpT2 = "Tier 2 Signals (enrichment required)"
+bool en_t2tntBull  = input.bool(true, "✓ TNT Raw Bull",         group = grpT2)
+bool en_t2tntBear  = input.bool(true, "✓ TNT Raw Bear",         group = grpT2)
+bool en_t2npmBull  = input.bool(true, "✓ Napalm Raw Bull",      group = grpT2)
+bool en_t2npmBear  = input.bool(true, "✓ Napalm Raw Bear",      group = grpT2)
+bool en_t2contBull = input.bool(true, "✓ Continuous Raw Bull",  group = grpT2)
+bool en_t2contBear = input.bool(true, "✓ Continuous Raw Bear",  group = grpT2)
+bool en_t2trBull   = input.bool(true, "✓ RC TNT+RET Bull",     group = grpT2)
+bool en_t2trBear   = input.bool(true, "✓ RC TNT+RET Bear",     group = grpT2)
+bool en_t2rnBull   = input.bool(true, "✓ RC RET+NPM Bull",     group = grpT2)
+bool en_t2rnBear   = input.bool(true, "✓ RC RET+NPM Bear",     group = grpT2)
+bool en_t2prBull   = input.bool(true, "✓ PBJ+RET Bull",        group = grpT2)
+bool en_t2prBear   = input.bool(true, "✓ PBJ+RET Bear",        group = grpT2)
+
+// ─── DENSITY ENABLES ────────────────────────────────────────────────────────
+grpD1 = "Density 1"
+int  den1_X = input.int(2, "Events (X)", minval = 1, group = grpD1)
+int  den1_Y = input.int(2, "Bars (Y)",   minval = 1, group = grpD1)
+bool en_d1b = input.bool(true, "✓ Bull", group = grpD1)
+bool en_d1s = input.bool(true, "✓ Bear", group = grpD1)
+grpD2 = "Density 2"
+int  den2_X = input.int(3, "Events (X)", minval = 1, group = grpD2)
+int  den2_Y = input.int(3, "Bars (Y)",   minval = 1, group = grpD2)
+bool en_d2b = input.bool(true, "✓ Bull", group = grpD2)
+bool en_d2s = input.bool(true, "✓ Bear", group = grpD2)
+grpD3 = "Density 3"
+int  den3_X = input.int(2, "Events (X)", minval = 1, group = grpD3)
+int  den3_Y = input.int(6, "Bars (Y)",   minval = 1, group = grpD3)
+bool en_d3b = input.bool(true, "✓ Bull", group = grpD3)
+bool en_d3s = input.bool(true, "✓ Bear", group = grpD3)
+
+// ─── UU/UUU/UUUU + TNT ANY ENABLES ─────────────────────────────────────────
+grpU = "UU/UUU/UUUU + TNT INDICATOR ANY SIGNAL"
+bool en_uu_bull   = input.bool(true, "✓ UU + TNT ANY Bull",   group = grpU)
+bool en_uu_bear   = input.bool(true, "✓ UU + TNT ANY Bear",   group = grpU)
+bool en_uuu_bull  = input.bool(true, "✓ UUU + TNT ANY Bull",  group = grpU)
+bool en_uuu_bear  = input.bool(true, "✓ UUU + TNT ANY Bear",  group = grpU)
+bool en_uuuu_bull = input.bool(true, "✓ UUUU + TNT ANY Bull", group = grpU)
+bool en_uuuu_bear = input.bool(true, "✓ UUUU + TNT ANY Bear", group = grpU)
+
+// ─── USE V5 BOWL SETTINGS ───────────────────────────────────────────────────
+grpU5 = "USE V5 Bowl"
+int   u5_std_len   = input.int(100, "Disp Std Dev Len", minval = 1, group = grpU5)
+float u5_std_min   = input.float(3.0, "Disp Min Mult", step = 0.1, group = grpU5)
+int   u5_od_max_bars = input.int(1, "Opening Drive Max Bars", minval = 1, group = grpU5)
+
+int maxZones = input.int(15, "Max TNT 1.0 Zones", minval = 1, group = "Zones")
+int maxSuperZones = input.int(8, "Max TNT 2.0 Zones", minval = 1, group = "Zones")
+
+// ─── CONSTANTS ──────────────────────────────────────────────────────────────
+int EMA_FAST = SENS, int EMA_SLOW = SENS + 13
+float ATR_VAL = ta.atr(200), float ATR14 = ta.atr(14)
+float ATR_MULT = 3.5, float ATR_MIN = 0.5
+int MIN_SIG_GAP = EMA_SLOW
+bool isFirstBar = session.isfirstbar
+var int sessionFirstBarIdx = na
+if isFirstBar
+    sessionFirstBarIdx := bar_index
+int u5_tfSec = timeframe.in_seconds(timeframe.period)
+bool isSubMinute = u5_tfSec <= 60
+
+// ─── TYPES ──────────────────────────────────────────────────────────────────
+type Zone
+    int    originIdx
+    int    confirmIdx
+    float  upper
+    float  lower
+    float  level
+    float  vol
+    bool   isBull
+    bool   isActive     = true
+    bool   returnFired  = false
+    line   lvlLine
+    label  sigLabel
+
+type SuperZone
+    int    formBar
+    float  zoneTop
+    float  zoneBtm
+    float  returnLevel
+    bool   isBull
+    bool   isActive     = true
+    bool   returnFired  = false
+    box    zoneBox
+    label  formLabel
+    label  returnLabel
+    line   returnLine
+
+type SwingPoint
+    float  val = na
+    int    idx = na
+    bool   crossed = false
+
+type BullBearEvent
+    int    barIdx
+    float  level
+    float  upper
+    float  lower
+    bool   isBull
+    bool   isTrue
+
+type ChargeLevel
+    float  level
+    bool   isBull
+    int    barIdx
+    bool   violated = false
+
+// NOTE: TNT OD v1 source pasted by Anish in chat 2026-05-04 as the canonical
+// reference for Napalm / TNT / CONT definitions. The full body (Engines 1-3,
+// Confluence + Zones, Charge, Napalm, Super TNT, TNT 2.0, Cont, USE V5 engine
+// with RVOL/WMD/FAUNA/PBJ/Displacement/CS1/PUP, DYNAMITE, COMBO DETECTION,
+// SUPPRESSION, TIER 2 ENRICHMENT GATES, FINAL PLOT BOOLEANS, DENSITY, UU+TNT,
+// PLOTSHAPES, ALERTS) is preserved verbatim in the session transcript.
+//
+// Header + types saved here for quick orientation. To rehydrate the full file,
+// ask Claude to "extract TNT OD v1 from the 2026-05-04 session transcript".
+//
+// Definition fingerprints used for B2B PUP audit:
+//   • Napalm = displacement-bullish AND any active opposing zone has low[1] > zone.level
+//   • TNT raw = VOB + Anish swing + Flux pullback temporal-OK + zone overlap + synergy gates
+//   • CONT 3-clause OR:
+//       (1) Charge AND last Return-to-TNT was within SUDDEN_PROX
+//       (2) (TNT or TNT2) AND last Charge was within SUDDEN_PROX
+//       (3) Charge AND ((last TNT or last TNT2) was within SUDDEN_PROX)
+//   • TNT 2.0 = bull/bear event log shows ≥2 events with min_sig_gap clearance
+//   • Super TNT = raw_bullTNT AND raw_bearCharge (and inverse)
