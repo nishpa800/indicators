@@ -1,7 +1,7 @@
 # TNT Opening Drive (OD)
 
-**Current version:** `v1` → `versions/TNT_OD_v1.pine`
-**Source pasted by Anish:** 2026-05-04
+**Current version:** `v2` → `versions/TNT_OD_v2.pine`
+**Source pasted by Anish:** 2026-05-04 (v1 baseline). v2 produced same session — see CHANGELOG.
 
 ## What it is
 
