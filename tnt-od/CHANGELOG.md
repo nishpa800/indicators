@@ -4,7 +4,41 @@ Newest first.
 
 ---
 
-## v2 — 2026-05-04 (current)
+## v3 — 2026-05-08 (current)
+**File:** `versions/TNT_OD_v3.pine`
+**Triggers:** Anish 2026-05-08 ask — gate the 4 NPM-family Tier 1 plots (B2B NAPALM, RC NPM+TNT, CATALYST, PBJ+NPM) and all 12 Tier 2 plots behind a 6-condition OR-gate; add two new combo plots (T1 RELAY = consecutive Tier 1 visual bars; T1 STACK = ≥ 2 Tier 1 visuals on same visual bar); clarify all displacement engines (yes, DYNAMITE has its own dedicated one).
+
+**Changes from v2:**
+
+1. **NEW CONDITIONAL GATE** on the 4 NPM-family Tier 1 plots and all 12 Tier 2 plots. Each plot now ALSO requires ANY of:
+   - RVOL 1x (`u5_RVOL1xB` / `u5_RVOL1xR`)
+   - Grand Slam (bull) / MOAB (bear)
+   - Unified Combo (`uc_bull` / `uc_bear` — placeholder, replaceable)
+   - Nagasaki + Any (Nagasaki AND any of P2/P1 tier signals)
+   - HCT (inline-ported using HCT's OWN thresholds per Indicator Trust Rules)
+   - Displacement ≥ adjustable σ-mult (NEW input `gateStdMult`, default 6.5)
+   Master toggle: `en_newGate` default ON. Bear mirrors with bear-side atoms. Offset-aware: offset -1 plots use `gate_bull[1]` / `gate_bear[1]`; offset 0 plots use `gate_bull` / `gate_bear`.
+
+2. **NEW PLOT — T1 RELAY** (bull/bear). Fires when ANY Tier 1 visual landed on bar[2] AND ANY Tier 1 visual on bar[1]. Same direction only (bull-bull or bear-bear). Same Tier 1 type counts (catalyst→catalyst valid). Pool: B2B NAPALM, RC NPM+TNT, FUSE, CATALYST, PBJ+NPM, PBJ+TNT, IGNITE T+C, IGNITE N+C, DYNAMITE, **HCT** (inline), **UC** (inline). Boolean true on bar[0]; plot offset = -1 → visual lands on bar[1] (the second of the two consecutive bars).
+
+3. **NEW PLOT — T1 STACK** (bull/bear). Fires when ≥ 2 distinct Tier 1 visual plots landed on the SAME visual bar. Same Tier 1 pool (10 candidates including HCT and UC). Boolean true on bar[0]; plot offset = -1 → visual lands on bar[1].
+
+4. **DISPLACEMENT ENGINE CLARIFICATION** (no behavior change, only tooltip text). There are now FIVE engines:
+   - **Engine #1** — Main TNT OD: `DISP_STD_LEN=100`, `DISP_STD_X=5`. Drives Napalm, Charge, B2B Napalm, Catalyst, RC NPM+TNT, sudden-change, CONT, IGNITE NPM+CONT.
+   - **Engine #2** — DYNAMITE (dedicated): `dynStdMult=5.0`, hard-coded 100-bar stdev. Used by DYNAMITE plot ONLY. Yes, DYNAMITE has its own.
+   - **Engine #3** — USE V5 enrichment: `u5_std_len=100`, `u5_std_min=3.0`. Drives `u5_DISPBull/Bear` → Tier 2 enrichment gate, WBUSH direction.
+   - **Engine #4** — HCT (NEW v3): `hct_disp_strength=6.0`, `hct_disp_lookback=100`, `hct_threshPct=2.0`, `hct_auto=true`. Drives `hct_dispBull/Bear` → `hct_bull/bear` for new gate.
+   - **Engine #5** — Gate (NEW v3): `gateStdMult=6.5`. Reuses `DISP_STD_LEN` for lookback. Drives `gate_disp_bull/bear` for new gate ONLY.
+
+5. **Inline-ported HCT engine** — uses HCT's own threshold curves (different from TNT OD's u5_* at 60s–600s timeframes) per Indicator Trust Rules. Produces `hct_bull` / `hct_bear` / `hct_neutral`. Neutral computed but NOT plotted in TNT OD.
+
+6. **Inline-ported UC engine (placeholder)** — Unified Combo defined as ≥ 2 distinct streams from {FAUNA, RVOL tier, WMD, PUP/PPD, CS1}. Clearly marked in code as replaceable; paste real Squarify v2 UC engine in if desired.
+
+**Plotshape count:** 49 / 64 (was 45, +4 for T1 RELAY × 2 + T1 STACK × 2).
+
+---
+
+## v2 — 2026-05-04
 **File:** `versions/TNT_OD_v2.pine` (1802 lines)
 **Triggers:** Verification Protocol v3.2 audit findings + WBUSH integration ask.
 
