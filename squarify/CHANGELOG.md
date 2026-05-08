@@ -4,12 +4,44 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## ATOMS v1 — 2026-05-08 (Tier 0 atomics, separate companion indicator)
+**File:** `versions/SQUARIFY_ATOMS_v1.pine` (2524 lines, 60 atomic plots — fits under Pine's 64 cap).
+
+**Purpose:** companion verification indicator. Load alongside SQUARIFY v2 on the same chart. v2 carries the 46 production combo plots + alerts; ATOMS v1 carries 60 individual Tier 0 atomic plots so each atomic SKU can be visually cross-checked against the original-source indicator (RVOL, FAUNA, B2B PUP, TNT OD, etc.) on a second chart pane.
+
+**Method:** v2 source copied byte-for-byte through line 2217 (engines + signal-definition section). Lines 2218→end (46 main plotshapes, alert aggregator, stats engine, T1/T2 OPENING CONFLU plotshapes + alerts) STRIPPED. Indicator name set to `SQUARIFY ATOMS v1`. Header note replaced. Then appended:
+
+1. `★ ATOMIC PLOTS — VERIFY ★` input group with 60 toggles, all default FALSE, every toggle has a `tooltip=` argument with its precise atomic definition (click the (i) icon next to any toggle in the input panel).
+2. 60 atomic plotshapes — small subtle markers (size.tiny / size.small).
+3. **Atom-fire logger** — one `log.info(...)` per confirmed bar listing every firing atom on that bar. Format: `ATOM_FIRE|TICKER=...|TF=...|TIME=...|BAR=...|FIRES=name1 + name2 + ...`. Read via `mcp__tradingview__pine_get_console` for automated cross-check vs original-source indicators. Logger fires INDEPENDENTLY of plot toggles — every atom is logged whether visually plotted or not, so verification scans don't depend on which toggles Anish has on.
+
+**60 atoms exposed (Tier 0 only — combinations and Tier 1+ NOT included):**
+- HV ranks (M3, [1] offset): HV50/75/100/150/200/250/300/350/400/450/500/550/600/650/700/750/1000 + HEV (18)
+- RVOL price-spike: SAAB, Kratos, RVOL1x bull/bear, GrandSlam, MOAB (6)
+- RVOL cumulative: WTC, Hiroshima, Pentagon (3)
+- All-time vol: Nagasaki (1)
+- FAUNA Bull/Bear (2) — synthesized after exclusions
+- Displacement: sigDISPBull/Bear (FVG, offset -1), disp5_bull/bear (no FVG, offset 0) (4)
+- FVG events: gz_bullGZI/bearGZI, gz_bullHV/bearHV (4)
+- PUP/PPD (2)
+- PBJ/PB Bull/Bear (4)
+- Ping-Pong: bull_pp, bear_pp (2)
+- U streak qualifier: u_qual_bull/bear (2)
+- Matrix Number: is_matrix_number (1)
+- Long/Short: L1, L2, S1, S2 (4)
+- Boom Hunter: bh_anyOmega (1)
+- TNT atomics: raw_bullTNT/bearTNT, raw_napalmBull/Bear, raw_bullCharge/bearCharge (6)
+
+**Why these are the atoms (and not the others):** atomic = single-engine output, no dependency on other detection plots. Tier 1 (HV+D fire = HV ∩ D, det_*NapalmCons = napalm ∪ charge) and Tier 2 (combo sets, FVG/MAT/UC, Floor/2F/Roof/Pent RAW, HW, Foxtrot, F2/E3/FC, B2B PUP/Napalm) are COMBINATIONS of these 60. They're verifiable on screen once the underlying atoms are confirmed correct.
+
+**Plot count:** 60 active. v2 carries 48 (46 main + 2 OPENING CONFLU). Loaded together: 60 + 48 = 108, but they're separate indicators so each compiles under the 64 cap independently.
+
+**Automated cross-check workflow:** see `~/.claude/projects/-Users-anishpatel/memory/SKU_VERIFICATION_AUTOMATION.md`.
+
+---
+
 ## v3 VERIFY — 2026-05-08 — RETRACTED (over Pine plot limit)
-**File:** DELETED. v3 hit 147 plot calls (46 main + 2 OPENING CONFLU + ~99 atom plotshapes). Pine v5 hard limit is 64 total plot* calls per indicator (plot, plotshape, plotchar, plotcandle, plotbar, plotarrow, bgcolor, fill, hline). The script would not compile on TradingView.
-
-**Lesson:** atom plots cannot be added to SQUARIFY itself within the plot budget. Next attempt: separate `SQUARIFY_ATOMS_*.pine` indicator file(s) — either (a) split atoms across multiple <64-plot files, or (b) use `label.new()` for atoms (which doesn't count toward the 64-plot limit; bounded by max_labels_count=500 instead). Pending design review with Anish.
-
-**Net effect:** v2 remains the production indicator. No usable v3 file at this revision.
+**File:** DELETED. v3 hit 147 plot calls. Pine v5 hard cap is 64 total plot* calls per indicator. Replaced by ATOMS v1 (above) as a separate companion indicator.
 
 ---
 
