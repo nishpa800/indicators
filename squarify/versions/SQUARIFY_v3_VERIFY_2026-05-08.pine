@@ -35,22 +35,9 @@
 //@version=5
 indicator("SQUARIFY v3 VERIFY", shorttitle="SQ46v3", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1500)
 // ════════════════════════════════════════════════════════════════════════════
-// v3 (2026-05-08) = v2 + ATOMIC DETECTION PLOTS for bottom-up verification.
-// New "★ ATOMIC PLOTS — VERIFY ★" input group at the bottom of the inputs panel.
-// ~80 atom toggles, ALL DEFAULT FALSE. Toggle on the atom you want to verify
-// against an original-source indicator (RVOL, FAUNA, B2B PUP, TNT OD, etc.) on
-// your bottom screen. Confirm same-candle alignment per SKU_BUILD_ORDER.md.
-//
-// FLOOR / 2F / ROOFTOP / PENTHOUSE — DEFINITIONS (so they don't drift again):
-//   Floor RAW  (anyBullFloor) = bull_pp AND sigBullPBJ AND bull_hw_slot
-//   2F RAW     (anyBull2nd)   = bull_pp AND sigBullPB  AND bull_hw_slot
-//   Roof RAW   (anyBearRoof)  = bear_pp AND sigBearPBJ AND bear_hw_slot
-//   Pent RAW   (anyBearPent)  = bear_pp AND sigBearPB  AND bear_hw_slot
-//   bull_hw_slot = RVOL1x bull OR GS OR WTC OR Hiroshima OR (Nagasaki AND dir-bull qualifier)
-//   bear_hw_slot = RVOL1x bear OR MOAB OR WTC OR Hiroshima OR (Nagasaki AND dir-bear qualifier)
-//   Plotted FLOOR (#4) and 2F (#5) wrap RAW versions with `oneOfThese` confluence
-//   gate AND `cb1_pass_floor` / `cb1_pass` checkbox qualifier set.
-// v2 plots, alert aggregator, stats engine — all unchanged.
+// v3 (2026-05-08) = v2 + ATOMIC DETECTION PLOTS. Each atom toggle has a
+// tooltip — click the (i) icon next to it for the precise definition.
+// All atoms default OFF. v2 plots / alerts / stats engine unchanged.
 // ════════════════════════════════════════════════════════════════════════════
 import TradingView/ta/7 as tv_ta
 
@@ -2317,141 +2304,141 @@ plotshape(_masterGate and en_ucNagBear and sig_UCNagasakiBear, "46 UC NAGASAKI B
 string grpATOM = "★ ATOMIC PLOTS — VERIFY ★"
 
 // HV ranks (M3 — describe bar[1])
-bool a_HV50   = input.bool(false, "atom HV50",   group=grpATOM)
-bool a_HV75   = input.bool(false, "atom HV75",   group=grpATOM)
-bool a_HV100  = input.bool(false, "atom HV100",  group=grpATOM)
-bool a_HV150  = input.bool(false, "atom HV150",  group=grpATOM)
-bool a_HV200  = input.bool(false, "atom HV200",  group=grpATOM)
-bool a_HV250  = input.bool(false, "atom HV250",  group=grpATOM)
-bool a_HV300  = input.bool(false, "atom HV300",  group=grpATOM)
-bool a_HV350  = input.bool(false, "atom HV350",  group=grpATOM)
-bool a_HV400  = input.bool(false, "atom HV400",  group=grpATOM)
-bool a_HV450  = input.bool(false, "atom HV450",  group=grpATOM)
-bool a_HV500  = input.bool(false, "atom HV500",  group=grpATOM)
-bool a_HV550  = input.bool(false, "atom HV550",  group=grpATOM)
-bool a_HV600  = input.bool(false, "atom HV600",  group=grpATOM)
-bool a_HV650  = input.bool(false, "atom HV650",  group=grpATOM)
-bool a_HV700  = input.bool(false, "atom HV700",  group=grpATOM)
-bool a_HV750  = input.bool(false, "atom HV750",  group=grpATOM)
-bool a_HV1000 = input.bool(false, "atom HV1000", group=grpATOM)
-bool a_HEV    = input.bool(false, "atom HEV (all-time)", group=grpATOM)
+bool a_HV50   = input.bool(false, "atom HV50",   group=grpATOM, tooltip="HV50: prior bar volume = highest in last 50 bars. volume[1]==ta.highest(volume,50)[1]. Atomic vol-rank, [1] offset.")
+bool a_HV75   = input.bool(false, "atom HV75",   group=grpATOM, tooltip="HV75: prior bar volume = highest in last 75 bars. Atomic, [1] offset.")
+bool a_HV100  = input.bool(false, "atom HV100",  group=grpATOM, tooltip="HV100: prior bar volume = highest in last 100 bars. Atomic, [1] offset.")
+bool a_HV150  = input.bool(false, "atom HV150",  group=grpATOM, tooltip="HV150: prior bar volume = highest in last 150 bars. Atomic, [1] offset.")
+bool a_HV200  = input.bool(false, "atom HV200",  group=grpATOM, tooltip="HV200: prior bar volume = highest in last 200 bars. Atomic, [1] offset.")
+bool a_HV250  = input.bool(false, "atom HV250",  group=grpATOM, tooltip="HV250: prior bar volume = highest in last 250 bars. Atomic, [1] offset.")
+bool a_HV300  = input.bool(false, "atom HV300",  group=grpATOM, tooltip="HV300: prior bar volume = highest in last 300 bars. Atomic, [1] offset.")
+bool a_HV350  = input.bool(false, "atom HV350",  group=grpATOM, tooltip="HV350: prior bar volume = highest in last 350 bars. Atomic, [1] offset.")
+bool a_HV400  = input.bool(false, "atom HV400",  group=grpATOM, tooltip="HV400: prior bar volume = highest in last 400 bars. Atomic, [1] offset.")
+bool a_HV450  = input.bool(false, "atom HV450",  group=grpATOM, tooltip="HV450: prior bar volume = highest in last 450 bars. Atomic, [1] offset.")
+bool a_HV500  = input.bool(false, "atom HV500",  group=grpATOM, tooltip="HV500: prior bar volume = highest in last 500 bars. Atomic, [1] offset.")
+bool a_HV550  = input.bool(false, "atom HV550",  group=grpATOM, tooltip="HV550: prior bar volume = highest in last 550 bars. Atomic, [1] offset.")
+bool a_HV600  = input.bool(false, "atom HV600",  group=grpATOM, tooltip="HV600: prior bar volume = highest in last 600 bars. Atomic, [1] offset.")
+bool a_HV650  = input.bool(false, "atom HV650",  group=grpATOM, tooltip="HV650: prior bar volume = highest in last 650 bars. Atomic, [1] offset.")
+bool a_HV700  = input.bool(false, "atom HV700",  group=grpATOM, tooltip="HV700: prior bar volume = highest in last 700 bars. Atomic, [1] offset.")
+bool a_HV750  = input.bool(false, "atom HV750",  group=grpATOM, tooltip="HV750: prior bar volume = highest in last 750 bars. Atomic, [1] offset.")
+bool a_HV1000 = input.bool(false, "atom HV1000", group=grpATOM, tooltip="HV1000: prior bar volume = highest in last 1000 bars. Atomic, [1] offset.")
+bool a_HEV    = input.bool(false, "atom HEV (all-time)", group=grpATOM, tooltip="HEV: prior bar volume exceeds the running maxVolEver state. State machine, increment-only, never decays. M6 latch, consumed via _hev_pending.")
 
 // RVOL price-spike (offset 0)
-bool a_SAAB   = input.bool(false, "atom SAAB",       group=grpATOM)
-bool a_KRATOS = input.bool(false, "atom Kratos",     group=grpATOM)
-bool a_RV1xB  = input.bool(false, "atom RVOL1x bull", group=grpATOM)
-bool a_RV1xR  = input.bool(false, "atom RVOL1x bear", group=grpATOM)
-bool a_GS     = input.bool(false, "atom GrandSlam",  group=grpATOM)
-bool a_MOAB   = input.bool(false, "atom MOAB",       group=grpATOM)
+bool a_SAAB   = input.bool(false, "atom SAAB",        group=grpATOM, tooltip="SAAB: bb_normalizedPrice in [0.56x rvol_thresh, 1x rvol_thresh] AND bullish base. Moderate bull RVOL atomic.")
+bool a_KRATOS = input.bool(false, "atom Kratos",      group=grpATOM, tooltip="Kratos: bb_normalizedPrice in [0.56x rvol_thresh, 1x rvol_thresh] AND bearish base. Moderate bear RVOL atomic — bear mirror of SAAB.")
+bool a_RV1xB  = input.bool(false, "atom RVOL1x bull", group=grpATOM, tooltip="RVOL1x bull: bb_normalizedPrice in [1x rvol_thresh, gs_thresh] AND bullish base. NOT GrandSlam. High bull RVOL atomic.")
+bool a_RV1xR  = input.bool(false, "atom RVOL1x bear", group=grpATOM, tooltip="RVOL1x bear: same range, bearish base. NOT MOAB. High bear RVOL atomic.")
+bool a_GS     = input.bool(false, "atom GrandSlam",   group=grpATOM, tooltip="GrandSlam: bb_normalizedPrice >= gs_moab_thresh AND bullish base. Extreme bull RVOL atomic.")
+bool a_MOAB   = input.bool(false, "atom MOAB",        group=grpATOM, tooltip="MOAB: bb_normalizedPrice >= gs_moab_thresh AND bearish base. Extreme bear RVOL atomic — bear mirror of GrandSlam.")
 
 // RVOL cumulative (offset 0)
-bool a_WTC    = input.bool(false, "atom WTC",       group=grpATOM)
-bool a_HIRO   = input.bool(false, "atom Hiroshima", group=grpATOM)
-bool a_PENT   = input.bool(false, "atom Pentagon",  group=grpATOM)
+bool a_WTC    = input.bool(false, "atom WTC",        group=grpATOM, tooltip="WTC: cumulative relVolRatio in (wtc_thresh, hiroshima_thresh]. High cumulative RVOL atomic. Direction-agnostic.")
+bool a_HIRO   = input.bool(false, "atom Hiroshima",  group=grpATOM, tooltip="Hiroshima: cumulative relVolRatio > hiroshima_thresh. Extreme cumulative RVOL atomic. Direction-agnostic.")
+bool a_PENT   = input.bool(false, "atom Pentagon",   group=grpATOM, tooltip="Pentagon: cumulative relVolRatio in [1x rvol_thresh, wtc_thresh]. Moderate cumulative RVOL atomic.")
 
 // All-time vol
-bool a_NAG    = input.bool(false, "atom Nagasaki",  group=grpATOM)
+bool a_NAG    = input.bool(false, "atom Nagasaki",   group=grpATOM, tooltip="Nagasaki: this bar volume > maxVolEver (running all-time max tracker). Fires on first bar to beat every prior bar. Direction-agnostic.")
 
 // PBJ / PB (offset 0)
-bool a_PBJB   = input.bool(false, "atom PBJ Bull",  group=grpATOM)
-bool a_PBJR   = input.bool(false, "atom PBJ Bear",  group=grpATOM)
-bool a_PBB    = input.bool(false, "atom PB Bull",   group=grpATOM)
-bool a_PBR    = input.bool(false, "atom PB Bear",   group=grpATOM)
+bool a_PBJB   = input.bool(false, "atom PBJ Bull",   group=grpATOM, tooltip="PBJ Bull (Pipeline B Engine 6): wait_pbj_buy=true at buy_cross. ATR-based dip + cross above zoo MA + landing in PBJ level zone. Atomic, offset 0.")
+bool a_PBJR   = input.bool(false, "atom PBJ Bear",   group=grpATOM, tooltip="PBJ Bear: bear mirror of PBJ Bull. wait_pbj_sell + sell_cross.")
+bool a_PBB    = input.bool(false, "atom PB Bull",    group=grpATOM, tooltip="PB Bull: post-cross approach (sigBullPB). Like PBJ but uses approach detection on bull SR levels rather than the strict PBJ wait flag.")
+bool a_PBR    = input.bool(false, "atom PB Bear",    group=grpATOM, tooltip="PB Bear: bear mirror of PB Bull.")
 
 // PUP / PPD (offset 0)
-bool a_PUP    = input.bool(false, "atom PUP",       group=grpATOM)
-bool a_PPD    = input.bool(false, "atom PPD",       group=grpATOM)
+bool a_PUP    = input.bool(false, "atom PUP",        group=grpATOM, tooltip="PUP: bar size pct > 3% UP AND volume > 10-bar red-volume max. Bull push with vol confirmation. Atomic.")
+bool a_PPD    = input.bool(false, "atom PPD",        group=grpATOM, tooltip="PPD: bar size pct > 3% DOWN AND volume > 10-bar green-volume max. Bear push with vol confirmation. Bear mirror of PUP.")
 
 // FAUNA (offset 0)
-bool a_FAUNAB = input.bool(false, "atom FAUNA Bull", group=grpATOM)
-bool a_FAUNAR = input.bool(false, "atom FAUNA Bear", group=grpATOM)
+bool a_FAUNAB = input.bool(false, "atom FAUNA Bull", group=grpATOM, tooltip="FAUNA Bull: (MB OR RE OR TA bull) AND NOT excluded by gap-and-go (GG) filter. MB=momentum body, RE=range expansion, TA=trend acceleration. Single-bar synthesis atomic.")
+bool a_FAUNAR = input.bool(false, "atom FAUNA Bear", group=grpATOM, tooltip="FAUNA Bear: bear mirror of FAUNA Bull.")
 
 // Displacement
-bool a_DISPB  = input.bool(false, "atom DISP Bull (FVG-confirmed)", group=grpATOM)
-bool a_DISPR  = input.bool(false, "atom DISP Bear (FVG-confirmed)", group=grpATOM)
-bool a_DISP5B = input.bool(false, "atom disp5 Bull (5x std no-FVG)", group=grpATOM)
-bool a_DISP5R = input.bool(false, "atom disp5 Bear (5x std no-FVG)", group=grpATOM)
+bool a_DISPB  = input.bool(false, "atom DISP Bull (FVG-confirmed)", group=grpATOM, tooltip="sigDISPBull: prior bar disp >= std x min AND bullish 3-bar FVG (low > high[2] AND close[1] > open[1]). Offset -1, visual on bar[1] (the displacement candle).")
+bool a_DISPR  = input.bool(false, "atom DISP Bear (FVG-confirmed)", group=grpATOM, tooltip="sigDISPBear: bear mirror of DISP Bull. Offset -1.")
+bool a_DISP5B = input.bool(false, "atom disp5 Bull (5x std no-FVG)", group=grpATOM, tooltip="disp5_bull: this bar range > 5 x std AND close > open. NO FVG required. Used by HW. Offset 0, visual on bar[0].")
+bool a_DISP5R = input.bool(false, "atom disp5 Bear (5x std no-FVG)", group=grpATOM, tooltip="disp5_bear: bear mirror of disp5 Bull. Offset 0.")
 
 // FVG events
-bool a_GZIB   = input.bool(false, "atom gz_bullGZI", group=grpATOM)
-bool a_GZIR   = input.bool(false, "atom gz_bearGZI", group=grpATOM)
-bool a_HVFVGB = input.bool(false, "atom gz_bullHV",  group=grpATOM)
-bool a_HVFVGR = input.bool(false, "atom gz_bearHV",  group=grpATOM)
+bool a_GZIB   = input.bool(false, "atom gz_bullGZI", group=grpATOM, tooltip="gz_bullGZI: bull FVG event (3-bar geometry) AND zone overlap with prior bull FVG within gz1_dist bars. Impact zone atomic.")
+bool a_GZIR   = input.bool(false, "atom gz_bearGZI", group=grpATOM, tooltip="gz_bearGZI: bear mirror of gz_bullGZI.")
+bool a_HVFVGB = input.bool(false, "atom gz_bullHV",  group=grpATOM, tooltip="gz_bullHV: bull FVG event AND HV qualifier (volume[1] = highest of 5000-bar OR 252-bar OR 63-bar). High-volume FVG atomic.")
+bool a_HVFVGR = input.bool(false, "atom gz_bearHV",  group=grpATOM, tooltip="gz_bearHV: bear mirror of gz_bullHV.")
 
 // Matrix
-bool a_MAT    = input.bool(false, "atom Matrix Number (Neo raw)", group=grpATOM)
-bool a_NEOB   = input.bool(false, "atom sigNeoBull",     group=grpATOM)
-bool a_NEOR   = input.bool(false, "atom sigNeoBear",     group=grpATOM)
-bool a_TRIB   = input.bool(false, "atom sigTrinityBull", group=grpATOM)
-bool a_TRIR   = input.bool(false, "atom sigTrinityBear", group=grpATOM)
+bool a_MAT    = input.bool(false, "atom Matrix Number (Neo raw)", group=grpATOM, tooltip="is_matrix_number: this bar volume == ta.highest(volume, 67). Direction-agnostic atomic. Note: uses NO [1] offset — inconsistent vs HV ranks.")
+bool a_NEOB   = input.bool(false, "atom sigNeoBull",     group=grpATOM, tooltip="sigNeoBull: is_matrix_number AND sigFAUNABull on same bar.")
+bool a_NEOR   = input.bool(false, "atom sigNeoBear",     group=grpATOM, tooltip="sigNeoBear: is_matrix_number AND sigFAUNABear on same bar.")
+bool a_TRIB   = input.bool(false, "atom sigTrinityBull", group=grpATOM, tooltip="sigTrinityBull: is_matrix_number AND NOT sigFAUNABull AND close > open.")
+bool a_TRIR   = input.bool(false, "atom sigTrinityBear", group=grpATOM, tooltip="sigTrinityBear: is_matrix_number AND NOT sigFAUNABear AND close < open.")
 
 // Long / Short (offset 0)
-bool a_L1     = input.bool(false, "atom Long1",  group=grpATOM)
-bool a_L2     = input.bool(false, "atom Long2",  group=grpATOM)
-bool a_S1     = input.bool(false, "atom Short1", group=grpATOM)
-bool a_S2     = input.bool(false, "atom Short2", group=grpATOM)
+bool a_L1     = input.bool(false, "atom Long1",  group=grpATOM, tooltip="Long1: regRatio > 7 AND cumRatio > 3.5 AND close > open AND body ratio >= 0.6. Strict bull regression+cumulative+body atomic.")
+bool a_L2     = input.bool(false, "atom Long2",  group=grpATOM, tooltip="Long2: regRatio > 5 AND cumRatio > 2.5 AND close > open AND body ratio >= 0.75. Looser bull thresholds.")
+bool a_S1     = input.bool(false, "atom Short1", group=grpATOM, tooltip="Short1: bear mirror of Long1.")
+bool a_S2     = input.bool(false, "atom Short2", group=grpATOM, tooltip="Short2: bear mirror of Long2.")
 
 // U streak qualifier (the per-bar atomic feeding UU/UUU/UUUU)
-bool a_UQB    = input.bool(false, "atom u_qual_bull", group=grpATOM)
-bool a_UQR    = input.bool(false, "atom u_qual_bear", group=grpATOM)
+bool a_UQB    = input.bool(false, "atom u_qual_bull", group=grpATOM, tooltip="u_qual_bull: per-bar atom feeding the UU/UUU/UUUU streak. = bb_baseBullish AND bb_normalizedPrice >= 0.5 on confirmed bar.")
+bool a_UQR    = input.bool(false, "atom u_qual_bear", group=grpATOM, tooltip="u_qual_bear: bear mirror of u_qual_bull.")
 
 // Ping-Pong regime
-bool a_PPB    = input.bool(false, "atom bull_pp", group=grpATOM)
-bool a_PPR    = input.bool(false, "atom bear_pp", group=grpATOM)
+bool a_PPB    = input.bool(false, "atom bull_pp", group=grpATOM, tooltip="bull_pp: Ping-Pong SR aggregator (Pipeline E Engine 7). Bull regime when count of bull SR conditions >= pp_min_count AND structural-floor gravity present.")
+bool a_PPR    = input.bool(false, "atom bear_pp", group=grpATOM, tooltip="bear_pp: bear mirror of bull_pp. Bear regime classifier.")
 
 // Boom Hunter
-bool a_OMEGA  = input.bool(false, "atom bh_anyOmega", group=grpATOM)
+bool a_OMEGA  = input.bool(false, "atom bh_anyOmega", group=grpATOM, tooltip="bh_anyOmega: Boom Hunter Quotient1/2/3 omega-events OR bounceUp/Down. Composite oscillator atomic.")
 
 // TNT engine atomics
-bool a_TNTB   = input.bool(false, "atom raw_bullTNT",     group=grpATOM)
-bool a_TNTR   = input.bool(false, "atom raw_bearTNT",     group=grpATOM)
-bool a_NPMRB  = input.bool(false, "atom raw_napalmBull",  group=grpATOM)
-bool a_NPMRR  = input.bool(false, "atom raw_napalmBear",  group=grpATOM)
-bool a_CHGB   = input.bool(false, "atom raw_bullCharge",  group=grpATOM)
-bool a_CHGR   = input.bool(false, "atom raw_bearCharge",  group=grpATOM)
+bool a_TNTB   = input.bool(false, "atom raw_bullTNT",     group=grpATOM, tooltip="raw_bullTNT: TNT zone confirmation. VOB bull cross + Apex bull break + Failed-Apex Flip token within window. Bull reaccumulation entry atomic.")
+bool a_TNTR   = input.bool(false, "atom raw_bearTNT",     group=grpATOM, tooltip="raw_bearTNT: bear mirror of raw_bullTNT.")
+bool a_NPMRB  = input.bool(false, "atom raw_napalmBull",  group=grpATOM, tooltip="raw_napalmBull: bull napalm. Displacement+FVG occurring outside an existing bear TNT zone (price moved AWAY from zone). Bullish flip atomic.")
+bool a_NPMRR  = input.bool(false, "atom raw_napalmBear",  group=grpATOM, tooltip="raw_napalmBear: bear mirror of raw_napalmBull.")
+bool a_CHGB   = input.bool(false, "atom raw_bullCharge",  group=grpATOM, tooltip="raw_bullCharge: bull charge. Displacement+FVG above the most recent unviolated bull charge level. Bull continuation in the charge ladder.")
+bool a_CHGR   = input.bool(false, "atom raw_bearCharge",  group=grpATOM, tooltip="raw_bearCharge: bear mirror of raw_bullCharge.")
 
 // TIER 1 — DERIVED-SAME-BAR
-bool a_HVDB   = input.bool(false, "T1 HV+D fire bull", group=grpATOM)
-bool a_HVDR   = input.bool(false, "T1 HV+D fire bear", group=grpATOM)
-bool a_NPMCB  = input.bool(false, "T1 det_bullNapalmCons", group=grpATOM)
-bool a_NPMCR  = input.bool(false, "T1 det_bearNapalmCons", group=grpATOM)
+bool a_HVDB   = input.bool(false, "T1 HV+D fire bull", group=grpATOM, tooltip="hvd_fire_bull (Pipeline A terminal): HV at bar[1] AND displacement at bar[1] AND bull FVG geometry. Offset -1, describes bar[1].")
+bool a_HVDR   = input.bool(false, "T1 HV+D fire bear", group=grpATOM, tooltip="hvd_fire_bear: bear mirror of hvd_fire_bull.")
+bool a_NPMCB  = input.bool(false, "T1 det_bullNapalmCons", group=grpATOM, tooltip="det_bullNapalmCons: raw_napalmBull OR raw_bullCharge. v2 consolidation that fixes Napalm under-firing bug from v1.")
+bool a_NPMCR  = input.bool(false, "T1 det_bearNapalmCons", group=grpATOM, tooltip="det_bearNapalmCons: bear mirror of det_bullNapalmCons.")
 
 // TIER 2 — Combo Sets and FVG/MAT/UC chain
-bool a_CS1B   = input.bool(false, "T2 comboSet1 Bull", group=grpATOM)
-bool a_CS1R   = input.bool(false, "T2 comboSet1 Bear", group=grpATOM)
-bool a_CS2B   = input.bool(false, "T2 comboSet2 Bull", group=grpATOM)
-bool a_CS2R   = input.bool(false, "T2 comboSet2 Bear", group=grpATOM)
-bool a_CS3B   = input.bool(false, "T2 comboSet3 Bull", group=grpATOM)
-bool a_CS3R   = input.bool(false, "T2 comboSet3 Bear", group=grpATOM)
-bool a_CS4B   = input.bool(false, "T2 comboSet4 Bull", group=grpATOM)
-bool a_CS4R   = input.bool(false, "T2 comboSet4 Bear", group=grpATOM)
-bool a_FVGCB  = input.bool(false, "T2 FVG COMBO Bull (csNew1)", group=grpATOM)
-bool a_FVGCR  = input.bool(false, "T2 FVG COMBO Bear (csNew1)", group=grpATOM)
-bool a_MATCB  = input.bool(false, "T2 MAT COMBO Bull (csNew2)", group=grpATOM)
-bool a_MATCR  = input.bool(false, "T2 MAT COMBO Bear (csNew2)", group=grpATOM)
-bool a_UCB    = input.bool(false, "T2 UNIFIED COMBO Bull (csNew3)", group=grpATOM)
-bool a_UCR    = input.bool(false, "T2 UNIFIED COMBO Bear (csNew3)", group=grpATOM)
+bool a_CS1B   = input.bool(false, "T2 comboSet1 Bull", group=grpATOM, tooltip="comboSet1_Bull: cs_vb body% on bar[1] AND (gz_bullHV OR gz_bullGZI) AND (SAAB[1] OR RVOL1x bull[1] OR GrandSlam[1]). FVG-side combo with price-spike RVOL.")
+bool a_CS1R   = input.bool(false, "T2 comboSet1 Bear", group=grpATOM, tooltip="comboSet1_Bear: bear mirror — cs_vb AND (gz_bearHV OR gz_bearGZI) AND (Kratos[1] OR RVOL1x bear[1] OR MOAB[1]).")
+bool a_CS2B   = input.bool(false, "T2 comboSet2 Bull", group=grpATOM, tooltip="comboSet2_Bull: cs_vb body% on bar[1] AND (gz_bullHV OR gz_bullGZI) AND (Pentagon[1] OR WTC[1] OR Hiroshima[1] OR Nagasaki[1]). FVG-side combo with cumulative-RVOL family.")
+bool a_CS2R   = input.bool(false, "T2 comboSet2 Bear", group=grpATOM, tooltip="comboSet2_Bear: bear mirror.")
+bool a_CS3B   = input.bool(false, "T2 comboSet3 Bull", group=grpATOM, tooltip="comboSet3_Bull: cs_vm body% AND matrix_any_bull AND (SAAB OR RVOL1x bull OR GrandSlam) on same bar. Matrix-side combo with price-spike RVOL.")
+bool a_CS3R   = input.bool(false, "T2 comboSet3 Bear", group=grpATOM, tooltip="comboSet3_Bear: bear mirror.")
+bool a_CS4B   = input.bool(false, "T2 comboSet4 Bull", group=grpATOM, tooltip="comboSet4_Bull: cs_vm body% AND matrix_any_bull AND (Pentagon OR WTC OR Hiroshima OR Nagasaki) on same bar. Matrix-side combo with cumulative-RVOL family.")
+bool a_CS4R   = input.bool(false, "T2 comboSet4 Bear", group=grpATOM, tooltip="comboSet4_Bear: bear mirror.")
+bool a_FVGCB  = input.bool(false, "T2 FVG COMBO Bull (csNew1)", group=grpATOM, tooltip="csNew1_Bull (FVG COMBO Bull): comboSet1_Bull OR comboSet2_Bull. The FVG-side of UC. Describes bar[1] internally; referenced at [0] downstream.")
+bool a_FVGCR  = input.bool(false, "T2 FVG COMBO Bear (csNew1)", group=grpATOM, tooltip="csNew1_Bear: bear mirror.")
+bool a_MATCB  = input.bool(false, "T2 MAT COMBO Bull (csNew2)", group=grpATOM, tooltip="csNew2_Bull (MAT COMBO Bull): comboSet3_Bull OR comboSet4_Bull. The matrix-side of UC. Single-bar event; referenced at [1] downstream in offset -1 chains.")
+bool a_MATCR  = input.bool(false, "T2 MAT COMBO Bear (csNew2)", group=grpATOM, tooltip="csNew2_Bear: bear mirror.")
+bool a_UCB    = input.bool(false, "T2 UNIFIED COMBO Bull (csNew3)", group=grpATOM, tooltip="csNew3_Bull (UNIFIED COMBO Bull): csNew1_Bull AND nz(csNew2_Bull[1]). FVG combo this bar AND MAT combo prior bar. Describes bar[1].")
+bool a_UCR    = input.bool(false, "T2 UNIFIED COMBO Bear (csNew3)", group=grpATOM, tooltip="csNew3_Bear: bear mirror.")
 
 // TIER 2 — Floor / 2F / Roof / Pent RAW (no oneOfThese, no checkbox gating)
-bool a_FLR_R  = input.bool(false, "T2 Floor RAW (anyBullFloor)",   group=grpATOM)
-bool a_2F_R   = input.bool(false, "T2 2F RAW (anyBull2nd)",        group=grpATOM)
-bool a_RF_R   = input.bool(false, "T2 Rooftop RAW (anyBearRoof)",  group=grpATOM)
-bool a_PH_R   = input.bool(false, "T2 Penthouse RAW (anyBearPent)", group=grpATOM)
+bool a_FLR_R  = input.bool(false, "T2 Floor RAW (anyBullFloor)",   group=grpATOM, tooltip="anyBullFloor RAW: bull_pp AND sigBullPBJ AND bull_hw_slot. bull_hw_slot = sigBullRVOL1x OR sigGrandSlam OR sigWTC OR sigHiroshima OR (sigNagasaki AND nag_dir_bull). NO oneOfThese gate, NO checkbox.")
+bool a_2F_R   = input.bool(false, "T2 2F RAW (anyBull2nd)",        group=grpATOM, tooltip="anyBull2nd RAW: bull_pp AND sigBullPB (NOT PBJ) AND bull_hw_slot. NO oneOfThese gate, NO checkbox.")
+bool a_RF_R   = input.bool(false, "T2 Rooftop RAW (anyBearRoof)",  group=grpATOM, tooltip="anyBearRoof RAW: bear_pp AND sigBearPBJ AND bear_hw_slot. bear_hw_slot = sigBearRVOL1x OR sigMOAB OR sigWTC OR sigHiroshima OR (sigNagasaki AND nag_dir_bear). NO gates.")
+bool a_PH_R   = input.bool(false, "T2 Penthouse RAW (anyBearPent)", group=grpATOM, tooltip="anyBearPent RAW: bear_pp AND sigBearPB (NOT PBJ) AND bear_hw_slot. NO gates.")
 
 // TIER 2 — HW / FOX / F2 / E3 / FC / B2B raw
-bool a_HW_B   = input.bool(false, "T2 HW Bull (raw hwBull)", group=grpATOM)
-bool a_HW_R   = input.bool(false, "T2 HW Bear (raw hwBear)", group=grpATOM)
-bool a_FOX_B  = input.bool(false, "T2 Foxtrot Bull",         group=grpATOM)
-bool a_FOX_R  = input.bool(false, "T2 Foxtrot Bear",         group=grpATOM)
-bool a_F2_B   = input.bool(false, "T2 F2 Bull",              group=grpATOM)
-bool a_F2_R   = input.bool(false, "T2 F2 Bear",              group=grpATOM)
-bool a_E3_B   = input.bool(false, "T2 E3 Bull",              group=grpATOM)
-bool a_E3_R   = input.bool(false, "T2 E3 Bear",              group=grpATOM)
-bool a_FC_B   = input.bool(false, "T2 FAUNA Cluster Bull",   group=grpATOM)
-bool a_FC_R   = input.bool(false, "T2 FAUNA Cluster Bear",   group=grpATOM)
-bool a_B2BPUP = input.bool(false, "T2 B2B PUP",              group=grpATOM)
-bool a_B2BNB  = input.bool(false, "T2 B2B Napalm Bull",      group=grpATOM)
-bool a_B2BNR  = input.bool(false, "T2 B2B Napalm Bear",      group=grpATOM)
+bool a_HW_B   = input.bool(false, "T2 HW Bull (raw hwBull)", group=grpATOM, tooltip="hwBull (Heavy Weapon raw): close>open AND disp5_bull (5x std, NO FVG) AND sigBullPBJ AND (GrandSlam OR WTC OR Hiroshima OR (Nagasaki AND nag_dir_bull)) AND (anyBullFloor OR anyBull2nd). All required.")
+bool a_HW_R   = input.bool(false, "T2 HW Bear (raw hwBear)", group=grpATOM, tooltip="hwBear: bear mirror of hwBull.")
+bool a_FOX_B  = input.bool(false, "T2 Foxtrot Bull",         group=grpATOM, tooltip="sigFoxtrotBull: 4 consecutive bullish FAUNA bars (sigFAUNABull on bar[0..3]). M1 streak length 4.")
+bool a_FOX_R  = input.bool(false, "T2 Foxtrot Bear",         group=grpATOM, tooltip="sigFoxtrotBear: bear mirror — 4 consecutive bear FAUNA bars.")
+bool a_F2_B   = input.bool(false, "T2 F2 Bull",              group=grpATOM, tooltip="sBullF2 (Foster Pair Bull): u57_sessBar==2 AND u57_bMB AND u57_bMB[1]. 2-bar FAUNA-MB streak ONLY on session bar 2. M1+session-gate.")
+bool a_F2_R   = input.bool(false, "T2 F2 Bear",              group=grpATOM, tooltip="sBearF2: bear mirror.")
+bool a_E3_B   = input.bool(false, "T2 E3 Bull",              group=grpATOM, tooltip="sBullE3 (Exhaustion Triple Bull): u57_sessBar==3 AND u57_bEv AND [1] AND [2]. 3-bar FAUNA-event streak ONLY on session bar 3. M1+session-gate.")
+bool a_E3_R   = input.bool(false, "T2 E3 Bear",              group=grpATOM, tooltip="sBearE3: bear mirror.")
+bool a_FC_B   = input.bool(false, "T2 FAUNA Cluster Bull",   group=grpATOM, tooltip="sBullFC (FAUNA Cluster Bull): 2-of-3 vote (MB-streak2 / Ev-streak2 / MB-or-RE-streak2) AND threshold-vs-sequence ring overlap within 20 bars. M2+M4 hybrid.")
+bool a_FC_R   = input.bool(false, "T2 FAUNA Cluster Bear",   group=grpATOM, tooltip="sBearFC: bear mirror.")
+bool a_B2BPUP = input.bool(false, "T2 B2B PUP",              group=grpATOM, tooltip="det_b2bPUP: sigPUP AND nz(sigPUP[1]). Strict 2-bar PUP streak, no gaps. M1.")
+bool a_B2BNB  = input.bool(false, "T2 B2B Napalm Bull",      group=grpATOM, tooltip="det_b2bBullNapalm: det_bullNapalmCons AND nz(det_bullNapalmCons[1]). Strict 2-bar consolidated-Napalm streak. M1, offset -1.")
+bool a_B2BNR  = input.bool(false, "T2 B2B Napalm Bear",      group=grpATOM, tooltip="det_b2bBearNapalm: bear mirror of B2B Napalm Bull.")
 
 // ────────────────────────────────────────────────────────────────────────────
 // ATOMIC PLOTSHAPES — small subtle markers, distinct from the 46 main plots
