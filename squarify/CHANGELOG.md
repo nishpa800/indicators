@@ -4,50 +4,12 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
-## v3 VERIFY — 2026-05-08 (verification mode — additive only, no logic change)
-**File:** `versions/SQUARIFY_v3_VERIFY_2026-05-08.pine` (2935 lines, 46 main plots + ~80 atomic plots)
+## v3 VERIFY — 2026-05-08 — RETRACTED (over Pine plot limit)
+**File:** DELETED. v3 hit 147 plot calls (46 main + 2 OPENING CONFLU + ~99 atom plotshapes). Pine v5 hard limit is 64 total plot* calls per indicator (plot, plotshape, plotchar, plotcandle, plotbar, plotarrow, bgcolor, fill, hline). The script would not compile on TradingView.
 
-**Purpose:** bottom-up verification. v2 reads the same engines; v3 adds individual ATOMIC DETECTION PLOTS so each atomic SKU can be visually cross-checked against the original-source indicator (RVOL, FAUNA, B2B PUP, TNT OD, etc.) on a second chart. Same-candle alignment = atomic verified.
+**Lesson:** atom plots cannot be added to SQUARIFY itself within the plot budget. Next attempt: separate `SQUARIFY_ATOMS_*.pine` indicator file(s) — either (a) split atoms across multiple <64-plot files, or (b) use `label.new()` for atoms (which doesn't count toward the 64-plot limit; bounded by max_labels_count=500 instead). Pending design review with Anish.
 
-**Method:** v2 source copied byte-for-byte. Then:
-1. Indicator name updated to `SQUARIFY v3 VERIFY` (`shorttitle="SQ46v3"`).
-2. Header note added explaining the additive nature + Floor/2F/Roof/Penthouse RAW definitions (so they don't drift again).
-3. New `★ ATOMIC PLOTS — VERIFY ★` input group added at the bottom of the inputs panel — ~80 toggle inputs, ALL DEFAULT FALSE.
-4. ~80 new `plotshape()` calls after the existing 46 main plots — each gated by `_masterGate AND a_<name> AND <atomic-variable>`. Visual styling small/subtle (size.tiny / size.small) to avoid clutter when toggled on.
-
-**Atoms exposed (alphabetical within group):**
-- HV ranks (M3 — describe bar[1]): HV50/75/100/150/200/250/300/350/400/450/500/550/600/650/700/750/1000 + HEV.
-- RVOL price-spike: SAAB, Kratos, RVOL1x bull/bear, GrandSlam, MOAB.
-- RVOL cumulative: WTC, Hiroshima, Pentagon.
-- All-time vol: Nagasaki.
-- PBJ/PB: Bull/Bear PBJ, Bull/Bear PB.
-- PUP/PPD.
-- FAUNA Bull/Bear (synthesized after exclusions).
-- Displacement: sigDISPBull/Bear (FVG-confirmed, offset -1), disp5_bull/bear (5x std no-FVG, offset 0).
-- FVG events: gz_bullGZI/bearGZI, gz_bullHV/bearHV.
-- Matrix: is_matrix_number raw, sigNeoBull/Bear, sigTrinityBull/Bear.
-- Long/Short: L1, L2, S1, S2.
-- U streak qualifier: u_qual_bull/bear.
-- Ping-Pong: bull_pp, bear_pp.
-- Boom Hunter: bh_anyOmega.
-- TNT engine: raw_bullTNT/bearTNT, raw_napalmBull/Bear, raw_bullCharge/bearCharge.
-- TIER 1: hvd_fire_bull/bear, det_bullNapalmCons / det_bearNapalmCons.
-- TIER 2: comboSet1-4 Bull/Bear, FVG COMBO (csNew1) Bull/Bear, MAT COMBO (csNew2) Bull/Bear, UNIFIED COMBO (csNew3) Bull/Bear.
-- TIER 2 RAW Floor / 2F / Rooftop / Penthouse (anyBullFloor / anyBull2nd / anyBearRoof / anyBearPent — RAW, no oneOfThese gate, no checkbox).
-- TIER 2: HW raw, Foxtrot Bull/Bear, F2 Bull/Bear, E3 Bull/Bear, FAUNA Cluster Bull/Bear, B2B PUP, B2B Napalm Bull/Bear.
-
-**Floor / 2F / Roof / Penthouse — frozen definitions:**
-- `Floor RAW   = bull_pp AND sigBullPBJ AND bull_hw_slot`
-- `2F RAW      = bull_pp AND sigBullPB  AND bull_hw_slot`
-- `Roof RAW    = bear_pp AND sigBearPBJ AND bear_hw_slot`
-- `Pent RAW    = bear_pp AND sigBearPB  AND bear_hw_slot`
-- `bull_hw_slot = sigBullRVOL1x OR sigGrandSlam OR sigWTC OR sigHiroshima OR (sigNagasaki AND nag_dir_bull)`
-- `bear_hw_slot = sigBearRVOL1x OR sigMOAB     OR sigWTC OR sigHiroshima OR (sigNagasaki AND nag_dir_bear)`
-- Plotted FLOOR (#4) and 2F (#5) wrap RAW with `oneOfThese` confluence gate AND `cb1_pass_floor` / `cb1_pass` checkbox set.
-
-**Logic preserved:** v2's 46 plots, alert aggregator, stats engine, Tier 1/2 OPENING CONFLUENCE alerts — ZERO behavioral changes. The 4 offset bugs from `SQ46_v2_AUDIT_2026-05-08.md` (signals 31, 39, 41, 42) are NOT fixed in v3 — that's a separate change pending Anish's go-ahead.
-
-**Removal plan:** v3 atom plots are temporary. Once verification is complete, atoms get folded back out (revert to v2 logic) or kept for production diagnostics — Anish's call.
+**Net effect:** v2 remains the production indicator. No usable v3 file at this revision.
 
 ---
 
