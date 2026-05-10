@@ -1,0 +1,444 @@
+//@version=5
+// =============================================================================
+// Heavy PENTAGON
+//
+// DETECTION REGISTRY:
+// ─────────────────────────────────────────────────────────────────────────────
+// STANDALONE DETECTIONS (10):
+//   Pipeline 1 (Standard RVOL — normalized price spike, bb_normalizedPrice):
+//     1. SAAB (Bull)  2. Kratos (Bear)  3. Bull RVOL 1x  4. Bear RVOL 1x
+//     5. Grand Slam (Bull)  6. MOAB (Bear)
+//   Pipeline 2 (Reg@Time RVOL — time-regularized volume, relVolRatio):
+//     7. Pentagon  8. WTC  9. Hiroshima
+//   Pipeline 3 (All-Time High Volume — raw volume vs running max):
+//     10. Nagasaki (HEV)
+//
+// HEAVY COMBO DETECTIONS (15):
+//   Stage 5 post-plot co-occurrence. Terminal booleans ONLY.
+//   Direction classified by displacement engine (Bull / Bear / Neutral).
+//     11-13. Heavy Yin-Yang Bull/Bear/Neutral       (P1 + P2)
+//     14-16. Heavy Nagasaki Bull/Bear/Neutral        (P3 + P1)
+//     17-19. Heavy Nagasaki Vol Bull/Bear/Neutral    (P3 + P2)
+//     20-22. Heavy Trident Bull/Bear/Neutral         (P1 + P2 + P3)
+//     23-25. Neutral Heavy x2 Bull/Bear/Neutral      (P2 × 2)
+//
+// DISPLACEMENT ENGINE:
+//   Building block only. No standalone plotshape.
+//   dispBull = bar[1] bullish + range > σ threshold + bar[0] bullish FVG
+//   dispBear = bar[1] bearish + range > σ threshold + bar[0] bearish FVG
+//
+// EXCEPTIONS:
+//   CHECKBOX BYPASSERS: None.
+//   AGGREGATOR BYPASSERS: No aggregator exists.
+//
+// PHANTOM TOGGLES (reserved — no engine connected):
+//   FAUNA Bull/Bear, DISP A/B/C Bull/Bear, LONG 1/2, SHORT 1/2,
+//   HV 75/150/250/500/1000, Hot Spot
+// =============================================================================
+
+indicator("Heavy PENTAGON", shorttitle="heavy pentagon", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+import TradingView/ta/7 as tv_ta
+
+// =============================================================================
+// GLOBAL PLOT/ALERT TOGGLES
+// =============================================================================
+grp_global = "★ GLOBAL PLOT/ALERT TOGGLES ★"
+
+show_SAAB       = input.bool(false, "SAAB",         group=grp_global, inline="rv1")
+show_Kratos     = input.bool(false, "Kratos",       group=grp_global, inline="rv1")
+show_BullRVOL1x = input.bool(false, "Bull RVOL 1x", group=grp_global, inline="rv1")
+show_BearRVOL1x = input.bool(false, "Bear RVOL 1x", group=grp_global, inline="rv1")
+show_GrandSlam  = input.bool(true,  "Grand Slam",   group=grp_global, inline="rv2")
+show_MOAB       = input.bool(true,  "MOAB",         group=grp_global, inline="rv2")
+
+show_Pentagon   = input.bool(false, "Pentagon",   group=grp_global, inline="rv3")
+show_WTC        = input.bool(true,  "WTC",        group=grp_global, inline="rv3")
+show_Hiroshima  = input.bool(true,  "Hiroshima",  group=grp_global, inline="rv3")
+show_Nagasaki   = input.bool(true,  "Nagasaki",   group=grp_global, inline="rv3")
+
+// --- Phantom toggles (reserved for future engines — no logic connected) ---
+show_FAUNABull  = input.bool(false, "FAUNA Bull",  group=grp_global, inline="fa1")
+show_FAUNABear  = input.bool(false, "FAUNA Bear",  group=grp_global, inline="fa1")
+
+show_DISPABull  = input.bool(false, "DISP A Bull", group=grp_global, inline="di1")
+show_DISPABear  = input.bool(false, "DISP A Bear", group=grp_global, inline="di1")
+
+show_DISPBBull  = input.bool(false, "DISP B Bull", group=grp_global, inline="di2")
+show_DISPBBear  = input.bool(false, "DISP B Bear", group=grp_global, inline="di2")
+
+show_DISPCBull  = input.bool(false, "DISP C Bull", group=grp_global, inline="di3")
+show_DISPCBear  = input.bool(false, "DISP C Bear", group=grp_global, inline="di3")
+
+show_Long1      = input.bool(false, "LONG 1",  group=grp_global, inline="hy1")
+show_Short1     = input.bool(false, "SHORT 1", group=grp_global, inline="hy1")
+show_Long2      = input.bool(false, "LONG 2",  group=grp_global, inline="hy2")
+show_Short2     = input.bool(false, "SHORT 2", group=grp_global, inline="hy2")
+
+show_HV75       = input.bool(false, "HV 75",    group=grp_global, inline="hv1")
+show_HV150      = input.bool(false, "HV 150",   group=grp_global, inline="hv1")
+show_HV250      = input.bool(false, "HV 250",   group=grp_global, inline="hv1")
+show_HV500      = input.bool(false, "HV 500",   group=grp_global, inline="hv2")
+show_HV1000     = input.bool(false, "HV 1000",  group=grp_global, inline="hv2")
+show_HotSpot    = input.bool(false, "Hot Spot",  group=grp_global, inline="hv2")
+
+// =============================================================================
+// HEAVY COMBO TOGGLES
+// =============================================================================
+grp_heavy = "★ HEAVY COMBO TOGGLES ★"
+
+show_HYYBull     = input.bool(true, "Heavy Yin-Yang Bull",    group=grp_heavy, inline="hyy")
+show_HYYBear     = input.bool(true, "Heavy Yin-Yang Bear",    group=grp_heavy, inline="hyy")
+show_HYYNeutral  = input.bool(true, "Heavy Yin-Yang Neutral", group=grp_heavy, inline="hyy")
+
+show_HNBull      = input.bool(true, "Heavy Nagasaki Bull",    group=grp_heavy, inline="hn1")
+show_HNBear      = input.bool(true, "Heavy Nagasaki Bear",    group=grp_heavy, inline="hn1")
+show_HNNeutral   = input.bool(true, "Heavy Nagasaki Neutral", group=grp_heavy, inline="hn1")
+
+show_HNVBull     = input.bool(true, "Heavy Nagasaki Vol Bull",    group=grp_heavy, inline="hnv")
+show_HNVBear     = input.bool(true, "Heavy Nagasaki Vol Bear",    group=grp_heavy, inline="hnv")
+show_HNVNeutral  = input.bool(true, "Heavy Nagasaki Vol Neutral", group=grp_heavy, inline="hnv")
+
+show_HTBull      = input.bool(true, "Heavy Trident Bull",    group=grp_heavy, inline="ht")
+show_HTBear      = input.bool(true, "Heavy Trident Bear",    group=grp_heavy, inline="ht")
+show_HTNeutral   = input.bool(true, "Heavy Trident Neutral", group=grp_heavy, inline="ht")
+
+show_NHx2Bull    = input.bool(true, "Neutral Heavy x2 Bull",    group=grp_heavy, inline="nhx")
+show_NHx2Bear    = input.bool(true, "Neutral Heavy x2 Bear",    group=grp_heavy, inline="nhx")
+show_NHx2Neutral = input.bool(true, "Neutral Heavy x2 Neutral", group=grp_heavy, inline="nhx")
+
+// =============================================================================
+// PIPELINE 1: RVOL BULL/BEAR (Standard — Normalized Price Spike)
+// Inputs: bb_avgLength, bb_smaLength
+// Measures: bb_normalizedPrice = abs(close-open) / SMA(abs(close-open))
+// Terminal booleans: sigSAAB, sigKratos, sigBullRVOL1x, sigBearRVOL1x,
+//                    sigGrandSlam, sigMOAB
+// =============================================================================
+groupBullBear = "RVOL - Bull/Bear Calculation"
+bb_avgLength  = input.int(30, "Lookback Length", minval=1, group=groupBullBear)
+bb_smaLength  = input.int(20, "SMA Length",      minval=1, group=groupBullBear)
+
+f_rvol_1x_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10   ? 38.0 :
+               s <= 15   ? 33.0 :
+               s <= 30   ? 28.0 :
+               s <= 45   ? 23.0 :
+               s <= 60   ? 20.0 :
+               s <= 120  ? 19.0 :
+               s <= 180  ? 17.0 :
+               s <= 240  ? 16.0 :
+               s <= 300  ? 15.0 :
+               s <= 360  ? 14.0 :
+               s <= 420  ? 12.0 :
+               s <= 480  ? 11.0 :
+               s <= 540  ? 10.0 :
+               s <= 600  ? 10.0 :
+               s <= 900  ? 8.4  :
+               s <= 1800 ? 6.9  :
+               s <= 3600 ? 5.9  :
+               s <= 7200 ? 3.0  : 1.8
+    th
+
+f_saab_kratos_threshold(_tfSec) => f_rvol_1x_threshold(_tfSec) * 0.56
+
+f_gs_moab_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10   ? 114.0 :
+               s <= 15   ? 99.0  :
+               s <= 30   ? 84.0  :
+               s <= 45   ? 69.0  :
+               s <= 60   ? 35.0  :
+               s <= 300  ? 35.0  :
+               s <= 600  ? 25.0  :
+               s <= 900  ? 20.0  :
+               s <= 3600 ? 10.0  : 8.0
+    th
+
+f_wtc_threshold(_tfSec) => f_rvol_1x_threshold(_tfSec) * 2.0
+f_hiroshima_threshold(_tfSec) => f_gs_moab_threshold(_tfSec)
+
+tfSec = timeframe.in_seconds(timeframe.period)
+
+th_saab_kratos = f_saab_kratos_threshold(tfSec)
+th_1x          = f_rvol_1x_threshold(tfSec)
+th_gs_moab     = f_gs_moab_threshold(tfSec)
+th_wtc         = f_wtc_threshold(tfSec)
+th_hiroshima   = f_hiroshima_threshold(tfSec)
+
+bb_spike = math.abs(close - open)
+bb_avgSpikeDenom = ta.sma(bb_spike, bb_avgLength)[1]
+bb_normalizedPrice = bb_spike / nz(bb_avgSpikeDenom, 1.0)
+bb_avgVolDenom = ta.sma(volume, bb_avgLength)[1]
+bb_normalizedVolume = volume / nz(bb_avgVolDenom, 1.0)
+bb_diff = bb_normalizedPrice - bb_normalizedVolume
+bb_positiveDiff = bb_diff > 0 ? bb_diff : na
+bb_smaDiff = ta.sma(bb_positiveDiff, bb_smaLength)
+
+bb_baseBullish = (close > open) and (bb_positiveDiff > bb_smaDiff)
+bb_baseBearish = (close < open) and (bb_positiveDiff > bb_smaDiff)
+
+bb_inRange(v, lowTh, highTh) => v >= lowTh and v < highTh
+
+conf = barstate.isconfirmed
+
+sigSAAB       = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigKratos     = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigBullRVOL1x = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigBearRVOL1x = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigGrandSlam  = conf and bb_baseBullish and (bb_normalizedPrice >= th_gs_moab)
+sigMOAB       = conf and bb_baseBearish and (bb_normalizedPrice >= th_gs_moab)
+
+// =============================================================================
+// PIPELINE 2: RVOL REG @ TIME (Time-Regularized Volume Ratio)
+// Inputs: reg_anchorTimeframe, reg_length, reg_calculationMode, reg_adjustRealtime
+// Measures: relVolRatio = currentVolume_reg / pastVolume_reg
+// Terminal booleans: sigPentagon, sigWTC, sigHiroshima
+// ZERO shared variables with Pipeline 1. ZERO shared inputs.
+// =============================================================================
+groupReg = "RVOL - Reg @ Time Calculation"
+reg_anchorTimeframe  = input.timeframe("", "Anchor Timeframe (blank = chart)", group=groupReg)
+reg_length           = input.int(30, "Length", minval=1, group=groupReg)
+reg_calculationMode  = input.string("Cumulative", "Calculation Mode", options=["Cumulative", "Regular"], group=groupReg)
+reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg)
+
+[currentVolume_reg, pastVolume_reg, _] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, reg_calculationMode == "Cumulative", reg_adjustRealtime)
+relVolRatio = currentVolume_reg / pastVolume_reg
+
+sigPentagon  = conf and (relVolRatio >= th_1x)  and (relVolRatio <= th_wtc)
+sigWTC       = conf and (relVolRatio >  th_wtc) and (relVolRatio <= th_hiroshima)
+sigHiroshima = conf and (relVolRatio >  th_hiroshima)
+
+// =============================================================================
+// PIPELINE 3: NAGASAKI (All-Time High Volume)
+// Inputs: NONE. Measures: volume vs running var maxVol.
+// Terminal boolean: sigNagasaki
+// ZERO shared variables with Pipeline 1 or 2. ZERO shared inputs.
+// =============================================================================
+vol = volume
+var float maxVol = 0.0
+bool isNagasaki = false
+
+if conf
+    if bar_index == 0
+        maxVol := vol
+    else if vol > maxVol
+        isNagasaki := true
+        maxVol := vol
+
+sigNagasaki = conf and isNagasaki
+
+// =============================================================================
+// DISPLACEMENT ENGINE (Building Block — no standalone plotshape)
+// Uses FVG detection for gap confirmation.
+// dispBull/dispBear are consumed ONLY by Stage 5 direction classification.
+// =============================================================================
+grp_disp = "Displacement Settings"
+disp_strength = input.float(6.0, "Strength (σ multiplier)", minval=1.0, step=0.5, group=grp_disp, tooltip="Bar[1] range must exceed this many standard deviations of recent bar ranges to qualify as a displacement candle.")
+disp_lookback = input.int(100, "Lookback Length", minval=10, group=grp_disp, tooltip="Number of bars for bar-range standard deviation calculation.")
+threshPct     = input.float(2, "FVG Threshold %", minval=0, maxval=100, step=0.1, group=grp_disp, tooltip="Minimum gap size as percentage of price for FVG confirmation. Used when Auto is OFF.")
+auto          = input.bool(true, "Auto FVG Threshold", group=grp_disp, tooltip="When ON, FVG threshold is calculated automatically from cumulative average range. When OFF, uses the manual Threshold % above.")
+
+// FVG detection (mechanical — no GZI overlap logic, no mitigation levels, no arrays)
+float thresh = auto ? ta.cum((high - low) / low) / bar_index : threshPct / 100
+bool bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > thresh
+bool sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > thresh
+
+// Displacement candle range check on bar[1]
+float barRange_d = high[1] - low[1]
+float rangeStdev = ta.stdev(high - low, disp_lookback)
+bool dispCandleMet = barRange_d > disp_strength * nz(rangeStdev[1])
+
+// Bullish: bar[1] bullish candle + range exceeds threshold + bar[0] confirms bullish FVG
+bool dispBull = conf and dispCandleMet and (close[1] > open[1]) and bFVG
+
+// Bearish: bar[1] bearish candle + range exceeds threshold + bar[0] confirms bearish FVG
+bool dispBear = conf and dispCandleMet and (close[1] < open[1]) and sFVG
+
+// =============================================================================
+// STAGE 5: HEAVY COMBO DETECTIONS
+// Post-plot co-occurrence. TERMINAL BOOLEANS ONLY.
+// These consume OUTPUTS from sealed pipelines.
+// They touch ZERO engine internals, ZERO intermediate variables, ZERO inputs.
+//
+// Group A (Directional, Pipeline 1 — excluding SAAB/Kratos):
+//   Bull: sigBullRVOL1x, sigGrandSlam
+//   Bear: sigBearRVOL1x, sigMOAB
+//
+// Group B (Neutral Heavy, Pipeline 2):
+//   sigPentagon, sigWTC, sigHiroshima
+//
+// Nagasaki (Pipeline 3): sigNagasaki
+//
+// Direction: dispBull → Bull, dispBear → Bear, neither → Neutral
+// All constituents offset 0. Same-candle = AND on bar[0]. No shifts.
+// =============================================================================
+
+// Group helper booleans (terminal booleans only)
+bool groupA_Bull = sigBullRVOL1x or sigGrandSlam
+bool groupA_Bear = sigBearRVOL1x or sigMOAB
+bool groupB      = sigPentagon or sigWTC or sigHiroshima
+
+// Base combo booleans (before direction classification)
+bool baseYinYang   = (groupA_Bull or groupA_Bear) and groupB
+bool baseNagasaki  = sigNagasaki and (groupA_Bull or groupA_Bear)
+bool baseNagasakiV = sigNagasaki and groupB
+bool baseTrident   = sigNagasaki and (groupA_Bull or groupA_Bear) and groupB
+bool baseNHx2      = (sigPentagon and sigWTC) or (sigPentagon and sigHiroshima) or (sigWTC and sigHiroshima)
+
+// Direction classification via displacement engine
+bool noDisp = (not dispBull) and (not dispBear)
+
+// Heavy Yin-Yang: Directional (P1) + Neutral Heavy (P2)
+bool sigHYYBull    = baseYinYang and dispBull
+bool sigHYYBear    = baseYinYang and dispBear
+bool sigHYYNeutral = baseYinYang and noDisp
+
+// Heavy Nagasaki: All-Time High (P3) + Directional (P1)
+bool sigHNBull     = baseNagasaki and dispBull
+bool sigHNBear     = baseNagasaki and dispBear
+bool sigHNNeutral  = baseNagasaki and noDisp
+
+// Heavy Nagasaki Vol: All-Time High (P3) + Neutral Heavy (P2)
+bool sigHNVBull    = baseNagasakiV and dispBull
+bool sigHNVBear    = baseNagasakiV and dispBear
+bool sigHNVNeutral = baseNagasakiV and noDisp
+
+// Heavy Trident: All three axes (P1 + P2 + P3)
+bool sigHTBull     = baseTrident and dispBull
+bool sigHTBear     = baseTrident and dispBear
+bool sigHTNeutral  = baseTrident and noDisp
+
+// Neutral Heavy x2: Two Reg@Time tiers on same bar (P2 × 2)
+bool sigNHx2Bull    = baseNHx2 and dispBull
+bool sigNHx2Bear    = baseNHx2 and dispBear
+bool sigNHx2Neutral = baseNHx2 and noDisp
+
+// =============================================================================
+// FIRE CONDITIONS (checkbox AND boolean → 1:1 parity for plot + alert)
+// =============================================================================
+
+// --- Standalone 10 ---
+fire_SAAB       = show_SAAB       and sigSAAB
+fire_Kratos     = show_Kratos     and sigKratos
+fire_BullRVOL1x = show_BullRVOL1x and sigBullRVOL1x
+fire_BearRVOL1x = show_BearRVOL1x and sigBearRVOL1x
+fire_GrandSlam  = show_GrandSlam  and sigGrandSlam
+fire_MOAB       = show_MOAB       and sigMOAB
+fire_Pentagon   = show_Pentagon   and sigPentagon
+fire_WTC        = show_WTC        and sigWTC
+fire_Hiroshima  = show_Hiroshima  and sigHiroshima
+fire_Nagasaki   = show_Nagasaki   and sigNagasaki
+
+// --- Heavy Yin-Yang ---
+fire_HYYBull    = show_HYYBull    and sigHYYBull
+fire_HYYBear    = show_HYYBear    and sigHYYBear
+fire_HYYNeutral = show_HYYNeutral and sigHYYNeutral
+
+// --- Heavy Nagasaki ---
+fire_HNBull     = show_HNBull     and sigHNBull
+fire_HNBear     = show_HNBear     and sigHNBear
+fire_HNNeutral  = show_HNNeutral  and sigHNNeutral
+
+// --- Heavy Nagasaki Vol ---
+fire_HNVBull    = show_HNVBull    and sigHNVBull
+fire_HNVBear    = show_HNVBear    and sigHNVBear
+fire_HNVNeutral = show_HNVNeutral and sigHNVNeutral
+
+// --- Heavy Trident ---
+fire_HTBull     = show_HTBull     and sigHTBull
+fire_HTBear     = show_HTBear     and sigHTBear
+fire_HTNeutral  = show_HTNeutral  and sigHTNeutral
+
+// --- Neutral Heavy x2 ---
+fire_NHx2Bull    = show_NHx2Bull    and sigNHx2Bull
+fire_NHx2Bear    = show_NHx2Bear    and sigNHx2Bear
+fire_NHx2Neutral = show_NHx2Neutral and sigNHx2Neutral
+
+// =============================================================================
+// PLOTSHAPES — STANDALONE 10
+// Source of truth: Screenshot 3 (Style tab)
+// Location mapping: Top=location.top, Bottom=location.bottom
+// =============================================================================
+plotshape(fire_SAAB,       title="SAAB",            style=shape.square,       location=location.top,    size=size.tiny,   color=color.lime,    text="SAAB")
+plotshape(fire_Kratos,     title="Kratos",           style=shape.square,       location=location.bottom, size=size.tiny,   color=color.orange,  text="Krat")
+plotshape(fire_BullRVOL1x, title="Bull RVOL 1x",    style=shape.xcross,       location=location.bottom, size=size.small,  color=color.green,   text="RV1x+")
+plotshape(fire_BearRVOL1x, title="Bear RVOL 1x",    style=shape.xcross,       location=location.bottom, size=size.small,  color=color.red,     text="RV1x-")
+plotshape(fire_GrandSlam,  title="Grand Slam",       style=shape.triangleup,   location=location.bottom, size=size.normal, color=color.aqua,    text="DINGER")
+plotshape(fire_MOAB,       title="MOAB",             style=shape.triangledown, location=location.top,    size=size.normal, color=color.fuchsia, text="MOAB")
+plotshape(fire_Pentagon,   title="Pentagon",          style=shape.diamond,      location=location.top,    size=size.small,  color=color.teal,    text="PENT")
+plotshape(fire_WTC,        title="WTC",              style=shape.xcross,       location=location.bottom, size=size.normal, color=color.yellow,  text="WTC")
+plotshape(fire_Hiroshima,  title="Hiroshima",         style=shape.diamond,      location=location.top,    size=size.normal, color=color.white,   text="H")
+plotshape(fire_Nagasaki,   title="Nagasaki (HEV)",   style=shape.flag,         location=location.top,    size=size.normal, color=color.purple,  text="N")
+
+// =============================================================================
+// PLOTSHAPES — HEAVY COMBOS
+// Bull=bottom (green), Bear=top (red), Neutral=top (white)
+// Shape: circle for all Heavy combos (distinct from standalone shapes)
+// =============================================================================
+
+// Heavy Yin-Yang (P1 + P2)
+plotshape(fire_HYYBull,    title="Heavy Yin-Yang Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="HYY")
+plotshape(fire_HYYBear,    title="Heavy Yin-Yang Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="HYY")
+plotshape(fire_HYYNeutral, title="Heavy Yin-Yang Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="HYY")
+
+// Heavy Nagasaki (P3 + P1)
+plotshape(fire_HNBull,     title="Heavy Nagasaki Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="HN")
+plotshape(fire_HNBear,     title="Heavy Nagasaki Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="HN")
+plotshape(fire_HNNeutral,  title="Heavy Nagasaki Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="HN")
+
+// Heavy Nagasaki Vol (P3 + P2)
+plotshape(fire_HNVBull,    title="Heavy Nagasaki Vol Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="HNV")
+plotshape(fire_HNVBear,    title="Heavy Nagasaki Vol Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="HNV")
+plotshape(fire_HNVNeutral, title="Heavy Nagasaki Vol Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="HNV")
+
+// Heavy Trident (P1 + P2 + P3)
+plotshape(fire_HTBull,     title="Heavy Trident Bull",    style=shape.circle, location=location.bottom, size=size.normal, color=color.lime,    text="HT")
+plotshape(fire_HTBear,     title="Heavy Trident Bear",    style=shape.circle, location=location.top,    size=size.normal, color=color.red,     text="HT")
+plotshape(fire_HTNeutral,  title="Heavy Trident Neutral", style=shape.circle, location=location.top,    size=size.normal, color=color.white,   text="HT")
+
+// Neutral Heavy x2 (P2 × 2)
+plotshape(fire_NHx2Bull,    title="Neutral Heavy x2 Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="NHx2")
+plotshape(fire_NHx2Bear,    title="Neutral Heavy x2 Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="NHx2")
+plotshape(fire_NHx2Neutral, title="Neutral Heavy x2 Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="NHx2")
+
+// =============================================================================
+// ALERTS — 1:1 parity with plotshapes, identical fire_* booleans
+// =============================================================================
+
+// --- Standalone 10 ---
+alertcondition(fire_SAAB,       "SAAB",          "SAAB fired on {{ticker}}")
+alertcondition(fire_Kratos,     "Kratos",        "Kratos fired on {{ticker}}")
+alertcondition(fire_BullRVOL1x, "Bull RVOL 1x",  "Bull RVOL 1x fired on {{ticker}}")
+alertcondition(fire_BearRVOL1x, "Bear RVOL 1x",  "Bear RVOL 1x fired on {{ticker}}")
+alertcondition(fire_GrandSlam,  "Grand Slam",     "Grand Slam fired on {{ticker}}")
+alertcondition(fire_MOAB,       "MOAB",           "MOAB fired on {{ticker}}")
+alertcondition(fire_Pentagon,   "Pentagon",       "Pentagon fired on {{ticker}}")
+alertcondition(fire_WTC,        "WTC",            "WTC fired on {{ticker}}")
+alertcondition(fire_Hiroshima,  "Hiroshima",      "Hiroshima fired on {{ticker}}")
+alertcondition(fire_Nagasaki,   "Nagasaki",       "Nagasaki fired on {{ticker}}")
+
+// --- Heavy Yin-Yang ---
+alertcondition(fire_HYYBull,    "Heavy Yin-Yang Bull",    "Heavy Yin-Yang Bull fired on {{ticker}}")
+alertcondition(fire_HYYBear,    "Heavy Yin-Yang Bear",    "Heavy Yin-Yang Bear fired on {{ticker}}")
+alertcondition(fire_HYYNeutral, "Heavy Yin-Yang Neutral", "Heavy Yin-Yang Neutral fired on {{ticker}}")
+
+// --- Heavy Nagasaki ---
+alertcondition(fire_HNBull,     "Heavy Nagasaki Bull",    "Heavy Nagasaki Bull fired on {{ticker}}")
+alertcondition(fire_HNBear,     "Heavy Nagasaki Bear",    "Heavy Nagasaki Bear fired on {{ticker}}")
+alertcondition(fire_HNNeutral,  "Heavy Nagasaki Neutral", "Heavy Nagasaki Neutral fired on {{ticker}}")
+
+// --- Heavy Nagasaki Vol ---
+alertcondition(fire_HNVBull,    "Heavy Nagasaki Vol Bull",    "Heavy Nagasaki Vol Bull fired on {{ticker}}")
+alertcondition(fire_HNVBear,    "Heavy Nagasaki Vol Bear",    "Heavy Nagasaki Vol Bear fired on {{ticker}}")
+alertcondition(fire_HNVNeutral, "Heavy Nagasaki Vol Neutral", "Heavy Nagasaki Vol Neutral fired on {{ticker}}")
+
+// --- Heavy Trident ---
+alertcondition(fire_HTBull,     "Heavy Trident Bull",    "Heavy Trident Bull fired on {{ticker}}")
+alertcondition(fire_HTBear,     "Heavy Trident Bear",    "Heavy Trident Bear fired on {{ticker}}")
+alertcondition(fire_HTNeutral,  "Heavy Trident Neutral", "Heavy Trident Neutral fired on {{ticker}}")
+
+// --- Neutral Heavy x2 ---
+alertcondition(fire_NHx2Bull,    "Neutral Heavy x2 Bull",    "Neutral Heavy x2 Bull fired on {{ticker}}")
+alertcondition(fire_NHx2Bear,    "Neutral Heavy x2 Bear",    "Neutral Heavy x2 Bear fired on {{ticker}}")
+alertcondition(fire_NHx2Neutral, "Neutral Heavy x2 Neutral", "Neutral Heavy x2 Neutral fired on {{ticker}}")
