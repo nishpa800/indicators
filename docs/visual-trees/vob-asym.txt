@@ -1,0 +1,59 @@
+VOB ASYM T3×6 v8 — dependency tree
+====================================
+
+ROOTS (tier 0; 100% self-contained — zero imports, zero request.security)
+─────────────────────────────────────────────────────────────────────────
+vob-asym::VOB_CROSS                  (per-tier EMA fast/slow crossover trigger)
+vob-asym::BULL_ZONE_PUSH             (lower_X push)
+vob-asym::BEAR_ZONE_PUSH             (upper_X push)
+vob-asym::ZONE_INVALIDATION          (close-through + dedup-nuke)
+vob-asym::T3_SUPER_BUY/SELL          (per-tier dominant-zone confluence)
+vob-asym::NAGASAKI                   (re-implemented — uses volume[1] + offset=-1; SEMANTIC drift vs canonical heavy-pentagon)
+
+PER-TIER STRUCTURE (6 instances, sensitivities A-F)
+────────────────────────────────────────────────────
+Tier  EMA len1  EMA len2 (=len1+13)
+A     2500      2513
+B     2250      2263
+C     2000      2013
+D     1500      1513
+E     1250      1263
+F     1000      1013
+
+Each tier emits: (T3 buy, T3 sell, bull_pool, bear_pool, lower_X array, upper_X array)
+Per-(tier, direction) cooldown: 100 bars after firing.
+Zone array hard cap: 15 per tier per direction.
+
+COMPOSITES
+───────────
+T3 LADDER (tier 3)         — six parallel T3 super-signal engines per tier A-F
+ZONE CREATION MARKER (T2)  — 12 plotshapes (ZoneBull A-F + ZoneBear A-F)
+MUTEX OVERLAP RENDER (visual layer; processing order A→F)
+  Priority 0 (no overlap):    full draw (top + bot + dashed mid + filled body)
+  Priority 1 (1 overlap):     single solid mid line
+  Priority 2 (2 overlaps):    single dotted mid line
+  Priority 3+ (3+ overlaps):  thin dotted mid line
+PANCAKE ASSESSMENT (emission heuristic) — bull/bear pancake = stack≥3 AND gap≥30%
+
+PLOTSHAPES (25)
+────────────────
+T3 Buy A-F (6) + T3 Sell A-F (6) at varied locations.
+Nagasaki (1, offset=-1).
+ZoneBull A-F (6) + ZoneBear A-F (6) at varied locations.
+
+ALERTCONDITION (2): any_t3, any_zone.
+14 alert() calls in Bloomberg pipe-delimited format.
+
+NAMING CONVENTION (inverted from intuition)
+────────────────────────────────────────────
+Bullish → lower_X array (zone forms at swing LOW)
+Bearish → upper_X array (zone forms at swing HIGH)
+
+DEAD INPUT
+───────────
+asym_threshold (default 99.0) "Reserved for future Tier 1 asymmetric signals" — not used.
+
+PROVENANCE NOTE
+────────────────
+File header line 559: "*** THIS FUNCTION IS PRESERVED EXACTLY FROM THE ORIGINAL — DO NOT MODIFY ***"
+suggests the core VOB+T3 logic was inherited from a parent file; v8 changes are emission-layer scaffolding only.

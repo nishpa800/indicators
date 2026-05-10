@@ -1,0 +1,48 @@
+VOB LADDER WATCH v1 — dependency tree
+========================================
+
+DISTINCT INDICATOR co-located with VOB Asym T3×6 in vob/ folder. Stage 6 should split.
+
+ROOTS (cross-refs to vob-asym bull-half engine)
+────────────────────────────────────────────────
+vob-ladder::Z_A   (EMA len 2500)
+vob-ladder::Z_B   (EMA len 2250)
+vob-ladder::Z_C   (EMA len 2000)
+vob-ladder::Z_D   (EMA len 1500)
+vob-ladder::Z_E   (EMA len 1250)
+vob-ladder::Z_F   (EMA len 1000)   ← LADDER ANCHOR (must exist for any depth>0)
+
+Per-tier price extraction: highest mid among active zones (not "most recent by index" despite comment).
+
+TIER 1 COMPOSITE
+─────────────────
+LADDER_DEPTH = nested if-cascade: count of consecutive ascending tiers from F walking up to A.
+               Range 0-6.
+
+TIER 2 COMPOSITES (transition flags)
+─────────────────────────────────────
+ESCALATED       = ladder_depth > prev_depth AND barstate.isconfirmed
+DE_ESCALATED    = ladder_depth < prev_depth AND barstate.isconfirmed   ← UNUSED (dead code)
+
+TIER 3 COMPOSITES (escalation level triggers)
+──────────────────────────────────────────────
+fire_watch  = escalated AND ladder_depth == 2     (WATCH F+E)        offset=0
+fire_tier3  = escalated AND ladder_depth == 3     (LDR3 +D)          offset=0
+fire_tier4  = escalated AND ladder_depth == 4     (LDR4 +C)          offset=0
+fire_tier5  = escalated AND ladder_depth == 5     (LDR5 +B)          offset=0
+fire_full   = escalated AND ladder_depth == 6     (FULL LDR)         offset=0  ← TERMINAL
+
+ESCALATION SEMANTICS
+─────────────────────
+- prev_depth (var int) persists across bars; updated to ladder_depth each confirmed bar.
+- Each fire_* boolean isolates the precise level entered (escalated AND ladder_depth == N).
+  A jump from depth 0 to 3 fires only fire_tier3, not the intervening levels.
+- Per-step rung: depth advances only if next-higher tier price is non-na AND strictly greater.
+- Reset: zF zone goes na (engine invalidates on close < l.lower), or any rung's tier price goes na, or strict-ascending breaks.
+
+PLOTSHAPES & ALERTS
+────────────────────
+5 plotshapes (gated by show_labels).
+5 alertconditions (1:1 with plotshapes).
+1 alert() call: pipe-delimited payload `VOB_LADDER|TICKER=...|DEPTH=...|F=...|...|CLOSE=...`
+Top-right depth gauge table (color-graded ≥4 lime / ≥2 yellow / else gray).

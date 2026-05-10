@@ -1,0 +1,42 @@
+HEAVY COMBO TOGGLES v1 — dependency tree
+=========================================
+
+ROOTS REFERENCED (all cross-refs to heavy-pentagon::*, VERBATIM)
+────────────────────────────────────────────────────────────────
+heavy-pentagon::SAAB, KRATOS              ← computed but ORPHANED (excluded from groupA per Stage-5 doctrine)
+heavy-pentagon::BULL_RVOL_1X, BEAR_RVOL_1X
+heavy-pentagon::GRAND_SLAM, MOAB
+heavy-pentagon::PENTAGON, WTC, HIROSHIMA
+heavy-pentagon::NAGASAKI
+displacement engine (dispBull/dispBear/noDisp — building block, NOT a root)
+
+5 BASE COMBOS (all cross-refs to heavy-pentagon, verbatim — not plotted, not alerted)
+──────────────────────────────────────────────────────────────────────────────────────
+baseYinYang, baseNagasaki, baseNagasakiV, baseTrident, baseNHx2
+
+15 DIRECTIONAL COMBO BOOLEANS (all cross-refs, verbatim — consumed by master OR-gates)
+──────────────────────────────────────────────────────────────────────────────────────
+sigHYY_{Bull,Bear,Neutral}
+sigHN_{Bull,Bear,Neutral}
+sigHNV_{Bull,Bear,Neutral}
+sigHT_{Bull,Bear,Neutral}
+sigNHx2_{Bull,Bear,Neutral}
+
+3 NEW MASTER OR-GATES (only original signals in this file)
+───────────────────────────────────────────────────────────
+hct::S1_HEAVY_COMBO_BULL    = OR over 5 eligibility-gated bull combos    offset=-1
+hct::S2_HEAVY_COMBO_BEAR    = OR over 5 eligibility-gated bear combos    offset=-1
+hct::S3_HEAVY_COMBO_NEUTRAL = OR over 5 eligibility-gated neutral combos offset=0
+
+15 ELIGIBILITY GATES (input.bool, default true): en_HYY{Bull,Bear,Neutral}, en_HN*, en_HNV*, en_HT*, en_NHx2*
+
+PLOTSHAPES & ALERTS: 3 + 3
+────────────────────────────
+"S1: Heavy Combo Bull"    (HC▲ circle bottom, lime, offset=-1)
+"S2: Heavy Combo Bear"    (HC▼ circle top, red, offset=-1)
+"S3: Heavy Combo Neutral" (HC— circle top, white, offset=0)
+
+VERBATIM CLAIM VERIFICATION
+────────────────────────────
+Per CHANGELOG, this file lifts 5 base combos + 15 directional booleans VERBATIM from heavy-pentagon.
+Byte-equivalent diff confirms 100% — only whitespace/alignment differs.

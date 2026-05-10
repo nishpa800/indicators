@@ -1,0 +1,64 @@
+HEAVY PENTAGON — dependency tree
+================================
+
+ROOTS (tier 0, lifecycle stage 2, all offset=0)
+─────────────────────────────────────────────────
+Pipeline 1 (Standard RVOL):
+  ├─ heavy-pentagon::SAAB
+  ├─ heavy-pentagon::KRATOS
+  ├─ heavy-pentagon::BULL_RVOL_1X
+  ├─ heavy-pentagon::BEAR_RVOL_1X
+  ├─ heavy-pentagon::GRAND_SLAM
+  └─ heavy-pentagon::MOAB
+
+Pipeline 2 (Reg@Time RVOL):
+  ├─ heavy-pentagon::PENTAGON
+  ├─ heavy-pentagon::WTC
+  └─ heavy-pentagon::HIROSHIMA
+
+Pipeline 3 (All-Time HV):
+  └─ heavy-pentagon::NAGASAKI
+
+Internal direction classifier (NOT a root):
+  ├─ dispBull
+  ├─ dispBear
+  └─ noDisp
+
+INTERMEDIATE BASE COMBOS (unnamed plumbing, not plotted)
+─────────────────────────────────────────────────────────
+groupA_Bull   = BULL_RVOL_1X OR GRAND_SLAM
+groupA_Bear   = BEAR_RVOL_1X OR MOAB
+groupB        = PENTAGON OR WTC OR HIROSHIMA
+baseYinYang   = (groupA_Bull OR groupA_Bear) AND groupB
+baseNagasaki  = NAGASAKI AND (groupA_Bull OR groupA_Bear)
+baseNagasakiV = NAGASAKI AND groupB
+baseTrident   = NAGASAKI AND (groupA_Bull OR groupA_Bear) AND groupB
+baseNHx2      = (PENTAGON AND WTC) OR (PENTAGON AND HIROSHIMA) OR (WTC AND HIROSHIMA)
+
+15 HEAVY COMBO COMPOSITES (tier 1, lifecycle stage 5, all offset=0)
+────────────────────────────────────────────────────────────────────
+  ┌─ HEAVY_YIN_YANG_BULL    = baseYinYang AND dispBull
+  ├─ HEAVY_YIN_YANG_BEAR    = baseYinYang AND dispBear
+  └─ HEAVY_YIN_YANG_NEUTRAL = baseYinYang AND noDisp
+
+  ┌─ HEAVY_NAGASAKI_BULL    = baseNagasaki AND dispBull
+  ├─ HEAVY_NAGASAKI_BEAR    = baseNagasaki AND dispBear
+  └─ HEAVY_NAGASAKI_NEUTRAL = baseNagasaki AND noDisp
+
+  ┌─ HEAVY_NAGASAKI_VOL_BULL    = baseNagasakiV AND dispBull
+  ├─ HEAVY_NAGASAKI_VOL_BEAR    = baseNagasakiV AND dispBear
+  └─ HEAVY_NAGASAKI_VOL_NEUTRAL = baseNagasakiV AND noDisp
+
+  ┌─ HEAVY_TRIDENT_BULL    = baseTrident AND dispBull
+  ├─ HEAVY_TRIDENT_BEAR    = baseTrident AND dispBear
+  └─ HEAVY_TRIDENT_NEUTRAL = baseTrident AND noDisp
+
+  ┌─ NEUTRAL_HEAVY_X2_BULL    = baseNHx2 AND dispBull
+  ├─ NEUTRAL_HEAVY_X2_BEAR    = baseNHx2 AND dispBear
+  └─ NEUTRAL_HEAVY_X2_NEUTRAL = baseNHx2 AND noDisp
+
+DOWNSTREAM CONSUMERS
+─────────────────────
+heavy-combo-toggles consumes all 15 verbatim.
+squarify::S41/S42/S43 WBUSH = OR-aggregator over the 5 family bases × dir-classifier.
+tnt-od::WBUSH+TNTOD-ANY = WBUSH × any TNT-OD plot fired.

@@ -1,0 +1,68 @@
+TNT OD (v2 dated 05-04 / v3 dated 05-08) — dependency tree
+============================================================
+
+ROOTS (tier 0, lifecycle stage 2)
+──────────────────────────────────
+tnt-od::TNT_RAW_BULL, TNT_RAW_BEAR    (composite-by-construction VOB+ANISH+FLUX, treated as root)
+tnt-od::OD                            (anemic — session-first-bar gate only)
+tnt-od::NAPALM_BULL/BEAR, CHARGE_BULL/BEAR
+tnt-od::RET_BULL_TNT, RET_BEAR_TNT
+tnt-od::TNT2_BULL/BEAR (Super TNT)
+tnt-od::SUPER_TNT_BULL/BEAR
+tnt-od::CONT_BULL/BEAR
+tnt-od::DISP_BULL/BEAR (Engine #1)
+
+USE V5 INLINE PORTS (cross-refs to other indicators)
+─────────────────────────────────────────────────────
+u5_PBJBull/Bear  → cross-ref hvdpbjppd::PBJ_*
+u5_FAUNABull/Bear → cross-ref squarify::FAUNA / fauna::*
+u5_SAAB, u5_Kratos, u5_RVOL1xB/R, u5_GS, u5_MOAB, u5_Pentagon, u5_WTC, u5_Hiroshima, u5_Nagasaki
+                  → cross-ref heavy-pentagon::*
+u5_PUP, u5_PPD   → cross-ref pocket-pivot::*
+u5_CS1_Bull/Bear → cross-ref squarify::COMBOSET1
+u5_HV1000        → cross-ref hvdpbjppd::HV1000
+u5_DISPBull/Bear (USE V5 variant — separate from Engine #1 disp)
+
+TIER 1 COMPOSITES (selected; 45 plotshapes total v2, 49 v3)
+────────────────────────────────────────────────────────────
+B2B Napalm        = NAPALM AND NAPALM[1]                    offset=-1
+RC NPM+TNT        = NAPALM AND TNT[1]                       offset=-1
+FUSE              = sequential cascade NPM→TNT→CONT in SUDDEN_PROX, in-session  offset=0
+CATALYST          = NAPALM AND u5_CS1_Bull                  offset=-1
+PBJ+NPM           = NAPALM AND PBJ[1] AND pnGateBull        offset=-1
+PBJ+TNT           = TNT AND PBJ AND ptGateBull              offset=0
+IGNITE T+C        = TNT AND CONT                            offset=0
+IGNITE N+C        = NAPALM AND CONT[1]                      offset=-1
+DYNAMITE          = bespoke 5σ bar[1]+bar[2] AND FAUNA AND FVG  offset=-1
+
+TIER 2 ENRICHED COMPOSITES
+───────────────────────────
+TNT ENRICHED      = TNT_RAW AND enrichBull_N                offset=0
+NPM ENRICHED      = NAPALM AND enrichBull_N1                offset=-1
+CONT ENRICHED     = CONT AND enrichBull_N                   offset=0
+RC TNT+RET ENR    = TNT AND RET_TNT AND enrichBull_N        offset=0
+RC RET+NPM ENR    = NAPALM AND RET_TNT[1] AND enrichBull_N1 offset=-1
+PBJ+RET ENR       = RET_TNT AND PBJ AND enrichBull_N        offset=0
+
+DENSITY (other tier; rolling-window event count)
+─────────────────────────────────────────────────
+Density 1 (X=2 events in Y=2 bars), Density 2 (3 in 3), Density 3 (2 in 6)  all offset=-1
+
+UU/UUU/UUUU + TNT ANY (paths pA-pG over PBJ/DISP/FAUNA/SAAB/RVOL1x/GS + TNT-detection)
+all offset=-1
+
+WBUSH+TNTOD ANY (Bull/Bear/Neutral) (T3)
+  = HEAVY PENTAGON family (HYY OR HN OR HNV OR HT OR NHx2)
+    AND USE V5 dispBull/Bear/noDisp
+    AND tntod_any_bull/bear (master OR over all TNTOD plots)
+  offset=0
+
+V3-ONLY ADDITIONS (in TNT_OD_v3.pine, not in v2)
+──────────────────────────────────────────────────
+- HCT engine (Engine #4)
+- UC placeholder (uc_bull/uc_bear)
+- T1 RELAY, T1 STACK plots
+- en_newGate / gateStdMult master gate
+
+ALERTS: 0 alertcondition (uses runtime alert() in DIRECTION|FIRST_STATUS|NAME format).
+masterAggregate (default ON) bundles non-Nagasaki alerts.

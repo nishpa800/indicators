@@ -1,0 +1,63 @@
+B2B PUP COMBINED v4.32 — dependency tree
+==========================================
+
+ROOTS (tier 0; all re-implemented locally — cross-refs to canonical owners)
+───────────────────────────────────────────────────────────────────────────
+PUP, PPD                              → cross-ref pocket-pivot::*
+PBJ_BULL, PBJ_BEAR, PB_BULL, PB_BEAR  → cross-ref hvdpbjppd::*
+DISP_BULL, DISP_BEAR (USE Disp)       → cross-ref hvdpbjppd::DISP_*
+HVD_BULL, HVD_BEAR                    → cross-ref hvdpbjppd::HVD_*
+RVOL ladder (SAAB, Kratos, RVOL1x, GS, MOAB, Pentagon, WTC, Hiroshima, Nagasaki)
+                                       → cross-ref heavy-pentagon::*
+                                       (B2B PUP comment "Pre Mythos thresholds" — drift candidate)
+GZ1/HV-FVG (gz_bullHV, gz_bullGZI etc.) → cross-ref hv-fvg-gz1-og::* (uses gz1_dist=7 vs canonical 6)
+TNT_RAW, NAPALM, CHARGE, RET_TNT, TNT2, SUPER_TNT → cross-ref tnt-od::*
+LONG1, SHORT1                         → cross-ref hvdpbjppd::LONG1/SHORT1
+MATRIX_NUMBER (matrix bar gate)       → cross-ref hvdpbjppd::MATRIX_NUMBER
+FAUNA atomics (MB, RE, TA, GG, TR, ES, GDR) → fauna::* (distributed)
+FAUNA_BULL/BEAR (composite-as-root)  → fauna::FAUNA
+
+INTERMEDIATE COMPOSITES
+────────────────────────
+det_b2bPUP   = PUP AND PUP[1]
+det_b2bPPD   = PPD AND PPD[1]
+det_bullNapalmCons = NAPALM OR CHARGE
+det_b2bBullNapalm  = det_bullNapalmCons[0] AND det_bullNapalmCons[1]
+det_contBull = 3-clause OR (Charge after Return; TNT after Charge; Charge after TNT/TNT2) within SUDDEN_PROX
+matrix_any_bull = Neo OR Trinity (with Long1/Long2 alignment)
+comboSet1_Bull  (FVG + RVOL low)        = body% AND (gz_bullHV OR gz_bullGZI) AND directional-RVOL[1]
+comboSet2_Bull  (FVG + Pentagon-tier)   = body% AND HV/GZI AND Pentagon-tier[1]
+comboSet3_Bull  (Matrix + RVOL low)     = body% AND matrix_any AND directional-RVOL
+comboSet4_Bull  (Matrix + Pentagon-tier)= body% AND matrix_any AND Pentagon-tier
+csNew1 (FVG_COMBO)    = comboSet1 OR comboSet2
+csNew2 (MATRIX_COMBO) = comboSet3 OR comboSet4
+csNew3 (UNIFIED_COMBO/CS3) = csNew1 AND csNew2[1]   ← LAGGED-AND (drift vs canonical same-bar)
+
+UU/UUU/UUUU streaks: 9-path scan (A through G) over PBJ/DISP/SAAB/RVOL1x/GS
+
+20 NUMBERED TOP-LEVEL COMPOSITES (S1-S20, no S7; 38 plotshapes — bull+bear)
+───────────────────────────────────────────────────────────────────────────
+  S1  B2B PUP/PPD    (T1) det_b2bPUP                                       offset=0
+  S2  B2B+FAUNA      (T2) det_b2bPUP AND FAUNA[0] AND FAUNA[1]            offset=0
+  S3  B2B+DISP/HVD   (T2) (PUP[1] AND PUP[2]) AND ((DISP+DISP[1]) OR (HVD+HVD[1]))  offset=-1
+  S4  B2B+FAU+D/H    (T3) S3 AND FAUNA[1] AND FAUNA[2]                    offset=-1
+  S5  B2B+SAAB/KRAT  (T2) det_b2bPUP AND directional-RVOL combo            offset=0
+  S6  Any B2B+PBJ    (T3) (anyB2B AND (PBJ OR PBJ[1] OR HVDPBJ)) OR ...   offset=-1
+  S8  UC+B2B PUP     (T3) (det_b2bPUP AND det_UnifiedBull) OR ...          offset=-1
+  S9  Uni+B2B PUP    (T3) det_b2bPUP AND (S19_combo OR S20_combo)          offset=-1
+  S10 L1 B2B+B2B PUP (T2) (LONG1 AND LONG1[1]) AND (det_b2bPUP OR det_b2bPUP[1])  offset=0
+  S11 FVG/L1+B2B     (T2) det_b2bPUP AND (CS1 OR LONG1 OR LONG1[1])        offset=-1
+  S12 UU+B2B PUP     (T3) det_b2bPUP AND (anyUU OR anyUU[1])               offset=0
+  S13 B2B Napalm+B2B (T3) det_b2bPUP AND (det_b2bBullNapalm OR det_b2bBullNapalm[1])  offset=0
+  S14 CONT+B2B PUP   (T3) det_b2bPUP AND (det_contBull OR det_contBull[1]) offset=0
+  S15 TNT+B2B PUP    (T3) det_b2bPUP AND (det_bullTNT OR det_bullTNT[1])   offset=0
+  S16 NPM+B2B PUP    (T2) det_b2bPUP AND (det_bullNapCons OR det_bullNapCons[1])  offset=-1
+  S17 B2B HV+D+B2B   (T3) det_b2bPUP AND (B2B_HVD_BULL OR B2B_HVD_BULL[1]) offset=-1
+  S18 B2B HV+D+PBJ+B2B (T4) det_b2bPUP AND (B2B_HVD_PBJ_BULL OR ...)       offset=-1
+  S19 UC×2 (UC2)     (T4) ≥2 Unified-Combo hits within 2 bars              offset=-1
+  S20 FMU×2          (T4) ≥2 hits of (FVG-Combo OR Matrix-Combo OR UC) in 2 bars  offset=-1
+
+PLOTSHAPES & ALERTS
+────────────────────
+38 plotshapes (19 bull + 19 bear). 0 alertcondition (uses runtime alert() in Bloomberg format).
+Aggregator path: BULL|<flag>|<+joined tags>.

@@ -1,0 +1,105 @@
+HVD PBJ PPD (THE_ONLY_ONE) — dependency tree
+=============================================
+
+PIPELINE A: HV+D (decoupled)
+──────────────────────────────
+ROOTS:
+  base_hv_hit (= 50/75/100/150/250/500/1000-bar volume highest OR HEV)
+  d1_bull / d1_bear (stdev disp + FVG)
+
+COMPOSITE TERMINAL:
+  hvd_fire_bull = (base_hv_hit AND d1_bull) OR (h1Rank AND d2_bull) OR (h2Rank AND d3_bull)
+                                                                          [tier-0 ROOT in bible terms]
+  → Plot: HV+D Bull (offset=-1)
+
+
+PIPELINE B: PB / PBJ (decoupled)
+──────────────────────────────────
+ROOTS (Zoo MA + Supertrend internals are mechanics, NOT roots):
+  PBJ_BULL  → not plotted standalone
+  PBJ_BEAR  → not plotted standalone
+  PB_BULL   → not plotted standalone (mutex with PBJ on same Zoo cross)
+  PB_BEAR   → not plotted standalone
+
+CROSSINGS WITH PIPELINE A:
+  hvd_pbj_bull = hvd_fire_bull AND PBJ[1]   → Plot: HV+D+PBJ Bull (offset=-1)
+  hvd_pb_bull  = hvd_fire_bull AND PB[1]    → Plot: HV+D+PB Bull (offset=-1)
+
+
+PIPELINE C: USE Alarm 1293 (decoupled — 11 internal "engines")
+────────────────────────────────────────────────────────────────
+ROOTS (Engine 1 — RVOL):
+  SAAB, KRATOS, BULL_RVOL_1X, BEAR_RVOL_1X, GRAND_SLAM, MOAB,
+  PENTAGON, WTC, HIROSHIMA, NAGASAKI
+
+ROOTS (Engine 2 — FAUNA):
+  fauna::MB, RE, TA (cores)
+  fauna::GG, TR, ES, GDR (exclusions)
+COMPOSITE: FAUNA_BULL = (MB OR RE OR TA) AND NOT (GG OR TR OR ES OR GDR)
+                       (treated as ROOT per Anish naming convention)
+
+ROOTS (Engine 3 — USE Displacement):
+  DISP_BULL/BEAR, DISP2_BULL/BEAR, DISP3_BULL/BEAR
+
+ROOTS (Engine 4 — GZ1 / HV-FVG):
+  gz_bullHV / gz_bullGZI / gz_bearHV / gz_bearGZI
+
+ROOTS (Engine 5 — PUP/PPD): PUP, PPD
+
+ROOTS (Engine 6 — PBJ/PB): re-export from Pipeline B
+
+ROOTS (Engine 7 — Ping Pong): bull_pp, bear_pp
+
+ROOTS (Engine 8 — Matrix Number): is_matrix_number = volume == highest(volume, 67)
+
+ROOTS (Engine 9 — Long/Short tier): LONG1, LONG2, SHORT1, SHORT2
+
+ROOTS (Engine 10 — HV-rank lookbacks): HV75, HV150, HV500, HV1000
+
+ROOTS (Engine 11 — Boom Hunter Omega): bh_anyOmega
+
+USE INTERMEDIATE COMPOSITES (tier 1):
+  Neo            = MATRIX_NUMBER AND FAUNA(direction)
+  Trinity        = MATRIX_NUMBER AND NOT FAUNA(direction) AND directional   [mutex with Neo]
+  Foxtrot        = 4 consec FAUNA bars
+  PAF            = PUP[0] AND FAUNA[0] AND PUP[1] AND FAUNA[1]
+  matrix_any     = Neo OR Trinity OR Neo-aligned (with Long1/2) OR Trinity-aligned
+
+USE INTERMEDIATE COMPOSITES (tier 2):
+  comboSet1_Bull = body% AND (gz_bullHV OR gz_bullGZI) AND directional-RVOL[1]
+  comboSet2_Bull = body% AND (gz_bullHV OR gz_bullGZI) AND Pentagon-tier[1]
+  comboSet3_Bull = body% AND matrix_any AND directional-RVOL
+  comboSet4_Bull = body% AND matrix_any AND Pentagon-tier
+  Floor          = bull_pp AND PBJ AND HW-slot
+  2F             = bull_pp AND PB AND HW-slot
+  Roof           = bear_pp AND PBJ AND HW-slot-bear   [mirror]
+  Penthouse      = bear_pp AND PB AND HW-slot-bear    [NAMESPACE COLLISION with PENTAGON]
+  Alpha Strike, OD, Golf, DispCons2/3, sigUUBull/UUUBull/UUUUBull, U-Sub
+
+USE TIER-3 COMPOSITES (KEY DRIFT POINTS):
+  csNew1 = FVG_COMBO   = comboSet1 OR comboSet2
+  csNew2 = MATRIX_COMBO= comboSet3 OR comboSet4
+  csNew3 = UNIFIED_COMBO = csNew1 AND csNew2   [SAME-BAR AND in canonical;
+                                                lagged-AND in predecessor + Squarify
+                                                — CRITICAL DRIFT]
+
+USE TIER-3 PLATFORM COMPOSITES:
+  HW_BULL  = (close>open) AND disp5 AND PBJ AND HW-slot AND (Floor OR 2F)
+  SUPER    = PBJ AND DISP AND (FAUNA OR LONG1) AND HW-slot AND ((Combo AND PUP) OR (Floor OR 2F))
+  SDUPER   = (Floor OR 2F) AND PBJ AND HW-slot AND Combo AND PUP AND DISP AND (FAUNA OR LONG1)
+
+
+PIPELINE D: TripleCo + B2B + UC fusion
+────────────────────────────────────────
+co_bull_pbj  = hvd_fire_bull AND PBJ[1] AND use_any_bull[1]    [Plot offset=-1]
+co_bull_pb   = hvd_fire_bull AND PB[1] AND use_any_bull[1]     [Plot offset=-1]
+B2B_HVD_BULL = hvd_fire_bull AND hvd_fire_bull[1]              [Plot offset=-1]
+B2B_HVD_PBJ  = B2B_HVD_BULL AND (PBJ[1] OR PBJ[2])             [Plot offset=-1]
+
+
+CHAINS (latched composites)
+─────────────────────────────
+sigCCBull (Combo Chain)  — latched while csNew2 + ≥2 hits in 4-bar window AND PBJ/PB
+sigLSCBull (LS Chain)    — latched while ≥hits Long1/Long2 in window AND PBJ/PB
+
+53 plotshapes total. 16 alert() calls. 0 alertcondition.

@@ -1,0 +1,74 @@
+ULTRA COMBO v57 — dependency tree
+===================================
+
+ROOTS (tier 0, mostly cross-refs)
+──────────────────────────────────
+fauna::MB, RE, TA, GG, TR, ES, GDR     (defined here AND distributed across other indicators)
+heavy-pentagon::BULL_RVOL_1X, GS, MOAB, WTC, HIROSHIMA, NAGASAKI  (cross-refs)
+hvdpbjppd::PBJ_BULL/BEAR, PB_BULL/BEAR (header line 367: "EXACT COPY FROM ANISH TB FOSTER v6")
+hvdpbjppd::DISP_BULL/BEAR              (cross-ref)
+hv-fvg-gz1-og::GZI_BULL/BEAR, HV_BULL/BEAR (cross-refs)
+pocket-pivot::PUP / PPD                (cross-refs)
+b2b-pup::B2B_PUP / B2B_PPD             (cross-refs)
+ultra-combo::F2, E3, FC                (NEW root family — F2/E3/FC cluster)
+ultra-combo::TB, FOSTER                (NEW transition roots)
+ultra-combo::ROC                       (NEW oscillator root: PBJ + ROC + LazyBear WT + HW)
+
+INTERNAL HELPERS (NOT roots)
+─────────────────────────────
+LazyBear WaveTrend (consumed only inside ROC)
+Anish Stage 2/4 EMA stack (bullPass/bearPass — internal mechanic here, root in anish-50-1st-combo)
+
+TIER 1 COMPOSITES
+──────────────────
+SUPER PUP/PPD, FAUNA = (MB OR RE OR TA) AND NOT (GG OR TR OR ES OR GDR)
+TB Sell, Foster Buy
+
+TIER 2 COMPOSITES
+──────────────────
+comboPBJ_F2_BULL/BEAR     = PBJ AND F2
+comboPBJ_E3_BULL/BEAR     = PBJ AND E3
+comboPBJ_CLUSTER_BULL/BEAR= PBJ AND FC
+comboPB_F2 / comboPB_E3 / comboPB_CLUSTER = PB AND F2/E3/FC
+
+TIER 3 COMPOSITES
+──────────────────
+comboF2Cluster_E3_BULL    = F2[1] AND FC[1] AND E3
+comboF2ClusterB2B_Bull    = F2 AND FC AND B2B_PUP
+comboB2B_F2_Bull          = B2B_PUP AND F2
+comboE3_2of3PUP_Bull      = E3 AND (PUP count in last 3 ≥ 2)
+comboF2_B2BDays_Bull      = F2 today AND F2 yesterday
+comboE3_B2BDays_Bull      = E3 today AND E3 yesterday
+comboF2E3_Consec_Bull     = F2[1] AND E3 OR E3[1] AND F2
+comboCluster_B2BDays_Bull = FC today AND FC yesterday
+anyBullHW                 = OR over (RVOL1x, GS, WTC, Hiro, Naga, ROC, Super-PBJ, Super-PB)
+comboHW_AnyBull           = anyHW AND (F2 OR E3 OR FC)
+comboHV_AnyBull           = bullHV AND (sAnyBull OR sAnyBull[1])
+comboGZ_AnyBull           = bullGZI AND (sAnyBull OR sAnyBull[1])
+comboGZHV_AnyBull         = comboHV_AnyBull OR comboGZ_AnyBull   offset=-1
+hvGziComboBull            = sessBar==2 AND HV[1] AND HV AND GZI  offset=-1
+sigSuperBullPBJ/PB        = DISP AND (PBJ|PB) AND FAUNA AND anyBullRVOL  (Super for Mega)
+fosterHeavyBull           = anyFoster AND (ROC OR HW-set OR Super)        offset=0
+tbHeavyBear               = anyTB AND (ROC OR HW-set OR Super)            offset=0
+gzHvHeavyBull             = (GZI OR HV) AND (HW OR Super OR ROC)          offset=-1
+
+TIER 4 TOP-LEVEL COMPOSITES (30 plotshapes total)
+──────────────────────────────────────────────────
+gz1MegaBull / hvMegaBull / gz1hvMegaBull
+                          = (GZ1 OR HV OR both) AND anySuperBull AND PUP AND FAUNA AND DISP   offset=-1
+openerBull                = sessBar==1 AND (GZI OR HV) AND (HW OR PBJ OR ROC OR (1stPUP+superPUP))  offset=0
+threeBar_Bull             = PBJ-in-3 AND (B2B-PUP-in-3 OR ≥2 PUPs-in-3)   offset=0
+superB2BDaysBull          = anySuperBull AND f_hadSignalYesterday(anySuperBull) offset=0
+scanTrigger               = Super-PBJ OR Super-PB OR GS OR MOAB           (alert-only)
+
+NAGA standalone plot      offset=0 (no offset arg)
+
+V5 PORT (ULTRA_COMBO_v57_pine5.pine)
+─────────────────────────────────────
+Verified 1:1 logic. Differences are mechanical:
+- //@version=5 vs //@version=6
+- inline ta.sma vs tv_ta.relativeVolume library import
+- comma-chain split onto separate lines
+- method-style array calls rewritten function-style for v5 parser tolerance
+
+15 alertcondition + 19 alert() calls.

@@ -1,0 +1,1584 @@
+---
+# Indicator Bible — single source of truth
+# Schema: see docs/glossary.md and feedback_root_vs_composite.md memory file.
+
+schema_version: 1
+generated_at: "2026-05-10"
+generated_by: "claude-opus-4-7"
+generated_from: "12 per-indicator extraction agents over 13 distinct indicators across origin/main + origin/claude/add-txt-indicator-format-b4FUu"
+
+operating_definitions:
+  root: "The least-common-denominator name humans use to refer to a signal. Calculated independently and decoupled from every other root in lifecycle stage 2. Internal computational complexity (Supertrend, Zoo MA, EMA crosses, ATR/sigma multipliers, raw highest/lowest) is hidden inside the root name and never decomposed in the bible."
+  composite: "A signal whose definition uses at least one root or lower-tier composite by name. Evaluated in lifecycle stage 5. Composites read post-offset boolean outputs of roots, never inspect root internals."
+  tier: "Depth from root. Tier 0 = root, tier 1 = composite-of-roots, tier 2 = composite-of-tier-1, etc."
+  lifecycle_stage: "2 = independent root calculation. 3 = per-root offset application. 4 = visual plot render. 5 = composite evaluation. 6 = composite offset & plot. 7 = alert firing at bar close."
+  canonical_name: "<provenance>::<NAME>. Provenance is the indicator family that canonically owns the signal."
+  decoupling_guarantee: "Roots: no other named signal contaminates the calculation. Composites: reads roots only at stage 5; never inspects root internals."
+
+# ─────────────────────────────────────────────────────────────
+# INDICATORS (13 distinct, 12 families)
+# ─────────────────────────────────────────────────────────────
+
+indicators:
+
+  - id: anish_50_1st_combo
+    title: "Anish 50% 1st Combo (NR)"
+    file: "anish-50-1st-combo/versions/ANISH_50_1ST_COMBO_v1.pine"
+    branch: "claude/add-txt-indicator-format-b4FUu"
+    pine_version: 6
+    line_count: 182
+    overlay: true
+    architecture: "Two parallel signal families on confirmed bars only: Anish Stage 2/4 EMA-stack regime filter + Pocket Pivot bull/bear. Combined into Super PUP/PPD, All-Three (PP+Gap+Anish), TB/Foster transition signals via var counters. Non-repainting."
+
+  - id: b2b_pup_combined_v4_32
+    title: "B2B PUP Combined 4.32"
+    file: "b2b-pup/versions/B2B_PUP_Combined_v4.32_2026-05-04.pine"
+    sibling: "b2b-pup/versions/B2B_PUP_v4.32.pine"
+    sibling_drift: "byte-identical post line-ending normalisation"
+    branch: "both"
+    pine_version: 5
+    line_count: 1259
+    overlay: true
+    architecture: "Monolithic overlay re-implementing 8 detection engines (PUP/PPD, FAUNA, Displacement, PBJ, RVOL/Pentagon, HV+D, TNT/Napalm/Charge/CONT, Combo Sets/Long1/UU). 18 numbered B2B-PUP composites S1-S18 (no S7) plus S19/S20 standalone density."
+
+  - id: heavy_combo_toggles_v1
+    title: "Heavy Combo Toggles"
+    file: "heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine"
+    branch: "both"
+    pine_version: 5
+    line_count: 268
+    overlay: true
+    architecture: "Aggregator that lifts 10 RVOL roots + displacement engine + 5 base combos + 15 directional combo booleans VERBATIM from heavy-pentagon, then collapses the 15 directional booleans into 3 master OR-gate plotshapes (Bull/Bear/Neutral) with 15 input.bool eligibility checkboxes."
+
+  - id: heavy_pentagon_v1
+    title: "Heavy PENTAGON"
+    file: "heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine"
+    branch: "claude/add-txt-indicator-format-b4FUu"
+    pine_version: 5
+    line_count: 444
+    overlay: true
+    architecture: "CANONICAL RVOL engine. Three sealed pipelines (P1 Standard / P2 Reg@Time / P3 All-Time HV) feed 10 root booleans. Internal displacement engine produces direction classifiers dispBull/dispBear/noDisp (NOT a root). Stage 5 builds 5 base co-occurrence combos x 3 directions = 15 Heavy Combo terminals."
+    canonical_owner_for: ["SAAB", "KRATOS", "BULL_RVOL_1X", "BEAR_RVOL_1X", "GRAND_SLAM", "MOAB", "PENTAGON", "WTC", "HIROSHIMA", "NAGASAKI", "HEAVY_YIN_YANG_*", "HEAVY_NAGASAKI_*", "HEAVY_NAGASAKI_VOL_*", "HEAVY_TRIDENT_*", "NEUTRAL_HEAVY_X2_*"]
+
+  - id: hv_fvg_gz1_og_v1
+    title: "HV FVG GZ1 OG THIS No tables"
+    file: "hv-fvg-gz1-og/versions/HV_FVG_GZ1_OG_v1.pine"
+    branch: "claude/add-txt-indicator-format-b4FUu"
+    pine_version: 5
+    line_count: 253
+    overlay: true
+    architecture: "CANONICAL HV/GZI/FVG engine. Detects raw FVGs from 3-bar gap pattern, tags each with milestone-volume (HV) flag from 5000/252/63 lookbacks, emits HV and GZI signals on new-FVG creation. proximity-gzi-hv is a re-skin (byte-identical detection logic, only indicator() title differs)."
+    canonical_owner_for: ["FVG_BULL_RAW", "FVG_BEAR_RAW", "GZI_BULL", "GZI_BEAR", "HV_BULL", "HV_BEAR"]
+
+  - id: hvdpbjppd_the_only_one
+    title: "HV+D ↔ PBJ ↔ USE THIS IS THE ONLY FUCKING ONE"
+    file: "hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine"
+    predecessor: "hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine"
+    branch: "claude/add-txt-indicator-format-b4FUu"
+    pine_version: 5
+    line_count: 1767
+    overlay: true
+    architecture: "CANONICAL PBJ/PPD/PB/Displacement source. 4 formally-decoupled pipelines: A=HV+D, B=PB/PBJ, C=USE Alarm 1293 (11 internal engines), D=Triple AND CO + B2B HV+D + UC fusion. 53 plotshapes, 16 alert(), 0 alertcondition."
+    canonical_owner_for: ["PBJ_BULL", "PBJ_BEAR", "PB_BULL", "PB_BEAR", "DISP_BULL", "DISP_BEAR", "DISP2_*", "DISP3_*", "MATRIX_NUMBER", "LONG1", "SHORT1", "LONG2", "SHORT2", "BOOM_HUNTER_OMEGA", "PING_PONG_BULL", "PING_PONG_BEAR", "HV75", "HV150", "HV500", "HV1000"]
+
+  - id: proximity_gzi_hv_v1
+    title: "Proximity GZI HV"
+    file: "proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine"
+    branch: "both"
+    pine_version: 5
+    line_count: 253
+    overlay: true
+    architecture: "Re-skin / alias of hv-fvg-gz1-og. Byte-identical to OG except indicator() title and shorttitle."
+    mirror_of: "hv_fvg_gz1_og_v1"
+
+  - id: squarify_46_v2
+    title: "SQUARIFY 46 v2"
+    file: "squarify/versions/SQUARIFY_46_v2_2026-05-04.pine"
+    sibling: "squarify/versions/SQUARIFY_ATOMS_v1.pine"
+    backtest_variants:
+      - "squarify/backtests/SQUARIFY_v2_BT.pine"
+      - "squarify/backtests/SQUARIFY_v2_STATS.pine"
+    branch: "both"
+    pine_version: 5
+    line_count: 2622
+    overlay: true
+    architecture: "Top-level fund signal. 4 explicit pipelines (A=HV+D, B+C=USE Alarm 1293 with 11 engines, D=TripleCo+B2B+UC fusion) plus TNT propulsion, Boom Hunter Omega, Heavy Pentagon → WBUSH. 46 numbered top-level composites S1-S46 plus T1/T2 opening confluence. 48 plotshapes. 2 alertconditions."
+
+  - id: tnt_od_v2_dated
+    title: "TNT Opening Drive OD v2 (filename says v3, internal says v2)"
+    file: "tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine"
+    file_naming_drift: "filename labels v3, internal indicator() title is v2; v3 features (HCT, UC, T1 RELAY, T1 STACK, en_newGate) are in tnt-od/versions/TNT_OD_v3.pine which is dated 2026-05-08"
+    branch: "both"
+    pine_version: 5
+    line_count: 1802
+    overlay: true
+    architecture: "Three confluence engines (VOB ema-cross OB + ANISH swing-OB cross + FLUX swing-pullback) feed TNT 1.0 zone array. Zones drive Napalm/Charge/Return/CONT + TNT 2.0 super-zone aggregator. Parallel USE V5 pipeline produces RVOL/WMD/FAUNA/PBJ/CS1/PUP/HV1000/DISP atoms. 45 plotshapes."
+    canonical_owner_for: ["TNT_RAW_BULL", "TNT_RAW_BEAR", "OD", "NAPALM_BULL", "NAPALM_BEAR", "CHARGE_BULL", "CHARGE_BEAR", "RET_BULL_TNT", "RET_BEAR_TNT", "TNT2_BULL", "TNT2_BEAR", "SUPER_TNT_BULL", "CONT_BULL", "CONT_BEAR", "DISP_BULL_ENGINE_1", "DISP_BEAR_ENGINE_1"]
+
+  - id: tnt_od_v3_dated
+    title: "TNT Opening Drive OD v3 (canonical with HCT/UC/T1 RELAY/T1 STACK)"
+    file: "tnt-od/versions/TNT_OD_v3.pine"
+    branch: "both"
+    pine_version: 5
+    line_count: 2150
+    overlay: true
+    architecture: "TNT-OD v2 + HCT engine + UC placeholder + T1 RELAY + T1 STACK + en_newGate / gateStdMult master gate. 49 plotshapes."
+    note: "All v2 primitives are bit-equivalent in v3. v3 is purely additive."
+
+  - id: ultra_combo_v57
+    title: "Ultra Combo v57"
+    file: "ultra-combo/versions/ULTRA_COMBO_v57_pine6.pine"
+    sibling: "ultra-combo/versions/ULTRA_COMBO_v57_pine5.pine"
+    sibling_drift: "v5 port verified 1:1 logic; only Pine version directive, library import vs inline ta.sma, comma-chain split, method-style array calls differ"
+    branch: "claude/add-txt-indicator-format-b4FUu"
+    pine_version: 6
+    line_count: 1147
+    overlay: true
+    architecture: "Aggregator. Re-implements primitive signal definitions from PBJ/PB, F2/E3/FC cluster, RVOL Heavy Weapon, PUP/PPD, TB/Foster, ROC + LazyBear WaveTrend, displacement, FAUNA, GZ1/HV FVG. Composes 30+ tier-2/tier-3 combos. 30 plotshapes, 19 alert(), 15 alertcondition."
+    canonical_owner_for: ["F2", "E3", "FC", "TB", "FOSTER", "ROC"]
+
+  - id: vob_asym_t3x6_v8
+    title: "VOB Asym T3 ×6 + MutEx Lines + Claude"
+    file: "vob/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine"
+    branch: "both"
+    pine_version: 6
+    line_count: 1473
+    overlay: true
+    architecture: "Six independent VOB engines (sensitivities A-F, EMA len 2500/2250/2000/1500/1250/1000) detect Volume Order Block zones from EMA fast/slow crossovers. Each emits T3 super-signal. MutEx engine renders highest-tier zones in full and degrades overlapping lower-tier zones to single mid-only lines (priorities 0-3+)."
+    canonical_owner_for: ["VOB_CROSS", "BULL_ZONE_PUSH", "BEAR_ZONE_PUSH", "ZONE_INVALIDATION", "T3_SUPER_BUY", "T3_SUPER_SELL"]
+    self_contained: "zero imports, zero request.security"
+
+  - id: vob_ladder_watch_v1
+    title: "VOB Ladder Watch v1"
+    file: "vob/versions/VOB_LADDER_WATCH_v1.pine"
+    branch: "both"
+    pine_version: 5
+    line_count: 215
+    overlay: true
+    architecture: "Six bull-only VOB zone engines (mirror VOB Asym T3×6 bull-half). Per-tier highest-priced active-zone midpoint extracted, strict ascending walk F→E→D→C→B→A computes ladder_depth (0-6). Escalation transitions on confirmed bars fire labeled plotshapes."
+    distinct_from: "vob_asym_t3x6_v8 — co-located in vob/ folder but unrelated output semantics"
+
+# ─────────────────────────────────────────────────────────────
+# ROOTS — canonical inventory across all indicators
+# ─────────────────────────────────────────────────────────────
+
+roots:
+
+  # ─── Pocket Pivot family ───────────────────────────────────
+  - id: "pocket-pivot::PUP"
+    family: push
+    canonical_owner: "anish_50_1st_combo (oldest definition site)"
+    plain_english: "Bullish Pocket Pivot: a bar with body % up-move ≥ pp_barSize AND volume exceeds the highest red-candle volume over the last pp_lookback bars."
+    parameters:
+      - { name: pp_barSize, default: 3.0, units: "%" }
+      - { name: pp_lookback, default: 10, units: "bars" }
+    aliases:
+      - { in_indicator: anish_50_1st_combo, name: "sPPBull" }
+      - { in_indicator: b2b_pup_combined_v4_32, name: "det_PUP" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "sigPUP" }
+      - { in_indicator: squarify_46_v2, name: "sigPUP" }
+      - { in_indicator: tnt_od_v2_dated, name: "u5_PUP" }
+      - { in_indicator: ultra_combo_v57, name: "sPPBull" }
+    used_by_composites:
+      - "anish-50-1st-combo::ALL_THREE_BULL"
+      - "anish-50-1st-combo::SUPER_PUP"
+      - "anish-50-1st-combo::TB_SELL"
+      - "anish-50-1st-combo::FOSTER_BUY"
+      - "b2b-pup::B2B_PUP"
+      - "b2b-pup::S1_B2B_PUP_BULL through S20_FMU_BULL"
+      - "hvdpbjppd::USE_ANY_BULL (via composites)"
+      - "squarify::S1_SDUPER_BULL through S46"
+      - "tnt-od::CATALYST"
+      - "tnt-od::CONT_BULL"
+      - "ultra-combo::THREE_BAR_BULL"
+      - "ultra-combo::OPENER_BULL"
+      - "ultra-combo::MEGA_BULL"
+    decoupling_guarantee: "Single-bar boolean over body% AND volume comparison; no reference to other named signals."
+    lifecycle_stage: 2
+
+  - id: "pocket-pivot::PPD"
+    family: push
+    canonical_owner: "anish_50_1st_combo"
+    plain_english: "Bearish symmetric mirror of PUP."
+    parameters:
+      - { name: pp_barSize, default: 3.0, units: "%" }
+      - { name: pp_lookback, default: 10, units: "bars" }
+    aliases:
+      - { in_indicator: anish_50_1st_combo, name: "sPPBear" }
+      - { in_indicator: b2b_pup_combined_v4_32, name: "det_PPD" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "sigPPD" }
+      - { in_indicator: squarify_46_v2, name: "sigPPD" }
+      - { in_indicator: tnt_od_v2_dated, name: "u5_PPD" }
+      - { in_indicator: ultra_combo_v57, name: "sPPBear" }
+    used_by_composites: ["mirrors of all PUP-using composites"]
+    decoupling_guarantee: "Single-bar boolean; no cross-contamination."
+    lifecycle_stage: 2
+
+  # ─── Anish Stage 2/4 EMA stack ─────────────────────────────
+  - id: "anish-stage::BULL_PASS"
+    family: regime
+    canonical_owner: "anish_50_1st_combo (presumed; canonical Anish-Stage indicator may exist outside repo)"
+    plain_english: "Stage 2 uptrend regime: price stacked above ordered 50/150/200 EMA cascade with 200 EMA rising vs ~1 month ago and price within band of 52-week range. Treated as a single named root despite EMA-stack internals (humans refer to 'Anish Bull Pass' as one named thing)."
+    parameters:
+      - { name: ema_fast, default: 50 }
+      - { name: ema_mid, default: 150 }
+      - { name: ema_slow, default: 200 }
+      - { name: ema_slope_lookback, default: 21, units: "bars (~1 month)" }
+      - { name: 52w_high_low_lookback, default: 252 }
+      - { name: bull_band_high, default: 1.30 }
+      - { name: bull_band_low, default: 0.75 }
+    aliases:
+      - { in_indicator: anish_50_1st_combo, name: "bullPass" }
+      - { in_indicator: ultra_combo_v57, name: "bullPass" }
+    used_by_composites: ["anish-50-1st-combo::ALL_THREE_BULL", "anish-50-1st-combo::SUPER_PUP", "anish-50-1st-combo::TB_SELL", "anish-50-1st-combo::FOSTER_BUY"]
+    decoupling_guarantee: "Stack/range checks on bar's own data; no reference to other named signals."
+    lifecycle_stage: 2
+    classification_note: "Tentative root — may be reclassified to composite if a dedicated Anish-Stage indicator exposes EMA cross primitives by name. Per Anish: humans refer to 'Anish Bull Pass' as one named thing → treat as root."
+
+  - id: "anish-stage::BEAR_PASS"
+    family: regime
+    canonical_owner: "anish_50_1st_combo"
+    plain_english: "Stage 4 downtrend regime: symmetric mirror of BULL_PASS."
+    parameters: [{ name: bear_band_high, default: 1.25 }, { name: bear_band_low, default: 0.70 }]
+    aliases: [{ in_indicator: anish_50_1st_combo, name: "bearPass" }, { in_indicator: ultra_combo_v57, name: "bearPass" }]
+    decoupling_guarantee: "Symmetric to BULL_PASS."
+    lifecycle_stage: 2
+
+  # ─── HVDPBJPPD canonical roots ─────────────────────────────
+  - id: "hvdpbjppd::PBJ_BULL"
+    family: zoo_pipeline
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Bullish landing zone: Zoo MA + Supertrend cross confirmed by PB&J wick filter (price wick beyond EMA ± ATR-derived band at lookback extreme with above-avg volume)."
+    parameters:
+      - { name: zoo_ma_type, default: "VWMA" }
+      - { name: zoo_ma_len, default: 5 }
+      - { name: zoo_pbj_ma_period, default: 20 }
+      - { name: zoo_pbj_atr_period, default: 14 }
+      - { name: zoo_pbj_hh_ll, default: 25 }
+      - { name: zoo_pbj_atr_mult, default: 3.0 }
+      - { name: zoo_pbj_vol_period, default: 20 }
+      - { name: zoo_pbj_vol_mult, default: 0.1 }
+      - { name: zoo_st_period, default: 10 }
+      - { name: zoo_st_mult, default: 2.0 }
+    aliases:
+      - { in_indicator: b2b_pup_combined_v4_32, name: "det_PBJBull" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "sigBullPBJ" }
+      - { in_indicator: squarify_46_v2, name: "sigBullPBJ" }
+      - { in_indicator: tnt_od_v2_dated, name: "u5_PBJBull" }
+      - { in_indicator: ultra_combo_v57, name: "sigBullPBJ" }
+    decoupling_guarantee: "PBJ's internals (Supertrend, VWMA, EMA, ATR) are mechanics, not roots. PBJ reads only price/volume of current and prior bars."
+    lifecycle_stage: 2
+    internal_mechanics_warning: "Internal Supertrend and VWMA implementations across indicators may have drifted. Byte-diff in Stage 6."
+
+  - id: "hvdpbjppd::PBJ_BEAR"
+    family: zoo_pipeline
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Bearish symmetric mirror of PBJ_BULL."
+    parameters: "(same as PBJ_BULL)"
+    aliases: ["mirrors of PBJ_BULL aliases"]
+    decoupling_guarantee: "Symmetric to PBJ_BULL."
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::PB_BULL"
+    family: zoo_pipeline
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Pullback (non-PBJ branch of Zoo): cross-after-approach of bull-lander level created by PBJ engine; only fires if PBJ did not fire same cross."
+    parameters: "(shares PBJ engine inputs)"
+    aliases:
+      - { in_indicator: b2b_pup_combined_v4_32, name: "det_PBBull" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "sigBullPB" }
+      - { in_indicator: squarify_46_v2, name: "sigBullPB" }
+      - { in_indicator: ultra_combo_v57, name: "sigBullPB" }
+    mutex_with: "hvdpbjppd::PBJ_BULL on the same Zoo cross"
+    decoupling_guarantee: "Internal mechanics of Zoo engine; no reference to other named signals."
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::PB_BEAR"
+    family: zoo_pipeline
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Bearish symmetric mirror of PB_BULL."
+    aliases: ["mirrors of PB_BULL aliases"]
+    decoupling_guarantee: "Symmetric to PB_BULL."
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::HVD_BULL"
+    family: volume_displacement
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Volume-rank hit (any of base 50/75/100…1000-bar volume highest, OR HEV all-time-high, OR HTF1/HTF2 ranks) co-occurring with stdev-displacement candle that opens a bull FVG."
+    parameters:
+      - { name: d1_type, default: "Open to Close" }
+      - { name: d1_len, default: 100 }
+      - { name: d1_mult, default: 5.0 }
+      - { name: d2_mult, default: 2.5, note: "was 4.0 in predecessor" }
+      - { name: d3_mult, default: 1.5, note: "was 2.5 in predecessor" }
+      - { name: ub50, default: true }
+      - { name: ub75, default: true }
+      - { name: ub100, default: true }
+      - { name: ub150, default: true }
+      - { name: ub250, default: true }
+      - { name: ub500, default: true }
+      - { name: ub1000, default: true }
+      - { name: useHEV, default: true }
+      - { name: h1On, default: false, note: "was true in predecessor" }
+      - { name: h2On, default: false, note: "was true in predecessor" }
+    aliases:
+      - { in_indicator: b2b_pup_combined_v4_32, name: "det_HVDBull" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "hvd_fire_bull" }
+      - { in_indicator: squarify_46_v2, name: "hvd_fire_bull" }
+    plot_offset: -1
+    decoupling_guarantee: "Volume rank + stdev-disp + FVG geometry; no reference to other named signals."
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::HVD_BEAR"
+    family: volume_displacement
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Bearish symmetric mirror of HVD_BULL."
+    aliases: ["mirrors"]
+    plot_offset: -1
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::DISP_BULL"
+    family: displacement
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "USE-Displacement: range > N×stdev in [i_std_min, i_std_max] band, with bull FVG when Require FVG ON."
+    parameters:
+      - { name: i_disp_type, default: "Open to Close" }
+      - { name: i_std_len, default: 100 }
+      - { name: i_std_min, default: 3.0, note: "was 6.0 in predecessor" }
+      - { name: i_std_max, default: 100.0 }
+      - { name: i_req_fvg, default: true }
+    aliases:
+      - { in_indicator: b2b_pup_combined_v4_32, name: "det_DISPBull" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "sigDISPBull" }
+      - { in_indicator: squarify_46_v2, name: "sigDISPBull" }
+      - { in_indicator: tnt_od_v2_dated, name: "u5_DISPBull (USE V5 variant)" }
+      - { in_indicator: ultra_combo_v57, name: "sigDISPBull" }
+    plot_offset: -1
+    decoupling_guarantee: "Single-bar range vs stdev band + FVG geometry; no other named signals."
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::DISP_BEAR"
+    family: displacement
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Bearish symmetric mirror."
+    aliases: ["mirrors"]
+    plot_offset: -1
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::MATRIX_NUMBER"
+    family: volume_threshold
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Volume on the current bar equals the highest volume over neo_len bars."
+    parameters: [{ name: neo_len, default: 67 }]
+    aliases:
+      - { in_indicator: b2b_pup_combined_v4_32, name: "matrix bar gate" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "is_matrix_number" }
+      - { in_indicator: squarify_46_v2, name: "is_matrix_number" }
+    decoupling_guarantee: "Single-bar volume comparison."
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::LONG1"
+    family: momentum_tier
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Tier-1 directional momentum: regular & cumulative RVOL ratios both exceed floors AND body ratio ≥ floor AND directional close."
+    parameters:
+      - { name: ls_reg1, default: 7.0, note: "was 10 in predecessor" }
+      - { name: ls_cum1, default: 3.5, note: "was 5 in predecessor" }
+      - { name: ls_body1, default: 0.60, note: "was 0.69 in predecessor" }
+    aliases:
+      - { in_indicator: b2b_pup_combined_v4_32, name: "det_Long1" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "sigLong1" }
+      - { in_indicator: squarify_46_v2, name: "sigLong1" }
+    decoupling_guarantee: "RVOL ratio + body comparison."
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::SHORT1"
+    family: momentum_tier
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Bearish symmetric mirror."
+    aliases: ["mirrors"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::LONG2"
+    family: momentum_tier
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Tier-2 directional momentum (lower thresholds, stricter body)."
+    parameters:
+      - { name: ls_reg2, default: 5.0, note: "was 8 in predecessor" }
+      - { name: ls_cum2, default: 2.5, note: "was 4 in predecessor" }
+      - { name: ls_body2, default: 0.75, note: "was 0.69 in predecessor" }
+    aliases: ["sigLong2 in HVDPBJPPD/Squarify"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::SHORT2"
+    family: momentum_tier
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Bearish symmetric mirror of LONG2."
+    aliases: ["mirrors"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::BOOM_HUNTER_OMEGA"
+    family: oscillator
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Boom Hunter Omega kernel: Ehlers HP+Filt+Peak quotient stack entry events: enter3 ∧ enter5 ∧ enter7, lone-lime, or wt2 oversold/overbought bounces."
+    parameters:
+      - { name: bh_LPPeriod, default: 6 }
+      - { name: bh_LPPeriod2, default: 27 }
+      - { name: bh_LPPeriod3, default: 11 }
+      - { name: bh_n1, default: 9 }
+      - { name: bh_n2, default: 6 }
+      - { name: bh_n3, default: 3 }
+      - { name: bh_n4, default: 21 }
+      - { name: bh_K1, default: 0 }
+      - { name: bh_K12, default: 0.8 }
+    aliases: ["bh_anyOmega in HVDPBJPPD/Squarify"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::HV75"
+    family: hv_lookback
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Volume ≥ highest in 75-bar lookback (using volume[1])."
+    aliases: ["sigHV75"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::HV150"
+    family: hv_lookback
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Volume ≥ highest in 150-bar lookback."
+    parameters: [{ name: hv150_len, default: 150 }]
+    aliases: ["sigHV150"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::HV500"
+    family: hv_lookback
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Volume ≥ highest in 500-bar lookback."
+    aliases: ["sigHV500"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::HV1000"
+    family: hv_lookback
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Volume ≥ highest in 1000-bar lookback."
+    aliases: ["sigHV1000", "u5_HV1000"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::PING_PONG_BULL"
+    family: structural
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Pivot-based S/R level engine; counts pivots/regimes/bounces/breaks; declares bull regime by counted state ≥ pp_min_count with floor gravity flag. Bear is mirror."
+    parameters:
+      - { name: sw_leftBars, default: 3, note: "was 5 in predecessor" }
+      - { name: sw_rightBars, default: 2, note: "was 1 in predecessor" }
+      - { name: sw_useAtr, default: true }
+      - { name: sw_atrMult, default: 2.0 }
+      - { name: pp_atr_len, default: 100 }
+      - { name: pp_min_count, default: 3, hardcoded: true }
+      - { name: pp_max_levels, default: 50, hardcoded: true }
+    aliases: ["bull_pp"]
+    decoupling_guarantee: "Pure pivot/level engine; no other named signals."
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::PING_PONG_BEAR"
+    family: structural
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "Bearish symmetric mirror."
+    aliases: ["bear_pp"]
+    lifecycle_stage: 2
+
+  # ─── Heavy Pentagon canonical RVOL roots ───────────────────
+  - id: "heavy-pentagon::SAAB"
+    family: rvol_p1
+    canonical_owner: "heavy_pentagon_v1"
+    plain_english: "Bullish RVOL spike whose normalised price magnitude sits in the SAAB/Kratos band ([th_saab_kratos, th_1x)) on a green candle."
+    parameters:
+      - { name: bb_avgLength, default: 30 }
+      - { name: bb_smaLength, default: 20 }
+      - { name: th_saab_kratos, default: "f_rvol_1x_threshold * 0.56" }
+    aliases:
+      - { in_indicator: b2b_pup_combined_v4_32, name: "sig_SAAB" }
+      - { in_indicator: heavy_pentagon_v1, name: "sigSAAB" }
+      - { in_indicator: heavy_combo_toggles_v1, name: "sigSAAB (cross-ref)" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "sigSAAB (re-implemented)" }
+      - { in_indicator: squarify_46_v2, name: "sigSAAB (re-implemented)" }
+      - { in_indicator: tnt_od_v2_dated, name: "u5_SAAB (re-implemented)" }
+    plot_offset: 0
+    decoupling_guarantee: "Single-bar normalised-price ratio comparison."
+    lifecycle_stage: 2
+    drift_warning: "Re-implementations across indicators may have drifted thresholds. B2B PUP comment 'Pre Mythos thresholds' suggests divergence."
+
+  - id: "heavy-pentagon::KRATOS"
+    family: rvol_p1
+    canonical_owner: "heavy_pentagon_v1"
+    plain_english: "Bearish symmetric mirror of SAAB."
+    aliases: ["sigKratos"]
+    plot_offset: 0
+    lifecycle_stage: 2
+
+  - id: "heavy-pentagon::BULL_RVOL_1X"
+    family: rvol_p1
+    canonical_owner: "heavy_pentagon_v1"
+    plain_english: "Bullish base candle with normalised price spike in the 1x band ([th_1x, th_gs_moab))."
+    aliases: ["sigBullRVOL1x", "u5_RVOL1xB"]
+    plot_offset: 0
+    lifecycle_stage: 2
+
+  - id: "heavy-pentagon::BEAR_RVOL_1X"
+    family: rvol_p1
+    canonical_owner: "heavy_pentagon_v1"
+    aliases: ["sigBearRVOL1x", "u5_RVOL1xR"]
+    plot_offset: 0
+    lifecycle_stage: 2
+
+  - id: "heavy-pentagon::GRAND_SLAM"
+    family: rvol_p1
+    canonical_owner: "heavy_pentagon_v1"
+    plain_english: "Bullish base candle whose normalised price spike exceeds th_gs_moab — top-tier bull."
+    aliases: ["sigGrandSlam", "u5_GrandSlam"]
+    plot_offset: 0
+    lifecycle_stage: 2
+
+  - id: "heavy-pentagon::MOAB"
+    family: rvol_p1
+    canonical_owner: "heavy_pentagon_v1"
+    plain_english: "Bearish symmetric mirror of GRAND_SLAM."
+    aliases: ["sigMOAB", "u5_MOAB"]
+    plot_offset: 0
+    lifecycle_stage: 2
+
+  - id: "heavy-pentagon::PENTAGON"
+    family: rvol_p2
+    canonical_owner: "heavy_pentagon_v1"
+    plain_english: "Reg@Time relVolRatio sits between th_1x and th_wtc — entry-tier neutral heavy event."
+    parameters:
+      - { name: reg_anchorTimeframe, default: "" }
+      - { name: reg_length, default: 30 }
+      - { name: reg_calculationMode, default: "Cumulative" }
+      - { name: reg_adjustRealtime, default: true }
+    aliases: ["sigPentagon", "u5_Pentagon"]
+    plot_offset: 0
+    lifecycle_stage: 2
+    namespace_collision_warning: "HVDPBJPPD also has 'anyBearPent' (Penthouse — bear PB-mirror of Floor) — distinct concept under similar name. Stage 6 should rename anyBearPent → anyBear2F."
+
+  - id: "heavy-pentagon::WTC"
+    family: rvol_p2
+    canonical_owner: "heavy_pentagon_v1"
+    plain_english: "Reg@Time relVolRatio above th_wtc but ≤ th_hiroshima."
+    aliases: ["sigWTC", "u5_WTC"]
+    plot_offset: 0
+    lifecycle_stage: 2
+
+  - id: "heavy-pentagon::HIROSHIMA"
+    family: rvol_p2
+    canonical_owner: "heavy_pentagon_v1"
+    plain_english: "Reg@Time relVolRatio strictly above th_hiroshima — top-tier neutral heavy."
+    aliases: ["sigHiroshima", "u5_Hiroshima"]
+    plot_offset: 0
+    lifecycle_stage: 2
+
+  - id: "heavy-pentagon::NAGASAKI"
+    family: rvol_p3
+    canonical_owner: "heavy_pentagon_v1"
+    plain_english: "Raw bar volume sets new all-time-high vs running maxVol since bar_index 0 — Highest-Ever-Volume (HEV) event."
+    parameters: []
+    aliases:
+      - { in_indicator: b2b_pup_combined_v4_32, name: "sig_Nagasaki" }
+      - { in_indicator: heavy_pentagon_v1, name: "sigNagasaki" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "sigNagasaki" }
+      - { in_indicator: squarify_46_v2, name: "sigNagasaki" }
+      - { in_indicator: tnt_od_v2_dated, name: "u5_Nagasaki" }
+      - { in_indicator: ultra_combo_v57, name: "sigNagasaki" }
+      - { in_indicator: vob_asym_t3x6_v8, name: "isNagasaki (re-implemented in VOB)" }
+    plot_offset: 0
+    note: "Plot title is 'Nagasaki (HEV)' but canonical name is NAGASAKI."
+    lifecycle_stage: 2
+
+  # ─── HV / FVG / GZI canonical roots (hv-fvg-gz1-og) ────────
+  - id: "hv-fvg-gz1-og::FVG_BULL_RAW"
+    family: fvg
+    canonical_owner: "hv_fvg_gz1_og_v1"
+    plain_english: "Bullish FVG: bar 0 low > bar 2 high, bar 1 close > bar 2 high, gap-size relative to bar 2's high exceeds threshold."
+    parameters:
+      - { name: thresholdPer, default: 1.0, units: "%" }
+      - { name: auto, default: true, note: "auto threshold = cumulative ((high-low)/low)/bar_index" }
+      - { name: tf, default: "" }
+    aliases:
+      - { in_indicator: hv_fvg_gz1_og_v1, name: "bull_fvg_raw" }
+      - { in_indicator: proximity_gzi_hv_v1, name: "bull_fvg_raw (verbatim)" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "gz_bullFVG (re-implemented)" }
+      - { in_indicator: squarify_46_v2, name: "gz_bullFVG (re-implemented)" }
+      - { in_indicator: ultra_combo_v57, name: "bull_fvg (re-implemented)" }
+    plot_offset: "(not plotted; drives box.new)"
+    lifecycle_stage: 2
+
+  - id: "hv-fvg-gz1-og::FVG_BEAR_RAW"
+    family: fvg
+    canonical_owner: "hv_fvg_gz1_og_v1"
+    plain_english: "Bearish symmetric mirror."
+    aliases: ["bear_fvg_raw"]
+    lifecycle_stage: 2
+
+  - id: "hv-fvg-gz1-og::GZI_BULL"
+    family: fvg_overlap
+    canonical_owner: "hv_fvg_gz1_og_v1"
+    plain_english: "Fires on creation of a new bullish FVG that price-overlaps a prior bullish FVG within gziProximity bars; adjacent-touch counts when both are HV."
+    parameters:
+      - { name: showGZI, default: true }
+      - { name: gziProximity, default: 6, units: "bars", note: "B2B PUP and HVDPBJPPD use 7-bar override (gz1_dist=7); Squarify uses 7." }
+    aliases:
+      - { in_indicator: hv_fvg_gz1_og_v1, name: "bullGZI_trigger" }
+      - { in_indicator: proximity_gzi_hv_v1, name: "bullGZI_trigger (verbatim)" }
+      - { in_indicator: b2b_pup_combined_v4_32, name: "gz_bullGZI" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "gz_bullGZI" }
+      - { in_indicator: squarify_46_v2, name: "gz_bullGZI" }
+      - { in_indicator: ultra_combo_v57, name: "bullGZI" }
+    plot_offset: -1
+    decoupling_guarantee: "FVG geometry + bar-distance proximity + adjacent-touch rule; no other named signals."
+    lifecycle_stage: 2
+    drift_warning: "gziProximity default 6 in canonical, 7 in B2B PUP / HVDPBJPPD / Squarify. Reconcile in Stage 6."
+
+  - id: "hv-fvg-gz1-og::GZI_BEAR"
+    family: fvg_overlap
+    canonical_owner: "hv_fvg_gz1_og_v1"
+    plain_english: "Bearish symmetric mirror."
+    aliases: ["bearGZI_trigger", "gz_bearGZI"]
+    plot_offset: -1
+    lifecycle_stage: 2
+
+  - id: "hv-fvg-gz1-og::HV_BULL"
+    family: hv_fvg
+    canonical_owner: "hv_fvg_gz1_og_v1"
+    plain_english: "Fires on creation of a new bullish FVG whose formation-bar volume equals the 5000-, 252-, or 63-bar volume highest."
+    parameters:
+      - { name: showHV, default: true }
+      - { name: HVE_lookback, default: 5000, hardcoded: true }
+      - { name: HVY_lookback, default: 252, hardcoded: true }
+      - { name: HVQ_lookback, default: 63, hardcoded: true }
+    aliases:
+      - { in_indicator: hv_fvg_gz1_og_v1, name: "bullHV_trigger" }
+      - { in_indicator: proximity_gzi_hv_v1, name: "bullHV_trigger (verbatim)" }
+      - { in_indicator: b2b_pup_combined_v4_32, name: "gz_bullHV" }
+      - { in_indicator: hvdpbjppd_the_only_one, name: "gz_bullHV" }
+      - { in_indicator: squarify_46_v2, name: "gz_bullHV" }
+      - { in_indicator: ultra_combo_v57, name: "bullHV" }
+    plot_offset: -1
+    decoupling_guarantee: "Fires only on bar of FVG creation. Volume[1] vs lookback highest comparison; no other named signals."
+    lifecycle_stage: 2
+
+  - id: "hv-fvg-gz1-og::HV_BEAR"
+    family: hv_fvg
+    canonical_owner: "hv_fvg_gz1_og_v1"
+    plain_english: "Bearish symmetric mirror."
+    aliases: ["bearHV_trigger", "gz_bearHV"]
+    plot_offset: -1
+    lifecycle_stage: 2
+
+  # ─── FAUNA atomic sub-roots ────────────────────────────────
+  - id: "fauna::MB"
+    family: candle_anatomy
+    canonical_owner: "(distributed: defined in heavy-pentagon's USE V5 AND squarify AND ultra-combo AND hvdpbjppd; same definition)"
+    plain_english: "Marubozu/Massive Body: directional body, body-size > 1.6×ATR(14), body/range > 0.7, vol > 1.8×SMA(volume,20)."
+    parameters: [{ name: body_mult, default: 1.6 }, { name: body_ratio, default: 0.7 }, { name: vol_mult, default: 1.8 }, { name: vol_sma_len, default: 20 }, { name: atr_len, default: 14 }]
+    aliases: ["bull_MB", "bear_MB", "fMB_b", "fMB_r"]
+    used_by_composites: ["FAUNA composite", "F2 (Ultra Combo)", "FOSTER, TB (Ultra Combo)"]
+    lifecycle_stage: 2
+
+  - id: "fauna::RE"
+    family: candle_anatomy
+    canonical_owner: "(distributed)"
+    plain_english: "Range Expansion: directional, range > 2.2×ATR, opposite-side wick < 0.15×range, vol > 1.8×avg."
+    parameters: [{ name: range_mult, default: 2.2 }, { name: tail_max_pct, default: 0.15 }, { name: vol_mult, default: 1.8 }]
+    aliases: ["bull_RE", "bear_RE", "fRE_b", "fRE_r"]
+    lifecycle_stage: 2
+
+  - id: "fauna::TA"
+    family: candle_anatomy
+    canonical_owner: "(distributed)"
+    plain_english: "Trend Acceleration: rising/falling 50-SMA + close-to-close move > 1.6×SMA(|Δclose|,10) in same direction + vol > 1.8×avg."
+    parameters: [{ name: trendMA_len, default: 50 }, { name: avgDelta_len, default: 10 }, { name: delta_mult, default: 1.6 }, { name: vol_mult, default: 1.8 }]
+    aliases: ["bull_TA", "bear_TA", "fTA_b", "fTA_r"]
+    lifecycle_stage: 2
+
+  - id: "fauna::GG"
+    family: fauna_exclusion
+    canonical_owner: "(distributed)"
+    plain_english: "Gap-Go: open-prev-close gap > 0.9×ATR, direction match, low > prev close (or high < prev close for bear), vol > 1.8×avg. Used as FAUNA exclusion."
+    aliases: ["fGG_b", "fGG_r"]
+    lifecycle_stage: 2
+
+  - id: "fauna::TR"
+    family: fauna_exclusion
+    canonical_owner: "(distributed)"
+    plain_english: "Trap: prev weak counter-bar (body/range ≤ 0.2) + core fired. FAUNA exclusion."
+    lifecycle_stage: 2
+
+  - id: "fauna::ES"
+    family: fauna_exclusion
+    canonical_owner: "(distributed)"
+    plain_english: "Exhaustion: prev strong counter-bar (|body| > 1.5×avgBody, vol > 1.5×avgVol) + core fired. FAUNA exclusion."
+    lifecycle_stage: 2
+
+  - id: "fauna::GDR"
+    family: fauna_exclusion
+    canonical_owner: "(distributed)"
+    plain_english: "Gap-Down-Reversal: prev counter-color + GG. FAUNA exclusion."
+    lifecycle_stage: 2
+
+  # ─── TNT-OD canonical roots ────────────────────────────────
+  - id: "tnt-od::TNT_RAW_BULL"
+    family: confluence_engine
+    canonical_owner: "tnt_od_v3_dated"
+    plain_english: "TNT 1.0 confluence: VOB ema-cross OB + ANISH swing-OB cross + FLUX pullback all confirm in same window AND zones overlap AND volume/EMA-slope/RSI synergy gate AND min-bar-gap cooldown elapsed."
+    parameters:
+      - { name: SENS, default: 100 }
+      - { name: SWING_LEN, default: 10 }
+      - { name: ATR_VAL, default: "ATR(200)" }
+      - { name: ATR_MULT, default: 3.5 }
+      - { name: ATR_MIN, default: 0.5 }
+      - { name: MIN_SIG_GAP, default: "EMA_SLOW (=SENS+13)" }
+      - { name: CONF_WINDOW, default: "EMA_SLOW * 2" }
+    aliases:
+      - { in_indicator: b2b_pup_combined_v4_32, name: "det_bullTNTraw" }
+      - { in_indicator: tnt_od_v2_dated, name: "raw_bullTNT" }
+      - { in_indicator: squarify_46_v2, name: "raw_bullTNT" }
+    note: "Composite by construction (VOB+ANISH+FLUX) but per Anish 'TNT' is the human-named primitive. Treat as root."
+    lifecycle_stage: 2
+
+  - id: "tnt-od::TNT_RAW_BEAR"
+    family: confluence_engine
+    canonical_owner: "tnt_od_v3_dated"
+    plain_english: "Bearish symmetric mirror."
+    aliases: ["raw_bearTNT", "det_bearTNTraw"]
+    lifecycle_stage: 2
+
+  - id: "tnt-od::OD"
+    family: session_gate
+    canonical_owner: "tnt_od_v3_dated"
+    plain_english: "Opening Drive shell: session-first-bar gate. u5_od_max_bars input is anemic — no dedicated OD-window scoring primitive."
+    parameters: [{ name: u5_od_max_bars, default: 1 }]
+    note: "Primitive is anemic. OD-ness comes via firstStatus_N/alertOK_N gating."
+    lifecycle_stage: 2
+
+  - id: "tnt-od::NAPALM_BULL"
+    family: tnt_propulsion
+    canonical_owner: "tnt_od_v3_dated"
+    plain_english: "Bullish FVG-confirmed displacement bar that pierces an active opposing TNT zone level."
+    aliases: ["raw_napalmBull", "det_bullNapalm"]
+    lifecycle_stage: 2
+
+  - id: "tnt-od::NAPALM_BEAR"
+    family: tnt_propulsion
+    canonical_owner: "tnt_od_v3_dated"
+    aliases: ["raw_napalmBear", "det_bearNapalm"]
+    lifecycle_stage: 2
+
+  - id: "tnt-od::CHARGE_BULL"
+    family: tnt_propulsion
+    canonical_owner: "tnt_od_v3_dated"
+    plain_english: "Displacement bar violating stored ChargeLevel; pushes new same-direction ChargeLevel to maintain alternating ladder. v4.32 fix in B2B PUP."
+    aliases: ["raw_bullCharge", "det_bullCharge"]
+    lifecycle_stage: 2
+
+  - id: "tnt-od::CHARGE_BEAR"
+    family: tnt_propulsion
+    canonical_owner: "tnt_od_v3_dated"
+    aliases: ["raw_bearCharge", "det_bearCharge"]
+    lifecycle_stage: 2
+
+  - id: "tnt-od::RET_BULL_TNT"
+    family: tnt_propulsion
+    canonical_owner: "tnt_od_v3_dated"
+    plain_english: "First retrace into still-active TNT zone after breakout, hits programmable retracement RET_TNT_PCT depth (default 100%). Single-fire per zone via returnFired flag."
+    parameters: [{ name: RET_TNT_PCT, default: 100.0 }, { name: RET_SUPER_PCT, default: 50.0 }]
+    aliases: ["raw_retBullTNT", "det_retBullTNT"]
+    lifecycle_stage: 2
+
+  - id: "tnt-od::RET_BEAR_TNT"
+    family: tnt_propulsion
+    canonical_owner: "tnt_od_v3_dated"
+    aliases: ["raw_retBearTNT", "det_retBearTNT"]
+    lifecycle_stage: 2
+
+  # ─── VOB Asym canonical roots ──────────────────────────────
+  - id: "vob-asym::VOB_CROSS"
+    family: vob_engine
+    canonical_owner: "vob_asym_t3x6_v8"
+    plain_english: "EMA fast/slow crossover trigger. Bullish: ta.crossover(ema(close,len1), ema(close,len1+13)). Bearish: ta.crossunder. Each crossover spawns one VOB zone candidate."
+    parameters:
+      - { name: len1, default: "tier-specific {2500, 2250, 2000, 1500, 1250, 1000} for A-F" }
+      - { name: len2, default: "len1 + 13", hardcoded: true }
+    aliases: ["f_vob internal trigger"]
+    lifecycle_stage: 2
+
+  - id: "vob-asym::BULL_ZONE_PUSH"
+    family: vob_engine
+    canonical_owner: "vob_asym_t3x6_v8"
+    plain_english: "On bullish cross, find lowest low in lookback, accumulate volume swing-low → cross bar, build zone bounded by [lowest_low, max(open,close) clamped ≥ lowest+atr_adj*0.5], push to lower_X array."
+    parameters: [{ name: atr_adj, default: "ta.highest(ta.atr(200), 200) * 2" }]
+    aliases: ["lower_X push (per tier)"]
+    lifecycle_stage: 2
+
+  - id: "vob-asym::BEAR_ZONE_PUSH"
+    family: vob_engine
+    canonical_owner: "vob_asym_t3x6_v8"
+    plain_english: "Symmetric: highest high, accumulate volume, push to upper_X array."
+    aliases: ["upper_X push"]
+    lifecycle_stage: 2
+
+  - id: "vob-asym::ZONE_INVALIDATION"
+    family: vob_engine
+    canonical_owner: "vob_asym_t3x6_v8"
+    plain_english: "Bull zone invalidated when close < lower; bear zone invalidated when close > upper. Plus dedup-nuke when mid within atr_proximity."
+    parameters: [{ name: atr_proximity, default: "ta.highest(ta.atr(200), 200) * 3" }, { name: array_cap, default: 15 }]
+    lifecycle_stage: 2
+
+  - id: "vob-asym::T3_SUPER_BUY"
+    family: vob_engine
+    canonical_owner: "vob_asym_t3x6_v8"
+    plain_english: "T3 buy: exactly ONE active bull zone AND opposing bear pool > 0 AND bull zone volume > bear pool × super_mult AND close inside dominant bull zone."
+    parameters: [{ name: super_mult, default: 1.5 }, { name: cooldown_bars, default: 100 }]
+    aliases: ["t3_buy_a..f"]
+    lifecycle_stage: 2
+
+  - id: "vob-asym::T3_SUPER_SELL"
+    family: vob_engine
+    canonical_owner: "vob_asym_t3x6_v8"
+    plain_english: "Symmetric mirror."
+    aliases: ["t3_sell_a..f"]
+    lifecycle_stage: 2
+
+  # ─── Ultra Combo NEW roots ─────────────────────────────────
+  - id: "ultra-combo::F2"
+    family: cluster
+    canonical_owner: "ultra_combo_v57"
+    plain_english: "F2-bar setup: session bar #2 with two consecutive same-direction MB candles."
+    aliases: ["sBullF2", "sBearF2"]
+    used_by_composites: ["squarify::S14", "S15", "S16", "S18", "S20", "ultra-combo::comboPBJ_F2", "ultra-combo::comboB2B_F2", "ultra-combo::comboF2_B2BDays"]
+    lifecycle_stage: 2
+
+  - id: "ultra-combo::E3"
+    family: cluster
+    canonical_owner: "ultra_combo_v57"
+    plain_english: "E3 cluster: session bar #3 with three consecutive MB|RE|TA bars in same direction."
+    aliases: ["sBullE3", "sBearE3"]
+    used_by_composites: ["squarify::S14, S16, S17, S19, S20", "ultra-combo::comboPBJ_E3", "comboE3_2of3PUP", "comboF2_CLUSTER_E3"]
+    lifecycle_stage: 2
+
+  - id: "ultra-combo::FC"
+    family: cluster
+    canonical_owner: "ultra_combo_v57"
+    plain_english: "F2/E3 Cluster overlap: 2-of-3 cluster indicators align with overlapping price ranges between threshold-bar and sequential-bar zones inside a 20-bar window."
+    parameters: [{ name: window, default: 20 }, { name: bull_seq_sum_min, default: 0.1 }, { name: bear_seq_sum_min, default: 0.5 }, { name: rvol_price_spike, default: 2.9 }]
+    aliases: ["sBullFC", "sBearFC"]
+    lifecycle_stage: 2
+
+  - id: "ultra-combo::TB"
+    family: transition
+    canonical_owner: "ultra_combo_v57"
+    plain_english: "After ≥5 consecutive bullPass days, a 2-bar window opens; first bear-direction trigger (sPPBear / PBJ-sell / PB-sell) fires TB / TB-PBJ / TB-PB."
+    parameters: [{ name: minAnishBars, default: 5 }, { name: window, default: 2 }]
+    aliases: ["TB Sell"]
+    note: "Cross-ref candidate: 'EXACT COPY FROM ANISH TB FOSTER v6' comment in TNT-OD line 367 implies a separate Anish TB Foster v6 indicator may exist outside repo."
+    lifecycle_stage: 2
+
+  - id: "ultra-combo::FOSTER"
+    family: transition
+    canonical_owner: "ultra_combo_v57"
+    plain_english: "Mirror of TB after ≥5 consecutive bearPass days; first bull-direction trigger."
+    aliases: ["Foster Buy"]
+    lifecycle_stage: 2
+
+  - id: "ultra-combo::ROC"
+    family: oscillator
+    canonical_owner: "ultra_combo_v57"
+    plain_english: "ROC + LazyBear WaveTrend: PBJ aligned with ROC-EMA + LazyBear WaveTrend conditions AND a Heavy-Weapon hit AND directional close. Per CHANGELOG treated as single 'ROC' root despite composite-of-mechanics structure."
+    parameters: [{ name: roc_pN, default: "close[5]" }, { name: roc_ar, default: "SMA(|Δroc|,100)" }, { name: roc_ema, default: "EMA(roc/roc_ar,5)" }, { name: WT_ESA, default: 8 }, { name: WT_CI_ATR, default: 100 }, { name: wt1_len, default: 21 }, { name: wt2_len, default: 4 }]
+    aliases: ["sigROCBull", "sigROCBear"]
+    note: "LazyBear WaveTrend internal mechanic (EMA cross primitives) is NOT a root."
+    lifecycle_stage: 2
+
+  # ─── VOB Ladder Watch tier roots ───────────────────────────
+  - id: "vob-ladder::Z_A"
+    family: vob_zone_tier
+    canonical_owner: "vob_ladder_watch_v1"
+    plain_english: "Most recent active VOB bull zone at highest sensitivity tier (EMA len 2500). Mirrors vob-asym bull-half engine."
+    cross_ref_to: "vob-asym::BULL_ZONE_PUSH (sens A)"
+    lifecycle_stage: 2
+
+  - id: "vob-ladder::Z_B"
+    family: vob_zone_tier
+    cross_ref_to: "vob-asym::BULL_ZONE_PUSH (sens B, EMA 2250)"
+    lifecycle_stage: 2
+
+  - id: "vob-ladder::Z_C"
+    cross_ref_to: "vob-asym::BULL_ZONE_PUSH (sens C, EMA 2000)"
+    lifecycle_stage: 2
+
+  - id: "vob-ladder::Z_D"
+    cross_ref_to: "vob-asym::BULL_ZONE_PUSH (sens D, EMA 1500)"
+    lifecycle_stage: 2
+
+  - id: "vob-ladder::Z_E"
+    cross_ref_to: "vob-asym::BULL_ZONE_PUSH (sens E, EMA 1250)"
+    lifecycle_stage: 2
+
+  - id: "vob-ladder::Z_F"
+    family: vob_zone_tier
+    canonical_owner: "vob_ladder_watch_v1"
+    plain_english: "Anchor — must exist for any depth>0. EMA len 1000."
+    cross_ref_to: "vob-asym::BULL_ZONE_PUSH (sens F)"
+    lifecycle_stage: 2
+
+  # ─── DISP variants used in DispCons streaks ────────────────
+  - id: "hvdpbjppd::DISP2_BULL"
+    family: displacement
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "DISP variant for D2+ streak; same logic as DISP_BULL with `i_disp2_std_min=3.0` (was 5.0 in predecessor)."
+    parameters: [{ name: i_disp2_std_min, default: 3.0, note: "was 5.0 in predecessor" }]
+    aliases: ["sigDISP2Bull"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::DISP2_BEAR"
+    canonical_owner: "hvdpbjppd_the_only_one"
+    aliases: ["sigDISP2Bear"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::DISP3_BULL"
+    family: displacement
+    canonical_owner: "hvdpbjppd_the_only_one"
+    plain_english: "DISP variant for D3+ streak; `i_disp3_std_min=3.0` (was 4.0 in predecessor)."
+    parameters: [{ name: i_disp3_std_min, default: 3.0, note: "was 4.0 in predecessor" }]
+    aliases: ["sigDISP3Bull"]
+    lifecycle_stage: 2
+
+  - id: "hvdpbjppd::DISP3_BEAR"
+    canonical_owner: "hvdpbjppd_the_only_one"
+    aliases: ["sigDISP3Bear"]
+    lifecycle_stage: 2
+
+# ─────────────────────────────────────────────────────────────
+# COMPOSITES — sorted by indicator, then by tier
+# ─────────────────────────────────────────────────────────────
+# (Selected major composites; full enumeration in docs/composites.md)
+# ─────────────────────────────────────────────────────────────
+
+composites:
+
+  # ─── Anish 50% 1st Combo composites ────────────────────────
+  - id: "anish-50-1st-combo::SUPER_PUP"
+    in_indicator: anish_50_1st_combo
+    tier: 1
+    plain_english: "Same-bar confluence of PUP and Anish Stage 2."
+    composition: { type: AND, operands: ["pocket-pivot::PUP", "anish-stage::BULL_PASS"] }
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "anish-50-1st-combo::SUPER_PPD"
+    in_indicator: anish_50_1st_combo
+    tier: 1
+    plain_english: "Same-bar confluence of PPD and Anish Stage 4."
+    composition: { type: AND, operands: ["pocket-pivot::PPD", "anish-stage::BEAR_PASS"] }
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "anish-50-1st-combo::ALL_THREE_BULL"
+    in_indicator: anish_50_1st_combo
+    tier: 2
+    plain_english: "PUP + Gap-Up + Anish Stage 2 on the same bar."
+    composition: { type: AND, operands: ["pocket-pivot::PUP", "anish-50-1st-combo::GAP_UP_SIG", "anish-stage::BULL_PASS"] }
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "anish-50-1st-combo::TB_SELL"
+    in_indicator: anish_50_1st_combo
+    tier: 2
+    is_state_machine: true
+    plain_english: "After ≥minAnishBars consecutive Anish-Bull bars, fires one-bar pulse once followUpBars consecutive bars print PPD without Anish-Bull."
+    parameters: [{ name: minAnishBars, default: 5 }, { name: followUpBars, default: 2 }]
+    composition: { type: FSM, operands: ["anish-stage::BULL_PASS", "pocket-pivot::PPD"] }
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "anish-50-1st-combo::FOSTER_BUY"
+    in_indicator: anish_50_1st_combo
+    tier: 2
+    is_state_machine: true
+    plain_english: "Symmetric mirror of TB_SELL."
+    composition: { type: FSM, operands: ["anish-stage::BEAR_PASS", "pocket-pivot::PUP"] }
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  # ─── B2B PUP composites (S1-S20, no S7) ────────────────────
+  - id: "b2b-pup::B2B_PUP"
+    in_indicator: b2b_pup_combined_v4_32
+    tier: 1
+    plain_english: "PUP fires on the current bar AND on the prior bar (back-to-back)."
+    composition: { type: AND, operands: ["pocket-pivot::PUP", { type: SHIFT, by: -1, of: "pocket-pivot::PUP" }] }
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "b2b-pup::B2B_PPD"
+    in_indicator: b2b_pup_combined_v4_32
+    tier: 1
+    composition: { type: AND, operands: ["pocket-pivot::PPD", { type: SHIFT, by: -1, of: "pocket-pivot::PPD" }] }
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "b2b-pup::CS1_BULL_FVG_COMBO"
+    in_indicator: b2b_pup_combined_v4_32
+    tier: 2
+    plain_english: "Body% bar with HV-FVG or GZI-FVG plus directional/neutral RVOL on prior bar."
+    composition_summary: "(gz_bullHV OR gz_bullGZI) AND body% AND (SAAB[1] OR RVOL1xB[1] OR GS[1] OR Pentagon[1] OR WTC[1] OR Hiro[1] OR Naga[1])"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "b2b-pup::CS3_UNIFIED_COMBO_BULL"
+    in_indicator: b2b_pup_combined_v4_32
+    tier: 3
+    plain_english: "FVG-combo this bar AND Matrix-combo prior bar."
+    composition: { type: AND, operands: ["b2b-pup::CS1_BULL", { type: SHIFT, by: -1, of: "b2b-pup::CS2_BULL" }] }
+    plot_offset: 0
+    lifecycle_stage: 5
+    drift_warning: "B2B PUP uses lagged-AND (csNew2[1]); HVDPBJPPD canonical uses same-bar AND. Reconcile in Stage 6."
+
+  - id: "b2b-pup::S1_B2B_PUP_BULL"
+    in_indicator: b2b_pup_combined_v4_32
+    tier: 1
+    composition: "det_b2bPUP AND gates"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "b2b-pup::S2_B2B_PUP_FAUNA_BULL"
+    in_indicator: b2b_pup_combined_v4_32
+    tier: 2
+    composition: "det_b2bPUP AND FAUNA[0] AND FAUNA[1]"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "b2b-pup::S3_B2B_PUP_DISP_HVD_BULL"
+    in_indicator: b2b_pup_combined_v4_32
+    tier: 2
+    composition: "(PUP[1] AND PUP[2]) AND ((DISPBull AND DISPBull[1]) OR (HVDBull AND HVDBull[1]))"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "b2b-pup::S4_B2B_PUP_FAU_DISP_HVD_BULL"
+    in_indicator: b2b_pup_combined_v4_32
+    tier: 3
+    composition: "S3 AND FAUNA[1] AND FAUNA[2]"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  # (S5-S20 elided — full list in docs/composites.md and agent report)
+
+  # ─── HVDPBJPPD canonical composites ────────────────────────
+  - id: "hvdpbjppd::FVG_COMBO_BULL"
+    aka_aliases: ["csNew1_Bull"]
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 3
+    composition: "comboSet1_Bull OR comboSet2_Bull"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::MATRIX_COMBO_BULL"
+    aka_aliases: ["csNew2_Bull"]
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 3
+    composition: "comboSet3_Bull OR comboSet4_Bull"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::UNIFIED_COMBO_BULL"
+    aka_aliases: ["csNew3_Bull"]
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 3
+    plain_english: "FVG_COMBO AND MATRIX_COMBO same-bar (canonical). Predecessor used 1-bar-lagged AND."
+    composition: { type: AND, operands: ["hvdpbjppd::FVG_COMBO_BULL", "hvdpbjppd::MATRIX_COMBO_BULL"] }
+    plot_offset: 0
+    lifecycle_stage: 5
+    drift_warning: "Same-bar AND in canonical, lagged-AND in predecessor. Squarify still uses lagged-AND. CRITICAL drift to reconcile."
+
+  - id: "hvdpbjppd::CO_BULL_PBJ"
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 3
+    plain_english: "Triple AND: HV+D fires, PBJ on prior bar, USE-any on prior bar."
+    composition: "hvd_fire_bull AND nz(sigBullPBJ[1]) AND nz(use_any_bull[1])"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::FLOOR_BULL"
+    aka_aliases: ["anyBullFloor"]
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 2
+    plain_english: "PingPong bull regime AND PBJ AND HW-slot."
+    composition: "bull_pp AND sigBullPBJ AND bull_hw_slot"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::ROOF_BEAR"
+    aka_aliases: ["anyBearRoof"]
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 2
+    composition: "bear_pp AND sigBearPBJ AND bear_hw_slot"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::PENTHOUSE_BEAR"
+    aka_aliases: ["anyBearPent"]
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 2
+    composition: "bear_pp AND sigBearPB AND bear_hw_slot"
+    plot_offset: 0
+    lifecycle_stage: 5
+    namespace_collision_warning: "'Pent' in this name collides with heavy-pentagon::PENTAGON RVOL tier. Stage 6: rename to anyBear2F."
+
+  - id: "hvdpbjppd::HW_BULL"
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 3
+    composition: "(close>open) AND disp5_bull AND PBJ AND HW-slot AND (Floor OR 2F)"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::SUPER_BULL"
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 3
+    composition: "PBJ AND DISP AND (FAUNA OR Long1) AND HW-slot AND ((Combo AND PUP) OR (Floor OR 2F))"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::SDUPER_BULL"
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 3
+    composition: "(Floor OR 2F) AND PBJ AND HW-slot AND Combo AND PUP AND DISP AND (FAUNA OR Long1)"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::B2B_HVD_BULL"
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 1
+    composition: { type: AND, operands: ["hvdpbjppd::HVD_BULL", { type: SHIFT, by: -1, of: "hvdpbjppd::HVD_BULL" }] }
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::B2B_HVD_PBJ_BULL"
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 2
+    composition: "B2B_HVD_BULL AND (PBJ[1] OR PBJ[2])"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  # ─── Heavy Pentagon composites (15 Heavy Combos) ───────────
+  - id: "heavy-pentagon::HEAVY_YIN_YANG_BULL"
+    in_indicator: heavy_pentagon_v1
+    tier: 1
+    composition: "((BULL_RVOL_1X OR GRAND_SLAM) OR (BEAR_RVOL_1X OR MOAB)) AND (PENTAGON OR WTC OR HIROSHIMA) AND dispBull"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "heavy-pentagon::HEAVY_YIN_YANG_BEAR"
+    in_indicator: heavy_pentagon_v1
+    tier: 1
+    composition: "baseYinYang AND dispBear"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL"
+    in_indicator: heavy_pentagon_v1
+    tier: 1
+    composition: "baseYinYang AND noDisp"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "heavy-pentagon::HEAVY_NAGASAKI_BULL"
+    in_indicator: heavy_pentagon_v1
+    tier: 1
+    composition: "NAGASAKI AND ((BULL_RVOL_1X OR GRAND_SLAM) OR (BEAR_RVOL_1X OR MOAB)) AND dispBull"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL"
+    in_indicator: heavy_pentagon_v1
+    tier: 1
+    composition: "NAGASAKI AND (PENTAGON OR WTC OR HIROSHIMA) AND dispBull"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "heavy-pentagon::HEAVY_TRIDENT_BULL"
+    in_indicator: heavy_pentagon_v1
+    tier: 1
+    composition: "NAGASAKI AND ((BULL_RVOL_1X OR GRAND_SLAM) OR (BEAR_RVOL_1X OR MOAB)) AND (PENTAGON OR WTC OR HIROSHIMA) AND dispBull"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "heavy-pentagon::NEUTRAL_HEAVY_X2_BULL"
+    in_indicator: heavy_pentagon_v1
+    tier: 1
+    composition: "((PENTAGON AND WTC) OR (PENTAGON AND HIROSHIMA) OR (WTC AND HIROSHIMA)) AND dispBull"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  # (HEAVY_NAGASAKI_BEAR/NEUTRAL, HEAVY_NAGASAKI_VOL_BEAR/NEUTRAL, HEAVY_TRIDENT_BEAR/NEUTRAL,
+  #  NEUTRAL_HEAVY_X2_BEAR/NEUTRAL all follow same pattern with dispBear/noDisp)
+
+  # ─── Heavy Combo Toggles (3 master OR-gates) ──────────────
+  - id: "hct::S1_HEAVY_COMBO_BULL"
+    in_indicator: heavy_combo_toggles_v1
+    tier: 2
+    composition: "(en_HYYBull AND HEAVY_YIN_YANG_BULL) OR (en_HNBull AND HEAVY_NAGASAKI_BULL) OR (en_HNVBull AND HEAVY_NAGASAKI_VOL_BULL) OR (en_HTBull AND HEAVY_TRIDENT_BULL) OR (en_NHx2Bull AND NEUTRAL_HEAVY_X2_BULL)"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "hct::S2_HEAVY_COMBO_BEAR"
+    in_indicator: heavy_combo_toggles_v1
+    tier: 2
+    composition: "mirror"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "hct::S3_HEAVY_COMBO_NEUTRAL"
+    in_indicator: heavy_combo_toggles_v1
+    tier: 2
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  # ─── Squarify 46 numbered composites (selected major; full in docs/composites.md) ──
+  - id: "squarify::S1_SDUPER_BULL"
+    in_indicator: squarify_46_v2
+    tier: 4
+    composition: "csNew3_Bull AND det_bullNapalmCons AND nz(sigPUP[1])"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "squarify::S2_SUPER_BULL"
+    in_indicator: squarify_46_v2
+    tier: 3
+    composition: "csNew3_Bull AND det_bullNapalmCons"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "squarify::S3_HW_BULL"
+    in_indicator: squarify_46_v2
+    tier: 3
+    composition: "(close>open) AND disp5_bull AND PBJ AND HW-slot AND (anyBullFloor OR anyBull2nd)"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "squarify::S27_CO_BULL"
+    in_indicator: squarify_46_v2
+    tier: 3
+    composition: "hvd_fire_bull AND PBJ[1] AND (csNew3_Bull OR csNew1_Bull)"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "squarify::S32_GRAIL_BULL"
+    in_indicator: squarify_46_v2
+    tier: 4
+    composition: "det_bullNapalmCons AND PBJ[1] AND PUP[1] AND csNew3_Bull"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "squarify::T1_OPENING_CONFLU_BULL"
+    in_indicator: squarify_46_v2
+    tier: 4
+    composition: "sessBar==1 AND disp_std_mult >= t1_disp_thresh AND csNew3_Bull AND hvd_fire_bull AND sigBullRVOL1x"
+    plot_offset: 0
+    has_alertcondition: true
+    lifecycle_stage: 5
+
+  - id: "squarify::T2_OPENING_CONFLU_BULL"
+    in_indicator: squarify_46_v2
+    tier: 4
+    composition: "sessBar in [1,2] AND det_b2bPUP AND uu_any"
+    plot_offset: 0
+    has_alertcondition: true
+    lifecycle_stage: 5
+
+  # ─── TNT-OD composites (selected) ──────────────────────────
+  - id: "tnt-od::B2B_NAPALM_BULL"
+    in_indicator: tnt_od_v2_dated
+    tier: 1
+    composition: { type: AND, operands: ["tnt-od::NAPALM_BULL", { type: SHIFT, by: -1, of: "tnt-od::NAPALM_BULL" }] }
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "tnt-od::FUSE_BULL"
+    in_indicator: tnt_od_v2_dated
+    tier: 1
+    plain_english: "Sequential cascade NPM → TNT → CONT all within SUDDEN_PROX bars, in-session."
+    composition: "det_contBull AND lastBullNPMVis < lastBullTNTVis < bar_index, both proximity-gated"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "tnt-od::CATALYST_BULL"
+    in_indicator: tnt_od_v2_dated
+    tier: 1
+    plain_english: "Napalm + CS1 (FVG combo) on same visual bar."
+    composition: "det_bullNapalm AND u5_CS1_Bull"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "tnt-od::IGNITE_TC_BULL"
+    in_indicator: tnt_od_v2_dated
+    tier: 1
+    composition: "det_bullTNT AND det_contBull"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "tnt-od::IGNITE_NC_BULL"
+    in_indicator: tnt_od_v2_dated
+    tier: 1
+    composition: "det_bullNapalm AND det_contBull[1]"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "tnt-od::DYNAMITE_BULL"
+    in_indicator: tnt_od_v2_dated
+    tier: 1
+    plain_english: "Bespoke dyn-displacement (Engine #2, dynStdMult=5.0) + B2B + FAUNA + FVG."
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "tnt-od::WBUSH_BULL"
+    in_indicator: tnt_od_v2_dated
+    tier: 3
+    composition: "Heavy Pentagon family (HYY OR HN OR HNV OR HT OR NHx2) AND USE V5 dispBull AND tntod_any_bull"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  # ─── Ultra Combo composites (selected) ─────────────────────
+  - id: "ultra-combo::OPENER_BULL"
+    in_indicator: ultra_combo_v57
+    tier: 4
+    composition: "sessBar==1 AND (GZ1 OR HV) AND (HW-set OR PBJ OR ROC OR (1stPUP AND superPUP))"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "ultra-combo::THREE_BAR_BULL"
+    in_indicator: ultra_combo_v57
+    tier: 3
+    composition: "PBJ-in-3 AND (B2B-PUP-in-3 OR ≥2 PUPs-in-3)"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  - id: "ultra-combo::MEGA_BULL"
+    in_indicator: ultra_combo_v57
+    tier: 4
+    composition: "(GZ1 OR HV OR both) AND anySuperBull AND PUP AND FAUNA AND DISP"
+    plot_offset: -1
+    lifecycle_stage: 5
+
+  - id: "ultra-combo::SUPER_B2B_DAYS_BULL"
+    in_indicator: ultra_combo_v57
+    tier: 4
+    composition: "anySuperBull AND f_hadSignalYesterday(anySuperBull)"
+    plot_offset: 0
+    lifecycle_stage: 5
+
+  # ─── VOB Asym composites ───────────────────────────────────
+  - id: "vob-asym::T3_LADDER"
+    in_indicator: vob_asym_t3x6_v8
+    tier: 3
+    plain_english: "Six parallel T3 super-signal engines per sensitivity tier A-F."
+    composition: "per-tier T3_SUPER_BUY/SELL, gated independently"
+    lifecycle_stage: 5
+
+  - id: "vob-asym::ZONE_CREATION_MARKER"
+    in_indicator: vob_asym_t3x6_v8
+    tier: 2
+    plain_english: "Per-bar boolean detecting array-size delta this bar; gated by en_zone_X and per-bar cooldown."
+    lifecycle_stage: 5
+
+  # ─── VOB Ladder Watch composites ───────────────────────────
+  - id: "vob-ladder::LADDER_DEPTH"
+    in_indicator: vob_ladder_watch_v1
+    tier: 1
+    plain_english: "Count of consecutive ascending tiers F→E→D→C→B→A. 0-6 ordinal."
+    composition: "nested if-cascade over (p_f, p_e, p_d, p_c, p_b, p_a) requiring not-na AND strictly increasing"
+    lifecycle_stage: 5
+
+  - id: "vob-ladder::FIRE_FULL"
+    in_indicator: vob_ladder_watch_v1
+    tier: 3
+    composition: "escalated AND ladder_depth == 6"
+    plot_offset: 0
+    has_alertcondition: true
+    lifecycle_stage: 5
+
+# ─────────────────────────────────────────────────────────────
+# CHAINS (latched / state-machine composites)
+# ─────────────────────────────────────────────────────────────
+
+chains:
+
+  - id: "hvdpbjppd::COMBO_CHAIN_BULL"
+    aka_aliases: ["sigCCBull"]
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 3
+    is_state_machine: true
+    plain_english: "Latched while csNew2 (Matrix combo) is firing AND ≥cc_min_hits Matrix combo in window AND PBJ/PB inside window. Resets when no cs3-or-cs4."
+    parameters: [{ name: cc_min_hits, default: 2 }, { name: cc_window, default: 4 }]
+    plot_offset: 0
+    drift_warning: "Reset gate tightened in canonical (cs3-or-cs4 only); predecessor reset on no-cs1-2-3-4."
+    lifecycle_stage: 5
+
+  - id: "hvdpbjppd::LSC_BULL"
+    aka_aliases: ["sigLSCBull"]
+    in_indicator: hvdpbjppd_the_only_one
+    tier: 2
+    is_state_machine: true
+    plain_english: "Latches when ≥lsc_min_hits Long1/Long2 hits in window AND PBJ/PB inside window."
+    plot_offset: 0
+    lifecycle_stage: 5
+
+# ─────────────────────────────────────────────────────────────
+# REDUNDANCY / DRIFT TABLE
+# ─────────────────────────────────────────────────────────────
+
+redundancy:
+
+  - name: "FLOOR"
+    kind: composition_drift
+    occurrences:
+      - { canonical: "hvdpbjppd::FLOOR_BULL", composition_summary: "bull_pp AND PBJ AND HW-slot (= RVOL1x OR GS OR WTC OR Hiro OR (Naga AND nag_dir_bull))" }
+      - { canonical: "squarify::S4_FLOOR", composition_summary: "anyBullFloor AND oneOfThese AND cb1_pass_floor" }
+    verdict: drifted
+    stage6_recommendation: "Squarify wraps HVDPBJPPD's anyBullFloor with additional `oneOfThese` callback gate. Document as legitimate Squarify-specific gate, not drift."
+
+  - name: "PENTAGON / Pent"
+    kind: namespace_collision
+    occurrences:
+      - { canonical: "heavy-pentagon::PENTAGON", kind: "RVOL P2 tier (cumulative relativeVolume bin)" }
+      - { canonical: "hvdpbjppd::PENTHOUSE_BEAR (anyBearPent)", kind: "Bear platform (mirror of Floor with PB instead of PBJ)" }
+    verdict: namespace_collision
+    stage6_recommendation: "Rename `anyBearPent` → `anyBear2F` to free up 'Pentagon' namespace. HIGH PRIORITY — this collision was the original frustration trigger."
+
+  - name: "Unified Combo (csNew3) composition"
+    kind: composition_drift
+    occurrences:
+      - { canonical: "hvdpbjppd::UNIFIED_COMBO_BULL (line 1052)", composition: "csNew1 AND csNew2 (same-bar AND)" }
+      - { canonical: "squarify::UC (line 1257)", composition: "csNew1 AND csNew2[1] (1-bar lagged AND)" }
+    verdict: drifted_semantic
+    stage6_recommendation: "CRITICAL. Reconcile to one definition. Anish must decide: same-bar (more selective) or lagged (more permissive). Likely canonical is HVDPBJPPD same-bar per its updated definition."
+
+  - name: "GZI proximity (gziProximity / gz1_dist)"
+    kind: parameter_drift
+    occurrences:
+      - { canonical: "hv-fvg-gz1-og::GZI_BULL", parameter: "gziProximity=6" }
+      - { canonical: "proximity-gzi-hv::GZI_BULL", parameter: "gziProximity=6 (verbatim)" }
+      - { canonical: "b2b-pup::gz_bullGZI", parameter: "gz1_dist=7" }
+      - { canonical: "hvdpbjppd::gz_bullGZI", parameter: "gz1_dist=7 (was 12 in predecessor)" }
+      - { canonical: "squarify::gz_bullGZI", parameter: "gz1_dist=7" }
+    verdict: drifted_parameter
+    stage6_recommendation: "Reconcile. Likely canonical is OG's 6 (smaller window = more selective)."
+
+  - name: "DISP / Displacement σ-multiplier"
+    kind: parameter_drift
+    occurrences:
+      - { canonical: "hvdpbjppd::DISP_BULL", parameter: "i_std_min=3.0 (was 6.0 in predecessor)" }
+      - { canonical: "b2b-pup::det_DISPBull", parameter: "disp_mult=5.0" }
+      - { canonical: "squarify::DISP_BULL", parameter: "i_std_min=3.0" }
+      - { canonical: "tnt-od::DISP", parameter: "DISP_STD_X=5" }
+      - { canonical: "ultra-combo::DISP", parameter: "5σ stdev(100)" }
+    verdict: drifted_parameter
+    stage6_recommendation: "Reconcile. The HVDPBJPPD predecessor 6.0 → canonical 3.0 was a deliberate loosening; B2B PUP, TNT-OD, Ultra Combo all use 5.0 — they may need to be updated to 3.0 to match canonical."
+
+  - name: "RVOL ladder (SAAB/Kratos/RVOL1x/GS/MOAB/Pentagon/WTC/Hiro/Naga)"
+    kind: internal_implementation_drift
+    occurrences:
+      - { canonical: "heavy-pentagon::*", note: "canonical thresholds f_rvol_1x_threshold etc." }
+      - { canonical: "heavy-combo-toggles::* (cross-ref)", note: "VERIFIED VERBATIM from heavy-pentagon" }
+      - { canonical: "b2b-pup::sig_*", note: "comment 'Pre Mythos thresholds' — drift candidate" }
+      - { canonical: "hvdpbjppd::sig*", note: "re-implemented" }
+      - { canonical: "squarify::sig*", note: "re-implemented" }
+      - { canonical: "tnt-od::u5_*", note: "USE V5 inline port" }
+      - { canonical: "ultra-combo::sig*", note: "re-implemented" }
+    verdict: drifted_internal
+    stage6_recommendation: "Byte-diff threshold tables across all 7 indicators. heavy-pentagon is canonical. Mirror everywhere; lock with a checksum in this YAML."
+
+  - name: "PBJ internal mechanics (Supertrend / VWMA / EMA crosses)"
+    kind: internal_implementation_drift
+    occurrences:
+      - { canonical: "hvdpbjppd::PBJ_BULL (THE_ONLY_ONE)" }
+      - { canonical: "b2b-pup::det_PBJBull (re-implemented L134-261)" }
+      - { canonical: "squarify::sigBullPBJ (re-implemented)" }
+      - { canonical: "tnt-od::u5_PBJBull (USE V5 inline port)" }
+      - { canonical: "ultra-combo::sigBullPBJ (header says 'EXACT COPY FROM ANISH TB FOSTER v6')" }
+    verdict: drifted_internal_likely
+    stage6_recommendation: "Byte-diff PBJ implementations across all 5 indicators. Anish has flagged this as a concrete corruption risk — past line-consolidation efforts may have changed Supertrend in one indicator and not another."
+
+  - name: "TNT-OD v2/v3 file-naming"
+    kind: file_naming_collision
+    occurrences:
+      - { file: "TNT_OD_v2.pine (123KB, internally v2)" }
+      - { file: "TNT_Opening_Drive_OD_v3_2026-05-04.pine (123KB, same SHA, internally v2 despite v3-named)" }
+      - { file: "TNT_OD_v3.pine (148KB, internally v3, dated 2026-05-08)" }
+    verdict: filename_internal_mismatch
+    stage6_recommendation: "Rename the date-stamped file to TNT_OD_v2_2026-05-04.pine to match its internal title. Delete one of the byte-identical pair."
+
+  - name: "B2B PUP v4.32 line-ending duplicates"
+    kind: line_ending_duplicate
+    occurrences:
+      - { file: "B2B_PUP_v4.32.pine (LF, md5 9151c531)" }
+      - { file: "B2B_PUP_Combined_v4.32_2026-05-04.pine (CRLF, md5 9327c895)" }
+    verdict: byte_identical_after_normalisation
+    stage6_recommendation: "Delete one. Keep one with consistent line endings. Both are v4.32 with identical content."
+
+  - name: "PROXIMITY_GZI_HV vs HV_FVG_GZ1_OG"
+    kind: alias_re_skin
+    occurrences:
+      - { file: "hv-fvg-gz1-og/versions/HV_FVG_GZ1_OG_v1.pine (canonical)" }
+      - { file: "proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine (only differs in indicator() title; line 2 only)" }
+    verdict: alias
+    stage6_recommendation: "Tag in bible as `mirror-of: hv-fvg-gz1-og::v1`. Stage 6: consider deletion or symlink."
+
+  - name: "FAUNA implementations across indicators"
+    kind: cross_indicator_replication
+    occurrences:
+      - { canonical: "(distributed)", note: "Same MB/RE/TA/GG/TR/ES/GDR formula appears verbatim in heavy-pentagon's USE V5, hvdpbjppd, squarify, ultra-combo, tnt-od, b2b-pup. Ultra Combo defines parallel fMB_b/fRE_b/fTA_b copies that are mathematically equivalent to bull_MB/bull_RE/bull_TA." }
+    verdict: distributed_root
+    stage6_recommendation: "Designate one canonical FAUNA owner (likely heavy-pentagon's USE V5 block, or hvdpbjppd, or extract to fauna/ as standalone indicator). All others become cross-refs."
+
+# ─────────────────────────────────────────────────────────────
+# VERSION-CONTROL DIAGNOSIS (mirrors docs/version-control-diagnosis.md)
+# ─────────────────────────────────────────────────────────────
+
+version_control_diagnosis:
+
+  - issue: stub_file
+    file: "hvd-pbj-ppd/versions/HVDPBJPPD_v1.pine"
+    detail: "10-line placeholder. Real source is HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine."
+
+  - issue: duplicate_version_label_line_endings
+    files: ["b2b-pup/versions/B2B_PUP_v4.32.pine", "b2b-pup/versions/B2B_PUP_Combined_v4.32_2026-05-04.pine"]
+    detail: "Both labelled v4.32 with byte-identical content (line endings differ)."
+
+  - issue: filename_internal_title_mismatch
+    files: ["tnt-od/versions/TNT_OD_v3.pine", "tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine"]
+    detail: "Date-stamped 05-04 file is internally v2; filename-only v3.pine is newer (dated 2026-05-08) and internally v3."
+
+  - issue: mixed_indicators_in_folder
+    folder: "vob/"
+    detail: "VOB_Asym_T3x6 and VOB_LADDER_WATCH are distinct indicators."
+
+  - issue: no_current_pointer
+    detail: "No per-indicator LATEST.pine, current symlink, or manifest entry."
+
+  - issue: inconsistent_per_indicator_metadata
+    detail: "hvd-pbj-ppd/, anish-50-1st-combo/, heavy-pentagon/, hv-fvg-gz1-og/, ultra-combo/ have CHANGELOG.md (b4FUu) but no README.md. heavy-combo-toggles/, proximity-gzi-hv/, vob/ have CHANGELOG only. Only b2b-pup, squarify, tnt-od have full README + CHANGELOG."
+
+  - issue: phantom_toggles
+    file: "heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine"
+    detail: "FAUNA, DISP A/B/C, LONG/SHORT 1/2, HV 75/150/250/500/1000, Hot Spot — all reserved input checkboxes with no engine wired. Header explicitly flags 'PHANTOM TOGGLES'."
+
+  - issue: dead_state
+    files:
+      - "proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine"
+      - "hv-fvg-gz1-og/versions/HV_FVG_GZ1_OG_v1.pine"
+      - "tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine"
+      - "vob/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine"
+      - "vob/versions/VOB_LADDER_WATCH_v1.pine"
+    detail: "Various unused declarations: max_bull_fvg etc., u5_od_max_bars, asym_threshold, de_escalated. Janitorial flags."
+
+  - issue: tnt_od_squarify_v3_retraction
+    file: "(absent) squarify/versions/SQUARIFY_v3.pine"
+    detail: "Per repo CHANGELOG.md, squarify v3 was retracted (over Pine 64-plot limit); v2 is current."

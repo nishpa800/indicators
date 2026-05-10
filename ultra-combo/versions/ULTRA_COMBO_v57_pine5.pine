@@ -1,0 +1,1166 @@
+//@version=5
+// =============================================================================
+// ULTRA COMBO SIGNALS v57 — Pine v5 PORT
+// =============================================================================
+// Pine v5 port of the v6 source. Logic identical to ULTRA_COMBO_v57_pine6.pine.
+// Only changes vs the v6 file:
+//   1. //@version=5 (was 6)
+//   2. TradingView/ta/7 library import replaced with inline relativeVolume
+//      calc — that library version requires Pine v6.
+// Per Anish: PBJ + OKEH + ZOO engines need Pine v5 to behave correctly.
+// =============================================================================
+indicator("Ultra Combo v57 (v5)", shorttitle="ULTRA v57 v5", overlay=true, max_labels_count=500, max_bars_back=2000)
+
+// =============================================================================
+// RTH BARS PER DAY
+// =============================================================================
+f_barsPerDay() =>
+    int tfMin = timeframe.in_seconds() / 60
+    int rawBars = tfMin >= 390 ? 1 : math.ceil(390.0 / tfMin)
+    int buffered = math.ceil(rawBars * 1.25)
+    buffered
+
+barsPerDay = f_barsPerDay()
+
+// =============================================================================
+// GLOBAL SETTINGS
+// =============================================================================
+grp_combo = "★ PBJ/PB + F2/E3/CLUSTER ★"
+show_pbjF2 = input.bool(true, "PBJ+F2", group=grp_combo, inline="c1")
+show_pbjE3 = input.bool(true, "PBJ+E3", group=grp_combo, inline="c1")
+show_pbjCluster = input.bool(true, "PBJ+Cluster", group=grp_combo, inline="c1")
+show_pbF2 = input.bool(true, "PB+F2", group=grp_combo, inline="c2")
+show_pbE3 = input.bool(true, "PB+E3", group=grp_combo, inline="c2")
+show_pbCluster = input.bool(true, "PB+Cluster", group=grp_combo, inline="c2")
+
+grp_combo2 = "★ SEQUENTIAL COMBOS ★"
+show_f2ClusterE3 = input.bool(true, "F2+Cluster→E3", group=grp_combo2, inline="s1")
+show_f2ClusterB2B = input.bool(true, "F2+Cluster+B2B", group=grp_combo2, inline="s1")
+show_b2bF2 = input.bool(true, "B2B+F2", group=grp_combo2, inline="s2")
+show_e3PUP = input.bool(true, "E3 2/3 PUP", group=grp_combo2, inline="s2")
+
+grp_combo3 = "★ CONSECUTIVE DAY COMBOS ★"
+show_f2B2B = input.bool(true, "F2 Back2Back Days", group=grp_combo3, inline="d1")
+show_e3B2B = input.bool(true, "E3 Back2Back Days", group=grp_combo3, inline="d1")
+show_f2e3Consec = input.bool(true, "F2/E3 Consec Days", group=grp_combo3, inline="d2")
+show_clusterB2BDays = input.bool(true, "Cluster B2B Days", group=grp_combo3, inline="d2")
+
+grp_combo4 = "★ HEAVY WEAPON + F2/E3 ★"
+show_hwBullAny = input.bool(true, "HW+AnyBull(same)", group=grp_combo4, inline="h1")
+show_hwBearAny = input.bool(true, "HW+AnyBear(same)", group=grp_combo4, inline="h1")
+
+grp_combo5 = "★ GZ1/HV + F2/E3 ★"
+show_gzHvAny = input.bool(true, "GZ1/HV+Any", group=grp_combo5, inline="g1")
+show_hvGziCombo = input.bool(true, "HV+GZI Combo", group=grp_combo5, inline="g1")
+
+grp_mega = "★ MEGA COMBOS ★"
+show_gzHvMega = input.bool(true, "GZ1/HV Mega", group=grp_mega, inline="m1")
+show_gz1hvMegaCombo = input.bool(true, "GZ1+HV Mega", group=grp_mega, inline="m1")
+
+grp_opener = "★ FIRST CANDLE OPENER ★"
+show_openerBull = input.bool(true, "Opener Bull", group=grp_opener, inline="o1")
+show_openerBear = input.bool(true, "Opener Bear", group=grp_opener, inline="o1")
+
+grp_3bar = "★ 3-BAR WINDOW ★"
+show_3barBull = input.bool(true, "3Bar Bull", group=grp_3bar, inline="3b")
+show_3barBear = input.bool(true, "3Bar Bear", group=grp_3bar, inline="3b")
+
+grp_foster = "★ FOSTER/TB + HEAVY ★"
+show_fosterHeavyBull = input.bool(true, "Foster+Heavy", group=grp_foster, inline="f1")
+show_tbHeavyBear = input.bool(true, "TB+Heavy", group=grp_foster, inline="f1")
+
+grp_gzheavy = "★ GZ1/HV + HEAVY ★"
+show_gzHvHeavyBull = input.bool(true, "GZ/HV+Heavy Bull", group=grp_gzheavy, inline="gh1")
+show_gzHvHeavyBear = input.bool(true, "GZ/HV+Heavy Bear", group=grp_gzheavy, inline="gh1")
+
+grp_superb2b = "★ SUPER COMBO B2B DAYS ★"
+show_superB2BDays = input.bool(true, "Super B2B Days", group=grp_superb2b, inline="sb1")
+
+// =============================================================================
+// CORE SHARED CALCULATIONS
+// =============================================================================
+float atr14 = ta.atr(14)
+float avgVol20 = ta.sma(volume, 20)
+float avgDelta = ta.sma(math.abs(close - close[1]), 10)
+float trendMA = ta.sma(close, 50)
+float body = close - open
+float rng = high - low
+float bodySize = math.abs(body)
+float bodyRatio = rng == 0 ? 0 : bodySize / rng
+bool bodyUp = body > 0
+bool bodyDn = body < 0
+bool wide = rng > 2.2 * atr14
+bool upTrend = trendMA > trendMA[1]
+bool dnTrend = trendMA < trendMA[1]
+bool inSession = not na(time(timeframe.period, "0930-1600", "America/New_York"))
+bool conf = barstate.isconfirmed
+
+// === BULL EVENTS ===
+bool bull_MB = conf and bodyUp and bodySize > 1.6 * atr14 and bodyRatio > 0.7 and volume > 1.8 * avgVol20
+bool bull_RE = conf and bodyUp and wide and (high - close) < 0.15 * rng and volume > 1.8 * avgVol20
+bool bull_TA = conf and upTrend and (close - close[1]) > 1.6 * avgDelta and bodyUp and volume > 1.8 * avgVol20
+
+// === BEAR EVENTS ===
+bool bear_MB = conf and bodyDn and bodySize > 1.6 * atr14 and bodyRatio > 0.7 and volume > 1.8 * avgVol20
+bool bear_RE = conf and bodyDn and wide and (close - low) < 0.15 * rng and volume > 1.8 * avgVol20
+bool bear_TA = conf and dnTrend and (close[1] - close) > 1.6 * avgDelta and bodyDn and volume > 1.8 * avgVol20
+
+// === SESSION BAR COUNTER ===
+var bool isNewDay = false
+if ta.change(dayofmonth) != 0
+    isNewDay := true
+var int sessBar = 0
+if isNewDay and inSession
+    sessBar := 1
+    isNewDay := false
+else if inSession and sessBar > 0
+    sessBar += 1
+else if not inSession
+    sessBar := 0
+
+// =============================================================================
+// F2 / E3 / FC CLUSTER SIGNALS
+// =============================================================================
+// === BULLISH FC CLUSTER ===
+var int b1_s1 = 0
+b1_s1 := bull_MB ? b1_s1 + 1 : 0
+bool b1_ind1 = bull_MB and b1_s1 >= 2
+
+bool b1_ev2 = bull_MB or bull_RE or bull_TA
+var int b1_s2 = 0
+if ta.change(dayofmonth) != 0
+    b1_s2 := 0
+else if not b1_ev2
+    b1_s2 := 0
+if b1_ev2
+    b1_s2 += 1
+bool b1_ind2 = b1_ev2 and b1_s2 >= 2
+
+bool b1_ev3 = (bull_MB or bull_RE) and inSession
+var int b1_s3 = 0
+b1_s3 := b1_ev3 ? b1_s3 + 1 : 0
+bool b1_ind3 = b1_ev3 and b1_s3 >= 2
+
+bool b1_2of3 = (b1_ind1 ? 1 : 0) + (b1_ind2 ? 1 : 0) + (b1_ind3 ? 1 : 0) >= 2
+
+float b1_spk = math.abs(body)
+float b1_avgSpk = ta.sma(b1_spk, 30)[1]
+float b1_rvolP = b1_spk / nz(b1_avgSpk, 1)
+float b1_avgVolD = ta.sma(volume, 30)[1]
+float b1_rvolV = volume / nz(b1_avgVolD, 1)
+float b1_diff = b1_rvolP - b1_rvolV
+float b1_pos = b1_diff > 0 ? b1_diff : na
+float b1_smaP = ta.sma(b1_pos, 20)
+bool b1_base = bodyUp and nz(b1_pos) > nz(b1_smaP)
+b1_inRng(v) => v > 2.9 and v < 1000000.0
+bool b1_thEv = b1_base and b1_inRng(b1_rvolP) and conf
+bool b1_uBar = b1_base and b1_inRng(b1_rvolP)
+
+var float b1_sum = 0.0
+var int b1_len = 0
+if b1_uBar
+    b1_len += 1
+    b1_sum += b1_rvolP
+else
+    b1_len := 0
+    b1_sum := 0.0
+bool b1_seqEv = (b1_len >= 2 and b1_sum >= 0.1) and conf
+
+var int[] b1_thIdx = array.new_int()
+var float[] b1_thHi = array.new_float()
+var float[] b1_thLo = array.new_float()
+var int[] b1_sqIdx = array.new_int()
+var float[] b1_sqHi = array.new_float()
+var float[] b1_sqLo = array.new_float()
+
+bool b1_ovlp = false
+if array.size(b1_thIdx) > 0
+    while bar_index - array.get(b1_thIdx, 0) > 20
+        array.shift(b1_thIdx)
+        array.shift(b1_thHi)
+        array.shift(b1_thLo)
+        if array.size(b1_thIdx) == 0
+            break
+if array.size(b1_sqIdx) > 0
+    while bar_index - array.get(b1_sqIdx, 0) > 20
+        array.shift(b1_sqIdx)
+        array.shift(b1_sqHi)
+        array.shift(b1_sqLo)
+        if array.size(b1_sqIdx) == 0
+            break
+
+b1_chk(loA, hiA, loB, hiB) => loA <= hiB and loB <= hiA
+
+if b1_thEv
+    array.push(b1_thIdx, bar_index)
+    array.push(b1_thHi, high)
+    array.push(b1_thLo, low)
+    if array.size(b1_sqIdx) > 0
+        for i = 0 to array.size(b1_sqIdx) - 1
+            if b1_chk(low, high, array.get(b1_sqLo, i), array.get(b1_sqHi, i))
+                b1_ovlp := true
+                break
+
+if b1_seqEv and not b1_ovlp
+    array.push(b1_sqIdx, bar_index)
+    array.push(b1_sqHi, high)
+    array.push(b1_sqLo, low)
+    if array.size(b1_thIdx) > 0
+        for i = 0 to array.size(b1_thIdx) - 1
+            if b1_chk(low, high, array.get(b1_thLo, i), array.get(b1_thHi, i))
+                b1_ovlp := true
+                break
+
+bool sBullFC = conf and b1_2of3 and b1_ovlp
+bool b2_ev = bull_MB or bull_RE or bull_TA
+bool sBullE3 = conf and sessBar == 3 and b2_ev and b2_ev[1] and b2_ev[2]
+bool sBullF2 = conf and sessBar == 2 and bull_MB and bull_MB[1]
+
+// === BEARISH FC CLUSTER ===
+var int b4_s1 = 0
+b4_s1 := bear_MB ? b4_s1 + 1 : 0
+bool b4_ind1 = bear_MB and b4_s1 >= 2
+
+bool b4_ev2 = bear_MB or bear_RE or bear_TA
+var int b4_s2 = 0
+if ta.change(dayofmonth) != 0
+    b4_s2 := 0
+else if not b4_ev2
+    b4_s2 := 0
+if b4_ev2
+    b4_s2 += 1
+bool b4_ind2 = b4_ev2 and b4_s2 >= 2
+
+bool b4_ev3 = (bear_MB or bear_RE) and inSession
+var int b4_s3 = 0
+b4_s3 := b4_ev3 ? b4_s3 + 1 : 0
+bool b4_ind3 = b4_ev3 and b4_s3 >= 2
+
+bool b4_2of3 = (b4_ind1 ? 1 : 0) + (b4_ind2 ? 1 : 0) + (b4_ind3 ? 1 : 0) >= 2
+
+float b4_spk = math.abs(body)
+float b4_avgSpk = ta.sma(b4_spk, 30)[1]
+float b4_rvolP = b4_spk / nz(b4_avgSpk, 1)
+float b4_avgVolD = ta.sma(volume, 30)[1]
+float b4_rvolV = volume / nz(b4_avgVolD, 1)
+float b4_diff = b4_rvolP - b4_rvolV
+float b4_neg = (b4_diff > 0 and bodyDn) ? b4_diff : na
+float b4_smaN = ta.sma(b4_neg, 20)
+bool b4_base = bodyDn and nz(b4_neg) > nz(b4_smaN)
+b4_inRng(v) => v > 2.9 and v < 1000000.0
+bool b4_thEv = b4_base and b4_inRng(b4_rvolP) and conf
+bool b4_dBar = b4_base and b4_inRng(b4_rvolP)
+
+var float b4_sum = 0.0
+var int b4_len = 0
+if b4_dBar
+    b4_len += 1
+    b4_sum += b4_rvolP
+else
+    b4_len := 0
+    b4_sum := 0.0
+bool b4_seqEv = (b4_len >= 2 and b4_sum >= 0.5) and conf
+
+var int[] b4_thIdx = array.new_int()
+var float[] b4_thHi = array.new_float()
+var float[] b4_thLo = array.new_float()
+var int[] b4_sqIdx = array.new_int()
+var float[] b4_sqHi = array.new_float()
+var float[] b4_sqLo = array.new_float()
+
+bool b4_ovlp = false
+if array.size(b4_thIdx) > 0
+    while bar_index - array.get(b4_thIdx, 0) > 20
+        array.shift(b4_thIdx)
+        array.shift(b4_thHi)
+        array.shift(b4_thLo)
+        if array.size(b4_thIdx) == 0
+            break
+if array.size(b4_sqIdx) > 0
+    while bar_index - array.get(b4_sqIdx, 0) > 20
+        array.shift(b4_sqIdx)
+        array.shift(b4_sqHi)
+        array.shift(b4_sqLo)
+        if array.size(b4_sqIdx) == 0
+            break
+
+b4_chk(loA, hiA, loB, hiB) => loA <= hiB and loB <= hiA
+
+if b4_thEv
+    array.push(b4_thIdx, bar_index)
+    array.push(b4_thHi, high)
+    array.push(b4_thLo, low)
+    if array.size(b4_sqIdx) > 0
+        for i = 0 to array.size(b4_sqIdx) - 1
+            if b4_chk(low, high, array.get(b4_sqLo, i), array.get(b4_sqHi, i))
+                b4_ovlp := true
+                break
+
+if b4_seqEv and not b4_ovlp
+    array.push(b4_sqIdx, bar_index)
+    array.push(b4_sqHi, high)
+    array.push(b4_sqLo, low)
+    if array.size(b4_thIdx) > 0
+        for i = 0 to array.size(b4_thIdx) - 1
+            if b4_chk(low, high, array.get(b4_thLo, i), array.get(b4_thHi, i))
+                b4_ovlp := true
+                break
+
+bool sBearFC = conf and b4_2of3 and b4_ovlp
+bool b5_ev = bear_MB or bear_RE or bear_TA
+bool sBearE3 = conf and sessBar == 3 and b5_ev and b5_ev[1] and b5_ev[2]
+bool sBearF2 = conf and sessBar == 2 and bear_MB and bear_MB[1]
+
+bool sAnyBull = sBullFC or sBullE3 or sBullF2
+bool sAnyBear = sBearFC or sBearE3 or sBearF2
+
+// =============================================================================
+// RVOL / HEAVY WEAPON SIGNALS
+// =============================================================================
+bb_avgLength = 30
+bb_smaLength = 20
+tfSec = timeframe.in_seconds(timeframe.period)
+
+f_rvol_1x_threshold(_tfSec) =>
+    float s = _tfSec
+    s <= 10  ? 38.0 : s <= 15  ? 33.0 : s <= 30  ? 28.0 : s <= 45  ? 23.0 : s <= 60  ? 20.0 : s <= 120 ? 18.0 : s <= 300 ? 13.0 : s <= 360 ? 12.0 : s <= 540 ? 10.0 : s <= 600 ? 9.0 : s <= 660 ? 8.0 : s <= 900 ? 7.0 : s <= 1560 ? 6.0 : s <= 2340 ? 4.5 : s <= 3600 ? 3.5 : s <= 9000 ? 3.5 : s <= 11700 ? 2.5 : s < 259200 ? 1.8 : 1.0
+
+f_gs_moab_threshold(_tfSec) =>
+    float s = _tfSec
+    float day = 86400.0
+    s < 60 ? f_rvol_1x_threshold(s) * 3.0 : s <= 300 ? 35.0 : s <= 600 ? 25.0 : s <= 1500 ? 20.0 : s <= 3060 ? 20.0 : s <= 7260 ? 10.0 : s <= 11700 ? 8.0 : s <= day ? 8.0 : s <= 3.0 * day ? 3.5 : 3.0
+
+f_hiroshima_threshold(_tfSec) =>
+    float s = _tfSec
+    float day = 86400.0
+    s < 60 ? f_rvol_1x_threshold(s) * 3.0 : s <= 300 ? 35.0 : s <= 600 ? 25.0 : s <= 1500 ? 25.0 : s <= 3060 ? 20.0 : s <= 7260 ? 10.0 : s <= 11700 ? 8.0 : s <= day ? 8.0 : s <= 3.0 * day ? 3.5 : 3.0
+
+th_1x = f_rvol_1x_threshold(tfSec)
+th_gs_moab = f_gs_moab_threshold(tfSec)
+th_wtc = f_rvol_1x_threshold(tfSec)
+th_hiroshima = f_hiroshima_threshold(tfSec)
+
+bb_spike = math.abs(close - open)
+bb_avgSpikeDenom = ta.sma(bb_spike, bb_avgLength)[1]
+bb_normalizedPrice = bb_spike / nz(bb_avgSpikeDenom, 1.0)
+bb_avgVolDenom = ta.sma(volume, bb_avgLength)[1]
+bb_normalizedVolume = volume / nz(bb_avgVolDenom, 1.0)
+bb_diff = bb_normalizedPrice - bb_normalizedVolume
+bb_positiveDiff = bb_diff > 0 ? bb_diff : na
+bb_smaDiff = ta.sma(bb_positiveDiff, bb_smaLength)
+bb_baseBullish = (close > open) and (bb_positiveDiff > bb_smaDiff)
+bb_baseBearish = (close < open) and (bb_positiveDiff > bb_smaDiff)
+bb_inRange(v, lowTh, highTh) => v >= lowTh and v < highTh
+
+sigBullRVOL1x = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigBearRVOL1x = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigGrandSlam = conf and bb_baseBullish and (bb_normalizedPrice >= th_gs_moab)
+sigMOAB = conf and bb_baseBearish and (bb_normalizedPrice >= th_gs_moab)
+
+float gsValue = sigGrandSlam ? bb_normalizedPrice : 0.0
+float moabValue = sigMOAB ? bb_normalizedPrice : 0.0
+float rvol1xBullValue = sigBullRVOL1x ? bb_normalizedPrice : 0.0
+float rvol1xBearValue = sigBearRVOL1x ? bb_normalizedPrice : 0.0
+
+// Inline relativeVolume — replaces TradingView/ta/7 lib (Pine v6-only).
+// Equivalent to relativeVolume(30, "", false, true) for bar-level RTH usage:
+// current = volume, past = 30-bar SMA of prior volume.
+float currentVolume_reg = volume
+float pastVolume_reg = ta.sma(volume[1], 30)
+float relVolRatio = pastVolume_reg == 0 or na(pastVolume_reg) ? 0.0 : currentVolume_reg / pastVolume_reg
+sigWTC = conf and (relVolRatio > th_wtc) and (relVolRatio <= th_hiroshima)
+sigHiroshima = conf and (relVolRatio > th_hiroshima)
+float wtcValue = sigWTC ? relVolRatio : 0.0
+float hiroValue = sigHiroshima ? relVolRatio : 0.0
+
+var float maxVol = 0.0
+bool sigNagasaki = false
+if bar_index == 0
+    maxVol := volume
+else if volume > maxVol
+    sigNagasaki := true
+    maxVol := volume
+float nagaValue = sigNagasaki ? volume : 0.0
+
+// =============================================================================
+// PBJ / PB SIGNALS (EXACT COPY FROM ANISH TB FOSTER)
+// =============================================================================
+type lvl
+    float upper
+    float lower
+    float vol
+    bool approached
+
+float atr_pb = ta.atr(14) * 2.0
+
+f_ma(src, len, t) =>
+    switch t
+        "EMA" => ta.ema(src, len)
+        "SMA" => ta.sma(src, len)
+        "WMA" => ta.wma(src, len)
+        "HMA" => ta.hma(src, len)
+        "VWMA" => ta.vwma(src, len)
+        => ta.sma(src, len)
+
+float base_ma = f_ma(close, 5, "VWMA")
+float st_atr = 2.0 * ta.atr(10)
+float dyn_long = base_ma - st_atr
+float dyn_short = base_ma + st_atr
+
+var int st_dir = 1
+float sig_line = 0.0
+float curr_long = 0.0
+curr_long := base_ma > nz(curr_long[1], dyn_long) ? math.max(dyn_long, nz(curr_long[1])) : dyn_long
+float curr_short = 0.0
+curr_short := base_ma < nz(curr_short[1], dyn_short) ? math.min(dyn_short, nz(curr_short[1])) : dyn_short
+
+if nz(st_dir[1]) == -1 and close > nz(curr_short[1])
+    st_dir := 1
+else if nz(st_dir[1]) == 1 and close < nz(curr_long[1])
+    st_dir := -1
+sig_line := st_dir == 1 ? curr_long : curr_short
+
+bool buy_cross = ta.crossover(close, sig_line)
+bool sell_cross = ta.crossunder(close, sig_line)
+bool is_rising = sig_line > nz(sig_line[1])
+bool is_falling = sig_line < nz(sig_line[1])
+bool bull_reaccel = st_dir == 1 and is_rising and nz(sig_line[1]) == nz(sig_line[2])
+bool bear_reaccel = st_dir == -1 and is_falling and nz(sig_line[1]) == nz(sig_line[2])
+
+float pbj_ma = ta.ema(close, 20)
+float pbj_atr = ta.atr(14)
+float avg_vol = ta.sma(volume, 20)
+float thresh_pbj = close == 0 ? 0 : (pbj_atr / close * 3.0)
+
+bool pbj_buy = low < pbj_ma * (1 - thresh_pbj) and low == ta.lowest(low, 25) and volume > avg_vol * 0.1
+bool pbj_sell = high > pbj_ma * (1 + thresh_pbj) and high == ta.highest(high, 25) and volume > avg_vol * 0.1
+
+var bull_lvls = array.new<lvl>()
+var bear_lvls = array.new<lvl>()
+
+f_add_lvl(arr, up, lo, v) =>
+    if math.abs(up - lo) >= syminfo.mintick
+        array.push(arr, lvl.new(up, lo, v, false))
+
+f_add_lander(is_bull, cross, arr) =>
+    if cross
+        float up = 0.0
+        float lo = 0.0
+        if is_bull
+            up := math.max(open[1], close[1])
+            lo := low[1]
+            if up - lo < atr_pb * 0.5
+                up := lo + atr_pb * 0.5
+        else
+            up := high[1]
+            lo := math.min(open[1], close[1])
+            if up - lo < atr_pb * 0.5
+                lo := up - atr_pb * 0.5
+        f_add_lvl(arr, up, lo, volume[1])
+
+f_add_reaccel(is_bull, sig, arr) =>
+    if sig and not na(sig_line)
+        float p1 = sig_line
+        float p2 = is_bull ? math.min(open, close) : math.max(open, close)
+        f_add_lvl(arr, math.max(p1, p2), math.min(p1, p2), volume)
+
+f_check_approach(arr, is_bull) =>
+    bool approached = false
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0
+            if i >= array.size(arr)
+                continue
+            l = array.get(arr, i)
+            if is_bull and close < l.lower
+                array.remove(arr, i)
+                continue
+            if not is_bull and close > l.upper
+                array.remove(arr, i)
+                continue
+            float ap = is_bull ? l.upper * 1.005 : l.lower * 0.995
+            if is_bull
+                if not l.approached and low <= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and low > l.upper
+                    l.approached := false
+            else
+                if not l.approached and high >= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and high < l.lower
+                    l.approached := false
+    approached
+
+f_add_lander(true, buy_cross, bull_lvls)
+f_add_lander(false, sell_cross, bear_lvls)
+f_add_reaccel(true, bull_reaccel, bull_lvls)
+f_add_reaccel(false, bear_reaccel, bear_lvls)
+
+var bool wait_buy = false
+var bool wait_sell = false
+var bool wait_pbj_buy = false
+var bool wait_pbj_sell = false
+
+if barstate.isconfirmed
+    if f_check_approach(bull_lvls, true)
+        wait_buy := true
+    if f_check_approach(bear_lvls, false)
+        wait_sell := true
+
+if pbj_buy
+    wait_pbj_buy := true
+if pbj_sell
+    wait_pbj_sell := true
+
+while array.size(bull_lvls) > 30
+    array.shift(bull_lvls)
+while array.size(bear_lvls) > 30
+    array.shift(bear_lvls)
+
+bool sig_pb_buy = buy_cross and wait_buy
+bool sig_pbj_buy = buy_cross and wait_pbj_buy
+bool sig_pb_sell = sell_cross and wait_sell
+bool sig_pbj_sell = sell_cross and wait_pbj_sell
+
+if sig_pb_buy
+    wait_buy := false
+if sig_pbj_buy
+    wait_pbj_buy := false
+if sig_pb_sell
+    wait_sell := false
+if sig_pbj_sell
+    wait_pbj_sell := false
+
+bool sigBullPB = sig_pb_buy and not sig_pbj_buy
+bool sigBullPBJ = sig_pbj_buy
+bool sigBearPB = sig_pb_sell and not sig_pbj_sell
+bool sigBearPBJ = sig_pbj_sell
+
+// =============================================================================
+// PUP/PPD / ANISH STAGES
+// =============================================================================
+float ema50 = ta.ema(close, 50)
+float ema150 = ta.ema(close, 150)
+float ema200 = ta.ema(close, 200)
+float ema200_1m = ema200[21]
+float w52Hi = ta.highest(high, 252)
+float w52Lo = ta.lowest(low, 252)
+
+bool bullPass = close > ema50 and close >= ema150 and close >= ema200 and ema50 > ema150 and ema50 > ema200 and ema150 >= ema200 and ema200 > ema200_1m and close > (w52Lo * 1.30) and close >= (w52Hi * 0.75)
+bool bearPass = close < ema50 and close <= ema150 and close <= ema200 and ema50 < ema150 and ema50 < ema200 and ema150 <= ema200 and ema200 < ema200_1m and close < (w52Hi * 0.70) and close <= (w52Lo * 1.25)
+
+float redVol = close < open ? volume : 0.0
+float greenVol = close > open ? volume : 0.0
+float hiRedVol = ta.highest(redVol[1], 10)
+float hiGreenVol = ta.highest(greenVol[1], 10)
+
+bool priceUp = ((close - open) / open) * 100 > 3.0
+bool priceDn = ((open - close) / open) * 100 > 3.0
+bool volBull = volume > hiRedVol
+bool volBear = volume > hiGreenVol
+
+bool sPPBull = conf and priceUp and volBull
+bool sPPBear = conf and priceDn and volBear
+bool b2bPUP = sPPBull and sPPBull[1]
+bool b2bPPD = sPPBear and sPPBear[1]
+bool superPup = sPPBull and bullPass
+bool superPPD = sPPBear and bearPass
+
+var int neutralBarCount = 0
+bool isNeutral = not bullPass and not bearPass
+neutralBarCount := isNeutral ? neutralBarCount + 1 : 0
+
+var bool neutralPhaseComplete = false
+if neutralBarCount >= 5
+    neutralPhaseComplete := true
+
+var bool pupArmed = false
+if neutralPhaseComplete and sPPBull
+    pupArmed := true
+if bearPass and pupArmed
+    pupArmed := false
+    neutralPhaseComplete := false
+bool firstPUPPass = pupArmed and bullPass and not bullPass[1]
+if firstPUPPass
+    pupArmed := false
+    neutralPhaseComplete := false
+
+var bool ppdArmed = false
+if neutralPhaseComplete and sPPBear
+    ppdArmed := true
+if bullPass and ppdArmed
+    ppdArmed := false
+    neutralPhaseComplete := false
+bool firstPPDPass = ppdArmed and bearPass and not bearPass[1]
+if firstPPDPass
+    ppdArmed := false
+    neutralPhaseComplete := false
+
+// =============================================================================
+// TB / FOSTER
+// =============================================================================
+var int consecAnishBull = 0
+consecAnishBull := bullPass ? consecAnishBull + 1 : 0
+
+var bool tbWindowOpen = false
+var int tbWindowCount = 0
+
+if not bullPass and consecAnishBull[1] >= 5
+    tbWindowOpen := true
+    tbWindowCount := 0
+
+bool tbSignal = false
+bool tbPBJSignal = false
+bool tbPBSignal = false
+
+if tbWindowOpen
+    tbWindowCount += 1
+    if bullPass
+        tbWindowOpen := false
+    else if sPPBear
+        tbSignal := true
+        tbWindowOpen := false
+    else if sigBearPBJ
+        tbPBJSignal := true
+        tbWindowOpen := false
+    else if sigBearPB
+        tbPBSignal := true
+        tbWindowOpen := false
+    else if tbWindowCount > 1
+        tbWindowOpen := false
+
+var int consecAnishBear = 0
+consecAnishBear := bearPass ? consecAnishBear + 1 : 0
+
+var bool fosterWindowOpen = false
+var int fosterWindowCount = 0
+
+if not bearPass and consecAnishBear[1] >= 5
+    fosterWindowOpen := true
+    fosterWindowCount := 0
+
+bool fosterSignal = false
+bool fosterPBJSignal = false
+bool fosterPBSignal = false
+
+if fosterWindowOpen
+    fosterWindowCount += 1
+    if bearPass
+        fosterWindowOpen := false
+    else if sPPBull
+        fosterSignal := true
+        fosterWindowOpen := false
+    else if sigBullPBJ
+        fosterPBJSignal := true
+        fosterWindowOpen := false
+    else if sigBullPB
+        fosterPBSignal := true
+        fosterWindowOpen := false
+    else if fosterWindowCount > 1
+        fosterWindowOpen := false
+
+// =============================================================================
+// ROC / DISPLACEMENT / FAUNA / SUPER COMBO
+// =============================================================================
+roc_pN = close[5]
+roc_val = roc_pN != 0 ? ((close - roc_pN) / roc_pN) * 100 : 0.0
+roc_ar = ta.sma(math.abs(roc_val - roc_val[1]), 100)
+roc_ema = ta.ema(roc_ar != 0 ? (roc_val / roc_ar) : 0.0, 5)
+
+ld_esa = ta.ema(hlc3, 8)
+ld_atr = ta.atr(100)
+ld_ci = ((hlc3 - ld_esa) / (ld_atr == 0 ? 1 : ld_atr)) * 100
+ld_wt1 = ta.ema(ld_ci, 21)
+ld_wt2 = ta.sma(ld_wt1, 4)
+ld_hist = ld_wt1 - ld_wt2
+ld_xup = ta.crossover(ld_wt1, ld_wt2)
+ld_xdn = ta.crossunder(ld_wt1, ld_wt2)
+
+b1_roc = ta.crossover(roc_ema, 2.0)
+b2_roc = ld_xup and ld_wt1 < -60
+b3_roc = ld_xup and ld_hist > 5.0
+b4_roc = ta.crossover(ld_hist, 15.0)
+b5_roc = ld_xup[1] and close > high[1]
+
+r1_roc = ta.crossunder(roc_ema, -1.25)
+r2_roc = ld_xdn and ld_wt1 > 60
+r3_roc = ld_xdn and ld_hist < -5.0
+r4_roc = ta.crossunder(ld_hist, -15.0)
+r5_roc = ld_xdn[1] and close < low[1]
+
+f_has(sig, win) =>
+    found = false
+    for i = 0 to math.min(win - 1, bar_index)
+        if sig[i]
+            found := true
+            break
+    found
+
+bull2_cond = (f_has(b1_roc, 1) and f_has(b4_roc, 1)) or (f_has(b3_roc, 1) and f_has(b2_roc, 1))
+bear2_cond = (f_has(r1_roc, 1) and f_has(r4_roc, 1)) or (f_has(r3_roc, 1) and f_has(r2_roc, 1))
+
+hasBullHW = sigBullRVOL1x or sigGrandSlam or sigWTC or sigHiroshima or sigNagasaki
+hasBearHW = sigBearRVOL1x or sigMOAB or sigWTC or sigHiroshima or sigNagasaki
+
+sigBullCombo = sigBullPBJ and bull2_cond
+sigBearCombo = sigBearPBJ and bear2_cond
+sigROCBull = conf and sigBullCombo and hasBullHW and (close > open)
+sigROCBear = conf and sigBearCombo and hasBearHW and (close < open)
+
+float disp_rng = math.abs(open - close)
+float disp_thresh = ta.stdev(disp_rng, 100) * 5
+bool disp_prevDisp = disp_rng[1] > disp_thresh[1]
+bool disp_bullFVG = low > high[2] and close[1] > open[1]
+bool disp_bearFVG = high < low[2] and close[1] < open[1]
+bool sigDISPBull = conf and disp_prevDisp and disp_bullFVG
+bool sigDISPBear = conf and disp_prevDisp and disp_bearFVG
+
+// =============================================================================
+// FAUNA (MB, RE, TA core + GG/TR/ES/GDR exclusion filters)
+// =============================================================================
+fauna_atr = ta.atr(14)
+fauna_avgVol = ta.sma(volume, 20)
+fauna_avgBody = ta.sma(math.abs(close - open), 20)
+fauna_avgRange = ta.sma(high - low, 20)
+fauna_avgDelta = ta.sma(math.abs(close - close[1]), 10)
+fauna_trendMA = ta.sma(close, 50)
+fauna_body = close - open
+fauna_rng2 = high - low
+fauna_bodySz = math.abs(fauna_body)
+fauna_bodyRat = fauna_rng2 == 0 ? 0 : fauna_bodySz / fauna_rng2
+fauna_up = fauna_body > 0
+fauna_dn = fauna_body < 0
+
+// --- Core three (bullish — WANTED) ---
+fMB_b = conf and fauna_up and fauna_bodySz > 1.6 * fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8 * fauna_avgVol
+fRE_b = conf and fauna_up and fauna_rng2 > 2.2 * fauna_atr and (high - close) < 0.15 * fauna_rng2 and volume > 1.8 * fauna_avgVol
+fTA_b = conf and fauna_trendMA > fauna_trendMA[1] and (close - close[1]) > 1.6 * fauna_avgDelta and fauna_up and volume > 1.8 * fauna_avgVol
+
+// --- Excluded patterns (bullish — detected ONLY to suppress) ---
+fGG_b = (open - close[1]) > 0.9 * fauna_atr and fauna_up and low > close[1] and volume > 1.8 * fauna_avgVol
+fauna_prev_body = close[1] - open[1]
+fauna_prev_range = high[1] - low[1]
+fauna_StrongBear = close[1] < open[1] and math.abs(fauna_prev_body) > 1.5 * fauna_avgBody[1] and volume[1] > 1.5 * fauna_avgVol[1]
+fauna_WeakBear   = close[1] < open[1] and (fauna_prev_range == 0 ? 0.0 : math.abs(fauna_prev_body) / fauna_prev_range) <= 0.2
+fTR_b  = fauna_WeakBear   and (fMB_b or fRE_b or fTA_b)
+fES_b  = fauna_StrongBear and (fMB_b or fRE_b or fTA_b)
+fGDR_b = close[1] < open[1] and fGG_b
+excluded_bull = fGG_b or fTR_b or fES_b or fGDR_b
+
+sigFAUNABull = (fMB_b or fRE_b or fTA_b) and not excluded_bull
+
+// --- Core three (bearish — WANTED) ---
+fMB_r = conf and fauna_dn and fauna_bodySz > 1.6 * fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8 * fauna_avgVol
+fRE_r = conf and fauna_dn and fauna_rng2 > 2.2 * fauna_atr and (close - low) < 0.15 * fauna_rng2 and volume > 1.8 * fauna_avgVol
+fTA_r = conf and fauna_trendMA < fauna_trendMA[1] and (close[1] - close) > 1.6 * fauna_avgDelta and fauna_dn and volume > 1.8 * fauna_avgVol
+
+// --- Excluded patterns (bearish — detected ONLY to suppress) ---
+fGG_r = (close[1] - open) > 0.9 * fauna_atr and fauna_dn and high < close[1] and volume > 1.8 * fauna_avgVol
+fauna_StrongBull = close[1] > open[1] and math.abs(fauna_prev_body) > 1.5 * fauna_avgBody[1] and volume[1] > 1.5 * fauna_avgVol[1]
+fauna_WeakBull   = close[1] > open[1] and (fauna_prev_range == 0 ? 0.0 : math.abs(fauna_prev_body) / fauna_prev_range) <= 0.2
+fTR_r  = fauna_WeakBull   and (fMB_r or fRE_r or fTA_r)
+fES_r  = fauna_StrongBull and (fMB_r or fRE_r or fTA_r)
+fGDR_r = close[1] > open[1] and fGG_r
+excluded_bear = fGG_r or fTR_r or fES_r or fGDR_r
+
+sigFAUNABear = (fMB_r or fRE_r or fTA_r) and not excluded_bear
+
+anyBullRVOL = sigBullRVOL1x or sigGrandSlam or sigWTC or sigHiroshima or sigNagasaki
+anyBearRVOL = sigBearRVOL1x or sigMOAB or sigWTC or sigHiroshima or sigNagasaki
+
+sigSuperBullPBJ = conf and sigDISPBull and sigBullPBJ and sigFAUNABull and anyBullRVOL
+sigSuperBullPB = conf and sigDISPBull and sigBullPB and sigFAUNABull and anyBullRVOL
+sigSuperBearPBJ = conf and sigDISPBear and sigBearPBJ and sigFAUNABear and anyBearRVOL
+sigSuperBearPB = conf and sigDISPBear and sigBearPB and sigFAUNABear and anyBearRVOL
+
+anySuperBull = sigSuperBullPBJ or sigSuperBullPB
+anySuperBear = sigSuperBearPBJ or sigSuperBearPB
+
+// =============================================================================
+// GZ1 / HV FVG
+// =============================================================================
+type fvg
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+
+float v1 = volume[1]
+bool isHV = v1 == ta.highest(volume, 5000)[1] or v1 == ta.highest(volume, 252)[1] or v1 == ta.highest(volume, 63)[1]
+
+float gzThresh = ta.cum((high - low) / low) / bar_index
+bool bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > gzThresh
+bool sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > gzThresh
+
+var fvgs = array.new<fvg>(0)
+var int lastT = 0
+
+bool bullGZI = false
+bool bearGZI = false
+bool bullHV = false
+bool bearHV = false
+
+if conf and bFVG and time != lastT
+    float mx = low
+    float mn = high[2]
+    if isHV
+        bullHV := true
+    if array.size(fvgs) > 0
+        for i = 0 to array.size(fvgs) - 1
+            fvg e = array.get(fvgs, i)
+            if e.bull and bar_index - e.idx <= 7
+                if math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and isHV)
+                    bullGZI := true
+                    break
+    array.unshift(fvgs, fvg.new(mx, mn, true, time, bar_index, isHV))
+    lastT := time
+
+if conf and sFVG and time != lastT
+    float mx = low[2]
+    float mn = high
+    if isHV
+        bearHV := true
+    if array.size(fvgs) > 0
+        for i = 0 to array.size(fvgs) - 1
+            fvg e = array.get(fvgs, i)
+            if not e.bull and bar_index - e.idx <= 7
+                if math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and isHV)
+                    bearGZI := true
+                    break
+    array.unshift(fvgs, fvg.new(mx, mn, false, time, bar_index, isHV))
+    lastT := time
+
+if array.size(fvgs) > 0
+    for i = array.size(fvgs) - 1 to 0
+        fvg g = array.get(fvgs, i)
+        if g.bull and close < g.mn
+            array.remove(fvgs, i)
+        else if not g.bull and close > g.mx
+            array.remove(fvgs, i)
+
+// =============================================================================
+// ALL COMBO SIGNALS
+// =============================================================================
+bool comboPBJ_F2_Bull = sigBullPBJ and sBullF2
+bool comboPBJ_E3_Bull = sigBullPBJ and sBullE3
+bool comboPBJ_Cluster_Bull = sigBullPBJ and sBullFC
+bool comboPBJ_F2_Bear = sigBearPBJ and sBearF2
+bool comboPBJ_E3_Bear = sigBearPBJ and sBearE3
+bool comboPBJ_Cluster_Bear = sigBearPBJ and sBearFC
+
+bool comboPB_F2_Bull = sigBullPB and sBullF2
+bool comboPB_E3_Bull = sigBullPB and sBullE3
+bool comboPB_Cluster_Bull = sigBullPB and sBullFC
+bool comboPB_F2_Bear = sigBearPB and sBearF2
+bool comboPB_E3_Bear = sigBearPB and sBearE3
+bool comboPB_Cluster_Bear = sigBearPB and sBearFC
+
+bool comboF2Cluster_E3_Bull = sBullF2[1] and sBullFC[1] and sBullE3
+bool comboF2Cluster_E3_Bear = sBearF2[1] and sBearFC[1] and sBearE3
+bool comboF2ClusterB2B_Bull = sBullF2 and sBullFC and b2bPUP
+bool comboF2ClusterB2B_Bear = sBearF2 and sBearFC and b2bPPD
+bool comboB2B_F2_Bull = b2bPUP and sBullF2
+bool comboB2B_F2_Bear = b2bPPD and sBearF2
+int pupCountE3 = (sPPBull ? 1 : 0) + (sPPBull[1] ? 1 : 0) + (sPPBull[2] ? 1 : 0)
+bool comboE3_2of3PUP_Bull = sBullE3 and pupCountE3 >= 2
+int ppdCountE3 = (sPPBear ? 1 : 0) + (sPPBear[1] ? 1 : 0) + (sPPBear[2] ? 1 : 0)
+bool comboE3_2of3PPD_Bear = sBearE3 and ppdCountE3 >= 2
+
+f_hadSignalYesterday(sig) =>
+    found = false
+    for i = 1 to math.min(barsPerDay * 2, bar_index)
+        if sig[i]
+            found := true
+            break
+    found
+
+bool comboF2_B2BDays_Bull = sBullF2 and f_hadSignalYesterday(sBullF2)
+bool comboF2_B2BDays_Bear = sBearF2 and f_hadSignalYesterday(sBearF2)
+bool comboE3_B2BDays_Bull = sBullE3 and f_hadSignalYesterday(sBullE3)
+bool comboE3_B2BDays_Bear = sBearE3 and f_hadSignalYesterday(sBearE3)
+bool comboF2E3_Consec_Bull = (sBullF2 and f_hadSignalYesterday(sBullE3)) or (sBullE3 and f_hadSignalYesterday(sBullF2))
+bool comboF2E3_Consec_Bear = (sBearF2 and f_hadSignalYesterday(sBearE3)) or (sBearE3 and f_hadSignalYesterday(sBearF2))
+bool comboCluster_B2BDays_Bull = sBullFC and f_hadSignalYesterday(sBullFC)
+bool comboCluster_B2BDays_Bear = sBearFC and f_hadSignalYesterday(sBearFC)
+
+bool anyBullHW = sigBullRVOL1x or sigGrandSlam or sigWTC or sigHiroshima or sigNagasaki or sigROCBull or sigSuperBullPBJ or sigSuperBullPB
+bool anyBearHW = sigBearRVOL1x or sigMOAB or sigWTC or sigHiroshima or sigNagasaki or sigROCBear or sigSuperBearPBJ or sigSuperBearPB
+
+bool comboHW_AnyBull = anyBullHW and sAnyBull
+bool comboHW_AnyBear = anyBearHW and sAnyBear
+
+bool comboHV_AnyBull = bullHV and (sAnyBull or sAnyBull[1])
+bool comboHV_AnyBear = bearHV and (sAnyBear or sAnyBear[1])
+bool comboGZ_AnyBull = bullGZI and (sAnyBull or sAnyBull[1])
+bool comboGZ_AnyBear = bearGZI and (sAnyBear or sAnyBear[1])
+
+bool hvGziComboBull = sessBar == 2 and bullHV[1] and bullHV and bullGZI
+bool hvGziComboBear = sessBar == 2 and bearHV[1] and bearHV and bearGZI
+
+bool gz1MegaBull = bullGZI and anySuperBull and sPPBull and sigFAUNABull and sigDISPBull
+bool hvMegaBull = bullHV and anySuperBull and sPPBull and sigFAUNABull and sigDISPBull
+bool gz1hvMegaBull = bullGZI and bullHV and anySuperBull and sPPBull and sigFAUNABull and sigDISPBull
+bool gz1MegaBear = bearGZI and anySuperBear and sPPBear and sigFAUNABear and sigDISPBear
+bool hvMegaBear = bearHV and anySuperBear and sPPBear and sigFAUNABear and sigDISPBear
+bool gz1hvMegaBear = bearGZI and bearHV and anySuperBear and sPPBear and sigFAUNABear and sigDISPBear
+
+bool openerBull = sessBar == 1 and (bullGZI or bullHV) and (anyBullHW or sigBullPBJ or sigROCBull or (firstPUPPass and superPup))
+bool openerBear = sessBar == 1 and (bearGZI or bearHV) and (anyBearHW or sigBearPBJ or sigROCBear or (firstPPDPass and superPPD))
+
+bool pbjIn3Bull = sigBullPBJ or sigBullPBJ[1] or sigBullPBJ[2]
+bool b2bIn3Bull = b2bPUP or b2bPUP[1] or b2bPUP[2]
+int pupsIn3Bull = (sPPBull ? 1 : 0) + (sPPBull[1] ? 1 : 0) + (sPPBull[2] ? 1 : 0)
+bool scenarioA_Bull = pbjIn3Bull and b2bIn3Bull
+bool scenarioB_Bull = pbjIn3Bull and pupsIn3Bull >= 2
+bool threeBar_Bull = scenarioA_Bull or scenarioB_Bull
+
+bool pbjIn3Bear = sigBearPBJ or sigBearPBJ[1] or sigBearPBJ[2]
+bool b2bIn3Bear = b2bPPD or b2bPPD[1] or b2bPPD[2]
+int ppdsIn3Bear = (sPPBear ? 1 : 0) + (sPPBear[1] ? 1 : 0) + (sPPBear[2] ? 1 : 0)
+bool scenarioA_Bear = pbjIn3Bear and b2bIn3Bear
+bool scenarioB_Bear = pbjIn3Bear and ppdsIn3Bear >= 2
+bool threeBar_Bear = scenarioA_Bear or scenarioB_Bear
+
+bool anyFoster = fosterSignal or fosterPBJSignal or fosterPBSignal
+bool anyTB = tbSignal or tbPBJSignal or tbPBSignal
+bool fosterHeavyBull = anyFoster and (sigROCBull or anyBullHW or anySuperBull)
+bool tbHeavyBear = anyTB and (sigROCBear or anyBearHW or anySuperBear)
+
+bool gzHvHeavyBull = (bullGZI or bullHV) and (anyBullHW or anySuperBull or sigROCBull)
+bool gzHvHeavyBear = (bearGZI or bearHV) and (anyBearHW or anySuperBear or sigROCBear)
+
+bool superB2BDaysBull = anySuperBull and f_hadSignalYesterday(anySuperBull)
+bool superB2BDaysBear = anySuperBear and f_hadSignalYesterday(anySuperBear)
+bool superB2BDays = superB2BDaysBull or superB2BDaysBear
+
+bool scanTrigger = sigSuperBullPBJ or sigSuperBullPB or sigSuperBearPBJ or sigSuperBearPB or sigGrandSlam or sigMOAB
+
+// =============================================================================
+// HELPER FUNCTIONS FOR ALERTS
+// =============================================================================
+f_hwStr() =>
+    string s = ""
+    if sigGrandSlam
+        s += "GS(" + str.tostring(gsValue, "#.#") + ") "
+    if sigMOAB
+        s += "MOAB(" + str.tostring(moabValue, "#.#") + ") "
+    if sigBullRVOL1x
+        s += "+1x(" + str.tostring(rvol1xBullValue, "#.#") + ") "
+    if sigBearRVOL1x
+        s += "-1x(" + str.tostring(rvol1xBearValue, "#.#") + ") "
+    if sigWTC
+        s += "WTC(" + str.tostring(wtcValue, "#.#") + ") "
+    if sigHiroshima
+        s += "HIRO(" + str.tostring(hiroValue, "#.#") + ") "
+    if sigNagasaki
+        s += "NAGA(" + str.tostring(nagaValue, "#") + ") "
+    s
+
+f_fullScan() =>
+    string s = ""
+    if sBullF2
+        s += "F2+ "
+    if sBearF2
+        s += "F2- "
+    if sBullE3
+        s += "E3+ "
+    if sBearE3
+        s += "E3- "
+    if sBullFC
+        s += "FC+ "
+    if sBearFC
+        s += "FC- "
+    if sPPBull
+        s += "PUP "
+    if sPPBear
+        s += "PPD "
+    if superPup
+        s += "S-PUP "
+    if superPPD
+        s += "S-PPD "
+    if b2bPUP
+        s += "B2BPUP "
+    if b2bPPD
+        s += "B2BPPD "
+    if firstPUPPass
+        s += "1stPUP "
+    if firstPPDPass
+        s += "1stPPD "
+    if sigBullPBJ
+        s += "PBJ+ "
+    if sigBearPBJ
+        s += "PBJ- "
+    if sigBullPB
+        s += "PB+ "
+    if sigBearPB
+        s += "PB- "
+    if fosterSignal
+        s += "FOSTER "
+    if fosterPBJSignal
+        s += "FOS-PBJ "
+    if fosterPBSignal
+        s += "FOS-PB "
+    if tbSignal
+        s += "TB "
+    if tbPBJSignal
+        s += "TB-PBJ "
+    if tbPBSignal
+        s += "TB-PB "
+    if sigFAUNABull
+        s += "FAUNA+ "
+    if sigFAUNABear
+        s += "FAUNA- "
+    if sigDISPBull
+        s += "DISP+ "
+    if sigDISPBear
+        s += "DISP- "
+    if bullGZI
+        s += "GZ1+ "
+    if bearGZI
+        s += "GZ1- "
+    if bullHV
+        s += "HV+ "
+    if bearHV
+        s += "HV- "
+    if sigROCBull
+        s += "ROC+ "
+    if sigROCBear
+        s += "ROC- "
+    s + f_hwStr()
+
+// =============================================================================
+// PLOTS
+// =============================================================================
+plotshape(show_pbjF2 and (comboPBJ_F2_Bull or comboPBJ_F2_Bear), "PBJ+F2", shape.labelup, location.belowbar, comboPBJ_F2_Bull ? color.lime : color.red, size=size.large, text="PBJ+F2")
+plotshape(show_pbjE3 and (comboPBJ_E3_Bull or comboPBJ_E3_Bear), "PBJ+E3", shape.labelup, location.belowbar, comboPBJ_E3_Bull ? color.lime : color.red, size=size.large, text="PBJ+E3")
+plotshape(show_pbjCluster and (comboPBJ_Cluster_Bull or comboPBJ_Cluster_Bear), "PBJ+CL", shape.labelup, location.belowbar, comboPBJ_Cluster_Bull ? color.lime : color.red, size=size.large, text="PBJ+CL")
+plotshape(show_pbF2 and (comboPB_F2_Bull or comboPB_F2_Bear), "PB+F2", shape.labelup, location.belowbar, comboPB_F2_Bull ? color.green : color.maroon, size=size.large, text="PB+F2")
+plotshape(show_pbE3 and (comboPB_E3_Bull or comboPB_E3_Bear), "PB+E3", shape.labelup, location.belowbar, comboPB_E3_Bull ? color.green : color.maroon, size=size.large, text="PB+E3")
+plotshape(show_pbCluster and (comboPB_Cluster_Bull or comboPB_Cluster_Bear), "PB+CL", shape.labelup, location.belowbar, comboPB_Cluster_Bull ? color.green : color.maroon, size=size.large, text="PB+CL")
+
+plotshape(show_f2ClusterE3 and (comboF2Cluster_E3_Bull or comboF2Cluster_E3_Bear), "F2CL→E3", shape.diamond, location.top, comboF2Cluster_E3_Bull ? color.aqua : color.fuchsia, size=size.large, text="F2CL→E3")
+plotshape(show_f2ClusterB2B and (comboF2ClusterB2B_Bull or comboF2ClusterB2B_Bear), "F2CL+B2B", shape.diamond, location.top, comboF2ClusterB2B_Bull ? color.aqua : color.fuchsia, size=size.large, text="F2CL+B2B")
+plotshape(show_b2bF2 and (comboB2B_F2_Bull or comboB2B_F2_Bear), "B2B+F2", shape.diamond, location.top, comboB2B_F2_Bull ? color.teal : color.orange, size=size.large, text="B2B+F2")
+plotshape(show_e3PUP and (comboE3_2of3PUP_Bull or comboE3_2of3PPD_Bear), "E3⅔PP", shape.diamond, location.top, comboE3_2of3PUP_Bull ? color.teal : color.orange, size=size.large, text="E3⅔PP")
+
+plotshape(show_f2B2B and (comboF2_B2BDays_Bull or comboF2_B2BDays_Bear), "F2×2D", shape.flag, location.top, comboF2_B2BDays_Bull ? color.lime : color.red, size=size.huge, text="F2×2D")
+plotshape(show_e3B2B and (comboE3_B2BDays_Bull or comboE3_B2BDays_Bear), "E3×2D", shape.flag, location.top, comboE3_B2BDays_Bull ? color.lime : color.red, size=size.huge, text="E3×2D")
+plotshape(show_f2e3Consec and (comboF2E3_Consec_Bull or comboF2E3_Consec_Bear), "F2E3seq", shape.flag, location.top, comboF2E3_Consec_Bull ? color.yellow : color.purple, size=size.huge, text="F2E3seq")
+plotshape(show_clusterB2BDays and (comboCluster_B2BDays_Bull or comboCluster_B2BDays_Bear), "CL×2D", shape.flag, location.top, comboCluster_B2BDays_Bull ? color.yellow : color.purple, size=size.huge, text="CL×2D")
+
+plotshape(show_hwBullAny and comboHW_AnyBull, "HW+Bull", shape.labelup, location.belowbar, color.lime, size=size.large, text="HW+BULL")
+plotshape(show_hwBearAny and comboHW_AnyBear, "HW+Bear", shape.labeldown, location.abovebar, color.red, size=size.large, text="HW+BEAR")
+
+bool comboGZHV_AnyBull = comboHV_AnyBull or comboGZ_AnyBull
+bool comboGZHV_AnyBear = comboHV_AnyBear or comboGZ_AnyBear
+plotshape(show_gzHvAny and comboGZHV_AnyBull, "GZ/HV+Bull", shape.triangleup, location.belowbar, color.blue, size=size.large, text="GZ/HV+BULL", offset=-1)
+plotshape(show_gzHvAny and comboGZHV_AnyBear, "GZ/HV+Bear", shape.triangledown, location.abovebar, color.orange, size=size.large, text="GZ/HV+BEAR", offset=-1)
+
+plotshape(show_hvGziCombo and hvGziComboBull, "HV+GZI+", shape.diamond, location.belowbar, #00ffff, size=size.large, text="HV+GZI", offset=-1)
+plotshape(show_hvGziCombo and hvGziComboBear, "HV+GZI-", shape.diamond, location.abovebar, #ff00ff, size=size.large, text="HV+GZI", offset=-1)
+
+bool gzHvMegaBull = gz1MegaBull or hvMegaBull
+bool gzHvMegaBear = gz1MegaBear or hvMegaBear
+plotshape(show_gzHvMega and gzHvMegaBull, "GZ/HV MEGA+", shape.labelup, location.belowbar, #00FF00, size=size.huge, text="GZ/HV\nMEGA+", offset=-1)
+plotshape(show_gzHvMega and gzHvMegaBear, "GZ/HV MEGA-", shape.labeldown, location.abovebar, #FF0000, size=size.huge, text="GZ/HV\nMEGA-", offset=-1)
+plotshape(show_gz1hvMegaCombo and gz1hvMegaBull, "GZ1+HV MEGA+", shape.labelup, location.belowbar, #FFFF00, size=size.huge, text="GZ1+HV\nMEGA+", offset=-1)
+plotshape(show_gz1hvMegaCombo and gz1hvMegaBear, "GZ1+HV MEGA-", shape.labeldown, location.abovebar, #FF6600, size=size.huge, text="GZ1+HV\nMEGA-", offset=-1)
+
+plotshape(show_openerBull and openerBull, "OPENER+", shape.flag, location.belowbar, #00FF88, size=size.huge, text="OPEN1+")
+plotshape(show_openerBear and openerBear, "OPENER-", shape.flag, location.abovebar, #FF0088, size=size.huge, text="OPEN1-")
+
+plotshape(show_3barBull and threeBar_Bull, "3BAR+", shape.circle, location.belowbar, #00CCFF, size=size.large, text="3BAR+")
+plotshape(show_3barBear and threeBar_Bear, "3BAR-", shape.circle, location.abovebar, #FF00CC, size=size.large, text="3BAR-")
+
+plotshape(show_fosterHeavyBull and fosterHeavyBull, "FOS+HVY", shape.labelup, location.belowbar, #88FF00, size=size.large, text="FOS+HVY")
+plotshape(show_tbHeavyBear and tbHeavyBear, "TB+HVY", shape.labeldown, location.abovebar, #FF8800, size=size.large, text="TB+HVY")
+
+plotshape(show_gzHvHeavyBull and gzHvHeavyBull, "GZ/HV+HVY+", shape.diamond, location.belowbar, #00FFAA, size=size.large, text="GZ/HV+HVY", offset=-1)
+plotshape(show_gzHvHeavyBear and gzHvHeavyBear, "GZ/HV+HVY-", shape.diamond, location.abovebar, #FF00AA, size=size.large, text="GZ/HV+HVY", offset=-1)
+
+plotshape(show_superB2BDays and superB2BDaysBull, "SUPER×2D+", shape.flag, location.belowbar, #FFD700, size=size.huge, text="SUPER×2D")
+plotshape(show_superB2BDays and superB2BDaysBear, "SUPER×2D-", shape.flag, location.abovebar, #FF4500, size=size.huge, text="SUPER×2D")
+
+plotshape(sigNagasaki, "NAGA", shape.flag, location.top, #9900FF, size=size.huge, text="NAGA")
+
+// =============================================================================
+// ALERTS
+// =============================================================================
+if sigNagasaki
+    alert("NAGA(" + str.tostring(nagaValue, "#") + "): " + f_fullScan(), alert.freq_once_per_bar_close)
+
+if scanTrigger
+    triggerName = sigSuperBullPBJ ? "SUPER+PBJ" : sigSuperBullPB ? "SUPER+PB" : sigSuperBearPBJ ? "SUPER-PBJ" : sigSuperBearPB ? "SUPER-PB" : sigGrandSlam ? "GS(" + str.tostring(gsValue, "#.#") + ")" : "MOAB(" + str.tostring(moabValue, "#.#") + ")"
+    alert(triggerName + ": " + f_fullScan(), alert.freq_once_per_bar_close)
+
+if openerBull
+    gzPart = bullGZI and bullHV ? "GZ1+HV" : bullGZI ? "GZ1" : "HV"
+    trigPart = sigBullPBJ ? "PBJ" : sigROCBull ? "ROC+" : (firstPUPPass and superPup) ? "1stPUP+S-PUP" : f_hwStr()
+    alert("OPEN1+: " + gzPart + " + " + trigPart, alert.freq_once_per_bar_close)
+
+if openerBear
+    gzPart = bearGZI and bearHV ? "GZ1+HV" : bearGZI ? "GZ1" : "HV"
+    trigPart = sigBearPBJ ? "PBJ" : sigROCBear ? "ROC-" : (firstPPDPass and superPPD) ? "1stPPD+S-PPD" : f_hwStr()
+    alert("OPEN1-: " + gzPart + " + " + trigPart, alert.freq_once_per_bar_close)
+
+if threeBar_Bull
+    scenario = scenarioA_Bull ? "PBJ+B2BPUP" : "PBJ+" + str.tostring(pupsIn3Bull) + "xPUP"
+    alert("3BAR+: " + scenario, alert.freq_once_per_bar_close)
+
+if threeBar_Bear
+    scenario = scenarioA_Bear ? "PBJ+B2BPPD" : "PBJ+" + str.tostring(ppdsIn3Bear) + "xPPD"
+    alert("3BAR-: " + scenario, alert.freq_once_per_bar_close)
+
+if gz1MegaBull
+    alert("GZ1 MEGA+: " + f_fullScan(), alert.freq_once_per_bar_close)
+if gz1MegaBear
+    alert("GZ1 MEGA-: " + f_fullScan(), alert.freq_once_per_bar_close)
+if hvMegaBull
+    alert("HV MEGA+: " + f_fullScan(), alert.freq_once_per_bar_close)
+if hvMegaBear
+    alert("HV MEGA-: " + f_fullScan(), alert.freq_once_per_bar_close)
+if gz1hvMegaBull
+    alert("GZ1+HV MEGA+: " + f_fullScan(), alert.freq_once_per_bar_close)
+if gz1hvMegaBear
+    alert("GZ1+HV MEGA-: " + f_fullScan(), alert.freq_once_per_bar_close)
+
+if fosterHeavyBull
+    alert("FOSTER+HVY: " + f_fullScan(), alert.freq_once_per_bar_close)
+if tbHeavyBear
+    alert("TB+HVY: " + f_fullScan(), alert.freq_once_per_bar_close)
+
+if gzHvHeavyBull
+    alert("GZ/HV+HVY+: " + f_fullScan(), alert.freq_once_per_bar_close)
+if gzHvHeavyBear
+    alert("GZ/HV+HVY-: " + f_fullScan(), alert.freq_once_per_bar_close)
+
+if hvGziComboBull
+    alert("HV+GZI COMBO+: " + f_fullScan(), alert.freq_once_per_bar_close)
+if hvGziComboBear
+    alert("HV+GZI COMBO-: " + f_fullScan(), alert.freq_once_per_bar_close)
+
+if superB2BDays
+    direction = superB2BDaysBull ? "BULL" : "BEAR"
+    alert("SUPER×2D " + direction + ": " + f_fullScan(), alert.freq_once_per_bar_close)
+
+// =============================================================================
+// ALERTCONDITIONS
+// =============================================================================
+alertcondition(sigNagasaki, "Nagasaki", "NAGASAKI")
+alertcondition(gzHvMegaBull or gzHvMegaBear, "GZ/HV Mega", "GZ/HV MEGA")
+alertcondition(gz1hvMegaBull or gz1hvMegaBear, "GZ1+HV Mega", "GZ1+HV MEGA")
+alertcondition(openerBull or openerBear, "Opener", "OPEN1")
+alertcondition(threeBar_Bull or threeBar_Bear, "3Bar", "3BAR")
+alertcondition(fosterHeavyBull or tbHeavyBear, "Foster/TB+Heavy", "FOS/TB+HVY")
+alertcondition(gzHvHeavyBull or gzHvHeavyBear, "GZ/HV+Heavy", "GZ/HV+HVY")
+alertcondition(superB2BDays, "Super B2B Days", "SUPER×2D")
+alertcondition(scanTrigger, "Scan Trigger", "SUPER/GS/MOAB")
+alertcondition(comboPBJ_F2_Bull or comboPBJ_F2_Bear, "PBJ+F2", "PBJ+F2")
+alertcondition(comboPBJ_E3_Bull or comboPBJ_E3_Bear, "PBJ+E3", "PBJ+E3")
+alertcondition(comboPBJ_Cluster_Bull or comboPBJ_Cluster_Bear, "PBJ+Cluster", "PBJ+CL")
+alertcondition(comboHW_AnyBull or comboHW_AnyBear, "HW+Any", "HW+ANY")
+alertcondition(comboGZHV_AnyBull or comboGZHV_AnyBear, "GZ/HV+Any", "GZ/HV+ANY")
+alertcondition(hvGziComboBull or hvGziComboBear, "HV+GZI Combo", "HV+GZI COMBO")

@@ -1,0 +1,25 @@
+PROXIMITY GZI HV — dependency tree
+====================================
+
+This indicator is an ALIAS / RE-SKIN of hv-fvg-gz1-og.
+diff between this file and HV_FVG_GZ1_OG_v1.pine returns EXACTLY 1 LINE OF DIFFERENCE
+— the indicator() declaration (title + shorttitle).
+Lines 3-253 byte-identical.
+
+ROOTS REFERENCED (all cross-refs to hv-fvg-gz1-og::*)
+──────────────────────────────────────────────────────
+FVG_BULL_RAW / FVG_BEAR_RAW (verbatim)
+GZI_BULL / GZI_BEAR  (offset=-1)
+HV_BULL / HV_BEAR    (offset=-1)
+
+COMPOSITES: NONE.
+
+PLOTSHAPES & ALERTS: same 4 + 10 as canonical OG.
+
+DEAD STATE (identical in both files):
+  max_bull_fvg / min_bull_fvg / max_bear_fvg / min_bear_fvg declared but never assigned/read.
+
+STAGE 6 RECOMMENDATION
+───────────────────────
+Tag in bible as `mirror-of: hv-fvg-gz1-og::v1`.
+Consider deletion or symlink. If kept, future edits to OG must be mirrored here.

@@ -1,0 +1,107 @@
+SQUARIFY 46 v2 — dependency tree (top-level fund signal)
+=========================================================
+
+ROOTS (re-implemented locally; cross-refs to other indicators)
+───────────────────────────────────────────────────────────────
+RVOL ladder         → cross-ref heavy-pentagon::*
+FVG / GZI / HV-FVG  → cross-ref hv-fvg-gz1-og::*
+PBJ / PB            → cross-ref hvdpbjppd::PBJ_BULL/BEAR/PB_BULL/BEAR
+PUP / PPD           → cross-ref pocket-pivot::*
+DISPLACEMENT        → cross-ref hvdpbjppd::DISP_BULL/BEAR
+HV+D                → cross-ref hvdpbjppd::HVD_BULL/BEAR
+MATRIX_NUMBER       → cross-ref hvdpbjppd::MATRIX_NUMBER
+LONG1/2, SHORT1/2   → cross-ref hvdpbjppd::*
+HV75/150/500/1000   → cross-ref hvdpbjppd::*
+BOOM_HUNTER_OMEGA   → cross-ref hvdpbjppd::BOOM_HUNTER_OMEGA
+PING_PONG           → cross-ref hvdpbjppd::PING_PONG_*
+TNT_RAW             → cross-ref tnt-od::TNT_RAW_*
+NAPALM, CHARGE      → cross-ref tnt-od::*
+FAUNA atomics       → fauna::MB, RE, TA, GG, TR, ES, GDR (distributed)
+
+INTERMEDIATE COMPOSITES
+────────────────────────
+csNew1 (FVG_COMBO)    = comboSet1 OR comboSet2
+csNew2 (MATRIX_COMBO) = comboSet3 OR comboSet4
+csNew3 (UNIFIED_COMBO) = csNew1 AND csNew2[1]   ← LAGGED-AND in Squarify (canonical hvdpbjppd uses same-bar AND)
+                                                  CRITICAL DRIFT
+
+anyBullFloor = bull_pp AND PBJ AND HW-slot
+anyBull2nd   = bull_pp AND PB AND HW-slot
+anyBearRoof, anyBearPent (mirrors)
+
+hwBull       = (close>open) AND disp5 AND PBJ AND HW-slot AND (anyBullFloor OR anyBull2nd)
+superBull    = csNew3 AND det_bullNapalmCons
+sduperBull   = csNew3 AND det_bullNapalmCons AND PUP[1]
+
+WBUSH variants = OR-aggregator over 5 Heavy Pentagon family bases × USE V5 disp classifier
+
+TNT propulsion engine (re-implemented):
+  raw_bullTNT, raw_napalmBull, raw_bullCharge,
+  det_bullNapalmCons = raw_napalmBull OR raw_bullCharge
+  det_b2bBullNapalm  = det_bullNapalmCons[0] AND det_bullNapalmCons[1]
+  det_npmTntBull     = raw_napalmBull AND raw_bullTNT[1]
+
+UU/UUU/UUUU streak qualifiers (paths pA-pG over PBJ/DISP/FAUNA/SAAB/RVOL1x/GS)
+  sigUUBull, sigP21BullUUU, sigP21BullUUUU
+  uu_any = UU OR UUU OR UUUU
+
+46 NUMBERED TOP-LEVEL COMPOSITES (S1-S46, 48 plotshapes total)
+───────────────────────────────────────────────────────────────
+  S1  SDUPER       (T4) sduperBull                                offset=-1
+  S2  SUPER        (T3) superBull                                  offset=-1
+  S3  HW           (T3) hwBull                                     offset=0
+  S4  FLOOR        (T3) anyBullFloor AND oneOfThese AND cb1_pass   offset=0
+  S5  2F           (T3) anyBull2nd AND oneOfThese AND cb1_pass     offset=0
+  S6  UUUU         (T2) sigP21BullUUUU                             offset=0
+  S7  UUU          (T2) sigP21BullUUU AND NOT UUUU                 offset=0
+  S8  UU           (T3) uu_gated AND NOT UUU AND NOT UUUU          offset=0
+  S9  A★ (Alpha)   (T3) firstOfDay AND bull_pp AND (GS OR RVOL1x) AND PBJ AND as_fauna   offset=0
+  S10 ΩA (OmegaA)  (T3) bh_anyOmega AND omega_cosignal_A AND NOT MOAB AND NOT DISP_BEAR  offset=0
+  S11 FOX          (T3) Foxtrot AND (hvd_pbj_bull OR oneOfThese)    offset=0
+  S12 OD           (T2) sigODBull                                   offset=-1
+  S13 GOLF         (T2) sigGolfBull                                 offset=-1
+  S14 PBJ+F2/E3    (T2) PBJ AND (sBullF2 OR sBullE3)                offset=0
+  S15 PBJ+CL       (T2) PBJ AND sBullFC                             offset=0
+  S16 F2CL→E3      (T2) sBullF2[1] AND sBullFC[1] AND sBullE3       offset=0
+  S17 E3⅔PP        (T2) sBullE3 AND pupCntE3≥2                      offset=0
+  S18 F2×2D        (T2) sBullF2 day-over-day                        offset=0
+  S19 E3×2D        (T2) sBullE3 day-over-day                        offset=0
+  S20 F2E3seq      (T2) sBullE3 today AND sBullF2 yesterday         offset=0
+  S21 CL×2D        (T2) sBullFC day-over-day                        offset=0
+  S22 NPM+         (T4) det_bullNapalmCons AND ((PBJ[1] AND (csNew3 OR HW[1] OR sigWMD[1])) OR sigWMD[1])  offset=-1
+  S23 NPM12        (T3) det_bullNapalmCons AND (cb1_pass OR cb2_pass)  offset=-1
+  S24 NPM3         (T3) det_bullNapalmCons AND cb3_pass               offset=-1
+  S25 B2BNPM       (T2) det_b2bBullNapalm                              offset=-1
+  S26 NPM+TNT      (T2) raw_napalmBull AND raw_bullTNT[1]              offset=-1
+  S27 CO           (T3) hvd_fire_bull AND PBJ[1] AND (csNew3 OR csNew1)  offset=-1
+  S28 HVD+PBJ      (T2) hvd_pbj_bull AND NOT co_bull_pbj                  offset=-1
+  S29 B2BHVD+PBJ   (T2) b2b_bull_pbj                                       offset=-1
+  S30 B2BHVD       (T2) b2b_bull_nopb AND NOT b2b_bull_pbj                offset=-1
+  S31 UU+UC        (T3) uu_any AND csNew3                                  offset=-1
+  S32 GRAIL        (T4) det_bullNapalmCons AND PBJ[1] AND PUP[1] AND csNew3   offset=-1
+  S33 FLR+NPM      (T4) anyBullFloor[1] AND det_bullNapalmCons              offset=-1
+  S34 NPM+PBJ+PUP  (T3) det_bullNapalmCons AND PBJ[1] AND PUP[1] AND NOT GRAIL  offset=-1
+  S35 NAG+         (T2) sigNagasaki AND (RVOL1x OR GS OR FAUNA OR DISP OR PBJ OR PUP OR HV-FVG OR GZI)  offset=0
+  S36 UU+HVD       (T3) (UUUU OR UUU OR UU)[1] AND hvd_pbj_bull            offset=-1
+  S37 UU+NPM       (T3) (UUUU OR UUU OR UU)[1] AND det_bullNapalmCons      offset=-1
+  S38 FLR+UU       (T4) (anyBullFloor OR anyBull2nd) AND uu_any            offset=0
+  S39 FOS+PUP+1x   (T2) fosterPBJSignal AND PUP AND (RVOL1x OR det_bullNapalmCons)  offset=0
+  S40 NPM+UC       (T3) det_bullNapalmCons AND csNew3                       offset=-1
+  S41 WBUSH+ANY Bull (T3) sig_WBUSH_Bull                                    offset=0
+  S42 WBUSH+ANY Bear (T3) sig_WBUSH_Bear                                    offset=0
+  S43 WBUSH Neutral  (T3) sig_WBUSH_Neutral                                 offset=0
+  S44 NPM+UC+PBJ   (T3) det_bullNapalmCons AND csNew3 AND PBJ[1]            offset=-1
+  S45 UC NAGASAKI Bull (T3) csNew3 AND sigNagasaki[1]                       offset=-1
+  S46 UC NAGASAKI Bear (T3) csNew3_Bear AND sigNagasaki[1]                  offset=-1
+
+T1 OPENING CONFLU (T4) sessBar==1 AND disp_std_mult≥t1_disp_thresh AND csNew3 AND HVD_BULL AND BULL_RVOL_1X
+                  Has alertcondition. offset=0.
+T2 OPENING CONFLU (T4) sessBar∈[1,2] AND det_b2bPUP AND uu_any
+                  Has alertcondition. offset=0.
+
+OFFSET BUG OBSERVATIONS (for diagnostic SOP)
+─────────────────────────────────────────────
+- S35 NAG+ uses sigDISPBull (FVG-bearing) but plotted offset=0
+  vs S22 NPM+ which uses offset=-1. Potential inconsistency.
+- WBUSH (S41/42/43) uses sigDISPBull but plotted offset=0
+  vs other DISP+FVG fusions at offset=-1. Potential inconsistency.

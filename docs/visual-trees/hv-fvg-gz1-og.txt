@@ -1,0 +1,36 @@
+HV FVG GZ1 OG — dependency tree
+================================
+
+ROOTS (tier 0, lifecycle stage 2)
+──────────────────────────────────
+hv-fvg-gz1-og::FVG_BULL_RAW   (not plotted; drives box.new; alert "Bullish FVG")
+hv-fvg-gz1-og::FVG_BEAR_RAW   (mirror)
+hv-fvg-gz1-og::HV_BULL        (offset=-1, plotshape "Bullish HV")
+hv-fvg-gz1-og::HV_BEAR        (offset=-1, plotshape "Bearish HV")
+hv-fvg-gz1-og::GZI_BULL       (offset=-1, plotshape "Bullish GZI")
+hv-fvg-gz1-og::GZI_BEAR       (offset=-1, plotshape "Bearish GZI")
+
+DEPENDENCY (within file)
+─────────────────────────
+FVG_BULL_RAW ──┬──→ HV_BULL  (filter: formation-bar volume = highest of 5000/252/63)
+               │
+               └──→ GZI_BULL (filter: overlaps prior bull FVG within gziProximity=6 bars,
+                              adjacent-touch counts when both HV)
+
+FVG_BEAR_RAW ──┬──→ HV_BEAR  (mirror)
+               │
+               └──→ GZI_BEAR (mirror)
+
+ALERTS (10)
+────────────
+Bullish FVG, Bearish FVG, Bullish FVG Mitigation, Bearish FVG Mitigation,
+Bullish GZI, Bearish GZI, Any GZI,
+Bullish HV FVG, Bearish HV FVG, Any HV FVG.
+
+DOWNSTREAM CONSUMERS
+─────────────────────
+proximity-gzi-hv: byte-identical mirror (only indicator() title differs).
+b2b-pup::CS1_BULL_FVG_COMBO   uses gz_bullHV / gz_bullGZI (gz1_dist=7 — drift)
+hvdpbjppd::FVG_COMBO          uses gz_bullHV / gz_bullGZI (gz1_dist=7 — drift)
+squarify::FVG_COMBO           uses gz_bullHV / gz_bullGZI
+ultra-combo::comboGZHV_AnyBull uses bullHV / bullGZI
