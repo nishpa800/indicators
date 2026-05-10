@@ -86,9 +86,14 @@ def merge() -> dict:
     indicators = []
     flat_roots = []
     flat_composites = []
+    skipped: list[Path] = []
     for extract_path in extracts:
         data = load_extract(extract_path)
         if not data:
+            # Empty / unparseable / unexpected-shape extract. The bible's source
+            # of truth must not silently drop indicators — accumulate and fail
+            # at the end so all skips are visible at once.
+            skipped.append(extract_path)
             continue
         # Normalise: each extract has top-level `indicator`, `roots`,
         # `composites`, etc. Combine them into one indicator record.
@@ -123,6 +128,14 @@ def merge() -> dict:
                 c.setdefault("lifecycle_stage", 5)
                 flat_composites.append(c)
         indicators.append(record)
+    if skipped:
+        names = ", ".join(p.name for p in skipped)
+        sys.stderr.write(
+            f"ERROR: {len(skipped)} extract(s) were unparseable or empty and were skipped: "
+            f"{names}\n"
+            "Refusing to write a partial bible. Fix the extract(s) and re-run.\n"
+        )
+        sys.exit(2)
     return {
         "schema_version": 1,
         "generated_at": _dt.date.today().isoformat(),

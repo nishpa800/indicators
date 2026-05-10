@@ -7,12 +7,33 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 
 | Top-level composite | Tier | Indicator | Offset | One-line |
 |---|---|---|---|---|
+| [`anish-50-1st-combo::AllThreeBull`](anish-50-1st-combo__AllThreeBull.md) | 2 | anish-50-1st-combo | ? |  |
+| [`anish-50-1st-combo::AllThreeBear`](anish-50-1st-combo__AllThreeBear.md) | 2 | anish-50-1st-combo | ? |  |
+| [`anish-50-1st-combo::SuperPup`](anish-50-1st-combo__SuperPup.md) | 2 | anish-50-1st-combo | ? |  |
+| [`anish-50-1st-combo::SuperPPD`](anish-50-1st-combo__SuperPPD.md) | 2 | anish-50-1st-combo | ? |  |
+| [`anish-50-1st-combo::TB`](anish-50-1st-combo__TB.md) | 3 | anish-50-1st-combo | ? |  |
+| [`anish-50-1st-combo::Foster`](anish-50-1st-combo__Foster.md) | 3 | anish-50-1st-combo | ? |  |
 | [`b2b-pup::B2B_PUP`](b2b-pup__B2B_PUP.md) | 1 | b2b-pup | 0 | Back-to-back PUP: PUP fires on bar[0] AND PUP fired on bar[1]. |
 | [`b2b-pup::B2B_PPD`](b2b-pup__B2B_PPD.md) | 1 | b2b-pup | 0 | Back-to-back PPD. |
 | [`b2b-pup::B2B_NAPALM_BULL`](b2b-pup__B2B_NAPALM_BULL.md) | 2 | b2b-pup | 0 | Back-to-back consolidated Napalm bull (Napalm OR Charge fires on this bar AND on |
 | [`b2b-pup::B2B_NAPALM_BEAR`](b2b-pup__B2B_NAPALM_BEAR.md) | 2 | b2b-pup | 0 | Mirror B2B_NAPALM_BULL bear. |
 | [`b2b-pup::S19_UC2`](b2b-pup__S19_UC2.md) | 3 | b2b-pup | -1 | Standalone Unified Combo ×2: count visual bars in [1, uc2_window] where BOTH FVG |
 | [`b2b-pup::S20_FMU`](b2b-pup__S20_FMU.md) | 3 | b2b-pup | -1 | Standalone FVG/MAT/Uni Combo ×2: count visual bars where ANY of FVG-combo, Matri |
+| [`heavy-pentagon::HEAVY_YIN_YANG_BULL`](heavy-pentagon__HEAVY_YIN_YANG_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bullish: a directional P1 RVOL spike (Bull RVOL 1x or Grand |
+| [`heavy-pentagon::HEAVY_YIN_YANG_BEAR`](heavy-pentagon__HEAVY_YIN_YANG_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bearish: same directional-P1 + neutral-P2 base, gated by di |
+| [`heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL`](heavy-pentagon__HEAVY_YIN_YANG_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires neutral: same base, but displacement engine produced neithe |
+| [`heavy-pentagon::HEAVY_NAGASAKI_BULL`](heavy-pentagon__HEAVY_NAGASAKI_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Nagasaki fires bullish: an all-time high volume bar (Nagasaki) co-occurs w |
+| [`heavy-pentagon::HEAVY_NAGASAKI_BEAR`](heavy-pentagon__HEAVY_NAGASAKI_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Nagasaki fires bearish: Nagasaki co-occurs with any directional P1, gated  |
+| [`heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL`](heavy-pentagon__HEAVY_NAGASAKI_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Nagasaki fires neutral: Nagasaki co-occurs with any directional P1, but no |
+| [`heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL`](heavy-pentagon__HEAVY_NAGASAKI_VOL_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Nagasaki Vol fires bullish: an all-time high volume bar (Nagasaki) co-occu |
+| [`heavy-pentagon::HEAVY_NAGASAKI_VOL_BEAR`](heavy-pentagon__HEAVY_NAGASAKI_VOL_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Nagasaki Vol fires bearish: Nagasaki + any P2 tier, gated bearish. |
+| [`heavy-pentagon::HEAVY_NAGASAKI_VOL_NEUTRAL`](heavy-pentagon__HEAVY_NAGASAKI_VOL_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Nagasaki Vol fires neutral: Nagasaki + any P2 tier, no displacement classi |
+| [`heavy-pentagon::HEAVY_TRIDENT_BULL`](heavy-pentagon__HEAVY_TRIDENT_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Trident fires bullish: all three RVOL axes co-occur — Nagasaki (P3) + any  |
+| [`heavy-pentagon::HEAVY_TRIDENT_BEAR`](heavy-pentagon__HEAVY_TRIDENT_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Trident fires bearish: all three RVOL axes co-occur, gated bearish. |
+| [`heavy-pentagon::HEAVY_TRIDENT_NEUTRAL`](heavy-pentagon__HEAVY_TRIDENT_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Trident fires neutral: all three RVOL axes co-occur, no displacement class |
+| [`heavy-pentagon::NEUTRAL_HEAVY_X2_BULL`](heavy-pentagon__NEUTRAL_HEAVY_X2_BULL.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires bullish: at least two of the three Reg@Time tiers (Pentag |
+| [`heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR`](heavy-pentagon__NEUTRAL_HEAVY_X2_BEAR.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires bearish: two-of-three P2 tier co-occurrence, gated bearis |
+| [`heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL`](heavy-pentagon__NEUTRAL_HEAVY_X2_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires neutral: two-of-three P2 tier co-occurrence, no displacem |
 | [`hvd-pbj-ppd::SUPER_BULL`](hvd-pbj-ppd__SUPER_BULL.md) | 0 | hvd-pbj-ppd | 0 | Tier-0 priority bull: PBJ + DISP + (FAUNA bull or LSLong1) + HW-volume slot + (( |
 | [`hvd-pbj-ppd::SDUPER_BULL`](hvd-pbj-ppd__SDUPER_BULL.md) | 0 | hvd-pbj-ppd | 0 | 'Super Duper' priority: Floor/2F + PBJ + HW-volume slot + Combo-set + PUP + DISP |
 | [`hvd-pbj-ppd::SDUPER_BEAR`](hvd-pbj-ppd__SDUPER_BEAR.md) | 0 | hvd-pbj-ppd | 0 | Bear mirror of SDUPER_BULL. |
@@ -71,8 +92,36 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 | [`tnt-od::WBUSH_Bull`](tnt-od__WBUSH_Bull.md) | 3 | tnt-od | ? |  |
 | [`tnt-od::WBUSH_Bear`](tnt-od__WBUSH_Bear.md) | 3 | tnt-od | ? |  |
 | [`tnt-od::WBUSH_Neutral`](tnt-od__WBUSH_Neutral.md) | 3 | tnt-od | ? |  |
+| [`ultra-combo::FAUNA_BULL`](ultra-combo__FAUNA_BULL.md) | 2 | ultra-combo | 0 | Bullish FAUNA: any of MB/RE/TA fires AND none of the four exclusion atoms (GG/TR |
+| [`ultra-combo::FAUNA_BEAR`](ultra-combo__FAUNA_BEAR.md) | 2 | ultra-combo | 0 | Bearish FAUNA: any of bear MB/RE/TA fires AND none of bear GG/TR/ES/GDR exclusio |
+| [`ultra-combo::ROC_BULL`](ultra-combo__ROC_BULL.md) | 2 | ultra-combo | 0 | Bull ROC composite: PBJ-bull AND ROC+WaveTrend dual-confirmation (b1+b4 OR b3+b2 |
+| [`ultra-combo::ROC_BEAR`](ultra-combo__ROC_BEAR.md) | 2 | ultra-combo | 0 | Bear ROC composite mirror |
+| [`ultra-combo::DISP_BULL`](ultra-combo__DISP_BULL.md) | 1 | ultra-combo | 0 | Displacement bull: previous bar had range > 5*stdev(range,100) AND current bar i |
+| [`ultra-combo::DISP_BEAR`](ultra-combo__DISP_BEAR.md) | 1 | ultra-combo | 0 | Displacement bear mirror |
 | [`ultra-combo::SUPER_BULL_PBJ`](ultra-combo__SUPER_BULL_PBJ.md) | 3 | ultra-combo | 0 | Super Bull PBJ: Disp-bull AND PBJ-bull AND FAUNA-bull AND any RVOL-bull (SAAB ex |
 | [`ultra-combo::SUPER_BULL_PB`](ultra-combo__SUPER_BULL_PB.md) | 3 | ultra-combo | 0 | Super Bull PB mirror |
+| [`ultra-combo::SUPER_BEAR_PBJ`](ultra-combo__SUPER_BEAR_PBJ.md) | 3 | ultra-combo | 0 | Super Bear PBJ |
+| [`ultra-combo::SUPER_BEAR_PB`](ultra-combo__SUPER_BEAR_PB.md) | 3 | ultra-combo | 0 | Super Bear PB |
+| [`ultra-combo::PBJ_F2`](ultra-combo__PBJ_F2.md) | 2 | ultra-combo | 0 | PBJ + F2 same bar (bull or bear) |
+| [`ultra-combo::PBJ_E3`](ultra-combo__PBJ_E3.md) | 2 | ultra-combo | 0 | PBJ + E3 same bar |
+| [`ultra-combo::PBJ_CLUSTER`](ultra-combo__PBJ_CLUSTER.md) | 2 | ultra-combo | 0 | PBJ + FC cluster same bar |
+| [`ultra-combo::PB_F2`](ultra-combo__PB_F2.md) | 2 | ultra-combo | 0 | PB + F2 same bar |
+| [`ultra-combo::PB_E3`](ultra-combo__PB_E3.md) | 2 | ultra-combo | 0 | PB + E3 same bar |
+| [`ultra-combo::PB_CLUSTER`](ultra-combo__PB_CLUSTER.md) | 2 | ultra-combo | 0 | PB + FC cluster same bar |
+| [`ultra-combo::F2CL_THEN_E3`](ultra-combo__F2CL_THEN_E3.md) | 2 | ultra-combo | 0 | Yesterday-bar F2 AND yesterday-bar FC, then today E3 (one-bar lag) |
+| [`ultra-combo::F2CL_PLUS_B2B`](ultra-combo__F2CL_PLUS_B2B.md) | 2 | ultra-combo | 0 | F2 + FC cluster + back-to-back PUP (or PPD) on same bar |
+| [`ultra-combo::B2B_PLUS_F2`](ultra-combo__B2B_PLUS_F2.md) | 2 | ultra-combo | 0 | Back-to-back PUP + F2 same bar |
+| [`ultra-combo::E3_2OF3_PUPPPD`](ultra-combo__E3_2OF3_PUPPPD.md) | 2 | ultra-combo | 0 | E3 with at least 2 of last 3 bars being PUP (bull) or PPD (bear) |
+| [`ultra-combo::F2_B2B_DAYS`](ultra-combo__F2_B2B_DAYS.md) | 2 | ultra-combo | 0 | F2 today AND F2 fired some time in the prior ~2 trading days |
+| [`ultra-combo::E3_B2B_DAYS`](ultra-combo__E3_B2B_DAYS.md) | 2 | ultra-combo | 0 | E3 today AND E3 fired in prior ~2 days |
+| [`ultra-combo::F2E3_CONSEC`](ultra-combo__F2E3_CONSEC.md) | 2 | ultra-combo | 0 | Cross-day F2/E3 sequence: F2 today + E3 in prior ~2 days, OR E3 today + F2 in pr |
+| [`ultra-combo::CLUSTER_B2B_DAYS`](ultra-combo__CLUSTER_B2B_DAYS.md) | 2 | ultra-combo | 0 | FC cluster today AND FC cluster in prior ~2 days |
+| [`ultra-combo::HW_PLUS_ANY_BULL`](ultra-combo__HW_PLUS_ANY_BULL.md) | 2 | ultra-combo | 0 | Any bull HW (RVOL family + sigROCBull + Super combos) AND any of (F2/E3/FC) bull |
+| [`ultra-combo::HW_PLUS_ANY_BEAR`](ultra-combo__HW_PLUS_ANY_BEAR.md) | 2 | ultra-combo | 0 | Mirror of HW_PLUS_ANY_BULL |
+| [`ultra-combo::GZHV_ANY_BULL`](ultra-combo__GZHV_ANY_BULL.md) | 2 | ultra-combo | -1 | (GZ1-bull OR HV-bull FVG) AND (sAnyBull this bar OR last bar) |
+| [`ultra-combo::GZHV_ANY_BEAR`](ultra-combo__GZHV_ANY_BEAR.md) | 2 | ultra-combo | -1 | Mirror |
+| [`ultra-combo::HV_GZI_COMBO_BULL`](ultra-combo__HV_GZI_COMBO_BULL.md) | 2 | ultra-combo | -1 | Session bar 2: HV bull on prior AND HV bull AND GZI bull (all same direction) |
+| [`ultra-combo::HV_GZI_COMBO_BEAR`](ultra-combo__HV_GZI_COMBO_BEAR.md) | 2 | ultra-combo | -1 | Mirror |
 | [`ultra-combo::GZ1_MEGA_BULL`](ultra-combo__GZ1_MEGA_BULL.md) | 4 | ultra-combo | 0 | GZ1 bull AND any Super-bull AND PUP AND FAUNA-bull AND DISP-bull — high-water co |
 | [`ultra-combo::HV_MEGA_BULL`](ultra-combo__HV_MEGA_BULL.md) | 4 | ultra-combo | 0 | Mirror with HV instead of GZ1 |
 | [`ultra-combo::GZ1_HV_MEGA_BULL`](ultra-combo__GZ1_HV_MEGA_BULL.md) | 5 | ultra-combo | -1 | BOTH GZ1 and HV bull simultaneously, plus full Super/PUP/FAUNA/DISP stack |
@@ -83,3 +132,12 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 | [`ultra-combo::GZHV_MEGA_BEAR`](ultra-combo__GZHV_MEGA_BEAR.md) | 4 | ultra-combo | -1 | Mirror |
 | [`ultra-combo::OPENER_BULL`](ultra-combo__OPENER_BULL.md) | 3 | ultra-combo | 0 | First session bar (sessBar==1) with (GZ1-bull OR HV-bull) AND (any HW bull OR PB |
 | [`ultra-combo::OPENER_BEAR`](ultra-combo__OPENER_BEAR.md) | 3 | ultra-combo | 0 | Mirror |
+| [`ultra-combo::THREE_BAR_BULL`](ultra-combo__THREE_BAR_BULL.md) | 3 | ultra-combo | 0 | PBJ bull within last 3 bars AND (b2bPUP within last 3 bars OR ≥2 PUPs within las |
+| [`ultra-combo::THREE_BAR_BEAR`](ultra-combo__THREE_BAR_BEAR.md) | 3 | ultra-combo | 0 | Mirror |
+| [`ultra-combo::FOSTER_PLUS_HEAVY`](ultra-combo__FOSTER_PLUS_HEAVY.md) | 3 | ultra-combo | 0 | Any Foster variant fires AND (ROC bull OR any HW bull OR any Super bull) |
+| [`ultra-combo::TB_PLUS_HEAVY`](ultra-combo__TB_PLUS_HEAVY.md) | 3 | ultra-combo | 0 | Any TB variant fires AND (ROC bear OR any HW bear OR any Super bear) |
+| [`ultra-combo::GZHV_HEAVY_BULL`](ultra-combo__GZHV_HEAVY_BULL.md) | 3 | ultra-combo | -1 | (GZ1 bull OR HV bull) AND (any HW bull OR any Super bull OR ROC bull) |
+| [`ultra-combo::GZHV_HEAVY_BEAR`](ultra-combo__GZHV_HEAVY_BEAR.md) | 3 | ultra-combo | -1 | Mirror |
+| [`ultra-combo::SUPER_B2B_DAYS_BULL`](ultra-combo__SUPER_B2B_DAYS_BULL.md) | 4 | ultra-combo | 0 | Any Super-bull (PBJ or PB) today AND any Super-bull fired in prior ~2 days |
+| [`ultra-combo::SUPER_B2B_DAYS_BEAR`](ultra-combo__SUPER_B2B_DAYS_BEAR.md) | 4 | ultra-combo | 0 | Mirror |
+| [`ultra-combo::NAGA_PASSTHROUGH`](ultra-combo__NAGA_PASSTHROUGH.md) | 1 | ultra-combo | 0 | Re-plot ultra-combo's local Nagasaki signal (volume > prior all-time max) with i |

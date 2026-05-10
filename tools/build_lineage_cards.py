@@ -287,8 +287,18 @@ def collect_offsets(node_id, roots, composites, visited, level):
 
 
 def is_top_level(c):
-    """A composite is top-level if it's plotted with an alertcondition or marked T1/T2/S* numbered."""
+    """A composite is top-level if it's plotted with an alertcondition or marked T1/T2/S* numbered.
+
+    Alert flag is recorded across extracts under several names — `has_alertcondition`,
+    `alertcondition_id`, `alert` — so check all and treat any non-null/non-empty value
+    as 'this composite has an alert and is therefore top-level'.
+    """
     if c.get("has_alertcondition"):
+        return True
+    for alert_key in ("alertcondition_id", "alert"):
+        v = c.get(alert_key)
+        if v in (None, "", "null", "None", "n/a", "N/A"):
+            continue
         return True
     cid = c.get("id", "")
     # Top-level Squarify and B2B PUP numbered composites
