@@ -1915,6 +1915,308 @@
       ]
     },
     {
+      "id": "disp-4x",
+      "file": "disp-4x/versions/DISP_4X_v1.pine",
+      "branch": "claude/organize-indicators-hierarchy-8JDw1",
+      "pine_version": 5,
+      "line_count": 121,
+      "overlay": true,
+      "one_line_purpose": "Four independent displacement engines (D1/D2/D3/D4) in one indicator; default \u03c3-multipliers 6.5/6.0/5.5/5.0; stack 4 instances on a chart for 16 simultaneous displacement-strength views",
+      "is_canonical_for": [
+        "D1_BULL",
+        "D1_BEAR",
+        "D2_BULL",
+        "D2_BEAR",
+        "D3_BULL",
+        "D3_BEAR",
+        "D4_BULL",
+        "D4_BEAR"
+      ],
+      "notes": "All 8 plots use offset=-1 because FVG confirmation occurs on bar[0] but\nthe displaced candle is bar[1]; plotting on bar[1] aligns the marker\nwith the actual displacement bar. Each engine has its own boolean\nnamespace (d1_*, d2_*, d3_*, d4_*) \u2014 they share NO state. The only\ndifferences across the 4 engines are the IPSF defaults (multiplier,\nplot shape, plot location, plot color).\nFuture: may expand to 15-20 engines per `docs/glossary.md` \u03c3-multiplier\nnotes; same D<n>_BULL/D<n>_BEAR naming pattern.\n",
+      "_extract_file": "bible-input/extract-disp-4x.yaml",
+      "internal_helpers": [
+        {
+          "name": "d_rng / d_std / d_thresh / d_prevDisp / d_bullFVG / d_bearFVG",
+          "purpose": "Per-engine displacement-detection scaffolding (range vs \u03c3-stdev gate; FVG geometry on bar[0])",
+          "notes": "Internal \u2014 not roots. Same pattern repeated 4 times under the d1_/d2_/d3_/d4_ prefix."
+        }
+      ],
+      "roots": [
+        {
+          "id": "disp-4x::D1_BULL",
+          "family": "displacement",
+          "plain_english": "Displacement 1 Bull \u2014 bar[1] range exceeds \u03c3-multiplier (default 6.5) \u00d7 stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG (low > high[2] AND close[1] > open[1])",
+          "boolean_summary": "barstate.isconfirmed AND d1_rng[1] > d1_thresh[1] AND low > high[2] AND close[1] > open[1]",
+          "parameters": [
+            {
+              "name": "d1_type",
+              "default": "Open to Close",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "d1_len",
+              "default": 100,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "d1_mult",
+              "default": 6.5,
+              "units": "\u03c3-multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": -1,
+          "plot_offset": -1,
+          "plot_call": "plotshape(d1_show_b and d1_bull, \"D1 Bull\", shape.square, location.top, color.new(#00FF00, 0), text=\"D1\", textcolor=color.white, size=size.small, offset=-1)",
+          "alertcondition_id": "D1 Bull",
+          "pine_source_line_range": "L41",
+          "lifecycle_stage": 2,
+          "notes": "Strictest of the four bull engines (highest default multiplier). offset=-1 aligns plot with bar[1] (the actual displaced candle).",
+          "in_indicator": "disp-4x"
+        },
+        {
+          "id": "disp-4x::D1_BEAR",
+          "family": "displacement",
+          "plain_english": "Displacement 1 Bear \u2014 bar[1] range exceeds \u03c3-multiplier (default 6.5) \u00d7 stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG (high < low[2] AND close[1] < open[1])",
+          "boolean_summary": "barstate.isconfirmed AND d1_rng[1] > d1_thresh[1] AND high < low[2] AND close[1] < open[1]",
+          "parameters": [
+            {
+              "name": "d1_type",
+              "default": "Open to Close",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "d1_len",
+              "default": 100,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "d1_mult",
+              "default": 6.5,
+              "units": "\u03c3-multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": -1,
+          "plot_offset": -1,
+          "plot_call": "plotshape(d1_show_r and d1_bear, \"D1 Bear\", shape.square, location.top, color.new(#FF0000, 0), text=\"D1\", textcolor=color.white, size=size.small, offset=-1)",
+          "alertcondition_id": "D1 Bear",
+          "pine_source_line_range": "L42",
+          "lifecycle_stage": 2,
+          "in_indicator": "disp-4x"
+        },
+        {
+          "id": "disp-4x::D2_BULL",
+          "family": "displacement",
+          "plain_english": "Displacement 2 Bull \u2014 bar[1] range exceeds \u03c3-multiplier (default 6.0) \u00d7 stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG",
+          "boolean_summary": "barstate.isconfirmed AND d2_rng[1] > d2_thresh[1] AND bullFVG",
+          "parameters": [
+            {
+              "name": "d2_type",
+              "default": "Open to Close",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "d2_len",
+              "default": 100,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "d2_mult",
+              "default": 6.0,
+              "units": "\u03c3-multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": -1,
+          "plot_offset": -1,
+          "plot_call": "plotshape(d2_show_b and d2_bull, \"D2 Bull\", shape.square, location.bottom, color.new(#2962FF, 0), text=\"D2\", textcolor=color.white, size=size.small, offset=-1)",
+          "alertcondition_id": "D2 Bull",
+          "pine_source_line_range": "L65",
+          "lifecycle_stage": 2,
+          "in_indicator": "disp-4x"
+        },
+        {
+          "id": "disp-4x::D2_BEAR",
+          "family": "displacement",
+          "plain_english": "Displacement 2 Bear \u2014 bar[1] range exceeds \u03c3-multiplier (default 6.0) \u00d7 stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG",
+          "boolean_summary": "barstate.isconfirmed AND d2_rng[1] > d2_thresh[1] AND bearFVG",
+          "parameters": [
+            {
+              "name": "d2_type",
+              "default": "Open to Close",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "d2_len",
+              "default": 100,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "d2_mult",
+              "default": 6.0,
+              "units": "\u03c3-multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": -1,
+          "plot_offset": -1,
+          "plot_call": "plotshape(d2_show_r and d2_bear, \"D2 Bear\", shape.square, location.bottom, color.new(#FF00FF, 0), text=\"D2\", textcolor=color.white, size=size.small, offset=-1)",
+          "alertcondition_id": "D2 Bear",
+          "pine_source_line_range": "L66",
+          "lifecycle_stage": 2,
+          "in_indicator": "disp-4x"
+        },
+        {
+          "id": "disp-4x::D3_BULL",
+          "family": "displacement",
+          "plain_english": "Displacement 3 Bull \u2014 bar[1] range exceeds \u03c3-multiplier (default 5.5) \u00d7 stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG",
+          "boolean_summary": "barstate.isconfirmed AND d3_rng[1] > d3_thresh[1] AND bullFVG",
+          "parameters": [
+            {
+              "name": "d3_type",
+              "default": "Open to Close",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "d3_len",
+              "default": 100,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "d3_mult",
+              "default": 5.5,
+              "units": "\u03c3-multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": -1,
+          "plot_offset": -1,
+          "plot_call": "plotshape(d3_show_b and d3_bull, \"D3 Bull\", shape.xcross, location.top, color.new(#00FF00, 0), text=\"D3\", textcolor=color.white, size=size.small, offset=-1)",
+          "alertcondition_id": "D3 Bull",
+          "pine_source_line_range": "L89",
+          "lifecycle_stage": 2,
+          "in_indicator": "disp-4x"
+        },
+        {
+          "id": "disp-4x::D3_BEAR",
+          "family": "displacement",
+          "plain_english": "Displacement 3 Bear \u2014 bar[1] range exceeds \u03c3-multiplier (default 5.5) \u00d7 stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG",
+          "boolean_summary": "barstate.isconfirmed AND d3_rng[1] > d3_thresh[1] AND bearFVG",
+          "parameters": [
+            {
+              "name": "d3_type",
+              "default": "Open to Close",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "d3_len",
+              "default": 100,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "d3_mult",
+              "default": 5.5,
+              "units": "\u03c3-multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": -1,
+          "plot_offset": -1,
+          "plot_call": "plotshape(d3_show_r and d3_bear, \"D3 Bear\", shape.xcross, location.top, color.new(#FF0000, 0), text=\"D3\", textcolor=color.white, size=size.small, offset=-1)",
+          "alertcondition_id": "D3 Bear",
+          "pine_source_line_range": "L90",
+          "lifecycle_stage": 2,
+          "in_indicator": "disp-4x"
+        },
+        {
+          "id": "disp-4x::D4_BULL",
+          "family": "displacement",
+          "plain_english": "Displacement 4 Bull \u2014 bar[1] range exceeds \u03c3-multiplier (default 5.0) \u00d7 stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG",
+          "boolean_summary": "barstate.isconfirmed AND d4_rng[1] > d4_thresh[1] AND bullFVG",
+          "parameters": [
+            {
+              "name": "d4_type",
+              "default": "Open to Close",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "d4_len",
+              "default": 100,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "d4_mult",
+              "default": 5.0,
+              "units": "\u03c3-multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": -1,
+          "plot_offset": -1,
+          "plot_call": "plotshape(d4_show_b and d4_bull, \"D4 Bull\", shape.cross, location.bottom, color.new(#2962FF, 0), text=\"D4\", textcolor=color.white, size=size.small, offset=-1)",
+          "alertcondition_id": "D4 Bull",
+          "pine_source_line_range": "L113",
+          "lifecycle_stage": 2,
+          "notes": "Loosest of the four bull engines (lowest default multiplier). Most permissive, fires more frequently.",
+          "in_indicator": "disp-4x"
+        },
+        {
+          "id": "disp-4x::D4_BEAR",
+          "family": "displacement",
+          "plain_english": "Displacement 4 Bear \u2014 bar[1] range exceeds \u03c3-multiplier (default 5.0) \u00d7 stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG",
+          "boolean_summary": "barstate.isconfirmed AND d4_rng[1] > d4_thresh[1] AND bearFVG",
+          "parameters": [
+            {
+              "name": "d4_type",
+              "default": "Open to Close",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "d4_len",
+              "default": 100,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "d4_mult",
+              "default": 5.0,
+              "units": "\u03c3-multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": -1,
+          "plot_offset": -1,
+          "plot_call": "plotshape(d4_show_r and d4_bear, \"D4 Bear\", shape.cross, location.bottom, color.new(#FF00FF, 0), text=\"D4\", textcolor=color.white, size=size.small, offset=-1)",
+          "alertcondition_id": "D4 Bear",
+          "pine_source_line_range": "L114",
+          "lifecycle_stage": 2,
+          "in_indicator": "disp-4x"
+        }
+      ],
+      "composites": [],
+      "cross_indicator_dependencies": [],
+      "uncertain_or_questions": [
+        "Relationship to hvd-pbj-ppd::DISPLACEMENT_BULL/BEAR: same boolean structure (bar[1] range > stdev \u00d7 mult, plus FVG confirmation on bar[0]). Disp-4x gives 4 parameterised instances of the same primitive, intended for stacked-pane diagnostics. Stage 7 byte-diff: confirm boolean equivalence with hvd-pbj-ppd::DISPLACEMENT at the same multiplier.",
+        "Future expansion to 15-20 engines per indicator (Anish's stated direction). Naming pattern preserved: disp-Nx::D<n>_BULL / D<n>_BEAR."
+      ]
+    },
+    {
       "id": "heavy-combo-toggles",
       "file": "heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine",
       "branch": "both",
@@ -5010,6 +5312,393 @@
         "DISP2 / DISP3 are intermediate primitives used only inside DISP_CONS_BULL2/3; not separately rooted. DISP5 is exposed because HW Bull/Bear depend on it (and uses a hardcoded 5\u03c3 which differs from DISP's user-input multipliers).",
         "Predecessor relationship \u2014 assessed as 'drifted-subset' from byte/line counts (1767 vs 1939 lines, 109,787 vs 123,396 bytes) and CHANGELOG header. Did NOT diff the predecessor file in detail per task rules.",
         "Several composite operands listed as bare Pine identifiers (e.g. sigFAUNABull, bull_pp, gz_bullGZI, sigSAAB, sigGrandSlam, sigPentagon, sigWTC, sigHiroshima, sigMOAB, sigKratos, sigBullRVOL1x, sigBearRVOL1x, sigLong1, sigShort1, sigNeoBull, sigTrinityBull) refer to internal USE-engine primitives. They are documented in `internal_helpers` as engines (RVOL/FAUNA/Matrix-Number/Long-Short/GZI). Whether the bible should treat each of those as its own root from this file or only from the dedicated heavy-pentagon/hv-fvg-gz1-og engines is a Stage-1 merge question."
+      ]
+    },
+    {
+      "id": "pb-pbj",
+      "file": "pb-pbj/versions/PB_PBJ_v1.pine",
+      "branch": "claude/organize-indicators-hierarchy-8JDw1",
+      "pine_version": 5,
+      "line_count": 290,
+      "overlay": true,
+      "one_line_purpose": "Canonical isolated PB/PBJ engine \u2014 4 dedicated detection roots with OKEH Zoo + PB&J Filter + Supertrend pipeline; all defaults preserved from YY+D+PBJ source",
+      "is_canonical_for": [
+        "PB_BULL",
+        "PB_BEAR",
+        "PBJ_BULL",
+        "PBJ_BEAR"
+      ],
+      "extracted_from": "Yin Yang + Displacement + PBJ (YY+D+PBJ)",
+      "notes": "Each PB/PBJ pair is mutually exclusive on the same direction:\nsigBullPB requires NOT sig_pbj_buy; sigBearPB requires NOT sig_pbj_sell.\nA bar that satisfies both filters is classified as PBJ.\nAll 4 signals gated by barstate.isconfirmed; alerts use\nalert.freq_once_per_bar_close for non-repainting 1:1 parity.\n",
+      "_extract_file": "bible-input/extract-pb-pbj.yaml",
+      "internal_helpers": [
+        {
+          "name": "f_ma()",
+          "purpose": "Switch-based MA selector (VWMA/EMA/SMA/WMA/HMA); default VWMA(close, 5)",
+          "pine_source_line_range": "L91-L100",
+          "notes": "Internal \u2014 not a root."
+        },
+        {
+          "name": "Supertrend",
+          "purpose": "ATR(10)*2.0 trailing-stop direction classifier (st_dir)",
+          "pine_source_line_range": "L106-L127",
+          "notes": "Internal \u2014 not a root. Applied when zoo_use_st=true (default ON)."
+        },
+        {
+          "name": "PB&J Filter (pbj_buy / pbj_sell)",
+          "purpose": "ATR-banded EMA wick test \u2014 low/high outside pbj_ma \u00b1 thresh, with HH/LL lookback gate and volume floor",
+          "pine_source_line_range": "L143-L150",
+          "notes": "Produces the buy/sell pre-confirmation flags consumed by the level manager. Internal."
+        },
+        {
+          "name": "Level management (bull_lvls, bear_lvls)",
+          "purpose": "Per-direction landing-box arrays tracking approach state via f_check_approach()",
+          "pine_source_line_range": "L153-L213",
+          "notes": "Stateful arrays of `lvl` UDT records. Internal."
+        },
+        {
+          "name": "wait_buy / wait_sell / wait_pbj_buy / wait_pbj_sell",
+          "purpose": "Var-state machines tracking whether a buy/sell setup is ready to fire",
+          "pine_source_line_range": "L221-L240",
+          "notes": "Reset by their corresponding sig_pb_*/sig_pbj_* fire. Internal state."
+        }
+      ],
+      "roots": [
+        {
+          "id": "pb-pbj::PB_BULL",
+          "family": "candle",
+          "plain_english": "Bullish PB landing \u2014 Supertrend buy_cross AND a tracked bull-zone landing-box was approached AND PBJ filter did NOT fire (mutual exclusion with PBJ_BULL)",
+          "boolean_summary": "barstate.isconfirmed AND buy_cross AND wait_buy AND NOT (buy_cross AND wait_pbj_buy)",
+          "parameters": [
+            {
+              "name": "zoo_ma_type",
+              "default": "VWMA",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_ma_len",
+              "default": 5,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_ma_period",
+              "default": 20,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_atr_period",
+              "default": 14,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_hh_ll",
+              "default": 25,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_atr_mult",
+              "default": 3.0,
+              "units": "multiplier",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_vol_period",
+              "default": 20,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_vol_mult",
+              "default": 0.1,
+              "units": "multiplier",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_use_st",
+              "default": true,
+              "units": "bool",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_st_period",
+              "default": 10,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_st_mult",
+              "default": 2.0,
+              "units": "multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": 0,
+          "plot_offset": 0,
+          "plot_call": "plotshape(show_BullPB and sigBullPB, title=\"Sig#1 Bull PB\", style=shape.labelup, location=location.bottom, color=color.new(color.aqua, 75), size=size.small, text=\"PB\", textcolor=color.white, offset=0)",
+          "alertcondition_id": "Sig#1 Bull PB",
+          "pine_source_line_range": "L259",
+          "lifecycle_stage": 2,
+          "notes": "Mutual exclusion with PBJ_BULL \u2014 bar that satisfies both is classified as PBJ. All settings IPSF (input.*).",
+          "in_indicator": "pb-pbj"
+        },
+        {
+          "id": "pb-pbj::PBJ_BULL",
+          "family": "candle",
+          "plain_english": "Bullish PBJ \u2014 Supertrend buy_cross occurs while the PB&J wick filter has been triggered (low pierced pbj_ma * (1 - thresh), at the lowest of HH/LL lookback, with volume above floor)",
+          "boolean_summary": "barstate.isconfirmed AND buy_cross AND wait_pbj_buy",
+          "parameters": [
+            {
+              "name": "zoo_ma_type",
+              "default": "VWMA",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_ma_len",
+              "default": 5,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_ma_period",
+              "default": 20,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_atr_period",
+              "default": 14,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_hh_ll",
+              "default": 25,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_atr_mult",
+              "default": 3.0,
+              "units": "multiplier",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_vol_period",
+              "default": 20,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_vol_mult",
+              "default": 0.1,
+              "units": "multiplier",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_use_st",
+              "default": true,
+              "units": "bool",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_st_period",
+              "default": 10,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_st_mult",
+              "default": 2.0,
+              "units": "multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": 0,
+          "plot_offset": 0,
+          "plot_call": "plotshape(show_BullPBJ and sigBullPBJ, title=\"Sig#2 Bull PBJ\", style=shape.diamond, location=location.bottom, color=color.new(color.yellow, 25), size=size.normal, text=\"PBJ\", textcolor=color.white, offset=0)",
+          "alertcondition_id": "Sig#2 Bull PBJ",
+          "pine_source_line_range": "L262",
+          "lifecycle_stage": 2,
+          "notes": "Stronger filter than PB_BULL. Internal: PB&J filter (pbj_buy) requires low pierce + HH/LL lowest + volume gate. All settings IPSF.",
+          "in_indicator": "pb-pbj"
+        },
+        {
+          "id": "pb-pbj::PB_BEAR",
+          "family": "candle",
+          "plain_english": "Bearish PB landing \u2014 Supertrend sell_cross AND a tracked bear-zone landing-box was approached AND PBJ filter did NOT fire (mutual exclusion with PBJ_BEAR)",
+          "boolean_summary": "barstate.isconfirmed AND sell_cross AND wait_sell AND NOT (sell_cross AND wait_pbj_sell)",
+          "parameters": [
+            {
+              "name": "zoo_ma_type",
+              "default": "VWMA",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_ma_len",
+              "default": 5,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_ma_period",
+              "default": 20,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_atr_period",
+              "default": 14,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_hh_ll",
+              "default": 25,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_atr_mult",
+              "default": 3.0,
+              "units": "multiplier",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_vol_period",
+              "default": 20,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_vol_mult",
+              "default": 0.1,
+              "units": "multiplier",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_use_st",
+              "default": true,
+              "units": "bool",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_st_period",
+              "default": 10,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_st_mult",
+              "default": 2.0,
+              "units": "multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": 0,
+          "plot_offset": 0,
+          "plot_call": "plotshape(show_BearPB and sigBearPB, title=\"Sig#3 Bear PB\", style=shape.labeldown, location=location.top, color=color.new(color.orange, 75), size=size.small, text=\"PB\", textcolor=color.white, offset=0)",
+          "alertcondition_id": "Sig#3 Bear PB",
+          "pine_source_line_range": "L265",
+          "lifecycle_stage": 2,
+          "notes": "Mirror of PB_BULL for short setups. Mutual exclusion with PBJ_BEAR. All settings IPSF.",
+          "in_indicator": "pb-pbj"
+        },
+        {
+          "id": "pb-pbj::PBJ_BEAR",
+          "family": "candle",
+          "plain_english": "Bearish PBJ \u2014 Supertrend sell_cross occurs while the PB&J wick filter has been triggered (high pierced pbj_ma * (1 + thresh), at the highest of HH/LL lookback, with volume above floor)",
+          "boolean_summary": "barstate.isconfirmed AND sell_cross AND wait_pbj_sell",
+          "parameters": [
+            {
+              "name": "zoo_ma_type",
+              "default": "VWMA",
+              "units": "enum",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_ma_len",
+              "default": 5,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_ma_period",
+              "default": 20,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_atr_period",
+              "default": 14,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_hh_ll",
+              "default": 25,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_atr_mult",
+              "default": 3.0,
+              "units": "multiplier",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_vol_period",
+              "default": 20,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_pbj_vol_mult",
+              "default": 0.1,
+              "units": "multiplier",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_use_st",
+              "default": true,
+              "units": "bool",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_st_period",
+              "default": 10,
+              "units": "bars",
+              "ipsf": true
+            },
+            {
+              "name": "zoo_st_mult",
+              "default": 2.0,
+              "units": "multiplier",
+              "ipsf": true
+            }
+          ],
+          "offset": 0,
+          "plot_offset": 0,
+          "plot_call": "plotshape(show_BearPBJ and sigBearPBJ, title=\"Sig#4 Bear PBJ\", style=shape.diamond, location=location.top, color=color.new(color.red, 25), size=size.normal, text=\"PBJ\", textcolor=color.white, offset=0)",
+          "alertcondition_id": "Sig#4 Bear PBJ",
+          "pine_source_line_range": "L268",
+          "lifecycle_stage": 2,
+          "notes": "Mirror of PBJ_BULL for short setups. All settings IPSF.",
+          "in_indicator": "pb-pbj"
+        }
+      ],
+      "composites": [],
+      "cross_indicator_dependencies": [],
+      "uncertain_or_questions": [
+        "Stage 7 byte-diff: confirm pb-pbj::PB_BULL/PBJ_BULL/PB_BEAR/PBJ_BEAR booleans are byte-identical to hvd-pbj-ppd::PB_BULL/PBJ_BULL/PB_BEAR/PBJ_BEAR (the same OKEH engine in HVDPBJPPD's Engine 6).",
+        "If byte-identical, designate pb-pbj::* as canonical (per its filename 'PB & PBJ \u2014 4 Signals PB PBJ ONLY THIS') and mark hvd-pbj-ppd::PBJ_BULL/BEAR/PB_BULL/PB_BEAR as variants.",
+        "If drift exists, document in docs/redundancy.md (b) and decide which implementation is canonical based on Anish's preference."
       ]
     },
     {
@@ -12341,6 +13030,272 @@
       "lifecycle_stage": 2
     },
     {
+      "id": "disp-4x::D1_BULL",
+      "family": "displacement",
+      "plain_english": "Displacement 1 Bull \u2014 bar[1] range exceeds \u03c3-multiplier (default 6.5) \u00d7 stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG (low > high[2] AND close[1] > open[1])",
+      "boolean_summary": "barstate.isconfirmed AND d1_rng[1] > d1_thresh[1] AND low > high[2] AND close[1] > open[1]",
+      "parameters": [
+        {
+          "name": "d1_type",
+          "default": "Open to Close",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "d1_len",
+          "default": 100,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "d1_mult",
+          "default": 6.5,
+          "units": "\u03c3-multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": -1,
+      "plot_offset": -1,
+      "plot_call": "plotshape(d1_show_b and d1_bull, \"D1 Bull\", shape.square, location.top, color.new(#00FF00, 0), text=\"D1\", textcolor=color.white, size=size.small, offset=-1)",
+      "alertcondition_id": "D1 Bull",
+      "pine_source_line_range": "L41",
+      "lifecycle_stage": 2,
+      "notes": "Strictest of the four bull engines (highest default multiplier). offset=-1 aligns plot with bar[1] (the actual displaced candle).",
+      "in_indicator": "disp-4x"
+    },
+    {
+      "id": "disp-4x::D1_BEAR",
+      "family": "displacement",
+      "plain_english": "Displacement 1 Bear \u2014 bar[1] range exceeds \u03c3-multiplier (default 6.5) \u00d7 stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG (high < low[2] AND close[1] < open[1])",
+      "boolean_summary": "barstate.isconfirmed AND d1_rng[1] > d1_thresh[1] AND high < low[2] AND close[1] < open[1]",
+      "parameters": [
+        {
+          "name": "d1_type",
+          "default": "Open to Close",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "d1_len",
+          "default": 100,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "d1_mult",
+          "default": 6.5,
+          "units": "\u03c3-multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": -1,
+      "plot_offset": -1,
+      "plot_call": "plotshape(d1_show_r and d1_bear, \"D1 Bear\", shape.square, location.top, color.new(#FF0000, 0), text=\"D1\", textcolor=color.white, size=size.small, offset=-1)",
+      "alertcondition_id": "D1 Bear",
+      "pine_source_line_range": "L42",
+      "lifecycle_stage": 2,
+      "in_indicator": "disp-4x"
+    },
+    {
+      "id": "disp-4x::D2_BULL",
+      "family": "displacement",
+      "plain_english": "Displacement 2 Bull \u2014 bar[1] range exceeds \u03c3-multiplier (default 6.0) \u00d7 stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG",
+      "boolean_summary": "barstate.isconfirmed AND d2_rng[1] > d2_thresh[1] AND bullFVG",
+      "parameters": [
+        {
+          "name": "d2_type",
+          "default": "Open to Close",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "d2_len",
+          "default": 100,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "d2_mult",
+          "default": 6.0,
+          "units": "\u03c3-multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": -1,
+      "plot_offset": -1,
+      "plot_call": "plotshape(d2_show_b and d2_bull, \"D2 Bull\", shape.square, location.bottom, color.new(#2962FF, 0), text=\"D2\", textcolor=color.white, size=size.small, offset=-1)",
+      "alertcondition_id": "D2 Bull",
+      "pine_source_line_range": "L65",
+      "lifecycle_stage": 2,
+      "in_indicator": "disp-4x"
+    },
+    {
+      "id": "disp-4x::D2_BEAR",
+      "family": "displacement",
+      "plain_english": "Displacement 2 Bear \u2014 bar[1] range exceeds \u03c3-multiplier (default 6.0) \u00d7 stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG",
+      "boolean_summary": "barstate.isconfirmed AND d2_rng[1] > d2_thresh[1] AND bearFVG",
+      "parameters": [
+        {
+          "name": "d2_type",
+          "default": "Open to Close",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "d2_len",
+          "default": 100,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "d2_mult",
+          "default": 6.0,
+          "units": "\u03c3-multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": -1,
+      "plot_offset": -1,
+      "plot_call": "plotshape(d2_show_r and d2_bear, \"D2 Bear\", shape.square, location.bottom, color.new(#FF00FF, 0), text=\"D2\", textcolor=color.white, size=size.small, offset=-1)",
+      "alertcondition_id": "D2 Bear",
+      "pine_source_line_range": "L66",
+      "lifecycle_stage": 2,
+      "in_indicator": "disp-4x"
+    },
+    {
+      "id": "disp-4x::D3_BULL",
+      "family": "displacement",
+      "plain_english": "Displacement 3 Bull \u2014 bar[1] range exceeds \u03c3-multiplier (default 5.5) \u00d7 stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG",
+      "boolean_summary": "barstate.isconfirmed AND d3_rng[1] > d3_thresh[1] AND bullFVG",
+      "parameters": [
+        {
+          "name": "d3_type",
+          "default": "Open to Close",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "d3_len",
+          "default": 100,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "d3_mult",
+          "default": 5.5,
+          "units": "\u03c3-multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": -1,
+      "plot_offset": -1,
+      "plot_call": "plotshape(d3_show_b and d3_bull, \"D3 Bull\", shape.xcross, location.top, color.new(#00FF00, 0), text=\"D3\", textcolor=color.white, size=size.small, offset=-1)",
+      "alertcondition_id": "D3 Bull",
+      "pine_source_line_range": "L89",
+      "lifecycle_stage": 2,
+      "in_indicator": "disp-4x"
+    },
+    {
+      "id": "disp-4x::D3_BEAR",
+      "family": "displacement",
+      "plain_english": "Displacement 3 Bear \u2014 bar[1] range exceeds \u03c3-multiplier (default 5.5) \u00d7 stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG",
+      "boolean_summary": "barstate.isconfirmed AND d3_rng[1] > d3_thresh[1] AND bearFVG",
+      "parameters": [
+        {
+          "name": "d3_type",
+          "default": "Open to Close",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "d3_len",
+          "default": 100,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "d3_mult",
+          "default": 5.5,
+          "units": "\u03c3-multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": -1,
+      "plot_offset": -1,
+      "plot_call": "plotshape(d3_show_r and d3_bear, \"D3 Bear\", shape.xcross, location.top, color.new(#FF0000, 0), text=\"D3\", textcolor=color.white, size=size.small, offset=-1)",
+      "alertcondition_id": "D3 Bear",
+      "pine_source_line_range": "L90",
+      "lifecycle_stage": 2,
+      "in_indicator": "disp-4x"
+    },
+    {
+      "id": "disp-4x::D4_BULL",
+      "family": "displacement",
+      "plain_english": "Displacement 4 Bull \u2014 bar[1] range exceeds \u03c3-multiplier (default 5.0) \u00d7 stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG",
+      "boolean_summary": "barstate.isconfirmed AND d4_rng[1] > d4_thresh[1] AND bullFVG",
+      "parameters": [
+        {
+          "name": "d4_type",
+          "default": "Open to Close",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "d4_len",
+          "default": 100,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "d4_mult",
+          "default": 5.0,
+          "units": "\u03c3-multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": -1,
+      "plot_offset": -1,
+      "plot_call": "plotshape(d4_show_b and d4_bull, \"D4 Bull\", shape.cross, location.bottom, color.new(#2962FF, 0), text=\"D4\", textcolor=color.white, size=size.small, offset=-1)",
+      "alertcondition_id": "D4 Bull",
+      "pine_source_line_range": "L113",
+      "lifecycle_stage": 2,
+      "notes": "Loosest of the four bull engines (lowest default multiplier). Most permissive, fires more frequently.",
+      "in_indicator": "disp-4x"
+    },
+    {
+      "id": "disp-4x::D4_BEAR",
+      "family": "displacement",
+      "plain_english": "Displacement 4 Bear \u2014 bar[1] range exceeds \u03c3-multiplier (default 5.0) \u00d7 stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG",
+      "boolean_summary": "barstate.isconfirmed AND d4_rng[1] > d4_thresh[1] AND bearFVG",
+      "parameters": [
+        {
+          "name": "d4_type",
+          "default": "Open to Close",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "d4_len",
+          "default": 100,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "d4_mult",
+          "default": 5.0,
+          "units": "\u03c3-multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": -1,
+      "plot_offset": -1,
+      "plot_call": "plotshape(d4_show_r and d4_bear, \"D4 Bear\", shape.cross, location.bottom, color.new(#FF00FF, 0), text=\"D4\", textcolor=color.white, size=size.small, offset=-1)",
+      "alertcondition_id": "D4 Bear",
+      "pine_source_line_range": "L114",
+      "lifecycle_stage": 2,
+      "in_indicator": "disp-4x"
+    },
+    {
       "id": "heavy-pentagon::SAAB",
       "family": "rvol",
       "plain_english": "Bullish bar with normalized price spike in the SAAB/Kratos band (between 0.56\u00d7 the RVOL-1x threshold and the RVOL-1x threshold).",
@@ -13408,6 +14363,334 @@
       "in_indicator": "hvd-pbj-ppd",
       "plot_offset": 0,
       "lifecycle_stage": 2
+    },
+    {
+      "id": "pb-pbj::PB_BULL",
+      "family": "candle",
+      "plain_english": "Bullish PB landing \u2014 Supertrend buy_cross AND a tracked bull-zone landing-box was approached AND PBJ filter did NOT fire (mutual exclusion with PBJ_BULL)",
+      "boolean_summary": "barstate.isconfirmed AND buy_cross AND wait_buy AND NOT (buy_cross AND wait_pbj_buy)",
+      "parameters": [
+        {
+          "name": "zoo_ma_type",
+          "default": "VWMA",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_ma_len",
+          "default": 5,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_ma_period",
+          "default": 20,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_atr_period",
+          "default": 14,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_hh_ll",
+          "default": 25,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_atr_mult",
+          "default": 3.0,
+          "units": "multiplier",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_vol_period",
+          "default": 20,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_vol_mult",
+          "default": 0.1,
+          "units": "multiplier",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_use_st",
+          "default": true,
+          "units": "bool",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_st_period",
+          "default": 10,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_st_mult",
+          "default": 2.0,
+          "units": "multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": 0,
+      "plot_offset": 0,
+      "plot_call": "plotshape(show_BullPB and sigBullPB, title=\"Sig#1 Bull PB\", style=shape.labelup, location=location.bottom, color=color.new(color.aqua, 75), size=size.small, text=\"PB\", textcolor=color.white, offset=0)",
+      "alertcondition_id": "Sig#1 Bull PB",
+      "pine_source_line_range": "L259",
+      "lifecycle_stage": 2,
+      "notes": "Mutual exclusion with PBJ_BULL \u2014 bar that satisfies both is classified as PBJ. All settings IPSF (input.*).",
+      "in_indicator": "pb-pbj"
+    },
+    {
+      "id": "pb-pbj::PBJ_BULL",
+      "family": "candle",
+      "plain_english": "Bullish PBJ \u2014 Supertrend buy_cross occurs while the PB&J wick filter has been triggered (low pierced pbj_ma * (1 - thresh), at the lowest of HH/LL lookback, with volume above floor)",
+      "boolean_summary": "barstate.isconfirmed AND buy_cross AND wait_pbj_buy",
+      "parameters": [
+        {
+          "name": "zoo_ma_type",
+          "default": "VWMA",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_ma_len",
+          "default": 5,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_ma_period",
+          "default": 20,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_atr_period",
+          "default": 14,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_hh_ll",
+          "default": 25,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_atr_mult",
+          "default": 3.0,
+          "units": "multiplier",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_vol_period",
+          "default": 20,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_vol_mult",
+          "default": 0.1,
+          "units": "multiplier",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_use_st",
+          "default": true,
+          "units": "bool",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_st_period",
+          "default": 10,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_st_mult",
+          "default": 2.0,
+          "units": "multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": 0,
+      "plot_offset": 0,
+      "plot_call": "plotshape(show_BullPBJ and sigBullPBJ, title=\"Sig#2 Bull PBJ\", style=shape.diamond, location=location.bottom, color=color.new(color.yellow, 25), size=size.normal, text=\"PBJ\", textcolor=color.white, offset=0)",
+      "alertcondition_id": "Sig#2 Bull PBJ",
+      "pine_source_line_range": "L262",
+      "lifecycle_stage": 2,
+      "notes": "Stronger filter than PB_BULL. Internal: PB&J filter (pbj_buy) requires low pierce + HH/LL lowest + volume gate. All settings IPSF.",
+      "in_indicator": "pb-pbj"
+    },
+    {
+      "id": "pb-pbj::PB_BEAR",
+      "family": "candle",
+      "plain_english": "Bearish PB landing \u2014 Supertrend sell_cross AND a tracked bear-zone landing-box was approached AND PBJ filter did NOT fire (mutual exclusion with PBJ_BEAR)",
+      "boolean_summary": "barstate.isconfirmed AND sell_cross AND wait_sell AND NOT (sell_cross AND wait_pbj_sell)",
+      "parameters": [
+        {
+          "name": "zoo_ma_type",
+          "default": "VWMA",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_ma_len",
+          "default": 5,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_ma_period",
+          "default": 20,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_atr_period",
+          "default": 14,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_hh_ll",
+          "default": 25,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_atr_mult",
+          "default": 3.0,
+          "units": "multiplier",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_vol_period",
+          "default": 20,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_vol_mult",
+          "default": 0.1,
+          "units": "multiplier",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_use_st",
+          "default": true,
+          "units": "bool",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_st_period",
+          "default": 10,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_st_mult",
+          "default": 2.0,
+          "units": "multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": 0,
+      "plot_offset": 0,
+      "plot_call": "plotshape(show_BearPB and sigBearPB, title=\"Sig#3 Bear PB\", style=shape.labeldown, location=location.top, color=color.new(color.orange, 75), size=size.small, text=\"PB\", textcolor=color.white, offset=0)",
+      "alertcondition_id": "Sig#3 Bear PB",
+      "pine_source_line_range": "L265",
+      "lifecycle_stage": 2,
+      "notes": "Mirror of PB_BULL for short setups. Mutual exclusion with PBJ_BEAR. All settings IPSF.",
+      "in_indicator": "pb-pbj"
+    },
+    {
+      "id": "pb-pbj::PBJ_BEAR",
+      "family": "candle",
+      "plain_english": "Bearish PBJ \u2014 Supertrend sell_cross occurs while the PB&J wick filter has been triggered (high pierced pbj_ma * (1 + thresh), at the highest of HH/LL lookback, with volume above floor)",
+      "boolean_summary": "barstate.isconfirmed AND sell_cross AND wait_pbj_sell",
+      "parameters": [
+        {
+          "name": "zoo_ma_type",
+          "default": "VWMA",
+          "units": "enum",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_ma_len",
+          "default": 5,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_ma_period",
+          "default": 20,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_atr_period",
+          "default": 14,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_hh_ll",
+          "default": 25,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_atr_mult",
+          "default": 3.0,
+          "units": "multiplier",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_vol_period",
+          "default": 20,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_pbj_vol_mult",
+          "default": 0.1,
+          "units": "multiplier",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_use_st",
+          "default": true,
+          "units": "bool",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_st_period",
+          "default": 10,
+          "units": "bars",
+          "ipsf": true
+        },
+        {
+          "name": "zoo_st_mult",
+          "default": 2.0,
+          "units": "multiplier",
+          "ipsf": true
+        }
+      ],
+      "offset": 0,
+      "plot_offset": 0,
+      "plot_call": "plotshape(show_BearPBJ and sigBearPBJ, title=\"Sig#4 Bear PBJ\", style=shape.diamond, location=location.top, color=color.new(color.red, 25), size=size.normal, text=\"PBJ\", textcolor=color.white, offset=0)",
+      "alertcondition_id": "Sig#4 Bear PBJ",
+      "pine_source_line_range": "L268",
+      "lifecycle_stage": 2,
+      "notes": "Mirror of PBJ_BULL for short setups. All settings IPSF.",
+      "in_indicator": "pb-pbj"
     },
     {
       "id": "proximity-gzi-hv::GZI_BULL",

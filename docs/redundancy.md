@@ -6,7 +6,7 @@ Two tables. **(a)** name collisions — same primitive name appearing under two 
 
 ## (a) Name collisions across indicators
 
-**28 colliding names.** Each row groups all canonical IDs that share an unqualified name.
+**32 colliding names.** Each row groups all canonical IDs that share an unqualified name.
 
 | Short name | Occurrences | Verdict | Recommendation |
 |---|---|---|---|
@@ -33,6 +33,10 @@ Two tables. **(a)** name collisions — same primitive name appearing under two 
 | `MOAB` | `b2b-pup::MOAB` (in b2b-pup); `heavy-pentagon::MOAB` (in heavy-pentagon) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `NAGASAKI` | `heavy-pentagon::NAGASAKI` (in heavy-pentagon); `hvd-pbj-ppd::NAGASAKI` (in hvd-pbj-ppd) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `Nagasaki` | `b2b-pup::Nagasaki` (in b2b-pup); `vob-asym::Nagasaki` (in vob-asym) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `PBJ_BEAR` | `hvd-pbj-ppd::PBJ_BEAR` (in hvd-pbj-ppd); `pb-pbj::PBJ_BEAR` (in pb-pbj) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `PBJ_BULL` | `hvd-pbj-ppd::PBJ_BULL` (in hvd-pbj-ppd); `pb-pbj::PBJ_BULL` (in pb-pbj) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `PB_BEAR` | `hvd-pbj-ppd::PB_BEAR` (in hvd-pbj-ppd); `pb-pbj::PB_BEAR` (in pb-pbj) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `PB_BULL` | `hvd-pbj-ppd::PB_BULL` (in hvd-pbj-ppd); `pb-pbj::PB_BULL` (in pb-pbj) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `PPD` | `b2b-pup::PPD` (in b2b-pup); `hvd-pbj-ppd::PPD` (in hvd-pbj-ppd) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `PUP` | `b2b-pup::PUP` (in b2b-pup); `hvd-pbj-ppd::PUP` (in hvd-pbj-ppd) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `SAAB` | `b2b-pup::SAAB` (in b2b-pup); `heavy-pentagon::SAAB` (in heavy-pentagon) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |

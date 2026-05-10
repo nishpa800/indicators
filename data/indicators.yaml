@@ -193,7 +193,7 @@ indicators:
     in_indicator: anish-50-1st-combo
     lifecycle_stage: 2
   composites:
-  - &id196
+  - &id208
     id: anish-50-1st-combo::AllThreeBull
     tier: 2
     aka:
@@ -218,7 +218,7 @@ indicators:
       message: PP + Gap Up + Anish Bull on {{ticker}}
     in_indicator: anish-50-1st-combo
     lifecycle_stage: 5
-  - &id197
+  - &id209
     id: anish-50-1st-combo::AllThreeBear
     tier: 2
     aka:
@@ -243,7 +243,7 @@ indicators:
       message: PP + Gap Down + Anish Bear on {{ticker}}
     in_indicator: anish-50-1st-combo
     lifecycle_stage: 5
-  - &id198
+  - &id210
     id: anish-50-1st-combo::SuperPup
     tier: 2
     aka:
@@ -269,7 +269,7 @@ indicators:
       message: PUP + Anish Bull Confluence - Strong Buy on {{ticker}}
     in_indicator: anish-50-1st-combo
     lifecycle_stage: 5
-  - &id199
+  - &id211
     id: anish-50-1st-combo::SuperPPD
     tier: 2
     aka:
@@ -295,7 +295,7 @@ indicators:
       message: PPD + Anish Bear Confluence - Strong Sell on {{ticker}}
     in_indicator: anish-50-1st-combo
     lifecycle_stage: 5
-  - &id200
+  - &id212
     id: anish-50-1st-combo::TB
     tier: 3
     aka:
@@ -325,7 +325,7 @@ indicators:
       Y: followUpBars
     in_indicator: anish-50-1st-combo
     lifecycle_stage: 5
-  - &id201
+  - &id213
     id: anish-50-1st-combo::Foster
     tier: 3
     aka:
@@ -1175,7 +1175,7 @@ indicators:
     plot_offset: 0
     lifecycle_stage: 2
   composites:
-  - &id202
+  - &id214
     id: b2b-pup::B2B_PUP
     tier: 1
     plain_english: 'Back-to-back PUP: PUP fires on bar[0] AND PUP fired on bar[1].'
@@ -1190,7 +1190,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id203
+  - &id215
     id: b2b-pup::B2B_PPD
     tier: 1
     plain_english: Back-to-back PPD.
@@ -1205,7 +1205,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id204
+  - &id216
     id: b2b-pup::B2B_HVD_BULL
     tier: 2
     plain_english: 'Back-to-back HV+D bull: HVDBull on bar[0] AND HVDBull on bar[1].'
@@ -1220,7 +1220,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id205
+  - &id217
     id: b2b-pup::B2B_HVD_BEAR
     tier: 2
     plain_english: Mirror B2B_HVD_BULL bear.
@@ -1235,7 +1235,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id206
+  - &id218
     id: b2b-pup::B2B_HVDPBJ_BULL
     tier: 3
     plain_english: B2B HV+D bull AND PBJ bull on bar[1] or bar[2].
@@ -1250,7 +1250,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id207
+  - &id219
     id: b2b-pup::B2B_HVDPBJ_BEAR
     tier: 3
     plain_english: Mirror B2B_HVDPBJ_BULL bear.
@@ -1265,7 +1265,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id208
+  - &id220
     id: b2b-pup::B2B_NAPALM_BULL
     tier: 2
     plain_english: Back-to-back consolidated Napalm bull (Napalm OR Charge fires on this bar AND on the prior bar).
@@ -1280,7 +1280,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id209
+  - &id221
     id: b2b-pup::B2B_NAPALM_BEAR
     tier: 2
     plain_english: Mirror B2B_NAPALM_BULL bear.
@@ -1295,7 +1295,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id210
+  - &id222
     id: b2b-pup::S1
     tier: 1
     plain_english: B2B PUP/PPD plot — pure back-to-back PUP (bull) or PPD (bear).
@@ -1314,7 +1314,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id211
+  - &id223
     id: b2b-pup::S2
     tier: 2
     plain_english: B2B PUP + FAUNA on both candles.
@@ -1334,7 +1334,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id212
+  - &id224
     id: b2b-pup::S3
     tier: 2
     plain_english: B2B PUP-on-bar[1]/bar[2] + (DISP or HV+D) bull on bar[0] AND on bar[1].
@@ -1356,7 +1356,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id213
+  - &id225
     id: b2b-pup::S4
     tier: 3
     plain_english: B2B PUP + FAUNA + (DISP or HV+D) — PUP and FAUNA on bar[1] and bar[2], DISP/HV+D on bar[0] and bar[1].
@@ -1375,7 +1375,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id214
+  - &id226
     id: b2b-pup::S5
     tier: 2
     plain_english: B2B PUP + directional RVOL (SAAB/1×/GS bull or Kratos/1×/MOAB bear) on both candles, with neutral WTC/Hiroshima
@@ -1395,7 +1395,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id215
+  - &id227
     id: b2b-pup::S6
     tier: 3
     plain_english: Any B2B (S1/S2/S5 OR S3/S4 chains) + PBJ bull or HVD-PBJ bull on the relevant offset bars.
@@ -1415,7 +1415,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id216
+  - &id228
     id: b2b-pup::S8
     tier: 3
     plain_english: Unified Combo + B2B PUP — B2B PUP AND UnifiedBull (current or prior) OR S3-chain AND UnifiedBull (current
@@ -1435,7 +1435,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id217
+  - &id229
     id: b2b-pup::S9
     tier: 3
     plain_english: Uni Combo + B2B PUP — fires when EITHER S19 (UC×2) OR S20 (FMU×2) lands alongside B2B PUP, plus the S3-chain
@@ -1456,7 +1456,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id218
+  - &id230
     id: b2b-pup::S10
     tier: 3
     plain_english: 'Long1-B2B + B2B PUP: Long1 on this AND prior bar, AND B2B PUP on this OR prior bar.'
@@ -1475,7 +1475,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id219
+  - &id231
     id: b2b-pup::S11
     tier: 3
     plain_english: (FVG combo or Long1) + B2B PUP.
@@ -1494,7 +1494,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id220
+  - &id232
     id: b2b-pup::S12
     tier: 3
     plain_english: UU/UUU/UUUU + B2B PUP.
@@ -1513,7 +1513,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id221
+  - &id233
     id: b2b-pup::S13
     tier: 3
     plain_english: B2B Napalm + B2B PUP.
@@ -1532,7 +1532,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id222
+  - &id234
     id: b2b-pup::S14
     tier: 3
     plain_english: CONT + B2B PUP.
@@ -1551,7 +1551,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id223
+  - &id235
     id: b2b-pup::S15
     tier: 3
     plain_english: Consolidated TNT (raw OR TNT 2.0 OR super) + B2B PUP.
@@ -1570,7 +1570,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: 0
     lifecycle_stage: 5
-  - &id224
+  - &id236
     id: b2b-pup::S16
     tier: 3
     plain_english: Napalm-consolidated (Napalm OR Charge) + B2B PUP.
@@ -1590,7 +1590,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id225
+  - &id237
     id: b2b-pup::S17
     tier: 3
     plain_english: B2B HV+D + B2B PUP.
@@ -1610,7 +1610,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id226
+  - &id238
     id: b2b-pup::S18
     tier: 4
     plain_english: B2B HV+D-PBJ + B2B PUP.
@@ -1630,7 +1630,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id227
+  - &id239
     id: b2b-pup::S19_UC2
     tier: 3
     plain_english: 'Standalone Unified Combo ×2: count visual bars in [1, uc2_window] where BOTH FVG-combo AND Matrix-combo
@@ -1653,7 +1653,7 @@ indicators:
     in_indicator: b2b-pup
     plot_offset: -1
     lifecycle_stage: 5
-  - &id228
+  - &id240
     id: b2b-pup::S20_FMU
     tier: 3
     plain_english: 'Standalone FVG/MAT/Uni Combo ×2: count visual bars where ANY of FVG-combo, Matrix-combo, or Unified-Combo
@@ -1711,6 +1711,273 @@ indicators:
   - S7 is intentionally missing from the S-numbered scheme (per README and v4.29 baseline).
   - Sibling file B2B_PUP_v4.32.pine is byte-for-byte equivalent except for line endings (Combined uses CRLF, sibling uses
     LF). They appear to be the same release packaged twice.
+- id: disp-4x
+  file: disp-4x/versions/DISP_4X_v1.pine
+  branch: claude/organize-indicators-hierarchy-8JDw1
+  pine_version: 5
+  line_count: 121
+  overlay: true
+  one_line_purpose: Four independent displacement engines (D1/D2/D3/D4) in one indicator; default σ-multipliers 6.5/6.0/5.5/5.0;
+    stack 4 instances on a chart for 16 simultaneous displacement-strength views
+  is_canonical_for:
+  - D1_BULL
+  - D1_BEAR
+  - D2_BULL
+  - D2_BEAR
+  - D3_BULL
+  - D3_BEAR
+  - D4_BULL
+  - D4_BEAR
+  notes: 'All 8 plots use offset=-1 because FVG confirmation occurs on bar[0] but
+
+    the displaced candle is bar[1]; plotting on bar[1] aligns the marker
+
+    with the actual displacement bar. Each engine has its own boolean
+
+    namespace (d1_*, d2_*, d3_*, d4_*) — they share NO state. The only
+
+    differences across the 4 engines are the IPSF defaults (multiplier,
+
+    plot shape, plot location, plot color).
+
+    Future: may expand to 15-20 engines per `docs/glossary.md` σ-multiplier
+
+    notes; same D<n>_BULL/D<n>_BEAR naming pattern.
+
+    '
+  _extract_file: bible-input/extract-disp-4x.yaml
+  internal_helpers:
+  - name: d_rng / d_std / d_thresh / d_prevDisp / d_bullFVG / d_bearFVG
+    purpose: Per-engine displacement-detection scaffolding (range vs σ-stdev gate; FVG geometry on bar[0])
+    notes: Internal — not roots. Same pattern repeated 4 times under the d1_/d2_/d3_/d4_ prefix.
+  roots:
+  - &id061
+    id: disp-4x::D1_BULL
+    family: displacement
+    plain_english: Displacement 1 Bull — bar[1] range exceeds σ-multiplier (default 6.5) × stdev(range, 100), AND bar[0] confirms
+      a bullish 3-bar FVG (low > high[2] AND close[1] > open[1])
+    boolean_summary: barstate.isconfirmed AND d1_rng[1] > d1_thresh[1] AND low > high[2] AND close[1] > open[1]
+    parameters:
+    - name: d1_type
+      default: Open to Close
+      units: enum
+      ipsf: true
+    - name: d1_len
+      default: 100
+      units: bars
+      ipsf: true
+    - name: d1_mult
+      default: 6.5
+      units: σ-multiplier
+      ipsf: true
+    offset: -1
+    plot_offset: -1
+    plot_call: plotshape(d1_show_b and d1_bull, "D1 Bull", shape.square, location.top, color.new(#00FF00, 0), text="D1", textcolor=color.white,
+      size=size.small, offset=-1)
+    alertcondition_id: D1 Bull
+    pine_source_line_range: L41
+    lifecycle_stage: 2
+    notes: Strictest of the four bull engines (highest default multiplier). offset=-1 aligns plot with bar[1] (the actual
+      displaced candle).
+    in_indicator: disp-4x
+  - &id062
+    id: disp-4x::D1_BEAR
+    family: displacement
+    plain_english: Displacement 1 Bear — bar[1] range exceeds σ-multiplier (default 6.5) × stdev(range, 100), AND bar[0] confirms
+      a bearish 3-bar FVG (high < low[2] AND close[1] < open[1])
+    boolean_summary: barstate.isconfirmed AND d1_rng[1] > d1_thresh[1] AND high < low[2] AND close[1] < open[1]
+    parameters:
+    - name: d1_type
+      default: Open to Close
+      units: enum
+      ipsf: true
+    - name: d1_len
+      default: 100
+      units: bars
+      ipsf: true
+    - name: d1_mult
+      default: 6.5
+      units: σ-multiplier
+      ipsf: true
+    offset: -1
+    plot_offset: -1
+    plot_call: plotshape(d1_show_r and d1_bear, "D1 Bear", shape.square, location.top, color.new(#FF0000, 0), text="D1", textcolor=color.white,
+      size=size.small, offset=-1)
+    alertcondition_id: D1 Bear
+    pine_source_line_range: L42
+    lifecycle_stage: 2
+    in_indicator: disp-4x
+  - &id063
+    id: disp-4x::D2_BULL
+    family: displacement
+    plain_english: Displacement 2 Bull — bar[1] range exceeds σ-multiplier (default 6.0) × stdev(range, 100), AND bar[0] confirms
+      a bullish 3-bar FVG
+    boolean_summary: barstate.isconfirmed AND d2_rng[1] > d2_thresh[1] AND bullFVG
+    parameters:
+    - name: d2_type
+      default: Open to Close
+      units: enum
+      ipsf: true
+    - name: d2_len
+      default: 100
+      units: bars
+      ipsf: true
+    - name: d2_mult
+      default: 6.0
+      units: σ-multiplier
+      ipsf: true
+    offset: -1
+    plot_offset: -1
+    plot_call: plotshape(d2_show_b and d2_bull, "D2 Bull", shape.square, location.bottom, color.new(#2962FF, 0), text="D2",
+      textcolor=color.white, size=size.small, offset=-1)
+    alertcondition_id: D2 Bull
+    pine_source_line_range: L65
+    lifecycle_stage: 2
+    in_indicator: disp-4x
+  - &id064
+    id: disp-4x::D2_BEAR
+    family: displacement
+    plain_english: Displacement 2 Bear — bar[1] range exceeds σ-multiplier (default 6.0) × stdev(range, 100), AND bar[0] confirms
+      a bearish 3-bar FVG
+    boolean_summary: barstate.isconfirmed AND d2_rng[1] > d2_thresh[1] AND bearFVG
+    parameters:
+    - name: d2_type
+      default: Open to Close
+      units: enum
+      ipsf: true
+    - name: d2_len
+      default: 100
+      units: bars
+      ipsf: true
+    - name: d2_mult
+      default: 6.0
+      units: σ-multiplier
+      ipsf: true
+    offset: -1
+    plot_offset: -1
+    plot_call: plotshape(d2_show_r and d2_bear, "D2 Bear", shape.square, location.bottom, color.new(#FF00FF, 0), text="D2",
+      textcolor=color.white, size=size.small, offset=-1)
+    alertcondition_id: D2 Bear
+    pine_source_line_range: L66
+    lifecycle_stage: 2
+    in_indicator: disp-4x
+  - &id065
+    id: disp-4x::D3_BULL
+    family: displacement
+    plain_english: Displacement 3 Bull — bar[1] range exceeds σ-multiplier (default 5.5) × stdev(range, 100), AND bar[0] confirms
+      a bullish 3-bar FVG
+    boolean_summary: barstate.isconfirmed AND d3_rng[1] > d3_thresh[1] AND bullFVG
+    parameters:
+    - name: d3_type
+      default: Open to Close
+      units: enum
+      ipsf: true
+    - name: d3_len
+      default: 100
+      units: bars
+      ipsf: true
+    - name: d3_mult
+      default: 5.5
+      units: σ-multiplier
+      ipsf: true
+    offset: -1
+    plot_offset: -1
+    plot_call: plotshape(d3_show_b and d3_bull, "D3 Bull", shape.xcross, location.top, color.new(#00FF00, 0), text="D3", textcolor=color.white,
+      size=size.small, offset=-1)
+    alertcondition_id: D3 Bull
+    pine_source_line_range: L89
+    lifecycle_stage: 2
+    in_indicator: disp-4x
+  - &id066
+    id: disp-4x::D3_BEAR
+    family: displacement
+    plain_english: Displacement 3 Bear — bar[1] range exceeds σ-multiplier (default 5.5) × stdev(range, 100), AND bar[0] confirms
+      a bearish 3-bar FVG
+    boolean_summary: barstate.isconfirmed AND d3_rng[1] > d3_thresh[1] AND bearFVG
+    parameters:
+    - name: d3_type
+      default: Open to Close
+      units: enum
+      ipsf: true
+    - name: d3_len
+      default: 100
+      units: bars
+      ipsf: true
+    - name: d3_mult
+      default: 5.5
+      units: σ-multiplier
+      ipsf: true
+    offset: -1
+    plot_offset: -1
+    plot_call: plotshape(d3_show_r and d3_bear, "D3 Bear", shape.xcross, location.top, color.new(#FF0000, 0), text="D3", textcolor=color.white,
+      size=size.small, offset=-1)
+    alertcondition_id: D3 Bear
+    pine_source_line_range: L90
+    lifecycle_stage: 2
+    in_indicator: disp-4x
+  - &id067
+    id: disp-4x::D4_BULL
+    family: displacement
+    plain_english: Displacement 4 Bull — bar[1] range exceeds σ-multiplier (default 5.0) × stdev(range, 100), AND bar[0] confirms
+      a bullish 3-bar FVG
+    boolean_summary: barstate.isconfirmed AND d4_rng[1] > d4_thresh[1] AND bullFVG
+    parameters:
+    - name: d4_type
+      default: Open to Close
+      units: enum
+      ipsf: true
+    - name: d4_len
+      default: 100
+      units: bars
+      ipsf: true
+    - name: d4_mult
+      default: 5.0
+      units: σ-multiplier
+      ipsf: true
+    offset: -1
+    plot_offset: -1
+    plot_call: plotshape(d4_show_b and d4_bull, "D4 Bull", shape.cross, location.bottom, color.new(#2962FF, 0), text="D4",
+      textcolor=color.white, size=size.small, offset=-1)
+    alertcondition_id: D4 Bull
+    pine_source_line_range: L113
+    lifecycle_stage: 2
+    notes: Loosest of the four bull engines (lowest default multiplier). Most permissive, fires more frequently.
+    in_indicator: disp-4x
+  - &id068
+    id: disp-4x::D4_BEAR
+    family: displacement
+    plain_english: Displacement 4 Bear — bar[1] range exceeds σ-multiplier (default 5.0) × stdev(range, 100), AND bar[0] confirms
+      a bearish 3-bar FVG
+    boolean_summary: barstate.isconfirmed AND d4_rng[1] > d4_thresh[1] AND bearFVG
+    parameters:
+    - name: d4_type
+      default: Open to Close
+      units: enum
+      ipsf: true
+    - name: d4_len
+      default: 100
+      units: bars
+      ipsf: true
+    - name: d4_mult
+      default: 5.0
+      units: σ-multiplier
+      ipsf: true
+    offset: -1
+    plot_offset: -1
+    plot_call: plotshape(d4_show_r and d4_bear, "D4 Bear", shape.cross, location.bottom, color.new(#FF00FF, 0), text="D4",
+      textcolor=color.white, size=size.small, offset=-1)
+    alertcondition_id: D4 Bear
+    pine_source_line_range: L114
+    lifecycle_stage: 2
+    in_indicator: disp-4x
+  composites: []
+  cross_indicator_dependencies: []
+  uncertain_or_questions:
+  - 'Relationship to hvd-pbj-ppd::DISPLACEMENT_BULL/BEAR: same boolean structure (bar[1] range > stdev × mult, plus FVG confirmation
+    on bar[0]). Disp-4x gives 4 parameterised instances of the same primitive, intended for stacked-pane diagnostics. Stage
+    7 byte-diff: confirm boolean equivalence with hvd-pbj-ppd::DISPLACEMENT at the same multiplier.'
+  - 'Future expansion to 15-20 engines per indicator (Anish''s stated direction). Naming pattern preserved: disp-Nx::D<n>_BULL
+    / D<n>_BEAR.'
 - id: heavy-combo-toggles
   file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
   branch: both
@@ -1783,7 +2050,7 @@ indicators:
     notes: Intermediate boolean = OR of (en_X and sigX) across the 5 Neutral combos; consumed by S3 plot
   roots: []
   composites:
-  - &id229
+  - &id241
     id: heavy-combo-toggles::HEAVY_COMBO_BULL
     tier: 4
     plain_english: 'Master Bull OR-gate: fires on bar[1] when ANY enabled Bull combo (Heavy Yin-Yang Bull, Heavy Nagasaki
@@ -1812,7 +2079,7 @@ indicators:
     in_indicator: heavy-combo-toggles
     plot_offset: -1
     lifecycle_stage: 5
-  - &id230
+  - &id242
     id: heavy-combo-toggles::HEAVY_COMBO_BEAR
     tier: 4
     plain_english: 'Master Bear OR-gate: fires on bar[1] when ANY enabled Bear combo (Heavy Yin-Yang Bear, Heavy Nagasaki
@@ -1841,7 +2108,7 @@ indicators:
     in_indicator: heavy-combo-toggles
     plot_offset: -1
     lifecycle_stage: 5
-  - &id231
+  - &id243
     id: heavy-combo-toggles::HEAVY_COMBO_NEUTRAL
     tier: 4
     plain_english: 'Master Neutral OR-gate: fires on bar[0] when ANY enabled Neutral combo (Heavy Yin-Yang Neutral, Heavy
@@ -1939,7 +2206,7 @@ indicators:
       Internal FVG detection (bFVG/sFVG) and σ range check (dispCandleMet) are sub-internals of this helper. NOT a root; NOT
       a composite. Used ONLY by Stage 5 Heavy Combo direction classification.
   roots:
-  - &id061
+  - &id069
     id: heavy-pentagon::SAAB
     family: rvol
     plain_english: Bullish bar with normalized price spike in the SAAB/Kratos band (between 0.56× the RVOL-1x threshold and
@@ -1962,7 +2229,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 2
-  - &id062
+  - &id070
     id: heavy-pentagon::KRATOS
     family: rvol
     plain_english: Bearish bar with normalized price spike in the SAAB/Kratos band (Kratos = bearish mirror of SAAB).
@@ -1984,7 +2251,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 2
-  - &id063
+  - &id071
     id: heavy-pentagon::RVOL_1X_BULL
     family: rvol
     plain_english: Bullish bar with normalized price spike in the RVOL-1x band (between RVOL-1x threshold and Grand Slam /
@@ -2007,7 +2274,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 2
-  - &id064
+  - &id072
     id: heavy-pentagon::RVOL_1X_BEAR
     family: rvol
     plain_english: Bearish bar with normalized price spike in the RVOL-1x band.
@@ -2029,7 +2296,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 2
-  - &id065
+  - &id073
     id: heavy-pentagon::GRAND_SLAM
     family: rvol
     plain_english: Bullish bar with normalized price spike at or above the Grand Slam / MOAB threshold (top tier of P1).
@@ -2052,7 +2319,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 2
-  - &id066
+  - &id074
     id: heavy-pentagon::MOAB
     family: rvol
     plain_english: Bearish bar with normalized price spike at or above the Grand Slam / MOAB threshold (top tier of P1, bearish
@@ -2076,7 +2343,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 2
-  - &id067
+  - &id075
     id: heavy-pentagon::PENTAGON
     family: rvol
     plain_english: Time-regularized relative volume ratio sits in the Pentagon band (between RVOL-1x threshold and the WTC
@@ -2104,7 +2371,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 2
-  - &id068
+  - &id076
     id: heavy-pentagon::WTC
     family: rvol
     plain_english: Time-regularized relative volume ratio sits in the WTC band (above WTC threshold up to Hiroshima threshold).
@@ -2132,7 +2399,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 2
-  - &id069
+  - &id077
     id: heavy-pentagon::HIROSHIMA
     family: rvol
     plain_english: Time-regularized relative volume ratio exceeds the Hiroshima threshold (top tier of P2).
@@ -2160,7 +2427,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 2
-  - &id070
+  - &id078
     id: heavy-pentagon::NAGASAKI
     family: rvol
     plain_english: All-time high volume bar — current bar volume exceeds the running max volume since bar 0.
@@ -2177,7 +2444,7 @@ indicators:
     plot_offset: 0
     lifecycle_stage: 2
   composites:
-  - &id232
+  - &id244
     id: heavy-pentagon::HEAVY_YIN_YANG_BULL
     tier: 1
     plain_english: 'Heavy Yin-Yang fires bullish: a directional P1 RVOL spike (Bull RVOL 1x or Grand Slam) co-occurs with
@@ -2204,7 +2471,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id233
+  - &id245
     id: heavy-pentagon::HEAVY_YIN_YANG_BEAR
     tier: 1
     plain_english: 'Heavy Yin-Yang fires bearish: same directional-P1 + neutral-P2 base, gated by displacement bearish.'
@@ -2228,7 +2495,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id234
+  - &id246
     id: heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL
     tier: 1
     plain_english: 'Heavy Yin-Yang fires neutral: same base, but displacement engine produced neither a bull nor bear classification.'
@@ -2252,7 +2519,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id235
+  - &id247
     id: heavy-pentagon::HEAVY_NAGASAKI_BULL
     tier: 1
     plain_english: 'Heavy Nagasaki fires bullish: an all-time high volume bar (Nagasaki) co-occurs with any directional P1
@@ -2275,7 +2542,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id236
+  - &id248
     id: heavy-pentagon::HEAVY_NAGASAKI_BEAR
     tier: 1
     plain_english: 'Heavy Nagasaki fires bearish: Nagasaki co-occurs with any directional P1, gated bearish by displacement.'
@@ -2297,7 +2564,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id237
+  - &id249
     id: heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL
     tier: 1
     plain_english: 'Heavy Nagasaki fires neutral: Nagasaki co-occurs with any directional P1, but no displacement classification.'
@@ -2319,7 +2586,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id238
+  - &id250
     id: heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL
     tier: 1
     plain_english: 'Heavy Nagasaki Vol fires bullish: an all-time high volume bar (Nagasaki) co-occurs with any neutral P2
@@ -2341,7 +2608,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id239
+  - &id251
     id: heavy-pentagon::HEAVY_NAGASAKI_VOL_BEAR
     tier: 1
     plain_english: 'Heavy Nagasaki Vol fires bearish: Nagasaki + any P2 tier, gated bearish.'
@@ -2362,7 +2629,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id240
+  - &id252
     id: heavy-pentagon::HEAVY_NAGASAKI_VOL_NEUTRAL
     tier: 1
     plain_english: 'Heavy Nagasaki Vol fires neutral: Nagasaki + any P2 tier, no displacement classification.'
@@ -2383,7 +2650,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id241
+  - &id253
     id: heavy-pentagon::HEAVY_TRIDENT_BULL
     tier: 1
     plain_english: 'Heavy Trident fires bullish: all three RVOL axes co-occur — Nagasaki (P3) + any directional P1 + any neutral
@@ -2410,7 +2677,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id242
+  - &id254
     id: heavy-pentagon::HEAVY_TRIDENT_BEAR
     tier: 1
     plain_english: 'Heavy Trident fires bearish: all three RVOL axes co-occur, gated bearish.'
@@ -2435,7 +2702,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id243
+  - &id255
     id: heavy-pentagon::HEAVY_TRIDENT_NEUTRAL
     tier: 1
     plain_english: 'Heavy Trident fires neutral: all three RVOL axes co-occur, no displacement classification.'
@@ -2460,7 +2727,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id244
+  - &id256
     id: heavy-pentagon::NEUTRAL_HEAVY_X2_BULL
     tier: 1
     plain_english: 'Neutral Heavy x2 fires bullish: at least two of the three Reg@Time tiers (Pentagon, WTC, Hiroshima) co-occur
@@ -2482,7 +2749,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id245
+  - &id257
     id: heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR
     tier: 1
     plain_english: 'Neutral Heavy x2 fires bearish: two-of-three P2 tier co-occurrence, gated bearish.'
@@ -2502,7 +2769,7 @@ indicators:
     in_indicator: heavy-pentagon
     plot_offset: 0
     lifecycle_stage: 5
-  - &id246
+  - &id258
     id: heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL
     tier: 1
     plain_english: 'Neutral Heavy x2 fires neutral: two-of-three P2 tier co-occurrence, no displacement classification.'
@@ -2591,7 +2858,7 @@ indicators:
       user-selected timeframe.
     notes: Producers of FVG_BULL_RAW / FVG_BEAR_RAW after MTF resolution at L73.
   roots:
-  - &id071
+  - &id079
     id: hv-fvg-gz1-og::GZI_BULL
     family: gzi
     plain_english: Fires on a newly detected bullish FVG when a same-polarity (bullish) FVG already exists within gziProximity
@@ -2624,7 +2891,7 @@ indicators:
     in_indicator: hv-fvg-gz1-og
     plot_offset: -1
     lifecycle_stage: 2
-  - &id072
+  - &id080
     id: hv-fvg-gz1-og::GZI_BEAR
     family: gzi
     plain_english: Fires on a newly detected bearish FVG when a same-polarity (bearish) FVG already exists within gziProximity
@@ -2656,7 +2923,7 @@ indicators:
     in_indicator: hv-fvg-gz1-og
     plot_offset: -1
     lifecycle_stage: 2
-  - &id073
+  - &id081
     id: hv-fvg-gz1-og::HV_BULL
     family: hv
     plain_english: Fires on a newly detected bullish FVG when the prior bar's volume equals the highest volume over 5000,
@@ -2695,7 +2962,7 @@ indicators:
     in_indicator: hv-fvg-gz1-og
     plot_offset: -1
     lifecycle_stage: 2
-  - &id074
+  - &id082
     id: hv-fvg-gz1-og::HV_BEAR
     family: hv
     plain_english: Fires on a newly detected bearish FVG when the prior bar's volume equals the highest volume over 5000,
@@ -2733,7 +3000,7 @@ indicators:
     in_indicator: hv-fvg-gz1-og
     plot_offset: -1
     lifecycle_stage: 2
-  - &id075
+  - &id083
     id: hv-fvg-gz1-og::FVG_BULL_RAW
     family: fvg
     plain_english: 'Raw bullish 3-bar Fair Value Gap: current low above the high of two bars ago, with prior close confirming
@@ -2761,7 +3028,7 @@ indicators:
     in_indicator: hv-fvg-gz1-og
     plot_offset: -1
     lifecycle_stage: 2
-  - &id076
+  - &id084
     id: hv-fvg-gz1-og::FVG_BEAR_RAW
     family: fvg
     plain_english: 'Raw bearish 3-bar Fair Value Gap: current high below the low of two bars ago, with prior close confirming
@@ -2857,7 +3124,7 @@ indicators:
     purpose: ATR/body/range/volume hybrid emitting sigFAUNABull/Bear with TR/ES/GDR/GG exclusions.
     notes: Internal to many composites; not exposed as a standalone plot here.
   roots:
-  - &id077
+  - &id085
     id: hvd-pbj-ppd::HVD_BULL
     family: hv
     plain_english: 'Pipeline-A primitive: prior bar was a high-volume bar (one of the toggled rank tiers 50–1000 base, or
@@ -2897,7 +3164,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 2
-  - &id078
+  - &id086
     id: hvd-pbj-ppd::HVD_BEAR
     family: hv
     plain_english: 'Bear mirror of HVD_BULL: prior bar high-volume rank ∧ prior bar disp ∧ bearish FVG. Pipeline A terminal
@@ -2916,7 +3183,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 2
-  - &id079
+  - &id087
     id: hvd-pbj-ppd::PBJ_BULL
     family: candle
     plain_english: 'Pipeline-B bullish PBJ landing: a Supertrend buy_cross (Zoo VWMA-5 vs ATR-band Supertrend) coincident
@@ -2964,7 +3231,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id080
+  - &id088
     id: hvd-pbj-ppd::PBJ_BEAR
     family: candle
     plain_english: 'Bear mirror of PBJ_BULL: Supertrend sell_cross + PB&J sell filter (high>EMA20*(1+thresh), high==25-bar
@@ -2982,7 +3249,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id081
+  - &id089
     id: hvd-pbj-ppd::PB_BULL
     family: candle
     plain_english: 'Pipeline-B bullish ''plain'' Pullback (PB) landing: Supertrend buy_cross when price has approached a previously-recorded
@@ -3004,7 +3271,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id082
+  - &id090
     id: hvd-pbj-ppd::PB_BEAR
     family: candle
     plain_english: 'Bear mirror of PB_BULL: Supertrend sell_cross + bear lander box approached, excluding PBJ-sell coincidence.'
@@ -3021,7 +3288,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id083
+  - &id091
     id: hvd-pbj-ppd::PUP
     family: push
     plain_english: 'Push-Up Day: bar''s percent body (close-open)/open*100 > 3% AND volume > 10-bar highest red-bar volume.
@@ -3043,7 +3310,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id084
+  - &id092
     id: hvd-pbj-ppd::PPD
     family: push
     plain_english: 'Push-Down Day: bar''s percent body (open-close)/open*100 > 3% AND volume > 10-bar highest green-bar volume.
@@ -3064,7 +3331,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id085
+  - &id093
     id: hvd-pbj-ppd::DISP_BULL
     family: displacement
     plain_english: 'Pipeline-C displacement: prior bar range > stdev*3.0 (capped *100), AND a bullish FVG opened on current
@@ -3092,7 +3359,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id086
+  - &id094
     id: hvd-pbj-ppd::DISP_BEAR
     family: displacement
     plain_english: Bear mirror of DISP_BULL.
@@ -3109,7 +3376,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id087
+  - &id095
     id: hvd-pbj-ppd::DISP5_BULL
     family: displacement
     plain_english: 5x-stdev displacement primitive (close>open ∧ range>stdev*5.0). Used inside HW Bull composite.
@@ -3126,7 +3393,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id088
+  - &id096
     id: hvd-pbj-ppd::DISP5_BEAR
     family: displacement
     plain_english: Bear mirror of DISP5_BULL.
@@ -3143,7 +3410,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id089
+  - &id097
     id: hvd-pbj-ppd::HV5K
     family: hv
     plain_english: Volume on prior bar equals 5000-bar highest. The 'all-time' tier of the GZI HV ladder.
@@ -3160,7 +3427,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id090
+  - &id098
     id: hvd-pbj-ppd::HVY
     family: hv
     plain_english: Yearly tier — volume on prior bar equals 252-bar highest.
@@ -3177,7 +3444,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id091
+  - &id099
     id: hvd-pbj-ppd::HVQ
     family: hv
     plain_english: Quarterly tier — volume on prior bar equals 63-bar highest.
@@ -3194,7 +3461,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id092
+  - &id100
     id: hvd-pbj-ppd::HV75
     family: hv
     plain_english: Volume >= 75-bar highest of prior bar. Named USE-side HV tier.
@@ -3211,7 +3478,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id093
+  - &id101
     id: hvd-pbj-ppd::HV150
     family: hv
     plain_english: Volume >= 150-bar (configurable hv150_len) highest of prior bar.
@@ -3228,7 +3495,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id094
+  - &id102
     id: hvd-pbj-ppd::HV500
     family: hv
     plain_english: Volume >= 500-bar highest of prior bar.
@@ -3245,7 +3512,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id095
+  - &id103
     id: hvd-pbj-ppd::HV1000
     family: hv
     plain_english: Volume >= 1000-bar highest of prior bar.
@@ -3262,7 +3529,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id096
+  - &id104
     id: hvd-pbj-ppd::HEV
     family: hv
     plain_english: All-time-high volume primitive (volume[1] strictly greater than running maxVolEver). Cumulative monotonic
@@ -3278,7 +3545,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 2
-  - &id097
+  - &id105
     id: hvd-pbj-ppd::NAGASAKI
     family: rvol
     plain_english: USE-side all-time-high volume primitive (volume strictly greater than running maxVol since bar 0).
@@ -3293,7 +3560,7 @@ indicators:
     plot_offset: 0
     lifecycle_stage: 2
   composites:
-  - &id247
+  - &id259
     id: hvd-pbj-ppd::SUPER_BULL
     tier: 0
     plain_english: 'Tier-0 priority bull: PBJ + DISP + (FAUNA bull or LSLong1) + HW-volume slot + ((Combo-set + PUP) OR Floor/2F).'
@@ -3313,7 +3580,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id248
+  - &id260
     id: hvd-pbj-ppd::SUPER_BEAR
     tier: 0
     plain_english: Bear mirror of SUPER_BULL.
@@ -3333,7 +3600,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id249
+  - &id261
     id: hvd-pbj-ppd::SDUPER_BULL
     tier: 0
     plain_english: '''Super Duper'' priority: Floor/2F + PBJ + HW-volume slot + Combo-set + PUP + DISP + (FAUNA or LSLong1).'
@@ -3355,7 +3622,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id250
+  - &id262
     id: hvd-pbj-ppd::SDUPER_BEAR
     tier: 0
     plain_english: Bear mirror of SDUPER_BULL.
@@ -3377,7 +3644,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id251
+  - &id263
     id: hvd-pbj-ppd::BULL_UUUU
     tier: 1
     plain_english: 4 consecutive bullish bars + must include first bar of trading day + PBJ on at least one of the 4 bars
@@ -3397,7 +3664,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id252
+  - &id264
     id: hvd-pbj-ppd::BEAR_UUUU
     tier: 1
     plain_english: Bear mirror of BULL_UUUU.
@@ -3416,7 +3683,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id253
+  - &id265
     id: hvd-pbj-ppd::BULL_UUU
     tier: 1
     plain_english: 3 consecutive bullish bars each with bb_normalizedPrice>1.0 + first-of-day in window + PBJ on any + DISP
@@ -3436,7 +3703,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id254
+  - &id266
     id: hvd-pbj-ppd::BEAR_UUU
     tier: 1
     plain_english: Bear mirror of BULL_UUU.
@@ -3455,7 +3722,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id255
+  - &id267
     id: hvd-pbj-ppd::BULL_UU
     tier: 1
     plain_english: 2 consecutive bullish bars each ≥ normPrice 2.0 + cumulative ≥ RVOL 1x threshold + ((PBJ ∧ DISP on either)
@@ -3474,7 +3741,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id256
+  - &id268
     id: hvd-pbj-ppd::BEAR_UU
     tier: 1
     plain_english: Bear mirror of BULL_UU.
@@ -3492,7 +3759,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id257
+  - &id269
     id: hvd-pbj-ppd::BULL_USUB
     tier: 1
     plain_english: 3+ consecutive bullish bars each ≥ normPrice 2.0 + cum ≥ th_1x + PBJ on any + DISP on any.
@@ -3511,7 +3778,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id258
+  - &id270
     id: hvd-pbj-ppd::BEAR_USUB
     tier: 1
     plain_english: Bear mirror of BULL_USUB.
@@ -3530,7 +3797,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id259
+  - &id271
     id: hvd-pbj-ppd::ALPHA_STRIKE_BULL
     tier: 1
     plain_english: First USE-signal of the day + Ping-Pong bull state + (GS or RVOL1x) + (PBJ or PB) + expanded FAUNA slot.
@@ -3550,7 +3817,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id260
+  - &id272
     id: hvd-pbj-ppd::ALPHA_STRIKE_BEAR
     tier: 1
     plain_english: Bear mirror of ALPHA_STRIKE_BULL.
@@ -3570,7 +3837,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id261
+  - &id273
     id: hvd-pbj-ppd::FOXTROT_BULL
     tier: 1
     plain_english: 4 consecutive FAUNA-confirmed bullish bars.
@@ -3589,7 +3856,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id262
+  - &id274
     id: hvd-pbj-ppd::FOXTROT_BEAR
     tier: 1
     plain_english: Bear mirror — 4 consecutive FAUNA-confirmed bearish bars.
@@ -3608,7 +3875,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id263
+  - &id275
     id: hvd-pbj-ppd::OMEGA_LONG
     tier: 1
     plain_english: Boom Hunter omega trigger + any of ~35 bull cosignals + NOT MOAB + NOT bearish DISP.
@@ -3627,7 +3894,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id264
+  - &id276
     id: hvd-pbj-ppd::OD_BULL
     tier: 1
     plain_english: 'Opening Drive Bull: within first od_max_bars of session + any FVG combo set + DISP prevDisp + PUP + PBJ_BULL.'
@@ -3647,7 +3914,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id265
+  - &id277
     id: hvd-pbj-ppd::OD_BEAR
     tier: 1
     plain_english: Bear mirror of OD_BULL.
@@ -3667,7 +3934,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id266
+  - &id278
     id: hvd-pbj-ppd::DISP_CONS_BULL2
     tier: 1
     plain_english: 2+ consecutive DISP2 bars (range > stdev*3) AND FAUNA bull on current and prior.
@@ -3685,7 +3952,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id267
+  - &id279
     id: hvd-pbj-ppd::DISP_CONS_BEAR2
     tier: 1
     plain_english: Bear mirror — 2+ consecutive DISP2 bear bars + FAUNA bear x2.
@@ -3703,7 +3970,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id268
+  - &id280
     id: hvd-pbj-ppd::DISP_CONS_BULL3
     tier: 1
     plain_english: 3+ consecutive DISP3 bull bars + FAUNA bull on current, [1], and [2].
@@ -3720,7 +3987,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id269
+  - &id281
     id: hvd-pbj-ppd::DISP_CONS_BEAR3
     tier: 1
     plain_english: Bear mirror — 3+ consecutive DISP3 bear bars + FAUNA bear x3.
@@ -3737,7 +4004,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id270
+  - &id282
     id: hvd-pbj-ppd::GOLF_BULL
     tier: 1
     plain_english: '3-bar confirmed bull sequence: DISP_BULL now + FAUNA[1] + PUP[1] + DISP_BULL[1] + FAUNA[2] + PUP[2].'
@@ -3758,7 +4025,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id271
+  - &id283
     id: hvd-pbj-ppd::GOLF_BEAR
     tier: 1
     plain_english: Bear mirror — DISP_BEAR + FAUNA bear[1] + PPD[1] + DISP_BEAR[1] + FAUNA bear[2] + PPD[2].
@@ -3779,7 +4046,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id272
+  - &id284
     id: hvd-pbj-ppd::PAF_BULL
     tier: 1
     plain_english: Back-to-back PUP + FAUNA bull (PUP now + FAUNA now + PUP[1] + FAUNA[1]).
@@ -3798,7 +4065,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id273
+  - &id285
     id: hvd-pbj-ppd::PAF_BEAR
     tier: 1
     plain_english: Bear mirror — PPD + FAUNA bear, with [1] also true.
@@ -3817,7 +4084,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id274
+  - &id286
     id: hvd-pbj-ppd::CS1_FVG_BULL
     tier: 1B
     plain_english: 'FVG Combo (consolidated): body% ≥ 0.85 on prior bar + (gz_bullHV OR gz_bullGZI) + (SAAB or RVOL1x or GS)
@@ -3837,7 +4104,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id275
+  - &id287
     id: hvd-pbj-ppd::CS1_FVG_BEAR
     tier: 1B
     plain_english: Bear mirror of CS1_FVG_BULL.
@@ -3855,7 +4122,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id276
+  - &id288
     id: hvd-pbj-ppd::CS2_MAT_BULL
     tier: 1B
     plain_english: 'Matrix Combo (consolidated): body% ≥ 0.85 + matrix_any_bull (Neo/Trinity/aligned) + (SAAB|RVOL1x|GS or
@@ -3874,7 +4141,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id277
+  - &id289
     id: hvd-pbj-ppd::CS2_MAT_BEAR
     tier: 1B
     plain_english: Bear mirror of CS2_MAT_BULL.
@@ -3892,7 +4159,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id278
+  - &id290
     id: hvd-pbj-ppd::CS3_UNIFIED_BULL
     tier: 1B
     plain_english: 'Unified Combo Bull: CS1 (FVG) AND CS2 (MAT) both present.'
@@ -3909,7 +4176,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id279
+  - &id291
     id: hvd-pbj-ppd::CS3_UNIFIED_BEAR
     tier: 1B
     plain_english: Bear mirror — CS1 ∧ CS2 both bear.
@@ -3926,7 +4193,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id280
+  - &id292
     id: hvd-pbj-ppd::CC_BULL
     tier: 1C
     plain_english: 'Combo Chain Bull: ≥ cc_min_hits Combo windows in last cc_window bars + a PBJ_BULL or PB_BULL within the
@@ -3944,7 +4211,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id281
+  - &id293
     id: hvd-pbj-ppd::CC_BEAR
     tier: 1C
     plain_english: Bear mirror of CC_BULL.
@@ -3961,7 +4228,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id282
+  - &id294
     id: hvd-pbj-ppd::LSC_BULL
     tier: 1C
     plain_english: 'Long/Short Chain Bull: ≥ lsc_min_hits LS-Long bars (lsc_L1 or lsc_L2 — Reg+Cum+body thresholds) within
@@ -3979,7 +4246,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id283
+  - &id295
     id: hvd-pbj-ppd::LSC_BEAR
     tier: 1C
     plain_english: Bear mirror of LSC_BULL.
@@ -3996,7 +4263,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id284
+  - &id296
     id: hvd-pbj-ppd::FLOOR_BULL
     tier: 2
     plain_english: 'Floor: Ping-Pong bull state + PBJ_BULL + (RVOL1x or GS or WTC or Hiro or directional Nag).'
@@ -4014,7 +4281,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id285
+  - &id297
     id: hvd-pbj-ppd::SECOND_FLOOR_BULL
     tier: 2
     plain_english: '2nd Floor: Ping-Pong bull + PB_BULL + HW-volume slot.'
@@ -4032,7 +4299,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id286
+  - &id298
     id: hvd-pbj-ppd::ROOFTOP_BEAR
     tier: 2
     plain_english: 'Rooftop: Ping-Pong bear + PBJ_BEAR + HW-volume slot bear.'
@@ -4050,7 +4317,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id287
+  - &id299
     id: hvd-pbj-ppd::PENTHOUSE_BEAR
     tier: 2
     plain_english: 'Penthouse: Ping-Pong bear + PB_BEAR + HW-volume slot bear.'
@@ -4068,7 +4335,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id288
+  - &id300
     id: hvd-pbj-ppd::HW_BULL
     tier: 3
     plain_english: 'HW Bull: green bar + DISP5 (5σ) + PBJ_BULL + HW-volume slot + (Floor or 2F).'
@@ -4088,7 +4355,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id289
+  - &id301
     id: hvd-pbj-ppd::HW_BEAR
     tier: 3
     plain_english: 'HW Bear: red bar + DISP5 bear + PBJ_BEAR + HW-volume slot bear + (Rooftop or Penthouse).'
@@ -4108,7 +4375,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: 0
     lifecycle_stage: 5
-  - &id290
+  - &id302
     id: hvd-pbj-ppd::HVD_PB_BULL
     tier: 2
     plain_english: HV+D bull AND PB_BULL on prior bar (offset alignment for the same described candle).
@@ -4126,7 +4393,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id291
+  - &id303
     id: hvd-pbj-ppd::HVD_PBJ_BULL
     tier: 2
     plain_english: HV+D bull AND PBJ_BULL on prior bar.
@@ -4144,7 +4411,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id292
+  - &id304
     id: hvd-pbj-ppd::HVD_PB_BEAR
     tier: 2
     plain_english: HV+D bear AND PB_BEAR on prior bar.
@@ -4162,7 +4429,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id293
+  - &id305
     id: hvd-pbj-ppd::HVD_PBJ_BEAR
     tier: 2
     plain_english: HV+D bear AND PBJ_BEAR on prior bar.
@@ -4180,7 +4447,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id294
+  - &id306
     id: hvd-pbj-ppd::CO_BULL_PBJ
     tier: 3
     plain_english: 'Triple AND: HV+D bull (Pipeline A) ∧ PBJ_BULL[1] (Pipeline B) ∧ use_any_bull[1] (Pipeline C OR-bag).'
@@ -4199,7 +4466,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id295
+  - &id307
     id: hvd-pbj-ppd::CO_BULL_PB
     tier: 3
     plain_english: 'Triple AND: HV+D bull ∧ PB_BULL[1] ∧ use_any_bull[1].'
@@ -4218,7 +4485,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id296
+  - &id308
     id: hvd-pbj-ppd::CO_BEAR_PBJ
     tier: 3
     plain_english: Bear mirror of CO_BULL_PBJ.
@@ -4237,7 +4504,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id297
+  - &id309
     id: hvd-pbj-ppd::CO_BEAR_PB
     tier: 3
     plain_english: Bear mirror of CO_BULL_PB.
@@ -4256,7 +4523,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id298
+  - &id310
     id: hvd-pbj-ppd::B2B_HVD_BULL_NOPB
     tier: 2
     plain_english: Two consecutive HV+D bull bars (bar N-1 and bar N-2) with NEITHER PBJ nor PB on either of those candles.
@@ -4276,7 +4543,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id299
+  - &id311
     id: hvd-pbj-ppd::B2B_HVD_PBJ_BULL
     tier: 2
     plain_english: Two consecutive HV+D bull bars + PBJ_BULL on either of the two.
@@ -4295,7 +4562,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id300
+  - &id312
     id: hvd-pbj-ppd::B2B_HVD_PB_BULL
     tier: 2
     plain_english: Two consecutive HV+D bull bars + PB_BULL on either of the two AND not B2B+PBJ.
@@ -4315,7 +4582,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id301
+  - &id313
     id: hvd-pbj-ppd::B2B_HVD_BEAR_NOPB
     tier: 2
     plain_english: Bear mirror of B2B_HVD_BULL_NOPB.
@@ -4335,7 +4602,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id302
+  - &id314
     id: hvd-pbj-ppd::B2B_HVD_PBJ_BEAR
     tier: 2
     plain_english: Bear mirror of B2B_HVD_PBJ_BULL.
@@ -4354,7 +4621,7 @@ indicators:
     in_indicator: hvd-pbj-ppd
     plot_offset: -1
     lifecycle_stage: 5
-  - &id303
+  - &id315
     id: hvd-pbj-ppd::B2B_HVD_PB_BEAR
     tier: 2
     plain_english: Bear mirror of B2B_HVD_PB_BULL.
@@ -4393,6 +4660,303 @@ indicators:
     sigTrinityBull) refer to internal USE-engine primitives. They are documented in `internal_helpers` as engines (RVOL/FAUNA/Matrix-Number/Long-Short/GZI).
     Whether the bible should treat each of those as its own root from this file or only from the dedicated heavy-pentagon/hv-fvg-gz1-og
     engines is a Stage-1 merge question.
+- id: pb-pbj
+  file: pb-pbj/versions/PB_PBJ_v1.pine
+  branch: claude/organize-indicators-hierarchy-8JDw1
+  pine_version: 5
+  line_count: 290
+  overlay: true
+  one_line_purpose: Canonical isolated PB/PBJ engine — 4 dedicated detection roots with OKEH Zoo + PB&J Filter + Supertrend
+    pipeline; all defaults preserved from YY+D+PBJ source
+  is_canonical_for:
+  - PB_BULL
+  - PB_BEAR
+  - PBJ_BULL
+  - PBJ_BEAR
+  extracted_from: Yin Yang + Displacement + PBJ (YY+D+PBJ)
+  notes: 'Each PB/PBJ pair is mutually exclusive on the same direction:
+
+    sigBullPB requires NOT sig_pbj_buy; sigBearPB requires NOT sig_pbj_sell.
+
+    A bar that satisfies both filters is classified as PBJ.
+
+    All 4 signals gated by barstate.isconfirmed; alerts use
+
+    alert.freq_once_per_bar_close for non-repainting 1:1 parity.
+
+    '
+  _extract_file: bible-input/extract-pb-pbj.yaml
+  internal_helpers:
+  - name: f_ma()
+    purpose: Switch-based MA selector (VWMA/EMA/SMA/WMA/HMA); default VWMA(close, 5)
+    pine_source_line_range: L91-L100
+    notes: Internal — not a root.
+  - name: Supertrend
+    purpose: ATR(10)*2.0 trailing-stop direction classifier (st_dir)
+    pine_source_line_range: L106-L127
+    notes: Internal — not a root. Applied when zoo_use_st=true (default ON).
+  - name: PB&J Filter (pbj_buy / pbj_sell)
+    purpose: ATR-banded EMA wick test — low/high outside pbj_ma ± thresh, with HH/LL lookback gate and volume floor
+    pine_source_line_range: L143-L150
+    notes: Produces the buy/sell pre-confirmation flags consumed by the level manager. Internal.
+  - name: Level management (bull_lvls, bear_lvls)
+    purpose: Per-direction landing-box arrays tracking approach state via f_check_approach()
+    pine_source_line_range: L153-L213
+    notes: Stateful arrays of `lvl` UDT records. Internal.
+  - name: wait_buy / wait_sell / wait_pbj_buy / wait_pbj_sell
+    purpose: Var-state machines tracking whether a buy/sell setup is ready to fire
+    pine_source_line_range: L221-L240
+    notes: Reset by their corresponding sig_pb_*/sig_pbj_* fire. Internal state.
+  roots:
+  - &id106
+    id: pb-pbj::PB_BULL
+    family: candle
+    plain_english: Bullish PB landing — Supertrend buy_cross AND a tracked bull-zone landing-box was approached AND PBJ filter
+      did NOT fire (mutual exclusion with PBJ_BULL)
+    boolean_summary: barstate.isconfirmed AND buy_cross AND wait_buy AND NOT (buy_cross AND wait_pbj_buy)
+    parameters:
+    - name: zoo_ma_type
+      default: VWMA
+      units: enum
+      ipsf: true
+    - name: zoo_ma_len
+      default: 5
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_ma_period
+      default: 20
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_atr_period
+      default: 14
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_hh_ll
+      default: 25
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_atr_mult
+      default: 3.0
+      units: multiplier
+      ipsf: true
+    - name: zoo_pbj_vol_period
+      default: 20
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_vol_mult
+      default: 0.1
+      units: multiplier
+      ipsf: true
+    - name: zoo_use_st
+      default: true
+      units: bool
+      ipsf: true
+    - name: zoo_st_period
+      default: 10
+      units: bars
+      ipsf: true
+    - name: zoo_st_mult
+      default: 2.0
+      units: multiplier
+      ipsf: true
+    offset: 0
+    plot_offset: 0
+    plot_call: plotshape(show_BullPB and sigBullPB, title="Sig#1 Bull PB", style=shape.labelup, location=location.bottom,
+      color=color.new(color.aqua, 75), size=size.small, text="PB", textcolor=color.white, offset=0)
+    alertcondition_id: Sig#1 Bull PB
+    pine_source_line_range: L259
+    lifecycle_stage: 2
+    notes: Mutual exclusion with PBJ_BULL — bar that satisfies both is classified as PBJ. All settings IPSF (input.*).
+    in_indicator: pb-pbj
+  - &id107
+    id: pb-pbj::PBJ_BULL
+    family: candle
+    plain_english: Bullish PBJ — Supertrend buy_cross occurs while the PB&J wick filter has been triggered (low pierced pbj_ma
+      * (1 - thresh), at the lowest of HH/LL lookback, with volume above floor)
+    boolean_summary: barstate.isconfirmed AND buy_cross AND wait_pbj_buy
+    parameters:
+    - name: zoo_ma_type
+      default: VWMA
+      units: enum
+      ipsf: true
+    - name: zoo_ma_len
+      default: 5
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_ma_period
+      default: 20
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_atr_period
+      default: 14
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_hh_ll
+      default: 25
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_atr_mult
+      default: 3.0
+      units: multiplier
+      ipsf: true
+    - name: zoo_pbj_vol_period
+      default: 20
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_vol_mult
+      default: 0.1
+      units: multiplier
+      ipsf: true
+    - name: zoo_use_st
+      default: true
+      units: bool
+      ipsf: true
+    - name: zoo_st_period
+      default: 10
+      units: bars
+      ipsf: true
+    - name: zoo_st_mult
+      default: 2.0
+      units: multiplier
+      ipsf: true
+    offset: 0
+    plot_offset: 0
+    plot_call: plotshape(show_BullPBJ and sigBullPBJ, title="Sig#2 Bull PBJ", style=shape.diamond, location=location.bottom,
+      color=color.new(color.yellow, 25), size=size.normal, text="PBJ", textcolor=color.white, offset=0)
+    alertcondition_id: Sig#2 Bull PBJ
+    pine_source_line_range: L262
+    lifecycle_stage: 2
+    notes: 'Stronger filter than PB_BULL. Internal: PB&J filter (pbj_buy) requires low pierce + HH/LL lowest + volume gate.
+      All settings IPSF.'
+    in_indicator: pb-pbj
+  - &id108
+    id: pb-pbj::PB_BEAR
+    family: candle
+    plain_english: Bearish PB landing — Supertrend sell_cross AND a tracked bear-zone landing-box was approached AND PBJ filter
+      did NOT fire (mutual exclusion with PBJ_BEAR)
+    boolean_summary: barstate.isconfirmed AND sell_cross AND wait_sell AND NOT (sell_cross AND wait_pbj_sell)
+    parameters:
+    - name: zoo_ma_type
+      default: VWMA
+      units: enum
+      ipsf: true
+    - name: zoo_ma_len
+      default: 5
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_ma_period
+      default: 20
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_atr_period
+      default: 14
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_hh_ll
+      default: 25
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_atr_mult
+      default: 3.0
+      units: multiplier
+      ipsf: true
+    - name: zoo_pbj_vol_period
+      default: 20
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_vol_mult
+      default: 0.1
+      units: multiplier
+      ipsf: true
+    - name: zoo_use_st
+      default: true
+      units: bool
+      ipsf: true
+    - name: zoo_st_period
+      default: 10
+      units: bars
+      ipsf: true
+    - name: zoo_st_mult
+      default: 2.0
+      units: multiplier
+      ipsf: true
+    offset: 0
+    plot_offset: 0
+    plot_call: plotshape(show_BearPB and sigBearPB, title="Sig#3 Bear PB", style=shape.labeldown, location=location.top, color=color.new(color.orange,
+      75), size=size.small, text="PB", textcolor=color.white, offset=0)
+    alertcondition_id: Sig#3 Bear PB
+    pine_source_line_range: L265
+    lifecycle_stage: 2
+    notes: Mirror of PB_BULL for short setups. Mutual exclusion with PBJ_BEAR. All settings IPSF.
+    in_indicator: pb-pbj
+  - &id109
+    id: pb-pbj::PBJ_BEAR
+    family: candle
+    plain_english: Bearish PBJ — Supertrend sell_cross occurs while the PB&J wick filter has been triggered (high pierced
+      pbj_ma * (1 + thresh), at the highest of HH/LL lookback, with volume above floor)
+    boolean_summary: barstate.isconfirmed AND sell_cross AND wait_pbj_sell
+    parameters:
+    - name: zoo_ma_type
+      default: VWMA
+      units: enum
+      ipsf: true
+    - name: zoo_ma_len
+      default: 5
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_ma_period
+      default: 20
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_atr_period
+      default: 14
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_hh_ll
+      default: 25
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_atr_mult
+      default: 3.0
+      units: multiplier
+      ipsf: true
+    - name: zoo_pbj_vol_period
+      default: 20
+      units: bars
+      ipsf: true
+    - name: zoo_pbj_vol_mult
+      default: 0.1
+      units: multiplier
+      ipsf: true
+    - name: zoo_use_st
+      default: true
+      units: bool
+      ipsf: true
+    - name: zoo_st_period
+      default: 10
+      units: bars
+      ipsf: true
+    - name: zoo_st_mult
+      default: 2.0
+      units: multiplier
+      ipsf: true
+    offset: 0
+    plot_offset: 0
+    plot_call: plotshape(show_BearPBJ and sigBearPBJ, title="Sig#4 Bear PBJ", style=shape.diamond, location=location.top,
+      color=color.new(color.red, 25), size=size.normal, text="PBJ", textcolor=color.white, offset=0)
+    alertcondition_id: Sig#4 Bear PBJ
+    pine_source_line_range: L268
+    lifecycle_stage: 2
+    notes: Mirror of PBJ_BULL for short setups. All settings IPSF.
+    in_indicator: pb-pbj
+  composites: []
+  cross_indicator_dependencies: []
+  uncertain_or_questions:
+  - 'Stage 7 byte-diff: confirm pb-pbj::PB_BULL/PBJ_BULL/PB_BEAR/PBJ_BEAR booleans are byte-identical to hvd-pbj-ppd::PB_BULL/PBJ_BULL/PB_BEAR/PBJ_BEAR
+    (the same OKEH engine in HVDPBJPPD''s Engine 6).'
+  - If byte-identical, designate pb-pbj::* as canonical (per its filename 'PB & PBJ — 4 Signals PB PBJ ONLY THIS') and mark
+    hvd-pbj-ppd::PBJ_BULL/BEAR/PB_BULL/PB_BEAR as variants.
+  - If drift exists, document in docs/redundancy.md (b) and decide which implementation is canonical based on Anish's preference.
 - id: proximity-gzi-hv
   file: proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine
   branch: both
@@ -4445,7 +5009,7 @@ indicators:
       user-selected timeframe.
     notes: Producers of FVG_BULL_RAW / FVG_BEAR_RAW after MTF resolution at L73. Identical to canonical.
   roots:
-  - &id098
+  - &id110
     id: proximity-gzi-hv::GZI_BULL
     variant_of: hv-fvg-gz1-og::GZI_BULL
     parity_check_required: true
@@ -4480,7 +5044,7 @@ indicators:
     in_indicator: proximity-gzi-hv
     plot_offset: -1
     lifecycle_stage: 2
-  - &id099
+  - &id111
     id: proximity-gzi-hv::GZI_BEAR
     variant_of: hv-fvg-gz1-og::GZI_BEAR
     parity_check_required: true
@@ -4515,7 +5079,7 @@ indicators:
     in_indicator: proximity-gzi-hv
     plot_offset: -1
     lifecycle_stage: 2
-  - &id100
+  - &id112
     id: proximity-gzi-hv::HV_BULL
     variant_of: hv-fvg-gz1-og::HV_BULL
     parity_check_required: true
@@ -4556,7 +5120,7 @@ indicators:
     in_indicator: proximity-gzi-hv
     plot_offset: -1
     lifecycle_stage: 2
-  - &id101
+  - &id113
     id: proximity-gzi-hv::HV_BEAR
     variant_of: hv-fvg-gz1-og::HV_BEAR
     parity_check_required: true
@@ -4597,7 +5161,7 @@ indicators:
     in_indicator: proximity-gzi-hv
     plot_offset: -1
     lifecycle_stage: 2
-  - &id102
+  - &id114
     id: proximity-gzi-hv::FVG_BULL_RAW
     variant_of: hv-fvg-gz1-og::FVG_BULL_RAW
     parity_check_required: true
@@ -4626,7 +5190,7 @@ indicators:
     in_indicator: proximity-gzi-hv
     plot_offset: -1
     lifecycle_stage: 2
-  - &id103
+  - &id115
     id: proximity-gzi-hv::FVG_BEAR_RAW
     variant_of: hv-fvg-gz1-og::FVG_BEAR_RAW
     parity_check_required: true
@@ -4708,7 +5272,7 @@ indicators:
   - name: f_b / f_n / f_fwd_ret
     purpose: Stats engine string/number formatters and forward-return lookback.
   roots:
-  - &id104
+  - &id116
     id: squarify::HVD_BULL
     family: hv-displacement
     plain_english: 'HV+D bullish: any of base/HTF1/HTF2 volume-rank ladder confirmed AND prior-bar displacement with bullish
@@ -4737,7 +5301,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 2
-  - &id105
+  - &id117
     id: squarify::HVD_BEAR
     family: hv-displacement
     plain_english: HV+D bearish mirror of HVD_BULL.
@@ -4754,7 +5318,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 2
-  - &id106
+  - &id118
     id: squarify::F2_BULL
     family: ultra57-foster
     plain_english: 'Foster Pair (bull): two consecutive bullish FAUNA-MB bars on session bars 1-2.'
@@ -4767,7 +5331,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id107
+  - &id119
     id: squarify::F2_BEAR
     family: ultra57-foster
     plain_english: Foster Pair (bear) mirror.
@@ -4779,7 +5343,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id108
+  - &id120
     id: squarify::E3_BULL
     family: ultra57-exhaustion
     plain_english: 'Exhaustion Triple (bull): 3 consecutive bullish FAUNA-event bars on session bars 1-3.'
@@ -4791,7 +5355,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id109
+  - &id121
     id: squarify::E3_BEAR
     family: ultra57-exhaustion
     plain_english: Exhaustion Triple (bear) mirror.
@@ -4803,7 +5367,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id110
+  - &id122
     id: squarify::FC_BULL
     family: ultra57-cluster
     plain_english: 'FAUNA Cluster (bull): 2-of-3 streak indicators (MB-streak, any-FAUNA streak, MB/RE streak) with overlapping
@@ -4816,7 +5380,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id111
+  - &id123
     id: squarify::FC_BEAR
     family: ultra57-cluster
     plain_english: FAUNA Cluster (bear) mirror.
@@ -4828,7 +5392,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id112
+  - &id124
     id: squarify::B2B_DAYS_TRACKER
     family: session-history
     plain_english: 'f_hadYesterday(sig): scans 1..500 bars back for the same boolean during the prior trading day. Used to
@@ -4841,7 +5405,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id113
+  - &id125
     id: squarify::FOSTER_PBJ_WINDOW
     family: ultra57-foster
     plain_english: 'Foster window: opens on first bullish-MB; if next bar fires PBJ, fosterPBJSignal latches true (used by
@@ -4854,7 +5418,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id114
+  - &id126
     id: squarify::WBUSH_BULL
     family: heavy-pentagon-aggregator
     plain_english: 'WBUSH bull: any of 5 Heavy Pentagon Combo families (HYY, HN, HNV, HT, NHx2) co-occurring with a bull FVG-confirmed
@@ -4869,7 +5433,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id115
+  - &id127
     id: squarify::WBUSH_BEAR
     family: heavy-pentagon-aggregator
     plain_english: 'WBUSH bear: 5 Heavy Pentagon families × bear-displacement OR''d.'
@@ -4881,7 +5445,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id116
+  - &id128
     id: squarify::WBUSH_NEUTRAL
     family: heavy-pentagon-aggregator
     plain_english: 'WBUSH neutral: 5 Heavy Pentagon families fired but no FVG-confirmed displacement either direction.'
@@ -4894,7 +5458,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id117
+  - &id129
     id: squarify::NPM_CONS_BULL
     family: tnt-napalm-consolidated
     plain_english: 'Consolidated NPM bull: raw napalm OR raw charge (Anish framework: napalm and charge are equivalent). v2
@@ -4908,7 +5472,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 2
-  - &id118
+  - &id130
     id: squarify::NPM_CONS_BEAR
     family: tnt-napalm-consolidated
     plain_english: Consolidated NPM bear mirror.
@@ -4920,7 +5484,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 2
-  - &id119
+  - &id131
     id: squarify::B2B_PUP
     family: pup-back-to-back
     plain_english: Two consecutive PUP bars (bull). Used as scaffolding for B2B-PUP composites and TIER-2 opening confluence.
@@ -4935,7 +5499,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id120
+  - &id132
     id: squarify::B2B_PPD
     family: pup-back-to-back
     plain_english: Two consecutive PPD bars (bear) mirror.
@@ -4947,7 +5511,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id121
+  - &id133
     id: squarify::NEO_BULL
     family: matrix-number
     plain_english: 'Neo bull: matrix-number bar (volume == highest of last 67) AND FAUNA bull on same bar.'
@@ -4960,7 +5524,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id122
+  - &id134
     id: squarify::NEO_BEAR
     family: matrix-number
     plain_english: Neo bear mirror.
@@ -4972,7 +5536,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id123
+  - &id135
     id: squarify::TRINITY_BULL
     family: matrix-number
     plain_english: 'Trinity bull: matrix-number bar AND NOT FAUNA bull AND green close. Resolves explicitly: Trinity is the
@@ -4986,7 +5550,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id124
+  - &id136
     id: squarify::TRINITY_BEAR
     family: matrix-number
     plain_english: Trinity bear mirror.
@@ -4998,7 +5562,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id125
+  - &id137
     id: squarify::UNIFIED_COMBO_BULL
     family: combo-set-fvg
     plain_english: Unified Combo (UC) bull = csNew3_Bull = csNew1_Bull on bar[0] AND csNew2_Bull on bar[1] (FVG combo + matrix
@@ -5017,7 +5581,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 2
-  - &id126
+  - &id138
     id: squarify::UNIFIED_COMBO_BEAR
     family: combo-set-fvg
     plain_english: UC bear mirror.
@@ -5029,7 +5593,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 2
-  - &id127
+  - &id139
     id: squarify::TIER1_OPENING_CONFLU_BULL
     family: opening-confluence
     plain_english: 'Tier-1 opening confluence (Anish CRWV recipe): first session bar AND displacement std multiple >= threshold
@@ -5045,7 +5609,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 2
-  - &id128
+  - &id140
     id: squarify::TIER2_OPENING_CONFLU_BULL
     family: opening-confluence
     plain_english: 'Tier-2 opening confluence (Anish CRWV 2m recipe): first 2 session bars AND B2B PUP active AND any UU family
@@ -5061,7 +5625,7 @@ indicators:
     plot_offset: 0
     lifecycle_stage: 2
   composites:
-  - &id304
+  - &id316
     id: squarify::S1_SD_BANG
     tier: 3
     plain_english: 'SD! (Super Duper) — REDEFINED v2: Unified Combo + consolidated NPM + PUP. All on visual bar [1].'
@@ -5078,7 +5642,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id305
+  - &id317
     id: squarify::S2_SUPER
     tier: 3
     plain_english: 'SUPER — REDEFINED v2: Unified Combo + consolidated NPM. Suppressed when SD! also fires.'
@@ -5095,7 +5659,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id306
+  - &id318
     id: squarify::S3_HW
     tier: 3
     plain_english: 'Heavy Weapon: green bar + 5x-std displacement (no FVG) + PBJ + (GS or WTC or Hiroshima or directional
@@ -5115,7 +5679,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id307
+  - &id319
     id: squarify::S4_FLOOR
     tier: 3
     plain_english: 'Floor: Ping-Pong bull + PBJ + directional RVOL slot (1x/GS/WTC/Hiro/dirNag) + one-of-these-bull + checkbox
@@ -5135,7 +5699,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id308
+  - &id320
     id: squarify::S5_2F
     tier: 3
     plain_english: '2nd Floor: Ping-Pong bull + PB (not PBJ) + directional RVOL + one-of-these + checkbox Set 1. Suppressed
@@ -5156,7 +5720,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id309
+  - &id321
     id: squarify::S6_UUUU
     tier: 3
     plain_english: 'UUUU: 4+ consecutive qualified U bars. Path-OR (pA/pB/pC/pD/pE/pF + new pG = >=4 distinct qualifiers in
@@ -5178,7 +5742,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id310
+  - &id322
     id: squarify::S7_UUU
     tier: 3
     plain_english: 'UUU: exactly 3 consecutive qualified U bars. Same path-OR (pA-pE + pG = >=3 distinct qualifiers). Suppressed
@@ -5200,7 +5764,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id311
+  - &id323
     id: squarify::S8_UU
     tier: 3
     plain_english: 'UU: exactly 2 consecutive qualified U bars + one-of-these-for-UU gate. Suppressed when UUU/UUUU also fires.'
@@ -5223,7 +5787,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id312
+  - &id324
     id: squarify::S9_ALPHA_STRIKE
     tier: 3
     plain_english: 'A* (Alpha Strike): first signal of session + Ping-Pong bull + (GS or RVOL1x) + PBJ + expanded FAUNA slot
@@ -5243,7 +5807,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id313
+  - &id325
     id: squarify::S10_OMEGA_A
     tier: 3
     plain_english: 'Omega-A: Boom Hunter omega event + high-confidence cosignal subset. Excludes MOAB and bear displacement.'
@@ -5261,7 +5825,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id314
+  - &id326
     id: squarify::S11_FOX
     tier: 3
     plain_english: 'Foxtrot: 4 consecutive FAUNA-confirmed bullish bars, gated by (HV+D + PBJ) OR one-of-these.'
@@ -5277,7 +5841,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id315
+  - &id327
     id: squarify::S12_OD
     tier: 3
     plain_english: 'Opening Drive: session bar <= max+1 + FVG/UC + prior-bar displacement + PUP[1] + PBJ[1].'
@@ -5296,7 +5860,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id316
+  - &id328
     id: squarify::S13_GOLF
     tier: 3
     plain_english: 'Golf: 3-bar sequence: bar[2] FAUNA+PUP, bar[1] FAUNA+PUP+DISP, bar[0] DISP confirmation.'
@@ -5316,7 +5880,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id317
+  - &id329
     id: squarify::S14_PBJ_F2_OR_E3
     tier: 3
     plain_english: PBJ + Foster Pair OR PBJ + Exhaustion Triple.
@@ -5332,7 +5896,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id318
+  - &id330
     id: squarify::S15_PBJ_CL
     tier: 3
     plain_english: PBJ + full FAUNA Cluster bull.
@@ -5348,7 +5912,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id319
+  - &id331
     id: squarify::S16_F2CL_TO_E3
     tier: 3
     plain_english: 'Sequential: prior-bar Foster Pair + prior-bar Cluster -> current-bar Exhaustion Triple.'
@@ -5365,7 +5929,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id320
+  - &id332
     id: squarify::S17_E3_TWOTHIRDS_PUP
     tier: 3
     plain_english: Exhaustion Triple where 2 of 3 bars are PUP.
@@ -5381,7 +5945,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id321
+  - &id333
     id: squarify::S18_F2_TIMES_2D
     tier: 3
     plain_english: Foster Pair on consecutive trading sessions.
@@ -5397,7 +5961,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id322
+  - &id334
     id: squarify::S19_E3_TIMES_2D
     tier: 3
     plain_english: Exhaustion Triple on consecutive trading sessions.
@@ -5413,7 +5977,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id323
+  - &id335
     id: squarify::S20_F2E3_SEQ
     tier: 3
     plain_english: Foster Pair one session then Exhaustion Triple next session.
@@ -5429,7 +5993,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id324
+  - &id336
     id: squarify::S21_CL_TIMES_2D
     tier: 3
     plain_english: FAUNA Cluster on consecutive trading sessions.
@@ -5445,7 +6009,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id325
+  - &id337
     id: squarify::S22_NPM_PLUS
     tier: 3
     plain_english: 'NPM+: consolidated NPM AND ((PBJ[1] AND (UC OR HW[1] OR WMD[1])) OR WMD[1]).'
@@ -5462,7 +6026,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id326
+  - &id338
     id: squarify::S23_NPM12
     tier: 3
     plain_english: 'NPM12: consolidated NPM + checkbox qualifier Set 1 OR Set 2 (napalm-aligned [1]).'
@@ -5478,7 +6042,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id327
+  - &id339
     id: squarify::S24_NPM3
     tier: 3
     plain_english: 'NPM3: consolidated NPM + checkbox Set 3 only. Suppressed when NPM12 fires.'
@@ -5495,7 +6059,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id328
+  - &id340
     id: squarify::S25_B2BNPM
     tier: 3
     plain_english: Back-to-back consolidated NPM (this bar AND prior bar).
@@ -5511,7 +6075,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id329
+  - &id341
     id: squarify::S26_NPM_PLUS_TNT
     tier: 3
     plain_english: Napalm + prior-bar TNT on same visual candle.
@@ -5527,7 +6091,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id330
+  - &id342
     id: squarify::S27_CO
     tier: 3
     plain_english: 'CO — RESTRUCTURED v2: HV+D + PBJ[1] + (UC OR FVG Combo Set). No longer fires on any bullish signal.'
@@ -5544,7 +6108,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id331
+  - &id343
     id: squarify::S28_HVD_PBJ
     tier: 3
     plain_english: HV+D + PBJ on same candle. Sub-3min requires checkbox Set 1 (napalm-aligned). Excludes CO.
@@ -5563,7 +6127,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id332
+  - &id344
     id: squarify::S29_B2BHVD_PBJ
     tier: 3
     plain_english: Consecutive HV+D bars + PBJ on either bar.
@@ -5580,7 +6144,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id333
+  - &id345
     id: squarify::S30_B2BHVD
     tier: 3
     plain_english: Consecutive HV+D bars without PBJ or PB.
@@ -5598,7 +6162,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id334
+  - &id346
     id: squarify::S31_UU_PLUS_UC
     tier: 3
     plain_english: Any UU family + Unified Combo on same candle.
@@ -5614,7 +6178,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id335
+  - &id347
     id: squarify::S32_GRAIL
     tier: 3
     plain_english: 'Holy Grail: consolidated NPM + PBJ[1] + PUP[1] + Unified Combo on same visual candle.'
@@ -5632,7 +6196,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id336
+  - &id348
     id: squarify::S33_FLR_NPM
     tier: 3
     plain_english: Floor[1] + consolidated NPM same window.
@@ -5648,7 +6212,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id337
+  - &id349
     id: squarify::S34_NPM_PBJ_PUP
     tier: 3
     plain_english: Consolidated NPM + PBJ[1] + PUP[1] WITHOUT Unified Combo. Suppressed when GRAIL fires.
@@ -5666,7 +6230,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id338
+  - &id350
     id: squarify::S35_NAG_PLUS
     tier: 3
     plain_english: Nagasaki + any directional bullish signal (RVOL1x/GS/FAUNA/DISP/PBJ/PUP/HV-FVG-bull/GZI-bull).
@@ -5683,7 +6247,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id339
+  - &id351
     id: squarify::S36_UU_HVD
     tier: 3
     plain_english: Any UU family[1] + HV+D + PBJ on same candle (UU shifted to [1] because hvd_pbj_bull is offset -1).
@@ -5700,7 +6264,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id340
+  - &id352
     id: squarify::S37_UU_NPM
     tier: 3
     plain_english: Any UU family[1] + consolidated NPM same window.
@@ -5716,7 +6280,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id341
+  - &id353
     id: squarify::S38_FLR_UU
     tier: 3
     plain_english: Floor or 2F + any UU family (both offset 0).
@@ -5732,7 +6296,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id342
+  - &id354
     id: squarify::S39_FOS_PUP_1X
     tier: 3
     plain_english: Foster (PBJ-resolved) + PUP + (RVOL1x OR consolidated NPM).
@@ -5749,7 +6313,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id343
+  - &id355
     id: squarify::S40_NPM_UC
     tier: 3
     plain_english: Consolidated NPM + Unified Combo WITHOUT PBJ. Suppressed when NPM+UC+PBJ (S44) fires.
@@ -5766,7 +6330,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id344
+  - &id356
     id: squarify::S41_WBUSH_BULL
     tier: 3
     plain_english: WBUSH bull aggregate plot — any of 5 Heavy Pentagon families fired bullish.
@@ -5781,7 +6345,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id345
+  - &id357
     id: squarify::S42_WBUSH_BEAR
     tier: 3
     plain_english: WBUSH bear aggregate plot.
@@ -5796,7 +6360,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id346
+  - &id358
     id: squarify::S43_WBUSH_NEUTRAL
     tier: 3
     plain_english: WBUSH neutral aggregate plot.
@@ -5812,7 +6376,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id347
+  - &id359
     id: squarify::S44_NPM_UC_PBJ
     tier: 3
     plain_english: Consolidated NPM + Unified Combo + PBJ[1].
@@ -5829,7 +6393,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id348
+  - &id360
     id: squarify::S45_UC_NAGASAKI_BULL
     tier: 3
     plain_english: 'UC NAGASAKI Bull: Unified Combo (csNew3) + Nagasaki[1] on same visual bar.'
@@ -5845,7 +6409,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id349
+  - &id361
     id: squarify::S46_UC_NAGASAKI_BEAR
     tier: 3
     plain_english: 'UC NAGASAKI Bear mirror: Unified Combo bear (csNew3_Bear) + Nagasaki[1].'
@@ -5861,7 +6425,7 @@ indicators:
     in_indicator: squarify
     plot_offset: -1
     lifecycle_stage: 5
-  - &id350
+  - &id362
     id: squarify::T1_OPENING_CONFLU
     tier: 3
     plain_english: Tier-1 opening confluence plot — see TIER1_OPENING_CONFLU_BULL root.
@@ -5877,7 +6441,7 @@ indicators:
     in_indicator: squarify
     plot_offset: 0
     lifecycle_stage: 5
-  - &id351
+  - &id363
     id: squarify::T2_OPENING_CONFLU
     tier: 3
     plain_english: Tier-2 opening confluence plot — see TIER2_OPENING_CONFLU_BULL root.
@@ -6072,7 +6636,7 @@ indicators:
     line_range: '1406'
     purpose: 'Alert string formatter: DIRECTION | FIRST_STATUS | NAME'
   roots:
-  - &id129
+  - &id141
     id: tnt-od::TNT
     aka:
     - TNT raw
@@ -6097,7 +6661,7 @@ indicators:
       plotted. They feed TNT.
     in_indicator: tnt-od
     lifecycle_stage: 2
-  - &id130
+  - &id142
     id: tnt-od::Napalm
     aka:
     - NPM
@@ -6117,7 +6681,7 @@ indicators:
     - displacement (dispBull/dispBear, lines 506-512)
     in_indicator: tnt-od
     lifecycle_stage: 2
-  - &id131
+  - &id143
     id: tnt-od::Charge
     aka:
     - raw_bullCharge/raw_bearCharge
@@ -6134,7 +6698,7 @@ indicators:
     notes: Effective only when not coincident with an opposite raw_bearTNT/raw_bullTNT (effectiveBullCharge gating, line 555).
     in_indicator: tnt-od
     lifecycle_stage: 2
-  - &id132
+  - &id144
     id: tnt-od::TNT2
     aka:
     - TNT 2.0
@@ -6145,7 +6709,7 @@ indicators:
       Internally folded into det_bullTNT/det_bearTNT.'
     in_indicator: tnt-od
     lifecycle_stage: 2
-  - &id133
+  - &id145
     id: tnt-od::Return
     aka:
     - RET
@@ -6158,7 +6722,7 @@ indicators:
     consolidated_into: det_bullRetTNT / det_bearRetTNT  line 622-623
     in_indicator: tnt-od
     lifecycle_stage: 2
-  - &id134
+  - &id146
     id: tnt-od::Continuous
     aka:
     - CONT
@@ -6171,7 +6735,7 @@ indicators:
     consolidated_into: det_contBull / det_contBear  line 624
     in_indicator: tnt-od
     lifecycle_stage: 2
-  - &id135
+  - &id147
     id: tnt-od::Dynamite
     family: structural
     line_range: 875-903
@@ -6191,7 +6755,7 @@ indicators:
     plot_label: ★ DYNAMITE
     in_indicator: tnt-od
     lifecycle_stage: 2
-  - &id136
+  - &id148
     id: tnt-od::Density1
     family: other
     line_range: 1060-1117
@@ -6211,7 +6775,7 @@ indicators:
       — i.e. Density is a composite of Tier-1/Tier-2 atoms. Treated here as a NAMED primitive per task definition list.
     in_indicator: tnt-od
     lifecycle_stage: 2
-  - &id137
+  - &id149
     id: tnt-od::Density2
     family: other
     line_range: 1085-1100, 1118
@@ -6228,7 +6792,7 @@ indicators:
     - den2_Y (default 3, line 213)
     in_indicator: tnt-od
     lifecycle_stage: 2
-  - &id138
+  - &id150
     id: tnt-od::Density3
     family: other
     line_range: 1101-1116, 1119
@@ -6246,7 +6810,7 @@ indicators:
     in_indicator: tnt-od
     lifecycle_stage: 2
   composites:
-  - &id352
+  - &id364
     id: tnt-od::B2B_Napalm
     tier: 1
     line_range: 1030-1031
@@ -6265,7 +6829,7 @@ indicators:
     - en_b2bBear (line 174)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id353
+  - &id365
     id: tnt-od::RC_NPM_TNT
     tier: 1
     line_range: 962-963
@@ -6282,7 +6846,7 @@ indicators:
     - en_rcNTBear (line 176)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id354
+  - &id366
     id: tnt-od::FUSE
     tier: 1
     line_range: 975-986
@@ -6300,7 +6864,7 @@ indicators:
     - en_fuseBear (line 178)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id355
+  - &id367
     id: tnt-od::Catalyst
     tier: 1
     line_range: 994-998
@@ -6317,7 +6881,7 @@ indicators:
     - en_catBear (line 180)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id356
+  - &id368
     id: tnt-od::PBJ_NPM
     tier: 1
     line_range: '969'
@@ -6335,7 +6899,7 @@ indicators:
     - en_pnBear (line 182)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id357
+  - &id369
     id: tnt-od::PBJ_TNT
     tier: 1
     line_range: '971'
@@ -6353,7 +6917,7 @@ indicators:
     - en_ptBear (line 184)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id358
+  - &id370
     id: tnt-od::Ignite
     tier: 1
     line_range: 988-992
@@ -6371,7 +6935,7 @@ indicators:
     - en_ignBear (line 186)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id359
+  - &id371
     id: tnt-od::TNT_Enriched
     tier: 2
     line_range: 1041-1042
@@ -6390,7 +6954,7 @@ indicators:
     - en_t2tntBear (line 193)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id360
+  - &id372
     id: tnt-od::NPM_Enriched
     tier: 2
     line_range: 1043-1044
@@ -6410,7 +6974,7 @@ indicators:
     - en_t2npmBear (line 195)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id361
+  - &id373
     id: tnt-od::CONT_Enriched
     tier: 2
     line_range: 1045-1046
@@ -6427,7 +6991,7 @@ indicators:
     - en_t2contBear (line 197)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id362
+  - &id374
     id: tnt-od::RC_TNT_RET_Enriched
     tier: 2
     line_range: 965, 1047
@@ -6445,7 +7009,7 @@ indicators:
     - en_t2trBear (line 199)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id363
+  - &id375
     id: tnt-od::RC_RET_NPM_Enriched
     tier: 2
     line_range: 967, 1048
@@ -6463,7 +7027,7 @@ indicators:
     - en_t2rnBear (line 201)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id364
+  - &id376
     id: tnt-od::PBJ_RET_Enriched
     tier: 2
     line_range: 973, 1049
@@ -6481,7 +7045,7 @@ indicators:
     - en_t2prBear (line 203)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id365
+  - &id377
     id: tnt-od::UU_TNT_Any
     tier: 2
     line_range: 1325, 1354-1355
@@ -6498,7 +7062,7 @@ indicators:
     - en_uu_bear (line 225)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id366
+  - &id378
     id: tnt-od::UUU_TNT_Any
     tier: 2
     line_range: 1326, 1356-1357
@@ -6515,7 +7079,7 @@ indicators:
     - en_uuu_bear (line 227)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id367
+  - &id379
     id: tnt-od::UUUU_TNT_Any
     tier: 2
     line_range: 1327, 1358-1359
@@ -6532,7 +7096,7 @@ indicators:
     - en_uuuu_bear (line 229)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id368
+  - &id380
     id: tnt-od::WBUSH_Bull
     tier: 3
     line_range: 905-956, 1371
@@ -6549,7 +7113,7 @@ indicators:
     - en_wbushBull (line 233)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id369
+  - &id381
     id: tnt-od::WBUSH_Bear
     tier: 3
     line_range: 905-956, 1372
@@ -6565,7 +7129,7 @@ indicators:
     - en_wbushBear (line 234)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id370
+  - &id382
     id: tnt-od::WBUSH_Neutral
     tier: 3
     line_range: 905-956, 1373
@@ -6581,7 +7145,7 @@ indicators:
     - en_wbushNeutral (line 235)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id371
+  - &id383
     id: tnt-od::tntod_any_bull
     tier: aggregator
     line_range: '1368'
@@ -6611,7 +7175,7 @@ indicators:
     plot: (no plotshape — internal aggregator only)
     in_indicator: tnt-od
     lifecycle_stage: 5
-  - &id372
+  - &id384
     id: tnt-od::tntod_any_bear
     tier: aggregator
     line_range: '1369'
@@ -6757,7 +7321,7 @@ indicators:
     purpose: Composite alert-only trigger = sigSuperBullPBJ or sigSuperBullPB or sigSuperBearPBJ or sigSuperBearPB or sigGrandSlam
       or sigMOAB (L920) — alertcondition-exposed but not plotted as a named shape
   roots:
-  - &id139
+  - &id151
     id: ultra-combo::F2_BULL
     family: f2_e3_fc
     plain_english: 'Bullish F2: at session bar 2, this and previous bar are both MB (momentum-body) bullish events'
@@ -6774,7 +7338,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id140
+  - &id152
     id: ultra-combo::F2_BEAR
     family: f2_e3_fc
     plain_english: 'Bearish F2: at session bar 2, this and previous bar are both bearish MB events'
@@ -6789,7 +7353,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id141
+  - &id153
     id: ultra-combo::E3_BULL
     family: f2_e3_fc
     plain_english: 'Bullish E3: at session bar 3, current and previous two bars each fired MB OR RE OR TA bull'
@@ -6805,7 +7369,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id142
+  - &id154
     id: ultra-combo::E3_BEAR
     family: f2_e3_fc
     plain_english: 'Bearish E3: at session bar 3, current and previous two bars each fired bear MB/RE/TA'
@@ -6821,7 +7385,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id143
+  - &id155
     id: ultra-combo::FC_BULL
     family: f2_e3_fc
     plain_english: 'Bullish FC cluster: 2-of-3 cluster indicators true (consecutive MB / cumulative-day MB+RE+TA / consecutive
@@ -6840,7 +7404,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id144
+  - &id156
     id: ultra-combo::FC_BEAR
     family: f2_e3_fc
     plain_english: Bearish FC cluster mirror of FC_BULL
@@ -6855,7 +7419,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id145
+  - &id157
     id: ultra-combo::MB_BULL
     family: fauna_core
     plain_english: 'FAUNA Momentum-Body bull: confirmed bullish bar with body > 1.6*ATR, body/range > 0.7, volume > 1.8*avg20'
@@ -6874,7 +7438,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id146
+  - &id158
     id: ultra-combo::MB_BEAR
     family: fauna_core
     plain_english: FAUNA Momentum-Body bear (mirror of MB_BULL)
@@ -6889,7 +7453,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id147
+  - &id159
     id: ultra-combo::RE_BULL
     family: fauna_core
     plain_english: 'FAUNA Range-Expansion bull: confirmed bull bar with range > 2.2*ATR, close in top 15% of range, vol >
@@ -6907,7 +7471,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id148
+  - &id160
     id: ultra-combo::RE_BEAR
     family: fauna_core
     plain_english: FAUNA Range-Expansion bear (mirror)
@@ -6923,7 +7487,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id149
+  - &id161
     id: ultra-combo::TA_BULL
     family: fauna_core
     plain_english: 'FAUNA Trend-Acceleration bull: 50-SMA rising, |close-close[1]| > 1.6*avg|delta|10, body up, vol > 1.8*avg'
@@ -6941,7 +7505,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id150
+  - &id162
     id: ultra-combo::TA_BEAR
     family: fauna_core
     plain_english: FAUNA Trend-Acceleration bear (mirror)
@@ -6957,7 +7521,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id151
+  - &id163
     id: ultra-combo::GG_BULL
     family: fauna_exclusion
     plain_english: 'FAUNA Gap-Gap bull exclusion atom: open gaps up > 0.9*ATR over prior close, body up, low > prior close,
@@ -6974,7 +7538,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id152
+  - &id164
     id: ultra-combo::GG_BEAR
     family: fauna_exclusion
     plain_english: FAUNA Gap-Gap bear exclusion atom
@@ -6989,7 +7553,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id153
+  - &id165
     id: ultra-combo::TR_BULL
     family: fauna_exclusion
     plain_english: 'FAUNA TR (Trap-Reverse from weak-bear) bull exclusion: prior bar weak-bear (body/range <= 0.2) AND core
@@ -7006,7 +7570,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id154
+  - &id166
     id: ultra-combo::TR_BEAR
     family: fauna_exclusion
     plain_english: FAUNA TR bear exclusion (mirror)
@@ -7021,7 +7585,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id155
+  - &id167
     id: ultra-combo::ES_BULL
     family: fauna_exclusion
     plain_english: 'FAUNA ES (Engulf-from-Strong-bear) bull exclusion: prior bar strong-bear (|body|>1.5*avgBody and vol>1.5*avgVol)
@@ -7037,7 +7601,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id156
+  - &id168
     id: ultra-combo::ES_BEAR
     family: fauna_exclusion
     plain_english: FAUNA ES bear exclusion (mirror)
@@ -7052,7 +7616,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id157
+  - &id169
     id: ultra-combo::GDR_BULL
     family: fauna_exclusion
     plain_english: 'FAUNA GDR (Gap Down + Reverse) bull exclusion: prior bar bearish AND GG_BULL fires'
@@ -7067,7 +7631,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id158
+  - &id170
     id: ultra-combo::GDR_BEAR
     family: fauna_exclusion
     plain_english: FAUNA GDR bear exclusion (mirror)
@@ -7082,7 +7646,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id159
+  - &id171
     id: ultra-combo::ROC_BULL_PRIMITIVE
     family: roc_lbwt
     plain_english: 'Atomic ROC-bull crossover primitive: ta.crossover(roc_ema, 2.0). Pre-merge with WaveTrend signals into
@@ -7100,7 +7664,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id160
+  - &id172
     id: ultra-combo::ROC_BEAR_PRIMITIVE
     family: roc_lbwt
     plain_english: 'Atomic ROC-bear crossunder primitive: ta.crossunder(roc_ema, -1.25)'
@@ -7115,7 +7679,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id161
+  - &id173
     id: ultra-combo::LBWT_BULL_CROSS
     family: roc_lbwt
     plain_english: 'LazyBear WaveTrend bull cross: ld_xup = wt1 crosses over wt2 (with HLC3-EMA8/CI/EMA21/SMA4 stack). One
@@ -7134,7 +7698,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id162
+  - &id174
     id: ultra-combo::LBWT_BEAR_CROSS
     family: roc_lbwt
     plain_english: 'LazyBear WaveTrend bear cross: ld_wt1 crosses under ld_wt2'
@@ -7149,7 +7713,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id163
+  - &id175
     id: ultra-combo::TB
     family: tb_foster
     plain_english: 'TB (Trend Break-down): after 5+ consecutive bullPass days, on the first bar where bullPass turns false,
@@ -7166,7 +7730,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 2
-  - &id164
+  - &id176
     id: ultra-combo::FOSTER
     family: tb_foster
     plain_english: 'Foster (Trend Reversal-up): after 5+ consecutive bearPass days, on the first non-bearPass bar, open 2-bar
@@ -7184,7 +7748,7 @@ indicators:
     plot_offset: 0
     lifecycle_stage: 2
   composites:
-  - &id373
+  - &id385
     id: ultra-combo::FAUNA_BULL
     tier: 2
     plain_english: 'Bullish FAUNA: any of MB/RE/TA fires AND none of the four exclusion atoms (GG/TR/ES/GDR) fires'
@@ -7207,7 +7771,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id374
+  - &id386
     id: ultra-combo::FAUNA_BEAR
     tier: 2
     plain_english: 'Bearish FAUNA: any of bear MB/RE/TA fires AND none of bear GG/TR/ES/GDR exclusion atoms fires'
@@ -7229,7 +7793,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id375
+  - &id387
     id: ultra-combo::ROC_BULL
     tier: 2
     plain_english: 'Bull ROC composite: PBJ-bull AND ROC+WaveTrend dual-confirmation (b1+b4 OR b3+b2) AND any-bull HW AND
@@ -7250,7 +7814,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id376
+  - &id388
     id: ultra-combo::ROC_BEAR
     tier: 2
     plain_english: Bear ROC composite mirror
@@ -7268,7 +7832,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id377
+  - &id389
     id: ultra-combo::DISP_BULL
     tier: 1
     plain_english: 'Displacement bull: previous bar had range > 5*stdev(range,100) AND current bar is a bullish FVG (low >
@@ -7287,7 +7851,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id378
+  - &id390
     id: ultra-combo::DISP_BEAR
     tier: 1
     plain_english: Displacement bear mirror
@@ -7304,7 +7868,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id379
+  - &id391
     id: ultra-combo::SUPER_BULL_PBJ
     tier: 3
     plain_english: 'Super Bull PBJ: Disp-bull AND PBJ-bull AND FAUNA-bull AND any RVOL-bull (SAAB excluded)'
@@ -7323,7 +7887,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id380
+  - &id392
     id: ultra-combo::SUPER_BULL_PB
     tier: 3
     plain_english: Super Bull PB mirror
@@ -7342,7 +7906,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id381
+  - &id393
     id: ultra-combo::SUPER_BEAR_PBJ
     tier: 3
     plain_english: Super Bear PBJ
@@ -7361,7 +7925,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id382
+  - &id394
     id: ultra-combo::SUPER_BEAR_PB
     tier: 3
     plain_english: Super Bear PB
@@ -7380,7 +7944,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id383
+  - &id395
     id: ultra-combo::PBJ_F2
     tier: 2
     plain_english: PBJ + F2 same bar (bull or bear)
@@ -7398,7 +7962,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id384
+  - &id396
     id: ultra-combo::PBJ_E3
     tier: 2
     plain_english: PBJ + E3 same bar
@@ -7416,7 +7980,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id385
+  - &id397
     id: ultra-combo::PBJ_CLUSTER
     tier: 2
     plain_english: PBJ + FC cluster same bar
@@ -7434,7 +7998,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id386
+  - &id398
     id: ultra-combo::PB_F2
     tier: 2
     plain_english: PB + F2 same bar
@@ -7452,7 +8016,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id387
+  - &id399
     id: ultra-combo::PB_E3
     tier: 2
     plain_english: PB + E3 same bar
@@ -7470,7 +8034,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id388
+  - &id400
     id: ultra-combo::PB_CLUSTER
     tier: 2
     plain_english: PB + FC cluster same bar
@@ -7488,7 +8052,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id389
+  - &id401
     id: ultra-combo::F2CL_THEN_E3
     tier: 2
     plain_english: Yesterday-bar F2 AND yesterday-bar FC, then today E3 (one-bar lag)
@@ -7507,7 +8071,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id390
+  - &id402
     id: ultra-combo::F2CL_PLUS_B2B
     tier: 2
     plain_english: F2 + FC cluster + back-to-back PUP (or PPD) on same bar
@@ -7526,7 +8090,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id391
+  - &id403
     id: ultra-combo::B2B_PLUS_F2
     tier: 2
     plain_english: Back-to-back PUP + F2 same bar
@@ -7544,7 +8108,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id392
+  - &id404
     id: ultra-combo::E3_2OF3_PUPPPD
     tier: 2
     plain_english: E3 with at least 2 of last 3 bars being PUP (bull) or PPD (bear)
@@ -7562,7 +8126,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id393
+  - &id405
     id: ultra-combo::F2_B2B_DAYS
     tier: 2
     plain_english: F2 today AND F2 fired some time in the prior ~2 trading days
@@ -7580,7 +8144,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id394
+  - &id406
     id: ultra-combo::E3_B2B_DAYS
     tier: 2
     plain_english: E3 today AND E3 fired in prior ~2 days
@@ -7598,7 +8162,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id395
+  - &id407
     id: ultra-combo::F2E3_CONSEC
     tier: 2
     plain_english: 'Cross-day F2/E3 sequence: F2 today + E3 in prior ~2 days, OR E3 today + F2 in prior ~2 days'
@@ -7616,7 +8180,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id396
+  - &id408
     id: ultra-combo::CLUSTER_B2B_DAYS
     tier: 2
     plain_english: FC cluster today AND FC cluster in prior ~2 days
@@ -7634,7 +8198,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id397
+  - &id409
     id: ultra-combo::HW_PLUS_ANY_BULL
     tier: 2
     plain_english: Any bull HW (RVOL family + sigROCBull + Super combos) AND any of (F2/E3/FC) bull
@@ -7654,7 +8218,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id398
+  - &id410
     id: ultra-combo::HW_PLUS_ANY_BEAR
     tier: 2
     plain_english: Mirror of HW_PLUS_ANY_BULL
@@ -7672,7 +8236,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id399
+  - &id411
     id: ultra-combo::GZHV_ANY_BULL
     tier: 2
     plain_english: (GZ1-bull OR HV-bull FVG) AND (sAnyBull this bar OR last bar)
@@ -7690,7 +8254,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id400
+  - &id412
     id: ultra-combo::GZHV_ANY_BEAR
     tier: 2
     plain_english: Mirror
@@ -7708,7 +8272,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id401
+  - &id413
     id: ultra-combo::HV_GZI_COMBO_BULL
     tier: 2
     plain_english: 'Session bar 2: HV bull on prior AND HV bull AND GZI bull (all same direction)'
@@ -7728,7 +8292,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id402
+  - &id414
     id: ultra-combo::HV_GZI_COMBO_BEAR
     tier: 2
     plain_english: Mirror
@@ -7748,7 +8312,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id403
+  - &id415
     id: ultra-combo::GZ1_MEGA_BULL
     tier: 4
     plain_english: GZ1 bull AND any Super-bull AND PUP AND FAUNA-bull AND DISP-bull — high-water composite
@@ -7768,7 +8332,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id404
+  - &id416
     id: ultra-combo::HV_MEGA_BULL
     tier: 4
     plain_english: Mirror with HV instead of GZ1
@@ -7788,7 +8352,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id405
+  - &id417
     id: ultra-combo::GZ1_HV_MEGA_BULL
     tier: 5
     plain_english: BOTH GZ1 and HV bull simultaneously, plus full Super/PUP/FAUNA/DISP stack
@@ -7810,7 +8374,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id406
+  - &id418
     id: ultra-combo::GZ1_MEGA_BEAR
     tier: 4
     plain_english: Mirror of GZ1_MEGA_BULL
@@ -7830,7 +8394,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id407
+  - &id419
     id: ultra-combo::HV_MEGA_BEAR
     tier: 4
     plain_english: Mirror of HV_MEGA_BULL
@@ -7850,7 +8414,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id408
+  - &id420
     id: ultra-combo::GZ1_HV_MEGA_BEAR
     tier: 5
     plain_english: Mirror of GZ1_HV_MEGA_BULL
@@ -7872,7 +8436,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id409
+  - &id421
     id: ultra-combo::GZHV_MEGA_BULL
     tier: 4
     plain_english: 'Aggregation: gz1MegaBull OR hvMegaBull, plotted as MEGA+'
@@ -7890,7 +8454,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id410
+  - &id422
     id: ultra-combo::GZHV_MEGA_BEAR
     tier: 4
     plain_english: Mirror
@@ -7908,7 +8472,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id411
+  - &id423
     id: ultra-combo::OPENER_BULL
     tier: 3
     plain_english: First session bar (sessBar==1) with (GZ1-bull OR HV-bull) AND (any HW bull OR PBJ bull OR ROC bull OR firstPUPPass+superPup)
@@ -7927,7 +8491,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id412
+  - &id424
     id: ultra-combo::OPENER_BEAR
     tier: 3
     plain_english: Mirror
@@ -7946,7 +8510,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id413
+  - &id425
     id: ultra-combo::THREE_BAR_BULL
     tier: 3
     plain_english: PBJ bull within last 3 bars AND (b2bPUP within last 3 bars OR ≥2 PUPs within last 3 bars)
@@ -7964,7 +8528,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id414
+  - &id426
     id: ultra-combo::THREE_BAR_BEAR
     tier: 3
     plain_english: Mirror
@@ -7982,7 +8546,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id415
+  - &id427
     id: ultra-combo::FOSTER_PLUS_HEAVY
     tier: 3
     plain_english: Any Foster variant fires AND (ROC bull OR any HW bull OR any Super bull)
@@ -8000,7 +8564,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id416
+  - &id428
     id: ultra-combo::TB_PLUS_HEAVY
     tier: 3
     plain_english: Any TB variant fires AND (ROC bear OR any HW bear OR any Super bear)
@@ -8018,7 +8582,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id417
+  - &id429
     id: ultra-combo::GZHV_HEAVY_BULL
     tier: 3
     plain_english: (GZ1 bull OR HV bull) AND (any HW bull OR any Super bull OR ROC bull)
@@ -8036,7 +8600,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id418
+  - &id430
     id: ultra-combo::GZHV_HEAVY_BEAR
     tier: 3
     plain_english: Mirror
@@ -8054,7 +8618,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: -1
     lifecycle_stage: 5
-  - &id419
+  - &id431
     id: ultra-combo::SUPER_B2B_DAYS_BULL
     tier: 4
     plain_english: Any Super-bull (PBJ or PB) today AND any Super-bull fired in prior ~2 days
@@ -8072,7 +8636,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id420
+  - &id432
     id: ultra-combo::SUPER_B2B_DAYS_BEAR
     tier: 4
     plain_english: Mirror
@@ -8090,7 +8654,7 @@ indicators:
     in_indicator: ultra-combo
     plot_offset: 0
     lifecycle_stage: 5
-  - &id421
+  - &id433
     id: ultra-combo::NAGA_PASSTHROUGH
     tier: 1
     plain_english: Re-plot ultra-combo's local Nagasaki signal (volume > prior all-time max) with its own NAGA flag — purely
@@ -8314,7 +8878,7 @@ indicators:
     lines: 1020-1037
     purpose: Cleared each bar; track lines drawn and overlap regions used by the MutEx priority engine.
   roots:
-  - &id165
+  - &id177
     id: vob-asym::zA-bull
     family: structural
     name_in_pine: fire_zb_a
@@ -8351,7 +8915,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id166
+  - &id178
     id: vob-asym::zA-bear
     family: structural
     name_in_pine: fire_zs_a
@@ -8387,7 +8951,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id167
+  - &id179
     id: vob-asym::zB-bull
     family: structural
     name_in_pine: fire_zb_b
@@ -8422,7 +8986,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id168
+  - &id180
     id: vob-asym::zB-bear
     family: structural
     name_in_pine: fire_zs_b
@@ -8457,7 +9021,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id169
+  - &id181
     id: vob-asym::zC-bull
     family: structural
     name_in_pine: fire_zb_c
@@ -8492,7 +9056,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id170
+  - &id182
     id: vob-asym::zC-bear
     family: structural
     name_in_pine: fire_zs_c
@@ -8527,7 +9091,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id171
+  - &id183
     id: vob-asym::zD-bull
     family: structural
     name_in_pine: fire_zb_d
@@ -8562,7 +9126,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id172
+  - &id184
     id: vob-asym::zD-bear
     family: structural
     name_in_pine: fire_zs_d
@@ -8597,7 +9161,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id173
+  - &id185
     id: vob-asym::zE-bull
     family: structural
     name_in_pine: fire_zb_e
@@ -8632,7 +9196,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id174
+  - &id186
     id: vob-asym::zE-bear
     family: structural
     name_in_pine: fire_zs_e
@@ -8667,7 +9231,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id175
+  - &id187
     id: vob-asym::zF-bull
     family: structural
     name_in_pine: fire_zb_f
@@ -8702,7 +9266,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id176
+  - &id188
     id: vob-asym::zF-bear
     family: structural
     name_in_pine: fire_zs_f
@@ -8737,7 +9301,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id177
+  - &id189
     id: vob-asym::T3a-buy
     family: structural
     name_in_pine: plot_t3_buy_a
@@ -8764,7 +9328,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id178
+  - &id190
     id: vob-asym::T3a-sell
     family: structural
     name_in_pine: plot_t3_sell_a
@@ -8790,7 +9354,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id179
+  - &id191
     id: vob-asym::T3b-buy
     family: structural
     name_in_pine: plot_t3_buy_b
@@ -8816,7 +9380,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id180
+  - &id192
     id: vob-asym::T3b-sell
     family: structural
     name_in_pine: plot_t3_sell_b
@@ -8842,7 +9406,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id181
+  - &id193
     id: vob-asym::T3c-buy
     family: structural
     name_in_pine: plot_t3_buy_c
@@ -8868,7 +9432,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id182
+  - &id194
     id: vob-asym::T3c-sell
     family: structural
     name_in_pine: plot_t3_sell_c
@@ -8894,7 +9458,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id183
+  - &id195
     id: vob-asym::T3d-buy
     family: structural
     name_in_pine: plot_t3_buy_d
@@ -8920,7 +9484,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id184
+  - &id196
     id: vob-asym::T3d-sell
     family: structural
     name_in_pine: plot_t3_sell_d
@@ -8946,7 +9510,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id185
+  - &id197
     id: vob-asym::T3e-buy
     family: structural
     name_in_pine: plot_t3_buy_e
@@ -8972,7 +9536,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id186
+  - &id198
     id: vob-asym::T3e-sell
     family: structural
     name_in_pine: plot_t3_sell_e
@@ -8998,7 +9562,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id187
+  - &id199
     id: vob-asym::T3f-buy
     family: structural
     name_in_pine: plot_t3_buy_f
@@ -9024,7 +9588,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id188
+  - &id200
     id: vob-asym::T3f-sell
     family: structural
     name_in_pine: plot_t3_sell_f
@@ -9050,7 +9614,7 @@ indicators:
     - f_cd_ok
     in_indicator: vob-asym
     lifecycle_stage: 2
-  - &id189
+  - &id201
     id: vob-asym::Nagasaki
     family: structural
     name_in_pine: plot_nagasaki
@@ -9077,7 +9641,7 @@ indicators:
     in_indicator: vob-asym
     lifecycle_stage: 2
   composites:
-  - &id422
+  - &id434
     id: vob-asym::any_t3
     tier: 1
     kind: derived_flag
@@ -9100,7 +9664,7 @@ indicators:
       861).
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id423
+  - &id435
     id: vob-asym::any_zone
     tier: 1
     kind: derived_flag
@@ -9122,7 +9686,7 @@ indicators:
       ZONE_FORMATION alert payload (lines 1138-1164).
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id424
+  - &id436
     id: vob-asym::mutex_zone_lines
     tier: 2
     kind: zone_drawing
@@ -9147,7 +9711,7 @@ indicators:
     rendered_in: Chart price layer - lines and linefills, persisted via drawn_lines/drawn_fills arrays cleared each bar.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id425
+  - &id437
     id: vob-asym::bull_pool / bear_pool (per-tier)
     tier: 2
     kind: derived_scalar_set
@@ -9170,7 +9734,7 @@ indicators:
       audit-table pct% computations.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id426
+  - &id438
     id: vob-asym::cnt_bull_all / cnt_bear_all
     tier: 2
     kind: derived_scalar
@@ -9181,7 +9745,7 @@ indicators:
       and BULLZONES/BEARZONES alert fields.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id427
+  - &id439
     id: vob-asym::nearest_bull_dist / nearest_bear_dist
     tier: 2
     kind: derived_scalar
@@ -9203,7 +9767,7 @@ indicators:
       row, alerts, log stream.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id428
+  - &id440
     id: vob-asym::stk_bull / stk_bear
     tier: 2
     kind: derived_scalar
@@ -9225,7 +9789,7 @@ indicators:
       'stacking near price' confluence indicator.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id429
+  - &id441
     id: vob-asym::bull_gap / bear_gap
     tier: 2
     kind: derived_scalar
@@ -9247,7 +9811,7 @@ indicators:
       hitting resistance/support.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id430
+  - &id442
     id: vob-asym::pancake_bull / pancake_bear
     tier: 3
     kind: composite_flag_string
@@ -9260,7 +9824,7 @@ indicators:
       for human + Claude reads.'
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id431
+  - &id443
     id: vob-asym::any_t3_alert
     tier: 3
     kind: alertcondition
@@ -9270,7 +9834,7 @@ indicators:
     description: Single alertcondition consolidating all 13 T3+Nagasaki triggers; saves alertcondition slot budget.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id432
+  - &id444
     id: vob-asym::any_zone_alert
     tier: 3
     kind: alertcondition
@@ -9280,7 +9844,7 @@ indicators:
     description: Single alertcondition for any of 12 zone-formation events.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id433
+  - &id445
     id: vob-asym::T3_bloomberg_alert
     tier: 3
     kind: alert_payload
@@ -9310,7 +9874,7 @@ indicators:
       slope. Nagasaki has its own simpler payload at line 904.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id434
+  - &id446
     id: vob-asym::ZONE_FORMATION_bloomberg_alert
     tier: 3
     kind: alert_payload
@@ -9326,7 +9890,7 @@ indicators:
       tag enumerating which tier+direction(s) fired this bar.'
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id435
+  - &id447
     id: vob-asym::zone_formation_label
     tier: 3
     kind: emission_label
@@ -9348,7 +9912,7 @@ indicators:
       metadata for the data_get_pine_labels emission channel. Gated by en_emission_labels.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id436
+  - &id448
     id: vob-asym::log_emission_stream
     tier: 4
     kind: log_stream
@@ -9363,7 +9927,7 @@ indicators:
       including all six per-tier bull/bear pools and slope_ema_a..f.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id437
+  - &id449
     id: vob-asym::comprehensive_emission_table
     tier: 4
     kind: dashboard
@@ -9393,7 +9957,7 @@ indicators:
       of truth' per file comments.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id438
+  - &id450
     id: vob-asym::audit_table
     tier: 4
     kind: dashboard
@@ -9417,7 +9981,7 @@ indicators:
       pct of pool.
     in_indicator: vob-asym
     lifecycle_stage: 5
-  - &id439
+  - &id451
     id: vob-asym::T3_signal_table
     tier: 4
     kind: dashboard
@@ -9542,7 +10106,7 @@ indicators:
     lines: 151-155
     purpose: One-shot escalation flags gated by (escalated AND ladder_depth == N). Used by both plotshape and alertcondition.
   roots:
-  - &id190
+  - &id202
     id: vob-ladder-watch::zF
     family: structural
     name_in_pine: p_f
@@ -9568,7 +10132,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-ladder-watch
     lifecycle_stage: 2
-  - &id191
+  - &id203
     id: vob-ladder-watch::zE
     family: structural
     name_in_pine: p_e
@@ -9593,7 +10157,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-ladder-watch
     lifecycle_stage: 2
-  - &id192
+  - &id204
     id: vob-ladder-watch::zD
     family: structural
     name_in_pine: p_d
@@ -9618,7 +10182,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-ladder-watch
     lifecycle_stage: 2
-  - &id193
+  - &id205
     id: vob-ladder-watch::zC
     family: structural
     name_in_pine: p_c
@@ -9643,7 +10207,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-ladder-watch
     lifecycle_stage: 2
-  - &id194
+  - &id206
     id: vob-ladder-watch::zB
     family: structural
     name_in_pine: p_b
@@ -9668,7 +10232,7 @@ indicators:
     - atr_adjust
     in_indicator: vob-ladder-watch
     lifecycle_stage: 2
-  - &id195
+  - &id207
     id: vob-ladder-watch::zA
     family: structural
     name_in_pine: p_a
@@ -9694,7 +10258,7 @@ indicators:
     in_indicator: vob-ladder-watch
     lifecycle_stage: 2
   composites:
-  - &id440
+  - &id452
     id: vob-ladder-watch::ladder_depth
     tier: 1
     kind: derived_scalar
@@ -9711,7 +10275,7 @@ indicators:
     rendered_in: Top-right table 'Depth N/6' cell (lines 207-209), color-coded gray<2 / yellow 2-3 / lime>=4.
     in_indicator: vob-ladder-watch
     lifecycle_stage: 5
-  - &id441
+  - &id453
     id: vob-ladder-watch::escalated
     tier: 2
     kind: edge_event
@@ -9722,7 +10286,7 @@ indicators:
     description: True on a confirmed bar where ladder_depth strictly increased vs prev_depth. Drives every plotshape and alert.
     in_indicator: vob-ladder-watch
     lifecycle_stage: 5
-  - &id442
+  - &id454
     id: vob-ladder-watch::WATCH
     tier: 3
     kind: escalation_signal
@@ -9745,7 +10309,7 @@ indicators:
     description: First escalation — zF and zE present and ascending. 'Put it on radar' per CHANGELOG rationale.
     in_indicator: vob-ladder-watch
     lifecycle_stage: 5
-  - &id443
+  - &id455
     id: vob-ladder-watch::TIER3
     tier: 3
     kind: escalation_signal
@@ -9767,7 +10331,7 @@ indicators:
     alert_message: VOB Ladder reached depth 3 (zF + zE + zD ascending). Escalating.
     in_indicator: vob-ladder-watch
     lifecycle_stage: 5
-  - &id444
+  - &id456
     id: vob-ladder-watch::TIER4
     tier: 3
     kind: escalation_signal
@@ -9789,7 +10353,7 @@ indicators:
     alert_message: VOB Ladder reached depth 4 (zF..zC ascending). High conviction.
     in_indicator: vob-ladder-watch
     lifecycle_stage: 5
-  - &id445
+  - &id457
     id: vob-ladder-watch::TIER5
     tier: 3
     kind: escalation_signal
@@ -9811,7 +10375,7 @@ indicators:
     alert_message: VOB Ladder reached depth 5 (zF..zB ascending). Strong trend.
     in_indicator: vob-ladder-watch
     lifecycle_stage: 5
-  - &id446
+  - &id458
     id: vob-ladder-watch::FULL
     tier: 3
     kind: escalation_signal
@@ -9834,7 +10398,7 @@ indicators:
     description: Maximum escalation — full F->A monotonic ascending stack.
     in_indicator: vob-ladder-watch
     lifecycle_stage: 5
-  - &id447
+  - &id459
     id: vob-ladder-watch::escalation_alert_message
     tier: 4
     kind: alert_payload
@@ -9854,7 +10418,7 @@ indicators:
       lines.
     in_indicator: vob-ladder-watch
     lifecycle_stage: 5
-  - &id448
+  - &id460
     id: vob-ladder-watch::depth_gauge_table
     tier: 4
     kind: dashboard
@@ -10092,7 +10656,6 @@ roots:
 - *id193
 - *id194
 - *id195
-composites:
 - *id196
 - *id197
 - *id198
@@ -10105,6 +10668,7 @@ composites:
 - *id205
 - *id206
 - *id207
+composites:
 - *id208
 - *id209
 - *id210
@@ -10346,3 +10910,15 @@ composites:
 - *id446
 - *id447
 - *id448
+- *id449
+- *id450
+- *id451
+- *id452
+- *id453
+- *id454
+- *id455
+- *id456
+- *id457
+- *id458
+- *id459
+- *id460

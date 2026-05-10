@@ -1,0 +1,119 @@
+//@version=5
+indicator("Displacement 4x", shorttitle="DISP 4x", overlay=true, max_labels_count=500)
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  DISPLACEMENT 4x — Four Independent Displacement Engines               ║
+// ╠══════════════════════════════════════════════════════════════════════════╣
+// ║  OFFSET: All plots use offset=-1 because FVG confirmation occurs on    ║
+// ║  bar[0] but the displaced candle (the large-body bar) is bar[1].       ║
+// ║  Any combo system checking co-signals must compare against bar[1]      ║
+// ║  (i.e. the plotted candle) to align with the actual displacement bar.  ║
+// ║  ARCHITECTURE: Four separate instances with independent multipliers    ║
+// ║  allow each to be tethered to a distinct combo or signal system.       ║
+// ║  Because the multiplier accepts any decimal (step 0.1), the threshold  ║
+// ║  is a continuous function of std dev — 4.9 and 5.0 produce genuinely  ║
+// ║  different thresholds since the displacement range is compared against ║
+// ║  (stdev × multiplier) directly with no rounding or bucketing.          ║
+// ║  LAYOUT: D1/D3 plot Top, D2/D4 plot Bottom.                           ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+// =============================================================================
+// SHARED
+// =============================================================================
+conf = barstate.isconfirmed
+
+// =============================================================================
+// DISPLACEMENT 1  —  square | top | green/red | mult 6.5
+// =============================================================================
+grp_d1 = "Displacement 1"
+d1_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_d1)
+d1_len     = input.int(100, "Std Dev Length", minval=1, group=grp_d1)
+d1_mult    = input.float(6.5, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_d1)
+d1_show_b  = input.bool(true, "Show Bull", group=grp_d1, inline="d1t")
+d1_show_r  = input.bool(true, "Show Bear", group=grp_d1, inline="d1t")
+
+float d1_rng = d1_type == "Open to Close" ? math.abs(open - close) : high - low
+float d1_std = ta.stdev(d1_rng, d1_len)
+float d1_thresh = d1_std * d1_mult
+bool  d1_prevDisp = d1_rng[1] > d1_thresh[1]
+bool  d1_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d1_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d1_bull = conf and d1_prevDisp and d1_bullFVG
+bool  d1_bear = conf and d1_prevDisp and d1_bearFVG
+
+plotshape(d1_show_b and d1_bull, "D1 Bull", shape.square, location.top, color.new(#00FF00, 0), text="D1", textcolor=color.white, size=size.small, offset=-1)
+plotshape(d1_show_r and d1_bear, "D1 Bear", shape.square, location.top, color.new(#FF0000, 0), text="D1", textcolor=color.white, size=size.small, offset=-1)
+alertcondition(d1_bull, "D1 Bull", "Displacement 1 Bull on {{ticker}}")
+alertcondition(d1_bear, "D1 Bear", "Displacement 1 Bear on {{ticker}}")
+
+// =============================================================================
+// DISPLACEMENT 2  —  square | bottom | blue/magenta | mult 6.0
+// =============================================================================
+grp_d2 = "Displacement 2"
+d2_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_d2)
+d2_len     = input.int(100, "Std Dev Length", minval=1, group=grp_d2)
+d2_mult    = input.float(6.0, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_d2)
+d2_show_b  = input.bool(true, "Show Bull", group=grp_d2, inline="d2t")
+d2_show_r  = input.bool(true, "Show Bear", group=grp_d2, inline="d2t")
+
+float d2_rng = d2_type == "Open to Close" ? math.abs(open - close) : high - low
+float d2_std = ta.stdev(d2_rng, d2_len)
+float d2_thresh = d2_std * d2_mult
+bool  d2_prevDisp = d2_rng[1] > d2_thresh[1]
+bool  d2_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d2_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d2_bull = conf and d2_prevDisp and d2_bullFVG
+bool  d2_bear = conf and d2_prevDisp and d2_bearFVG
+
+plotshape(d2_show_b and d2_bull, "D2 Bull", shape.square, location.bottom, color.new(#2962FF, 0), text="D2", textcolor=color.white, size=size.small, offset=-1)
+plotshape(d2_show_r and d2_bear, "D2 Bear", shape.square, location.bottom, color.new(#FF00FF, 0), text="D2", textcolor=color.white, size=size.small, offset=-1)
+alertcondition(d2_bull, "D2 Bull", "Displacement 2 Bull on {{ticker}}")
+alertcondition(d2_bear, "D2 Bear", "Displacement 2 Bear on {{ticker}}")
+
+// =============================================================================
+// DISPLACEMENT 3  —  xcross | top | green/red | mult 5.5
+// =============================================================================
+grp_d3 = "Displacement 3"
+d3_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_d3)
+d3_len     = input.int(100, "Std Dev Length", minval=1, group=grp_d3)
+d3_mult    = input.float(5.5, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_d3)
+d3_show_b  = input.bool(true, "Show Bull", group=grp_d3, inline="d3t")
+d3_show_r  = input.bool(true, "Show Bear", group=grp_d3, inline="d3t")
+
+float d3_rng = d3_type == "Open to Close" ? math.abs(open - close) : high - low
+float d3_std = ta.stdev(d3_rng, d3_len)
+float d3_thresh = d3_std * d3_mult
+bool  d3_prevDisp = d3_rng[1] > d3_thresh[1]
+bool  d3_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d3_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d3_bull = conf and d3_prevDisp and d3_bullFVG
+bool  d3_bear = conf and d3_prevDisp and d3_bearFVG
+
+plotshape(d3_show_b and d3_bull, "D3 Bull", shape.xcross, location.top, color.new(#00FF00, 0), text="D3", textcolor=color.white, size=size.small, offset=-1)
+plotshape(d3_show_r and d3_bear, "D3 Bear", shape.xcross, location.top, color.new(#FF0000, 0), text="D3", textcolor=color.white, size=size.small, offset=-1)
+alertcondition(d3_bull, "D3 Bull", "Displacement 3 Bull on {{ticker}}")
+alertcondition(d3_bear, "D3 Bear", "Displacement 3 Bear on {{ticker}}")
+
+// =============================================================================
+// DISPLACEMENT 4  —  cross | bottom | blue/magenta | mult 5.0
+// =============================================================================
+grp_d4 = "Displacement 4"
+d4_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_d4)
+d4_len     = input.int(100, "Std Dev Length", minval=1, group=grp_d4)
+d4_mult    = input.float(5.0, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_d4)
+d4_show_b  = input.bool(true, "Show Bull", group=grp_d4, inline="d4t")
+d4_show_r  = input.bool(true, "Show Bear", group=grp_d4, inline="d4t")
+
+float d4_rng = d4_type == "Open to Close" ? math.abs(open - close) : high - low
+float d4_std = ta.stdev(d4_rng, d4_len)
+float d4_thresh = d4_std * d4_mult
+bool  d4_prevDisp = d4_rng[1] > d4_thresh[1]
+bool  d4_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d4_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d4_bull = conf and d4_prevDisp and d4_bullFVG
+bool  d4_bear = conf and d4_prevDisp and d4_bearFVG
+
+plotshape(d4_show_b and d4_bull, "D4 Bull", shape.cross, location.bottom, color.new(#2962FF, 0), text="D4", textcolor=color.white, size=size.small, offset=-1)
+plotshape(d4_show_r and d4_bear, "D4 Bear", shape.cross, location.bottom, color.new(#FF00FF, 0), text="D4", textcolor=color.white, size=size.small, offset=-1)
+alertcondition(d4_bull, "D4 Bull", "Displacement 4 Bull on {{ticker}}")
+alertcondition(d4_bear, "D4 Bear", "Displacement 4 Bear on {{ticker}}")
