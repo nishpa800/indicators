@@ -34,6 +34,16 @@ Two consecutive same-direction same-named events on adjacent bars. Formal: `EVEN
 
 A composite-level gating composition that requires at least one of a set of qualifier composites to fire (e.g. `oneOfThese = UUUU OR UUU OR UU OR OmegaA OR Napalm OR B2BNPM OR UC OR CS1or2 OR WMD`). Used in Squarify's S4-S11 to prevent low-quality firings.
 
+## IPSF (Input Structured Field) vs TRUE DRIFT
+
+A first-class distinction when comparing parameter values across indicators that name the same primitive.
+
+- **IPSF** — the parameter is exposed as a Pine `input.*` (`input.int`, `input.float`, `input.bool`, `input.string`, etc.). Anish can change the value at runtime in TradingView's settings dialog. **Different defaults across indicators are NOT corruption** — they're tunable, and reconciliation is a settings-panel operation, not a source-edit operation.
+- **TRUE DRIFT** — the parameter is hardcoded as a Pine constant in source code. Invisible to the user. Reconciliation requires source edit + commit + redeploy on TradingView. Hardcoded values that diverge across indicators are real corruption — they cannot be tuned to align without re-editing every consumer.
+- **IPSF asymmetry** — the same parameter is exposed as `input.*` in some indicators but hardcoded as a constant in others. The numeric values may currently match, but tuning is asymmetric — changing the input-bound copy is a settings click; changing the hardcoded copy is a source edit. Logged in `docs/redundancy.md` table (b) as a potential source of future drift.
+
+When `docs/validation-log/<date>-drift-byte-diffs.md` reports parameter-default differences, every entry must classify the finding as IPSF / TRUE DRIFT / IPSF asymmetry. False-alarm "drifts" (both copies are IPSF, just different defaults) get explicitly de-escalated so the redundancy table doesn't bloat with non-issues.
+
 ## σ-multiplier (sigma-multiplier)
 
 In Displacement-family roots, the threshold is `bar_range > σ × N × stdev(range, lookback)`, where `σ` is the multiplier (typical values 5.0, 6.0, 9.0 across indicators) and `lookback` is typically 100 bars. The σ-multiplier is INTERNAL MECHANICS of Displacement — not a separate root. Drift in σ-multiplier defaults across indicators is tracked in `redundancy.md`.
