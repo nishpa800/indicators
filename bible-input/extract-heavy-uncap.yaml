@@ -1,0 +1,456 @@
+indicator:
+  id: heavy-uncap
+  file: heavy-uncap/versions/HEAVY_UNCAP_v1.pine
+  branch: claude/organize-indicators-hierarchy-8JDw1
+  pine_version: 5
+  line_count: 595
+  overlay: true
+  one_line_purpose: "Comprehensive RVOL toolkit — bundles heavy-pentagon RVOL roots locally, adds 7 Hybrid Momentum tiers + 6 RVOL sequences + 6 B2B + 4 Consec Disp + FAUNA label-based composites + HV ladder + Hot Spot calendar"
+  is_canonical_for: ["LONG_1/2/3/4/5", "SHORT_1/2", "UU/UUU/UUUU/DD/DDD/DDDD", "HOT_SPOT", "B2B_2X_*", "B2B_MID_*", "CONSEC_DISP_*"]
+  notes: |
+    The unique ingredient is the "Hybrid RVOL" — bar-RVOL (Reg @ Time,
+    non-cumulative) × cumulative-session-RVOL × body-ratio. This is NOT
+    the same as WTC/Hiroshima's RVOL @ Reg time. The 5 Long tiers + 2 Short
+    tiers let Anish tune 7 independent momentum detectors against different
+    conviction levels simultaneously.
+
+    Locally re-implements every heavy-pentagon RVOL root (SAAB, Kratos,
+    Bull/Bear RVOL 1x, Grand Slam, MOAB, WTC, Hiroshima, Nagasaki) and
+    hvd-pbj-ppd's Displacement. Threshold ladders verified byte-identical
+    to heavy-pentagon — no drift today, but watch for IPSF-asymmetry
+    going forward.
+
+local_reimplementations:
+  - heavy-pentagon::SAAB
+  - heavy-pentagon::KRATOS
+  - heavy-pentagon::RVOL_1X_BULL
+  - heavy-pentagon::RVOL_1X_BEAR
+  - heavy-pentagon::GRAND_SLAM
+  - heavy-pentagon::MOAB
+  - heavy-pentagon::PENTAGON     # implicit (same RVOL@Reg pipeline)
+  - heavy-pentagon::WTC
+  - heavy-pentagon::HIROSHIMA
+  - heavy-pentagon::NAGASAKI
+  - hvd-pbj-ppd::DISPLACEMENT_BULL
+  - hvd-pbj-ppd::DISPLACEMENT_BEAR
+  - hvd-pbj-ppd::HV ladder tiers (75/150/250/500/1000)
+
+internal_helpers:
+  - name: f_rvol_1x_threshold / f_saab_kratos_threshold / f_gs_moab_threshold / f_wtc_threshold / f_hiroshima_threshold
+    purpose: Timeframe-keyed threshold ladders (10s → 7200s+ buckets)
+    pine_source_line_range: "L113-L165"
+    notes: "Verified byte-identical to heavy-pentagon. Internal."
+  - name: bb_normalizedPrice / bb_normalizedVolume / bb_baseBullish / bb_baseBearish / bb_smaDiff
+    purpose: Heavy-pentagon RVOL pipeline (price-spike-minus-volume-spike basis)
+    pine_source_line_range: "L172-L190"
+    notes: "Internal; same as heavy-pentagon."
+  - name: hybRegRatio / hybCumRatio / hybBodyRat / hybConvict<n> / hybMom<n>
+    purpose: Hybrid Momentum pipeline (bar-RVOL × cumulative-RVOL × body-ratio)
+    pine_source_line_range: "L215-L260"
+    notes: "Pre-configured combo. Distinct from heavy-pentagon's RVOL@Reg pipeline. Feeds the 7 LONG/SHORT roots."
+  - name: tv_ta.relativeVolume()
+    purpose: TradingView library RVOL function (anchor TF + Cumulative/Regular mode + realtime adjustment)
+    notes: "Called twice: once for non-cumulative (hybRegCur), once for cumulative (hybCumCur). Internal."
+  - name: seq_inRange_pair / bull_seq_len_<UU/UUU/UUUU> / bear_seq_len_<DD/DDD/DDDD>
+    purpose: Per-pair sequence-tracking var-state machines
+    pine_source_line_range: "L296-L390"
+    notes: "Var-state counters reset to 0 on any non-qualifying bar. Internal."
+  - name: disp_isPrevBarDisplaced / disp_bullStreak / disp_bearStreak
+    purpose: Displacement detection + streak counter for Consec Disp composites
+    pine_source_line_range: "L515-L555"
+    notes: "Same as hvd-pbj-ppd Engine 3 with min/max σ-mult bounds (3.0 / 7.0)."
+  - name: FAUNA pipeline (fn_MB / fn_RE / fn_TA / fn_GG / fn_TR / fn_ES / fn_GDR bull/bear)
+    purpose: Same family primitives as ultra-combo, computed locally
+    pine_source_line_range: "L405-L505"
+    notes: "Parameter defaults hardcoded (not IPSF here). Stage 7 byte-diff vs ultra-combo locks (which is IPSF). Internal — the named primitives MB/RE/TA/GG/TR/ES/GDR are ROOTS canonically in ultra-combo, not duplicated here."
+
+roots:
+  # ── Hybrid Momentum (7) ─────────────────────────────────────
+  - id: heavy-uncap::LONG_1
+    family: rvol_hybrid
+    plain_english: "Bar-RVOL > reg_floor (default 5.0) AND cumulative session-RVOL > cum_floor (default 3.0) AND bar body-ratio ≥ body_ratio_floor (default 0.65) AND bar is bullish"
+    boolean_summary: "barstate.isconfirmed AND hybRegRatio > hyb_addReg1 AND hybCumRatio > hyb_addCum1 AND (close > open) AND hybBodyRat ≥ hyb_bodyRat1"
+    parameters:
+      - { name: hyb_addReg1, default: 5.0, units: ratio, ipsf: true }
+      - { name: hyb_addCum1, default: 3.0, units: ratio, ipsf: true }
+      - { name: hyb_bodyRat1, default: 0.65, units: ratio, ipsf: true }
+    offset: 0
+    plot_offset: 0
+    plot_call: 'plotshape(show_Long1 and sigAddLong1, title="LONG 1", ...)'
+    alertcondition_id: null
+    pine_source_line_range: "L226-L228"
+    lifecycle_stage: 2
+    notes: "Bar AND session both hot. Trend continuation pattern."
+
+  - id: heavy-uncap::SHORT_1
+    family: rvol_hybrid
+    plain_english: "Mirror of LONG_1 for bearish bars"
+    boolean_summary: "barstate.isconfirmed AND hybRegRatio > hyb_addReg1 AND hybCumRatio > hyb_addCum1 AND (close < open) AND hybBodyRat ≥ hyb_bodyRat1"
+    parameters:
+      - { name: hyb_addReg1, default: 5.0, units: ratio, ipsf: true }
+      - { name: hyb_addCum1, default: 3.0, units: ratio, ipsf: true }
+      - { name: hyb_bodyRat1, default: 0.65, units: ratio, ipsf: true }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L229"
+    lifecycle_stage: 2
+
+  - id: heavy-uncap::LONG_2
+    family: rvol_hybrid
+    plain_english: "Independent second Hybrid-Momentum bull tier with its own IPSF thresholds"
+    boolean_summary: "barstate.isconfirmed AND hybRegRatio > hyb_addReg2 AND hybCumRatio > hyb_addCum2 AND (close > open) AND hybBodyRat ≥ hyb_bodyRat2"
+    parameters:
+      - { name: hyb_addReg2, default: 5.0, units: ratio, ipsf: true }
+      - { name: hyb_addCum2, default: 3.0, units: ratio, ipsf: true }
+      - { name: hyb_bodyRat2, default: 0.65, units: ratio, ipsf: true }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L233-L235"
+    lifecycle_stage: 2
+
+  - id: heavy-uncap::SHORT_2
+    family: rvol_hybrid
+    plain_english: "Independent second Hybrid-Momentum bear tier"
+    boolean_summary: "barstate.isconfirmed AND hybRegRatio > hyb_addReg2 AND hybCumRatio > hyb_addCum2 AND (close < open) AND hybBodyRat ≥ hyb_bodyRat2"
+    parameters:
+      - { name: hyb_addReg2, default: 5.0, units: ratio, ipsf: true }
+      - { name: hyb_addCum2, default: 3.0, units: ratio, ipsf: true }
+      - { name: hyb_bodyRat2, default: 0.65, units: ratio, ipsf: true }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L236"
+    lifecycle_stage: 2
+
+  - id: heavy-uncap::LONG_3
+    family: rvol_hybrid
+    plain_english: "Long-only Hybrid-Momentum tier 3 with independent IPSF thresholds"
+    boolean_summary: "barstate.isconfirmed AND hybRegRatio > hyb_addReg3 AND hybCumRatio > hyb_addCum3 AND (close > open) AND hybBodyRat ≥ hyb_bodyRat3"
+    parameters:
+      - { name: hyb_addReg3, default: 5.0, units: ratio, ipsf: true }
+      - { name: hyb_addCum3, default: 3.0, units: ratio, ipsf: true }
+      - { name: hyb_bodyRat3, default: 0.65, units: ratio, ipsf: true }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L240-L243"
+    lifecycle_stage: 2
+
+  - id: heavy-uncap::LONG_4
+    family: rvol_hybrid
+    plain_english: "Long-only Hybrid-Momentum tier 4"
+    boolean_summary: "barstate.isconfirmed AND hybRegRatio > hyb_addReg4 AND hybCumRatio > hyb_addCum4 AND (close > open) AND hybBodyRat ≥ hyb_bodyRat4"
+    parameters:
+      - { name: hyb_addReg4, default: 5.0, units: ratio, ipsf: true }
+      - { name: hyb_addCum4, default: 3.0, units: ratio, ipsf: true }
+      - { name: hyb_bodyRat4, default: 0.65, units: ratio, ipsf: true }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L245-L248"
+    lifecycle_stage: 2
+
+  - id: heavy-uncap::LONG_5
+    family: rvol_hybrid
+    plain_english: "Long-only Hybrid-Momentum tier 5"
+    boolean_summary: "barstate.isconfirmed AND hybRegRatio > hyb_addReg5 AND hybCumRatio > hyb_addCum5 AND (close > open) AND hybBodyRat ≥ hyb_bodyRat5"
+    parameters:
+      - { name: hyb_addReg5, default: 5.0, units: ratio, ipsf: true }
+      - { name: hyb_addCum5, default: 3.0, units: ratio, ipsf: true }
+      - { name: hyb_bodyRat5, default: 0.65, units: ratio, ipsf: true }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L250-L253"
+    lifecycle_stage: 2
+
+  # ── RVOL Sequences (6) ──────────────────────────────────────
+  - id: heavy-uncap::UU
+    family: rvol_sequence
+    plain_english: "Two consecutive bullish bars where each bar's bb_normalizedPrice > th_low_UU_DD (default 1.0) AND sum across the 2 bars ≥ seqTh_UU_DD (default 0.1)"
+    boolean_summary: "barstate.isconfirmed AND bull_seq_len_UU == 2 AND bull_seq_sum_UU ≥ seqTh_UU_DD"
+    parameters:
+      - { name: th_low_UU_DD, default: 1.0, units: bb_normalizedPrice, ipsf: true }
+      - { name: seqTh_UU_DD, default: 0.1, units: sum, ipsf: true }
+      - { name: seq_th_high, default: 50.0, units: bb_normalizedPrice ceiling, ipsf: true, shared: true }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L389"
+    lifecycle_stage: 2
+    notes: "Distinct from b2b-pup's UU (which is PUP-based). This is RVOL-bar-based."
+
+  - id: heavy-uncap::UUU
+    family: rvol_sequence
+    plain_english: "Three consecutive bullish bars; same gates as UU but with its own IPSF thresholds"
+    boolean_summary: "barstate.isconfirmed AND bull_seq_len_UUU == 3 AND bull_seq_sum_UUU ≥ seqTh_UUU_DDD"
+    parameters:
+      - { name: th_low_UUU_DDD, default: 1.0, units: bb_normalizedPrice, ipsf: true }
+      - { name: seqTh_UUU_DDD, default: 0.1, units: sum, ipsf: true }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L390"
+    lifecycle_stage: 2
+
+  - id: heavy-uncap::UUUU
+    family: rvol_sequence
+    plain_english: "Four consecutive bullish bars; independent IPSF"
+    boolean_summary: "barstate.isconfirmed AND bull_seq_len_UUUU == 4 AND bull_seq_sum_UUUU ≥ seqTh_UUUU_DDDD"
+    parameters:
+      - { name: th_low_UUUU_DDDD, default: 1.0, units: bb_normalizedPrice, ipsf: true }
+      - { name: seqTh_UUUU_DDDD, default: 0.1, units: sum, ipsf: true }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L391"
+    lifecycle_stage: 2
+
+  - id: heavy-uncap::DD
+    family: rvol_sequence
+    plain_english: "Two consecutive bearish bars; bear mirror of UU"
+    boolean_summary: "barstate.isconfirmed AND bear_seq_len_DD == 2 AND bear_seq_sum_DD ≥ seqTh_UU_DD"
+    parameters:
+      - { name: th_low_UU_DD, default: 1.0, units: bb_normalizedPrice, ipsf: true, shared_with: "UU" }
+      - { name: seqTh_UU_DD, default: 0.1, units: sum, ipsf: true, shared_with: "UU" }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L393"
+    lifecycle_stage: 2
+    notes: "Shares thresholds with UU per the IPSF pair grouping (UU/DD = one group)."
+
+  - id: heavy-uncap::DDD
+    family: rvol_sequence
+    plain_english: "Three consecutive bearish bars; bear mirror of UUU"
+    boolean_summary: "barstate.isconfirmed AND bear_seq_len_DDD == 3 AND bear_seq_sum_DDD ≥ seqTh_UUU_DDD"
+    parameters:
+      - { name: th_low_UUU_DDD, default: 1.0, units: bb_normalizedPrice, ipsf: true, shared_with: "UUU" }
+      - { name: seqTh_UUU_DDD, default: 0.1, units: sum, ipsf: true, shared_with: "UUU" }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L394"
+    lifecycle_stage: 2
+
+  - id: heavy-uncap::DDDD
+    family: rvol_sequence
+    plain_english: "Four consecutive bearish bars; bear mirror of UUUU"
+    boolean_summary: "barstate.isconfirmed AND bear_seq_len_DDDD == 4 AND bear_seq_sum_DDDD ≥ seqTh_UUUU_DDDD"
+    parameters:
+      - { name: th_low_UUUU_DDDD, default: 1.0, units: bb_normalizedPrice, ipsf: true, shared_with: "UUUU" }
+      - { name: seqTh_UUUU_DDDD, default: 0.1, units: sum, ipsf: true, shared_with: "UUUU" }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L395"
+    lifecycle_stage: 2
+
+  # ── Calendar (1) ────────────────────────────────────────────
+  - id: heavy-uncap::HOT_SPOT
+    family: calendar
+    plain_english: "Bar falls within at least one of 6 calendar windows known to coincide with institutional rebalancing or volatility — OpEx (10-17 Mon-Wed), Quarter-End (23-27 of Mar/Jun/Sep/Dec), Russell Rebal (Jun 19-24), Tax-Loss (Dec 21-26), January Effect (Dec 27-30), HF Redemption (May 10-13 or Nov 10-13)"
+    boolean_summary: "opExWindow OR qtrEndWindow OR russellWindow OR taxLossWindow OR janEffectWindow OR hfRedemptionWindow (all evaluated on bar[1] for NRA)"
+    parameters: []
+    offset: -1
+    plot_offset: -1
+    plot_call: 'plotshape(plot_HS, title="Hot Spot", style=shape.cross, location=location.bottom, color=color.new(color.red, 0), size=size.tiny, offset=-1)'
+    alertcondition_id: null
+    pine_source_line_range: "L590-L601"
+    lifecycle_stage: 2
+    notes: "Evaluated on bar[1] (NRA — non-repainting); plotted with offset=-1 to land on the actual calendar bar. No IPSF — windows are hardcoded constants reflecting market-structure timing."
+
+composites:
+  # ── Back-to-Back composites (6) ─────────────────────────────
+  - id: heavy-uncap::B2B_2X_SAAB
+    tier: 1
+    plain_english: "SAAB fires on bar[-1] AND on bar[0] — back-to-back same-direction RVOL 0.56× spike"
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::SAAB"
+        - { type: SHIFT, by: -1, of: "heavy-pentagon::SAAB" }
+      note: "Local: sigSAAB[1] AND sigSAAB (where sigSAAB is heavy-pentagon's SAAB recomputed locally)"
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L406"
+    lifecycle_stage: 5
+
+  - id: heavy-uncap::B2B_2X_KRATOS
+    tier: 1
+    plain_english: "Kratos fires on bar[-1] AND on bar[0]"
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::KRATOS"
+        - { type: SHIFT, by: -1, of: "heavy-pentagon::KRATOS" }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L407"
+    lifecycle_stage: 5
+
+  - id: heavy-uncap::B2B_2X_BULL_1X
+    tier: 1
+    plain_english: "RVOL 1x Bull fires on bar[-1] AND on bar[0]"
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - { type: SHIFT, by: -1, of: "heavy-pentagon::RVOL_1X_BULL" }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L408"
+    lifecycle_stage: 5
+
+  - id: heavy-uncap::B2B_2X_BEAR_1X
+    tier: 1
+    plain_english: "RVOL 1x Bear fires on bar[-1] AND on bar[0]"
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - { type: SHIFT, by: -1, of: "heavy-pentagon::RVOL_1X_BEAR" }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L409"
+    lifecycle_stage: 5
+
+  - id: heavy-uncap::B2B_MID_BULL
+    tier: 2
+    plain_english: "Mixed back-to-back of SAAB and RVOL 1x Bull (one of them on each adjacent bar), gated by NOT (B2B_2X_SAAB OR B2B_2X_BULL_1X) so it's mutually exclusive with the pure-2x variants"
+    composition:
+      type: AND_GATED
+      operands:
+        - { type: OR, operands: [
+            { type: AND, operands: [
+              { type: SHIFT, by: -1, of: "heavy-pentagon::SAAB" },
+              "heavy-pentagon::RVOL_1X_BULL"
+            ]},
+            { type: AND, operands: [
+              { type: SHIFT, by: -1, of: "heavy-pentagon::RVOL_1X_BULL" },
+              "heavy-pentagon::SAAB"
+            ]}
+          ]}
+        - { type: NOT, of: "heavy-uncap::B2B_2X_SAAB" }
+        - { type: NOT, of: "heavy-uncap::B2B_2X_BULL_1X" }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L411"
+    lifecycle_stage: 5
+
+  - id: heavy-uncap::B2B_MID_BEAR
+    tier: 2
+    plain_english: "Mixed back-to-back of Kratos and RVOL 1x Bear, gated by NOT (B2B_2X_KRATOS OR B2B_2X_BEAR_1X)"
+    composition:
+      type: AND_GATED
+      operands:
+        - { type: OR, operands: [
+            { type: AND, operands: [
+              { type: SHIFT, by: -1, of: "heavy-pentagon::KRATOS" },
+              "heavy-pentagon::RVOL_1X_BEAR"
+            ]},
+            { type: AND, operands: [
+              { type: SHIFT, by: -1, of: "heavy-pentagon::RVOL_1X_BEAR" },
+              "heavy-pentagon::KRATOS"
+            ]}
+          ]}
+        - { type: NOT, of: "heavy-uncap::B2B_2X_KRATOS" }
+        - { type: NOT, of: "heavy-uncap::B2B_2X_BEAR_1X" }
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L412"
+    lifecycle_stage: 5
+
+  # ── Consecutive Displacement (4) ────────────────────────────
+  - id: heavy-uncap::CONSEC_DISP_BULL_2
+    tier: 1
+    plain_english: "Bullish Displacement fires on the current bar AND its bull-streak counter ≥ 2"
+    composition:
+      type: AND
+      operands:
+        - "hvd-pbj-ppd::DISPLACEMENT_BULL"
+        - { type: STREAK_GTE, threshold: 2 }
+      note: "Local: sigDispBull AND disp_bullStreak ≥ 2 (re-implementation; verify byte-parity vs hvd-pbj-ppd)"
+    offset: -1
+    plot_offset: -1
+    pine_source_line_range: "L572"
+    lifecycle_stage: 5
+
+  - id: heavy-uncap::CONSEC_DISP_BEAR_2
+    tier: 1
+    plain_english: "Bearish Displacement streak ≥ 2"
+    composition:
+      type: AND
+      operands:
+        - "hvd-pbj-ppd::DISPLACEMENT_BEAR"
+        - { type: STREAK_GTE, threshold: 2 }
+    offset: -1
+    plot_offset: -1
+    pine_source_line_range: "L573"
+    lifecycle_stage: 5
+
+  - id: heavy-uncap::CONSEC_DISP_BULL_3
+    tier: 1
+    plain_english: "Bullish Displacement streak ≥ 3"
+    composition:
+      type: AND
+      operands:
+        - "hvd-pbj-ppd::DISPLACEMENT_BULL"
+        - { type: STREAK_GTE, threshold: 3 }
+    offset: -1
+    plot_offset: -1
+    pine_source_line_range: "L574"
+    lifecycle_stage: 5
+
+  - id: heavy-uncap::CONSEC_DISP_BEAR_3
+    tier: 1
+    plain_english: "Bearish Displacement streak ≥ 3"
+    composition:
+      type: AND
+      operands:
+        - "hvd-pbj-ppd::DISPLACEMENT_BEAR"
+        - { type: STREAK_GTE, threshold: 3 }
+    offset: -1
+    plot_offset: -1
+    pine_source_line_range: "L575"
+    lifecycle_stage: 5
+
+  # ── FAUNA label-based (2) ───────────────────────────────────
+  - id: heavy-uncap::FAUNA_BULL
+    tier: 1
+    plain_english: "Hierarchical OR over FAUNA components MB/RE/TA + reversal-component GG/TR/ES/GDR. Resolved to a label-text string by priority: 4-component combo > 3-component > 2-component > singletons"
+    composition:
+      type: HIERARCHICAL_OR
+      operands:
+        - "ultra-combo::MB_BULL"
+        - "ultra-combo::RE_BULL"
+        - "ultra-combo::TA_BULL"
+        - "ultra-combo::GG_BULL"
+        - "ultra-combo::TR_BULL"
+        - "ultra-combo::ES_BULL"
+        - "ultra-combo::GDR_BULL"
+      note: "Local re-implementation. Different label-text resolution from ultra-combo (which uses pure boolean composition). Stage 7 byte-diff vs ultra-combo to verify component-level parity."
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L457-L502"
+    lifecycle_stage: 5
+
+  - id: heavy-uncap::FAUNA_BEAR
+    tier: 1
+    plain_english: "Bear mirror of FAUNA_BULL"
+    composition:
+      type: HIERARCHICAL_OR
+      operands:
+        - "ultra-combo::MB_BEAR"
+        - "ultra-combo::RE_BEAR"
+        - "ultra-combo::TA_BEAR"
+        - "ultra-combo::GG_BEAR"
+        - "ultra-combo::TR_BEAR"
+        - "ultra-combo::ES_BEAR"
+        - "ultra-combo::GDR_BEAR"
+    offset: 0
+    plot_offset: 0
+    pine_source_line_range: "L505-L550"
+    lifecycle_stage: 5
+
+cross_indicator_dependencies:
+  - "heavy-pentagon::SAAB / KRATOS / RVOL_1X_BULL/BEAR / GRAND_SLAM / MOAB / PENTAGON / WTC / HIROSHIMA / NAGASAKI (locally re-implemented; Stage 7 byte-parity TBD)"
+  - "hvd-pbj-ppd::DISPLACEMENT_BULL / DISPLACEMENT_BEAR (locally re-implemented; Stage 7 byte-parity TBD)"
+  - "ultra-combo::MB_BULL / RE_BULL / TA_BULL / GG_BULL / TR_BULL / ES_BULL / GDR_BULL + bear mirrors (FAUNA components — locally re-implemented with different label-text resolution)"
+
+uncertain_or_questions:
+  - "Stage 7 byte-diff: verify the RVOL threshold ladders (f_rvol_1x_threshold, f_saab_kratos_threshold, f_gs_moab_threshold, f_wtc_threshold, f_hiroshima_threshold) are byte-identical to heavy-pentagon. Source inspection suggests YES; need diff to confirm."
+  - "FAUNA label-based composite uses a DIFFERENT resolution scheme than ultra-combo (priority-ordered label text vs pure OR over excluded combos). Verify the boolean (`fn_bullText != ''`) matches `ultra-combo::sigFAUNABull` per the locked formula `(MB OR RE OR TA) AND NOT (GG OR TR OR ES OR GDR)`."
+  - "B2B_MID_BULL / B2B_MID_BEAR have NOT-gates against their 2X siblings, making them mutually exclusive. Document this in lineage card as a callback-gate."
+  - "RVOL Sequences UU/UUU/UUUU here are distinct from b2b-pup's UU/UUU/UUUU (which are PUP-based streaks). Different primitives, same name — flag in `docs/redundancy.md` (a) as a namespace collision worth resolving."
+  - "Hot Spot calendar uses hardcoded month/day windows. Anish may want to externalise these as IPSF date-range inputs in a v2."

@@ -18,8 +18,8 @@ Two tables. **(a)** name collisions — same primitive name appearing under two 
 | `E3_BULL` | `squarify::E3_BULL` (in squarify); `ultra-combo::E3_BULL` (in ultra-combo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `F2_BEAR` | `squarify::F2_BEAR` (in squarify); `ultra-combo::F2_BEAR` (in ultra-combo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `F2_BULL` | `squarify::F2_BULL` (in squarify); `ultra-combo::F2_BULL` (in ultra-combo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
-| `FAUNA_BEAR` | `b2b-pup::FAUNA_BEAR` (in b2b-pup); `ultra-combo::FAUNA_BEAR` (in ultra-combo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
-| `FAUNA_BULL` | `b2b-pup::FAUNA_BULL` (in b2b-pup); `ultra-combo::FAUNA_BULL` (in ultra-combo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `FAUNA_BEAR` | `b2b-pup::FAUNA_BEAR` (in b2b-pup); `heavy-uncap::FAUNA_BEAR` (in heavy-uncap); `ultra-combo::FAUNA_BEAR` (in ultra-combo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `FAUNA_BULL` | `b2b-pup::FAUNA_BULL` (in b2b-pup); `heavy-uncap::FAUNA_BULL` (in heavy-uncap); `ultra-combo::FAUNA_BULL` (in ultra-combo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `FC_BEAR` | `squarify::FC_BEAR` (in squarify); `ultra-combo::FC_BEAR` (in ultra-combo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `FC_BULL` | `squarify::FC_BULL` (in squarify); `ultra-combo::FC_BULL` (in ultra-combo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `FVG_BEAR_RAW` | `hv-fvg-gz1-og::FVG_BEAR_RAW` (in hv-fvg-gz1-og); `proximity-gzi-hv::FVG_BEAR_RAW` (in proximity-gzi-hv) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
