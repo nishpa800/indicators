@@ -1,0 +1,704 @@
+//@version=5
+indicator("Anish TB Foster Air Bud Leprosy Enhanced", overlay=true, max_bars_back=3000)
+
+// =============================================================================
+// INPUTS
+// =============================================================================
+
+// === POCKET PIVOT INPUTS ===
+grp_pp = "Pocket Pivot"
+barSize = input.float(3.0, "% Change (Barsize)", minval=0.1, step=0.1, group=grp_pp)
+ppLookback = input.int(10, "Lookback Days", minval=1, group=grp_pp)
+gapUpEnabled = input.bool(false, "Gap-Up Required", group=grp_pp)
+gapDownEnabled = input.bool(false, "Gap-Down Required", group=grp_pp)
+gapValue = input.float(0.5, "Gap Value %", minval=0.1, step=0.1, group=grp_pp)
+
+// === TB/FOSTER SIGNAL INPUTS ===
+grp_tf = "TB/Foster Signals"
+minAnishBars = input.int(5, "Min Anish Bars (X)", minval=1, group=grp_tf, tooltip="Minimum consecutive bars with Anish signal before transition")
+followUpBars = input.int(1, "Window Bars (Y)", minval=1, group=grp_tf, tooltip="Window of opportunity after Anish run ends")
+
+// === 1ST PASS SIGNAL INPUTS ===
+grp_1p = "1st Pass Signals"
+neutralBarsRequired = input.int(5, "Neutral Bars Required", minval=1, group=grp_1p)
+
+// === REVERSAL SIGNAL INPUTS ===
+grp_rev = "Reversal Signals"
+airBudWindow = input.int(1, "Air Bud Window", minval=1, group=grp_rev)
+leprosyWindow = input.int(1, "Leprosy Window", minval=1, group=grp_rev)
+
+// === PBJ ENGINE SETTINGS ===
+grp_pbj = "PB&J Engine"
+zoo_ma_type = input.string("VWMA", "Base MA Type", options=["VWMA", "EMA", "SMA", "WMA", "HMA"], group=grp_pbj)
+zoo_ma_len = input.int(5, "Base MA Length", minval=1, group=grp_pbj)
+zoo_price_src = input.source(close, "Price Source", group=grp_pbj)
+zoo_pbj_ma_period = input.int(20, "PBJ MA Period", minval=1, group=grp_pbj)
+zoo_pbj_atr_period = input.int(14, "PBJ ATR Period", minval=1, group=grp_pbj)
+zoo_pbj_hh_ll = input.int(25, "HH/LL Lookback", minval=1, group=grp_pbj)
+zoo_pbj_atr_mult = input.float(3.0, "ATR Multiplier", step=0.1, group=grp_pbj)
+zoo_pbj_vol_period = input.int(20, "Volume MA Period", minval=1, group=grp_pbj)
+zoo_pbj_vol_mult = input.float(0.1, "Volume Multiplier", step=0.1, group=grp_pbj)
+zoo_use_st = input.bool(true, "Apply ATR Supertrend", group=grp_pbj)
+zoo_st_period = input.int(10, "ST ATR Period", group=grp_pbj)
+zoo_st_mult = input.float(2.0, "ST Multiplier", group=grp_pbj)
+
+// === RVOL SETTINGS ===
+grp_rv = "RVOL Settings"
+i_rv_b_th = input.float(20.0, "RVOL Bull Thresh", step=0.1, group=grp_rv)
+i_rv_r_th = input.float(20.0, "RVOL Bear Thresh", step=0.1, group=grp_rv)
+
+// === PLOT TOGGLES ===
+grp_plot = "★ PLOT TOGGLES ★"
+show_pup = input.bool(true, "PUP", group=grp_plot, inline="p1")
+show_ppd = input.bool(true, "PPD", group=grp_plot, inline="p1")
+show_super_pup = input.bool(true, "Super PUP", group=grp_plot, inline="p1")
+show_super_ppd = input.bool(true, "Super PPD", group=grp_plot, inline="p1")
+show_foster = input.bool(true, "Foster", group=grp_plot, inline="p2")
+show_tb = input.bool(true, "TB", group=grp_plot, inline="p2")
+show_foster_pbj = input.bool(true, "Foster PBJ", group=grp_plot, inline="p2")
+show_foster_pb = input.bool(true, "Foster PB", group=grp_plot, inline="p2")
+show_tb_pbj = input.bool(true, "TB PBJ", group=grp_plot, inline="p3")
+show_tb_pb = input.bool(true, "TB PB", group=grp_plot, inline="p3")
+show_b2b_pup = input.bool(true, "B2B PUP", group=grp_plot, inline="p3")
+show_b2b_ppd = input.bool(true, "B2B PPD", group=grp_plot, inline="p3")
+show_1st_pup = input.bool(true, "1st PUP", group=grp_plot, inline="p4")
+show_1st_ppd = input.bool(true, "1st PPD", group=grp_plot, inline="p4")
+show_air_bud = input.bool(true, "Air Bud", group=grp_plot, inline="p4")
+show_leprosy = input.bool(true, "Leprosy", group=grp_plot, inline="p4")
+show_bull_pb = input.bool(true, "Bull PB", group=grp_plot, inline="p5")
+show_bull_pbj = input.bool(true, "Bull PBJ", group=grp_plot, inline="p5")
+show_bear_pb = input.bool(true, "Bear PB", group=grp_plot, inline="p5")
+show_bear_pbj = input.bool(true, "Bear PBJ", group=grp_plot, inline="p5")
+show_rv_bull = input.bool(true, "RVOL Bull", group=grp_plot, inline="p6")
+show_rv_bear = input.bool(true, "RVOL Bear", group=grp_plot, inline="p6")
+
+// === ALERT TOGGLES ===
+grp_alert = "★ ALERT TOGGLES ★"
+alert_pup = input.bool(true, "PUP", group=grp_alert, inline="a1")
+alert_ppd = input.bool(true, "PPD", group=grp_alert, inline="a1")
+alert_super_pup = input.bool(true, "Super PUP", group=grp_alert, inline="a1")
+alert_super_ppd = input.bool(true, "Super PPD", group=grp_alert, inline="a1")
+alert_foster = input.bool(true, "Foster", group=grp_alert, inline="a2")
+alert_tb = input.bool(true, "TB", group=grp_alert, inline="a2")
+alert_foster_pbj = input.bool(true, "Foster PBJ", group=grp_alert, inline="a2")
+alert_foster_pb = input.bool(true, "Foster PB", group=grp_alert, inline="a2")
+alert_tb_pbj = input.bool(true, "TB PBJ", group=grp_alert, inline="a3")
+alert_tb_pb = input.bool(true, "TB PB", group=grp_alert, inline="a3")
+alert_b2b_pup = input.bool(true, "B2B PUP", group=grp_alert, inline="a3")
+alert_b2b_ppd = input.bool(true, "B2B PPD", group=grp_alert, inline="a3")
+alert_1st_pup = input.bool(true, "1st PUP", group=grp_alert, inline="a4")
+alert_1st_ppd = input.bool(true, "1st PPD", group=grp_alert, inline="a4")
+alert_air_bud = input.bool(true, "Air Bud", group=grp_alert, inline="a4")
+alert_leprosy = input.bool(true, "Leprosy", group=grp_alert, inline="a4")
+alert_bull_pb = input.bool(true, "Bull PB", group=grp_alert, inline="a5")
+alert_bull_pbj = input.bool(true, "Bull PBJ", group=grp_alert, inline="a5")
+alert_bear_pb = input.bool(true, "Bear PB", group=grp_alert, inline="a5")
+alert_bear_pbj = input.bool(true, "Bear PBJ", group=grp_alert, inline="a5")
+alert_rv_bull = input.bool(true, "RVOL Bull", group=grp_alert, inline="a6")
+alert_rv_bear = input.bool(true, "RVOL Bear", group=grp_alert, inline="a6")
+
+// === MULTIPLEXER ===
+grp_mux = "★ MULTIPLEXER ★"
+mux_sel = input.string("Any", "Signal Filter", options=["Any", "Bullish Only", "Bearish Only", "PUP", "PPD", "Super PUP", "Super PPD", "Foster", "TB", "Foster PBJ", "Foster PB", "TB PBJ", "TB PB", "B2B PUP", "B2B PPD", "1st PUP", "1st PPD", "Air Bud", "Leprosy", "Bull PB", "Bull PBJ", "Bear PB", "Bear PBJ", "RVOL Bull", "RVOL Bear"], group=grp_mux)
+
+// =============================================================================
+// CORE CALCULATIONS
+// =============================================================================
+
+// === EMAs FOR ANISH ===
+float ema50 = ta.ema(close, 50)
+float ema150 = ta.ema(close, 150)
+float ema200 = ta.ema(close, 200)
+float ema200_1m = ema200[21]
+float w52Hi = ta.highest(high, 252)
+float w52Lo = ta.lowest(low, 252)
+
+// === ANISH BULL CONDITIONS (Stage 2 Uptrend) ===
+bool bullPass = close > ema50 and close >= ema150 and close >= ema200 and ema50 > ema150 and ema50 > ema200 and ema150 >= ema200 and ema200 > ema200_1m and close > (w52Lo * 1.30) and close >= (w52Hi * 0.75)
+
+// === ANISH BEAR CONDITIONS (Stage 4 Downtrend) ===
+bool bearPass = close < ema50 and close <= ema150 and close <= ema200 and ema50 < ema150 and ema50 < ema200 and ema150 <= ema200 and ema200 < ema200_1m and close < (w52Hi * 0.70) and close <= (w52Lo * 1.25)
+
+// === POCKET PIVOT CALCS ===
+float redVol = close < open ? volume : 0.0
+float greenVol = close > open ? volume : 0.0
+float hiRedVol = ta.highest(redVol[1], ppLookback)
+float hiGreenVol = ta.highest(greenVol[1], ppLookback)
+
+bool priceUp = ((close - open) / open) * 100 > barSize
+bool priceDn = ((open - close) / open) * 100 > barSize
+bool volBull = volume > hiRedVol
+bool volBear = volume > hiGreenVol
+
+bool sPPBull = priceUp and volBull
+bool sPPBear = priceDn and volBear
+
+// === GAP DETECTION ===
+bool gapUp = open > (close[1] * (1 + gapValue / 100))
+bool gapDn = open < (close[1] * (1 - gapValue / 100))
+bool gapUpSig = gapUpEnabled and gapUp
+bool gapDnSig = gapDownEnabled and gapDn
+
+// === RVOL CALCULATIONS ===
+rv_s = math.abs(close - open)
+rv_avg_s = ta.sma(rv_s, 30)[1]
+rv_p = rv_s / nz(rv_avg_s, 1.0)
+rv_avg_v = ta.sma(volume, 30)[1]
+rv_v = volume / nz(rv_avg_v, 1.0)
+rv_d = (rv_p - rv_v) > 0 ? (rv_p - rv_v) : 0.0
+rv_m = ta.sma(rv_d, 20)
+
+bool bull_candle = close > open
+bool bear_candle = close < open
+
+bool sRVOLBull = bull_candle and rv_d > rv_m and rv_p >= i_rv_b_th
+bool sRVOLBear = bear_candle and rv_d > rv_m and rv_p >= i_rv_r_th
+
+// =============================================================================
+// PB&J ENGINE (from pbj indicator)
+// =============================================================================
+
+// Level type for PB tracking
+type lvl
+    float upper
+    float lower
+    float vol
+    bool approached
+
+float atr_pb = ta.atr(14) * 2.0
+
+f_ma(src, len, t) =>
+    switch t
+        "EMA" => ta.ema(src, len)
+        "SMA" => ta.sma(src, len)
+        "WMA" => ta.wma(src, len)
+        "HMA" => ta.hma(src, len)
+        "VWMA" => ta.vwma(src, len)
+        => ta.sma(src, len)
+
+float base_ma = f_ma(zoo_price_src, zoo_ma_len, zoo_ma_type)
+float st_atr = zoo_st_mult * ta.atr(zoo_st_period)
+float dyn_long = base_ma - st_atr
+float dyn_short = base_ma + st_atr
+
+var int st_dir = 1
+float sig_line = 0.0
+float curr_long = 0.0
+curr_long := base_ma > nz(curr_long[1], dyn_long) ? math.max(dyn_long, nz(curr_long[1])) : dyn_long
+float curr_short = 0.0
+curr_short := base_ma < nz(curr_short[1], dyn_short) ? math.min(dyn_short, nz(curr_short[1])) : dyn_short
+
+if zoo_use_st
+    if nz(st_dir[1]) == -1 and zoo_price_src > nz(curr_short[1])
+        st_dir := 1
+    else if nz(st_dir[1]) == 1 and zoo_price_src < nz(curr_long[1])
+        st_dir := -1
+    sig_line := st_dir == 1 ? curr_long : curr_short
+else
+    sig_line := base_ma
+
+bool buy_cross = ta.crossover(zoo_price_src, sig_line)
+bool sell_cross = ta.crossunder(zoo_price_src, sig_line)
+bool is_rising = sig_line > nz(sig_line[1])
+bool is_falling = sig_line < nz(sig_line[1])
+bool bull_reaccel = st_dir == 1 and is_rising and nz(sig_line[1]) == nz(sig_line[2])
+bool bear_reaccel = st_dir == -1 and is_falling and nz(sig_line[1]) == nz(sig_line[2])
+
+// PBJ conditions
+float pbj_ma = ta.ema(close, zoo_pbj_ma_period)
+float pbj_atr = ta.atr(zoo_pbj_atr_period)
+float avg_vol = ta.sma(volume, zoo_pbj_vol_period)
+float thresh = close == 0 ? 0 : (pbj_atr / close * zoo_pbj_atr_mult)
+
+bool pbj_buy = low < pbj_ma * (1 - thresh) and low == ta.lowest(low, zoo_pbj_hh_ll) and volume > avg_vol * zoo_pbj_vol_mult
+bool pbj_sell = high > pbj_ma * (1 + thresh) and high == ta.highest(high, zoo_pbj_hh_ll) and volume > avg_vol * zoo_pbj_vol_mult
+
+// === LEVEL MANAGEMENT ===
+var bull_lvls = array.new<lvl>()
+var bear_lvls = array.new<lvl>()
+
+f_add_lvl(arr, up, lo, v) =>
+    if math.abs(up - lo) >= syminfo.mintick
+        array.push(arr, lvl.new(up, lo, v, false))
+
+f_add_lander(is_bull, cross, arr) =>
+    if cross
+        float up = 0.0
+        float lo = 0.0
+        if is_bull
+            up := math.max(open[1], close[1])
+            lo := low[1]
+            if up - lo < atr_pb * 0.5
+                up := lo + atr_pb * 0.5
+        else
+            up := high[1]
+            lo := math.min(open[1], close[1])
+            if up - lo < atr_pb * 0.5
+                lo := up - atr_pb * 0.5
+        f_add_lvl(arr, up, lo, volume[1])
+
+f_add_reaccel(is_bull, sig, arr) =>
+    if sig and not na(sig_line)
+        float p1 = sig_line
+        float p2 = is_bull ? math.min(open, close) : math.max(open, close)
+        f_add_lvl(arr, math.max(p1, p2), math.min(p1, p2), volume)
+
+f_check_approach(arr, is_bull) =>
+    bool approached = false
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0
+            if i >= array.size(arr)
+                continue
+            l = array.get(arr, i)
+            if is_bull and close < l.lower
+                array.remove(arr, i)
+                continue
+            if not is_bull and close > l.upper
+                array.remove(arr, i)
+                continue
+            float ap = is_bull ? l.upper * 1.005 : l.lower * 0.995
+            if is_bull
+                if not l.approached and low <= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and low > l.upper
+                    l.approached := false
+            else
+                if not l.approached and high >= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and high < l.lower
+                    l.approached := false
+    approached
+
+// Add levels
+f_add_lander(true, buy_cross, bull_lvls)
+f_add_lander(false, sell_cross, bear_lvls)
+f_add_reaccel(true, bull_reaccel, bull_lvls)
+f_add_reaccel(false, bear_reaccel, bear_lvls)
+
+// Check approaches
+var bool wait_buy = false
+var bool wait_sell = false
+var bool wait_pbj_buy = false
+var bool wait_pbj_sell = false
+
+if barstate.isconfirmed
+    if f_check_approach(bull_lvls, true)
+        wait_buy := true
+    if f_check_approach(bear_lvls, false)
+        wait_sell := true
+
+if pbj_buy
+    wait_pbj_buy := true
+if pbj_sell
+    wait_pbj_sell := true
+
+while array.size(bull_lvls) > 30
+    array.shift(bull_lvls)
+while array.size(bear_lvls) > 30
+    array.shift(bear_lvls)
+
+// === PB&J SIGNALS ===
+bool sig_pb_buy = buy_cross and wait_buy
+bool sig_pbj_buy = buy_cross and wait_pbj_buy
+bool sig_pb_sell = sell_cross and wait_sell
+bool sig_pbj_sell = sell_cross and wait_pbj_sell
+
+if sig_pb_buy
+    wait_buy := false
+if sig_pbj_buy
+    wait_pbj_buy := false
+if sig_pb_sell
+    wait_sell := false
+if sig_pbj_sell
+    wait_pbj_sell := false
+
+bool sBullPB = sig_pb_buy and not sig_pbj_buy
+bool sBullPBJ = sig_pbj_buy
+bool sBearPB = sig_pb_sell and not sig_pbj_sell
+bool sBearPBJ = sig_pbj_sell
+
+// =============================================================================
+// CONFLUENCE SIGNALS
+// =============================================================================
+
+bool superPup = sPPBull and bullPass
+bool superPPD = sPPBear and bearPass
+
+// =============================================================================
+// TB SIGNAL LOGIC (Bearish - after bull run ends, PPD fires)
+// =============================================================================
+
+var int consecAnishBull = 0
+if bullPass
+    consecAnishBull := consecAnishBull + 1
+else
+    consecAnishBull := 0
+
+var bool tbWindowOpen = false
+var int tbWindowCount = 0
+
+bool bullRunJustEnded = not bullPass and consecAnishBull[1] >= minAnishBars
+
+if bullRunJustEnded
+    tbWindowOpen := true
+    tbWindowCount := 0
+
+bool tbSignal = false
+bool tbPBJSignal = false
+bool tbPBSignal = false
+
+if tbWindowOpen
+    tbWindowCount := tbWindowCount + 1
+    if bullPass
+        tbWindowOpen := false
+        tbWindowCount := 0
+    else if sPPBear
+        tbSignal := true
+        tbWindowOpen := false
+        tbWindowCount := 0
+    else if sBearPBJ
+        tbPBJSignal := true
+        tbWindowOpen := false
+        tbWindowCount := 0
+    else if sBearPB
+        tbPBSignal := true
+        tbWindowOpen := false
+        tbWindowCount := 0
+    else if tbWindowCount > followUpBars
+        tbWindowOpen := false
+        tbWindowCount := 0
+
+// =============================================================================
+// FOSTER SIGNAL LOGIC (Bullish - after bear run ends, PUP fires)
+// =============================================================================
+
+var int consecAnishBear = 0
+if bearPass
+    consecAnishBear := consecAnishBear + 1
+else
+    consecAnishBear := 0
+
+var bool fosterWindowOpen = false
+var int fosterWindowCount = 0
+
+bool bearRunJustEnded = not bearPass and consecAnishBear[1] >= minAnishBars
+
+if bearRunJustEnded
+    fosterWindowOpen := true
+    fosterWindowCount := 0
+
+bool fosterSignal = false
+bool fosterPBJSignal = false
+bool fosterPBSignal = false
+
+if fosterWindowOpen
+    fosterWindowCount := fosterWindowCount + 1
+    if bearPass
+        fosterWindowOpen := false
+        fosterWindowCount := 0
+    else if sPPBull
+        fosterSignal := true
+        fosterWindowOpen := false
+        fosterWindowCount := 0
+    else if sBullPBJ
+        fosterPBJSignal := true
+        fosterWindowOpen := false
+        fosterWindowCount := 0
+    else if sBullPB
+        fosterPBSignal := true
+        fosterWindowOpen := false
+        fosterWindowCount := 0
+    else if fosterWindowCount > followUpBars
+        fosterWindowOpen := false
+        fosterWindowCount := 0
+
+// =============================================================================
+// BACK TO BACK SIGNALS
+// =============================================================================
+
+bool b2bPUP = sPPBull and sPPBull[1]
+bool b2bPPD = sPPBear and sPPBear[1]
+
+// =============================================================================
+// AIR BUD SIGNAL (Bullish Reversal: PPD/RVOL Bear followed by PUP/RVOL Bull)
+// =============================================================================
+
+var bool airBudArmed = false
+var int airBudCount = 0
+
+// Arm when PPD OR RVOL Bear occurs
+if sPPBear or sRVOLBear
+    airBudArmed := true
+    airBudCount := 0
+
+bool airBudSignal = false
+if airBudArmed
+    airBudCount := airBudCount + 1
+    // If PUP OR RVOL Bull appears within window, fire Air Bud
+    if sPPBull or sRVOLBull
+        airBudSignal := true
+        airBudArmed := false
+        airBudCount := 0
+    else if airBudCount > airBudWindow
+        airBudArmed := false
+        airBudCount := 0
+
+// =============================================================================
+// LEPROSY SIGNAL (Bearish Reversal: PUP/RVOL Bull followed by PPD/RVOL Bear)
+// =============================================================================
+
+var bool leprosyArmed = false
+var int leprosyCount = 0
+
+// Arm when PUP OR RVOL Bull occurs
+if sPPBull or sRVOLBull
+    leprosyArmed := true
+    leprosyCount := 0
+
+bool leprosySignal = false
+if leprosyArmed
+    leprosyCount := leprosyCount + 1
+    // If PPD OR RVOL Bear appears within window, fire Leprosy
+    if sPPBear or sRVOLBear
+        leprosySignal := true
+        leprosyArmed := false
+        leprosyCount := 0
+    else if leprosyCount > leprosyWindow
+        leprosyArmed := false
+        leprosyCount := 0
+
+// =============================================================================
+// 1ST PASS LOGIC
+// =============================================================================
+
+var int neutralBarCount = 0
+bool isNeutral = not bullPass and not bearPass
+neutralBarCount := isNeutral ? neutralBarCount + 1 : 0
+
+var bool neutralPhaseComplete = false
+if neutralBarCount >= neutralBarsRequired
+    neutralPhaseComplete := true
+
+// 1st PUP Pass
+var bool pupArmed = false
+if neutralPhaseComplete and sPPBull
+    pupArmed := true
+if bearPass and pupArmed
+    pupArmed := false
+    neutralPhaseComplete := false
+bool firstPUPPass = pupArmed and bullPass and not bullPass[1]
+if firstPUPPass
+    pupArmed := false
+    neutralPhaseComplete := false
+
+// 1st PPD Pass
+var bool ppdArmed = false
+if neutralPhaseComplete and sPPBear
+    ppdArmed := true
+if bullPass and ppdArmed
+    ppdArmed := false
+    neutralPhaseComplete := false
+bool firstPPDPass = ppdArmed and bearPass and not bearPass[1]
+if firstPPDPass
+    ppdArmed := false
+    neutralPhaseComplete := false
+
+// =============================================================================
+// PLOTS
+// =============================================================================
+
+// Core PP signals
+plotshape(sPPBull and show_pup, "PUP", shape.square, location.belowbar, color.blue, size=size.tiny, text="PUP")
+plotshape(sPPBear and show_ppd, "PPD", shape.square, location.abovebar, color.red, size=size.tiny, text="PPD")
+
+// Super signals
+plotshape(superPup and show_super_pup, "Super PUP", shape.labelup, location.belowbar, color.lime, size=size.normal, text="S-PUP", textcolor=color.black)
+plotshape(superPPD and show_super_ppd, "Super PPD", shape.labeldown, location.abovebar, color.maroon, size=size.large, text="S-PPD", textcolor=color.white)
+
+// Foster/TB with PUP/PPD
+plotshape(fosterSignal and show_foster, "Foster", shape.labelup, location.belowbar, color.aqua, size=size.normal, text="FOSTER", textcolor=color.black)
+plotshape(tbSignal and show_tb, "TB", shape.labeldown, location.abovebar, color.purple, size=size.normal, text="TB", textcolor=color.white)
+
+// Foster/TB with PBJ/PB (NEW)
+plotshape(fosterPBJSignal and show_foster_pbj, "Foster PBJ", shape.labelup, location.belowbar, color.rgb(0, 255, 200), size=size.large, text="FOSTER-PBJ", textcolor=color.black)
+plotshape(fosterPBSignal and show_foster_pb, "Foster PB", shape.labelup, location.bottom, color.rgb(100, 255, 200), size=size.large, text="FOSTER-PB", textcolor=color.black)
+plotshape(tbPBJSignal and show_tb_pbj, "TB PBJ", shape.labeldown, location.top, color.rgb(128, 0, 128), size=size.large, text="TB-PBJ", textcolor=color.white)
+plotshape(tbPBSignal and show_tb_pb, "TB PB", shape.labeldown, location.abovebar, color.rgb(180, 0, 180), size=size.large, text="TB-PB", textcolor=color.white)
+
+// B2B signals
+plotshape(b2bPUP and show_b2b_pup, "B2B PUP", shape.labelup, location.bottom, color.teal, size=size.large, text="B2B PUP", textcolor=color.white)
+plotshape(b2bPPD and show_b2b_ppd, "B2B PPD", shape.labeldown, location.top, color.orange, size=size.large, text="B2B PPD", textcolor=color.black)
+
+// 1st Pass signals
+plotshape(firstPUPPass and show_1st_pup, "1st PUP Pass", shape.labeldown, location.top, color.rgb(0, 255, 127), size=size.large, text="1st PUP", textcolor=color.black)
+plotshape(firstPPDPass and show_1st_ppd, "1st PPD Pass", shape.labelup, location.bottom, color.rgb(255, 69, 0), size=size.large, text="1st PPD", textcolor=color.white)
+
+// Reversal signals
+plotshape(airBudSignal and show_air_bud, "Air Bud", shape.labelup, location.top, color.rgb(255, 215, 0), size=size.normal, text="AIR BUD", textcolor=color.black)
+plotshape(leprosySignal and show_leprosy, "Leprosy", shape.labeldown, location.bottom, color.rgb(139, 0, 139), size=size.normal, text="LEPROSY", textcolor=color.white)
+
+// PB&J signals
+plotshape(sBullPB and show_bull_pb, "Bull PB", shape.labelup, location.belowbar, color.new(color.aqua, 50), size=size.tiny, text="PB", textcolor=color.white)
+plotshape(sBullPBJ and show_bull_pbj, "Bull PBJ", shape.diamond, location.belowbar, color.new(color.yellow, 50), size=size.small, text="PB+J", textcolor=color.black)
+plotshape(sBearPB and show_bear_pb, "Bear PB", shape.labeldown, location.abovebar, color.new(color.orange, 0), size=size.tiny, text="PB", textcolor=color.white)
+plotshape(sBearPBJ and show_bear_pbj, "Bear PBJ", shape.labeldown, location.abovebar, color.new(color.red, 0), size=size.small, text="PBJ", textcolor=color.white)
+
+// RVOL signals
+plotshape(sRVOLBull and show_rv_bull, "RVOL Bull", shape.arrowup, location.belowbar, color.new(#00FFFF, 0), size=size.small, text="RV+")
+plotshape(sRVOLBear and show_rv_bear, "RVOL Bear", shape.arrowdown, location.abovebar, color.new(#FFA500, 0), size=size.small, text="RV-")
+
+// =============================================================================
+// ROBUST ALERT SYSTEM (EXCLUDES Anish Bull/Bear)
+// =============================================================================
+
+// Build dynamic alert message
+var string alertMsg = ""
+alertMsg := ""
+
+bool fired_pup = sPPBull and alert_pup
+bool fired_ppd = sPPBear and alert_ppd
+bool fired_super_pup = superPup and alert_super_pup
+bool fired_super_ppd = superPPD and alert_super_ppd
+bool fired_foster = fosterSignal and alert_foster
+bool fired_tb = tbSignal and alert_tb
+bool fired_foster_pbj = fosterPBJSignal and alert_foster_pbj
+bool fired_foster_pb = fosterPBSignal and alert_foster_pb
+bool fired_tb_pbj = tbPBJSignal and alert_tb_pbj
+bool fired_tb_pb = tbPBSignal and alert_tb_pb
+bool fired_b2b_pup = b2bPUP and alert_b2b_pup
+bool fired_b2b_ppd = b2bPPD and alert_b2b_ppd
+bool fired_1st_pup = firstPUPPass and alert_1st_pup
+bool fired_1st_ppd = firstPPDPass and alert_1st_ppd
+bool fired_air_bud = airBudSignal and alert_air_bud
+bool fired_leprosy = leprosySignal and alert_leprosy
+bool fired_bull_pb = sBullPB and alert_bull_pb
+bool fired_bull_pbj = sBullPBJ and alert_bull_pbj
+bool fired_bear_pb = sBearPB and alert_bear_pb
+bool fired_bear_pbj = sBearPBJ and alert_bear_pbj
+bool fired_rv_bull = sRVOLBull and alert_rv_bull
+bool fired_rv_bear = sRVOLBear and alert_rv_bear
+
+if fired_pup
+    alertMsg := alertMsg + "PUP | "
+if fired_ppd
+    alertMsg := alertMsg + "PPD | "
+if fired_super_pup
+    alertMsg := alertMsg + "SUPER PUP | "
+if fired_super_ppd
+    alertMsg := alertMsg + "SUPER PPD | "
+if fired_foster
+    alertMsg := alertMsg + "FOSTER | "
+if fired_tb
+    alertMsg := alertMsg + "TB | "
+if fired_foster_pbj
+    alertMsg := alertMsg + "FOSTER-PBJ | "
+if fired_foster_pb
+    alertMsg := alertMsg + "FOSTER-PB | "
+if fired_tb_pbj
+    alertMsg := alertMsg + "TB-PBJ | "
+if fired_tb_pb
+    alertMsg := alertMsg + "TB-PB | "
+if fired_b2b_pup
+    alertMsg := alertMsg + "B2B PUP | "
+if fired_b2b_ppd
+    alertMsg := alertMsg + "B2B PPD | "
+if fired_1st_pup
+    alertMsg := alertMsg + "1st PUP | "
+if fired_1st_ppd
+    alertMsg := alertMsg + "1st PPD | "
+if fired_air_bud
+    alertMsg := alertMsg + "AIR BUD | "
+if fired_leprosy
+    alertMsg := alertMsg + "LEPROSY | "
+if fired_bull_pb
+    alertMsg := alertMsg + "Bull PB | "
+if fired_bull_pbj
+    alertMsg := alertMsg + "Bull PBJ | "
+if fired_bear_pb
+    alertMsg := alertMsg + "Bear PB | "
+if fired_bear_pbj
+    alertMsg := alertMsg + "Bear PBJ | "
+if fired_rv_bull
+    alertMsg := alertMsg + "RVOL Bull | "
+if fired_rv_bear
+    alertMsg := alertMsg + "RVOL Bear | "
+
+// Any alert (excludes Anish Bull/Bear)
+bool anyAlert = fired_pup or fired_ppd or fired_super_pup or fired_super_ppd or fired_foster or fired_tb or fired_foster_pbj or fired_foster_pb or fired_tb_pbj or fired_tb_pb or fired_b2b_pup or fired_b2b_ppd or fired_1st_pup or fired_1st_ppd or fired_air_bud or fired_leprosy or fired_bull_pb or fired_bull_pbj or fired_bear_pb or fired_bear_pbj or fired_rv_bull or fired_rv_bear
+
+// Bullish only
+bool bullishAlert = fired_pup or fired_super_pup or fired_foster or fired_foster_pbj or fired_foster_pb or fired_b2b_pup or fired_1st_pup or fired_air_bud or fired_bull_pb or fired_bull_pbj or fired_rv_bull
+
+// Bearish only
+bool bearishAlert = fired_ppd or fired_super_ppd or fired_tb or fired_tb_pbj or fired_tb_pb or fired_b2b_ppd or fired_1st_ppd or fired_leprosy or fired_bear_pb or fired_bear_pbj or fired_rv_bear
+
+// Multiplexer filter
+bool muxPass = switch mux_sel
+    "Any" => anyAlert
+    "Bullish Only" => bullishAlert
+    "Bearish Only" => bearishAlert
+    "PUP" => fired_pup
+    "PPD" => fired_ppd
+    "Super PUP" => fired_super_pup
+    "Super PPD" => fired_super_ppd
+    "Foster" => fired_foster
+    "TB" => fired_tb
+    "Foster PBJ" => fired_foster_pbj
+    "Foster PB" => fired_foster_pb
+    "TB PBJ" => fired_tb_pbj
+    "TB PB" => fired_tb_pb
+    "B2B PUP" => fired_b2b_pup
+    "B2B PPD" => fired_b2b_ppd
+    "1st PUP" => fired_1st_pup
+    "1st PPD" => fired_1st_ppd
+    "Air Bud" => fired_air_bud
+    "Leprosy" => fired_leprosy
+    "Bull PB" => fired_bull_pb
+    "Bull PBJ" => fired_bull_pbj
+    "Bear PB" => fired_bear_pb
+    "Bear PBJ" => fired_bear_pbj
+    "RVOL Bull" => fired_rv_bull
+    "RVOL Bear" => fired_rv_bear
+    => anyAlert
+
+// =============================================================================
+// LEGACY ALERT CONDITIONS (for TradingView alert dialog)
+// =============================================================================
+
+alertcondition(sPPBull, "PUP", "Pocket Pivot Up")
+alertcondition(sPPBear, "PPD", "Pocket Pivot Down")
+alertcondition(superPup, "Super PUP", "Super PUP")
+alertcondition(superPPD, "Super PPD", "Super PPD")
+alertcondition(fosterSignal, "Foster", "Foster")
+alertcondition(tbSignal, "TB", "TB Sell Signal")
+alertcondition(fosterPBJSignal, "Foster PBJ", "Foster & PBJ")
+alertcondition(fosterPBSignal, "Foster PB", "Foster & PB")
+alertcondition(tbPBJSignal, "TB PBJ", "TB & PBJ")
+alertcondition(tbPBSignal, "TB PB", "TB & PB")
+alertcondition(b2bPUP, "B2B PUP", "B2B PUP")
+alertcondition(b2bPPD, "B2B PPD", "B2B PPD")
+alertcondition(firstPUPPass, "1st PUP Pass", "First PUP Pass")
+alertcondition(firstPPDPass, "1st PPD Pass", "First PPD Pass")
+alertcondition(airBudSignal, "Air Bud", "Air Bud")
+alertcondition(leprosySignal, "Leprosy", "Leprosy")
+alertcondition(sBullPB, "Bull PB", "Bull PB")
+alertcondition(sBullPBJ, "Bull PBJ", "Bull PBJ")
+alertcondition(sBearPB, "Bear PB", "Bear PB")
+alertcondition(sBearPBJ, "Bear PBJ", "Bear PBJ Signal")
+alertcondition(sRVOLBull, "RVOL Bull", "RVOL 1x Bullish")
+alertcondition(sRVOLBear, "RVOL Bear", "RVOL 1x Bearish")
+alertcondition(anyAlert, "⚡ Any Signal", "Any signal fired - check message")
+alertcondition(bullishAlert, "🟢 Any Bullish", "Any bullish signal fired")
+alertcondition(bearishAlert, "🔴 Any Bearish", "Any bearish signal fired")
+alertcondition(muxPass, "🎯 Multiplexer", "Multiplexer filtered signal")
+
+// =============================================================================
+// DYNAMIC ALERT (fires with detailed message)
+// =============================================================================
+
+if muxPass and str.length(alertMsg) > 0
+    alert(syminfo.ticker + " " + timeframe.period + " | " + alertMsg + "Price: " + str.tostring(close, format.mintick), alert.freq_once_per_bar_close)
+
+

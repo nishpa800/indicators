@@ -29,6 +29,34 @@ indicator family — the one Stage 1 extracts from.
 
 **Total canonical Pine source**: ~750 KB across 15 files (12 original + pb-pbj + disp-4x + heavy-uncap added in Stage 7).
 
+## 2026-05-10 Master Directory ingest — pending-vetting families + variants
+
+Per `docs/master-directory-delta-2026-05-10.md`. None of these is labelled
+"canonical." Stage 1 extraction queued; canonical determination waits on
+Stage 3 (TV verification).
+
+### New families (5)
+
+| # | Family            | File                                                                          | Pine | Lines | Status                  |
+|---|-------------------|-------------------------------------------------------------------------------|------|------:|-------------------------|
+| 16 | `hv-ladder`       | `hv-ladder/versions/HV_LADDER_50_TO_1K_v1.pine`                              | v5   |   196 | pending Stage-1 extract |
+| 16 | `hv-ladder`       | `hv-ladder/versions/HV_LADDER_100_TO_1K_v1.pine`                             | v5   |   227 | pending Stage-1 extract |
+| 17 | `anish-tb-foster` | `anish-tb-foster/versions/ANISH_TB_FOSTER_AIRBUD_LEPROSY_ENHANCED_v1.pine`   | v5   |   704 | pending Stage-1 extract |
+| 18 | `heavy-weapons`   | `heavy-weapons/versions/HEAVY_WEAPONS_8FVG_MATRIX_COMBOS_NO_PENTAGON_v1.pine`| v5   |   489 | pending Stage-1 extract |
+| 19 | `fauna-shifu`     | `fauna-shifu/versions/FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine`                 | v5   |  2338 | pending Stage-1 extract |
+| 20 | `vob-single-sens` | `vob-single-sens/versions/VOB_SINGLE_SENS_WITH_TABLES_v1.pine`               | v6   |   414 | pending Stage-1 extract |
+| 20 | `vob-single-sens` | `vob-single-sens/versions/VOB_SINGLE_SENS_NO_TABLES_NO_EMISSION_v1.pine`     | v6   |   415 | pending Stage-1 extract |
+
+### New sibling variants inside existing families (3)
+
+| Family        | Variant file                                                           | Lines | Notes                                                                                                  |
+|---------------|------------------------------------------------------------------------|------:|--------------------------------------------------------------------------------------------------------|
+| `hvd-pbj-ppd` | `hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine`   |  2246 | 133 KB — larger than current `THE_ONLY_ONE` (109 KB). Pending vetting.                                  |
+| `hvd-pbj-ppd` | `hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine`   |  1939 | Same line count as repo's `HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine` but with Tier-1 input defaults flipped (Bear UUUU/UUU/Bull UU/Omega/Alpha Strike). Pending vetting. |
+| `vob-asym`    | `vob-asym/versions/VOB_Asym_T3x6_FROM_MASTERDIR_ummmm_2026-05-10.pine` |  1473 | Title `+ Claude ummmm`; plotshape locations/shapes for T3 buy/sell differ from repo v8. Pending vetting. |
+
+Bible family count after this ingest: **15 → 20**.
+
 ## Predecessor / variant files (kept for byte-diff in Stage 1.5)
 
 - `b2b-pup/versions/B2B_PUP_v4.32.pine` — DELETED in Stage 6.3 (was byte-equivalent to Combined except CRLF/LF; verified by md5 after `tr -d '\r'`)
