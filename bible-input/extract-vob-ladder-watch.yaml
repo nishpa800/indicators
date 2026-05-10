@@ -1,6 +1,6 @@
 indicator:
   id: vob-ladder-watch
-  file: vob/versions/VOB_LADDER_WATCH_v1.pine
+  file: vob-ladder-watch/versions/VOB_LADDER_WATCH_v1.pine
   branch: both
   pine_version: 5
   line_count: 215

@@ -8180,7 +8180,7 @@ indicators:
   - DISP_BULL/DISP_BEAR are listed as composites because the displacement primitive (range > 5*stdev * prevDisp) AND the FVG
     primitive are bound together in the same boolean (sigDISPBull). They have no NAME outside ultra-combo so are not roots.
 - id: vob-asym
-  file: vob/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine
+  file: vob-asym/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine
   branch: both
   pine_version: 6
   line_count: 1473
@@ -9480,7 +9480,7 @@ indicators:
       to the file's six-tier ladder topology rather than a separate asym signal.
     severity: info
 - id: vob-ladder-watch
-  file: vob/versions/VOB_LADDER_WATCH_v1.pine
+  file: vob-ladder-watch/versions/VOB_LADDER_WATCH_v1.pine
   branch: both
   pine_version: 5
   line_count: 215

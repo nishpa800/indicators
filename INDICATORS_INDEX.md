@@ -33,8 +33,8 @@ _Generated 2026-05-10. Source of truth: [`data/indicators.yaml`](./data/indicato
 | 8 | `squarify` | `squarify/versions/SQUARIFY_46_v2_2026-05-04.pine` | v5 | 2622 | 25 | 48 | Top-level fund signal: 60 atoms feed 46 numbered Tier-3 composites (foundationa… |
 | 9 | `tnt-od` | `tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine` | v5 | 1802 | 10 | 21 | TNT Opening Drive — VOB cross + Apex break + Failed-Apex Flip + density/UU + T1… |
 | 10 | `ultra-combo` | `ultra-combo/versions/ULTRA_COMBO_v57_pine6.pine` | v6 | 1147 | 26 | 49 | Aggregator firing combo signals across PBJ/PB, F2/E3/FC, B2B PUP/PPD, Heavy Wea… |
-| 11 | `vob-asym` | `vob/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine` | v6 | 1473 | 25 | 18 | VOB asymmetric T3 x6 mutex - staged structural ladder with mutually-exclusive s… |
-| 12 | `vob-ladder-watch` | `vob/versions/VOB_LADDER_WATCH_v1.pine` | v5 | 215 | 6 | 9 | Staged zF -> zA ascending bull-zone ladder escalation detector (depth 0-6 watch… |
+| 11 | `vob-asym` | `vob-asym/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine` | v6 | 1473 | 25 | 18 | VOB asymmetric T3 x6 mutex - staged structural ladder with mutually-exclusive s… |
+| 12 | `vob-ladder-watch` | `vob-ladder-watch/versions/VOB_LADDER_WATCH_v1.pine` | v5 | 215 | 6 | 9 | Staged zF -> zA ascending bull-zone ladder escalation detector (depth 0-6 watch… |
 
 ## Stage roadmap (this branch)
 

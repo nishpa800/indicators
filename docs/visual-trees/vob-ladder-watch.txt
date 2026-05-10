@@ -1,6 +1,6 @@
 VISUAL TREE — vob-ladder-watch
 ===============================
-File: vob/versions/VOB_LADDER_WATCH_v1.pine
+File: vob-ladder-watch/versions/VOB_LADDER_WATCH_v1.pine
 Pine v5  ·  215 lines  ·  overlay=True
 Purpose: Staged zF -> zA ascending bull-zone ladder escalation detector (depth 0-6 watch gauge + alerts)
 

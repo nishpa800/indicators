@@ -18,7 +18,7 @@ Every file-system / version-control issue identified in the indicator suite. **N
 
 ## Title / filename mismatch
 
-- `tnt-od/versions/TNT_OD_v3.pine` (148.4 KB, internally titled `TNT Opening Drive OD v3`, dated 2026-05-08) is **newer and has more features** (HCT engine, UC placeholder, T1 RELAY, T1 STACK, en_newGate/gateStdMult).
+- `tnt-od/versions/TNT_OD_v3_LEGACY_PRE_CONSOLIDATION.pine` (148.4 KB, internally titled `TNT Opening Drive OD v3`, dated 2026-05-08) is **newer and has more features** (HCT engine, UC placeholder, T1 RELAY, T1 STACK, en_newGate/gateStdMult).
 - `tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine` (123.0 KB, internally titled `TNT Opening Drive OD v2`, dated 2026-05-04) is older despite the v3-style filename.
 - Per `tnt-od/CHANGELOG.md`, the v3 build is the canonical one. Stage 6 should either rename the older file to `TNT_OD_v2_2026-05-04.pine` for clarity, or merge their version histories.
 
