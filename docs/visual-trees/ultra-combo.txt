@@ -1,74 +1,347 @@
-ULTRA COMBO v57 — dependency tree
-===================================
+VISUAL TREE — ultra-combo
+==========================
+File: ultra-combo/versions/ULTRA_COMBO_v57_pine6.pine
+Pine v6  ·  1147 lines  ·  overlay=True
+Purpose: Aggregator firing combo signals across PBJ/PB, F2/E3/FC, B2B PUP/PPD, Heavy Weapon, GZ1/HV FVG, FAUNA, displacement, ROC+WaveTrend, TB/Foster, Opener, 3-Bar, Mega, Super B2B Days
 
-ROOTS (tier 0, mostly cross-refs)
-──────────────────────────────────
-fauna::MB, RE, TA, GG, TR, ES, GDR     (defined here AND distributed across other indicators)
-heavy-pentagon::BULL_RVOL_1X, GS, MOAB, WTC, HIROSHIMA, NAGASAKI  (cross-refs)
-hvdpbjppd::PBJ_BULL/BEAR, PB_BULL/BEAR (header line 367: "EXACT COPY FROM ANISH TB FOSTER v6")
-hvdpbjppd::DISP_BULL/BEAR              (cross-ref)
-hv-fvg-gz1-og::GZI_BULL/BEAR, HV_BULL/BEAR (cross-refs)
-pocket-pivot::PUP / PPD                (cross-refs)
-b2b-pup::B2B_PUP / B2B_PPD             (cross-refs)
-ultra-combo::F2, E3, FC                (NEW root family — F2/E3/FC cluster)
-ultra-combo::TB, FOSTER                (NEW transition roots)
-ultra-combo::ROC                       (NEW oscillator root: PBJ + ROC + LazyBear WT + HW)
+ROOTS
+-----
+  ◆ ultra-combo::F2_BULL    [f2_e3_fc · offset=0]
+      Bullish F2: at session bar 2, this and previous bar are both MB (mome…
+  ◆ ultra-combo::F2_BEAR    [f2_e3_fc · offset=0]
+      Bearish F2: at session bar 2, this and previous bar are both bearish …
+  ◆ ultra-combo::E3_BULL    [f2_e3_fc · offset=0]
+      Bullish E3: at session bar 3, current and previous two bars each fire…
+  ◆ ultra-combo::E3_BEAR    [f2_e3_fc · offset=0]
+      Bearish E3: at session bar 3, current and previous two bars each fire…
+  ◆ ultra-combo::FC_BULL    [f2_e3_fc · offset=0]
+      Bullish FC cluster: 2-of-3 cluster indicators true (consecutive MB / …
+  ◆ ultra-combo::FC_BEAR    [f2_e3_fc · offset=0]
+      Bearish FC cluster mirror of FC_BULL
+  ◆ ultra-combo::MB_BULL    [fauna_core · offset=0]
+      FAUNA Momentum-Body bull: confirmed bullish bar with body > 1.6*ATR, …
+  ◆ ultra-combo::MB_BEAR    [fauna_core · offset=0]
+      FAUNA Momentum-Body bear (mirror of MB_BULL)
+  ◆ ultra-combo::RE_BULL    [fauna_core · offset=0]
+      FAUNA Range-Expansion bull: confirmed bull bar with range > 2.2*ATR, …
+  ◆ ultra-combo::RE_BEAR    [fauna_core · offset=0]
+      FAUNA Range-Expansion bear (mirror)
+  ◆ ultra-combo::TA_BULL    [fauna_core · offset=0]
+      FAUNA Trend-Acceleration bull: 50-SMA rising, /close-close[1]/ > 1.6*…
+  ◆ ultra-combo::TA_BEAR    [fauna_core · offset=0]
+      FAUNA Trend-Acceleration bear (mirror)
+  ◆ ultra-combo::GG_BULL    [fauna_exclusion · offset=0]
+      FAUNA Gap-Gap bull exclusion atom: open gaps up > 0.9*ATR over prior …
+  ◆ ultra-combo::GG_BEAR    [fauna_exclusion · offset=0]
+      FAUNA Gap-Gap bear exclusion atom
+  ◆ ultra-combo::TR_BULL    [fauna_exclusion · offset=0]
+      FAUNA TR (Trap-Reverse from weak-bear) bull exclusion: prior bar weak…
+  ◆ ultra-combo::TR_BEAR    [fauna_exclusion · offset=0]
+      FAUNA TR bear exclusion (mirror)
+  ◆ ultra-combo::ES_BULL    [fauna_exclusion · offset=0]
+      FAUNA ES (Engulf-from-Strong-bear) bull exclusion: prior bar strong-b…
+  ◆ ultra-combo::ES_BEAR    [fauna_exclusion · offset=0]
+      FAUNA ES bear exclusion (mirror)
+  ◆ ultra-combo::GDR_BULL    [fauna_exclusion · offset=0]
+      FAUNA GDR (Gap Down + Reverse) bull exclusion: prior bar bearish AND …
+  ◆ ultra-combo::GDR_BEAR    [fauna_exclusion · offset=0]
+      FAUNA GDR bear exclusion (mirror)
+  ◆ ultra-combo::ROC_BULL_PRIMITIVE    [roc_lbwt · offset=0]
+      Atomic ROC-bull crossover primitive: ta.crossover(roc_ema, 2.0). Pre-…
+  ◆ ultra-combo::ROC_BEAR_PRIMITIVE    [roc_lbwt · offset=0]
+      Atomic ROC-bear crossunder primitive: ta.crossunder(roc_ema, -1.25)
+  ◆ ultra-combo::LBWT_BULL_CROSS    [roc_lbwt · offset=0]
+      LazyBear WaveTrend bull cross: ld_xup = wt1 crosses over wt2 (with HL…
+  ◆ ultra-combo::LBWT_BEAR_CROSS    [roc_lbwt · offset=0]
+      LazyBear WaveTrend bear cross: ld_wt1 crosses under ld_wt2
+  ◆ ultra-combo::TB    [tb_foster · offset=0]
+      TB (Trend Break-down): after 5+ consecutive bullPass days, on the fir…
+  ◆ ultra-combo::FOSTER    [tb_foster · offset=0]
+      Foster (Trend Reversal-up): after 5+ consecutive bearPass days, on th…
 
-INTERNAL HELPERS (NOT roots)
-─────────────────────────────
-LazyBear WaveTrend (consumed only inside ROC)
-Anish Stage 2/4 EMA stack (bullPass/bearPass — internal mechanic here, root in anish-50-1st-combo)
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● ultra-combo::DISP_BULL    [offset=0 · AND]
+        Displacement bull: previous bar had range > 5*stdev(range,100) AND cu…
+        ├── disp_prevDisp
+        └── disp_bullFVG (bull FVG primitive)
+    ● ultra-combo::DISP_BEAR    [offset=0 · AND]
+        Displacement bear mirror
+        ├── disp_prevDisp
+        └── disp_bearFVG
+    ● ultra-combo::NAGA_PASSTHROUGH    [offset=0 · NESTED]
+        Re-plot ultra-combo's local Nagasaki signal (volume > prior all-time …
+        └── heavy-weapon::SIG_NAGASAKI (computed locally as sigNagasaki here)
 
-TIER 1 COMPOSITES
-──────────────────
-SUPER PUP/PPD, FAUNA = (MB OR RE OR TA) AND NOT (GG OR TR OR ES OR GDR)
-TB Sell, Foster Buy
+  Tier 2:
+    ● ultra-combo::FAUNA_BULL    [offset=0 · AND_NOT]
+        Bullish FAUNA: any of MB/RE/TA fires AND none of the four exclusion a…
+        ├── ultra-combo::MB_BULL
+        ├── ultra-combo::RE_BULL
+        ├── ultra-combo::TA_BULL
+        ├── NOT ultra-combo::GG_BULL
+        ├── NOT ultra-combo::TR_BULL
+        ├── NOT ultra-combo::ES_BULL
+        └── NOT ultra-combo::GDR_BULL
+    ● ultra-combo::FAUNA_BEAR    [offset=0 · AND_NOT]
+        Bearish FAUNA: any of bear MB/RE/TA fires AND none of bear GG/TR/ES/G…
+        ├── ultra-combo::MB_BEAR
+        ├── ultra-combo::RE_BEAR
+        ├── ultra-combo::TA_BEAR
+        ├── NOT ultra-combo::GG_BEAR
+        ├── NOT ultra-combo::TR_BEAR
+        ├── NOT ultra-combo::ES_BEAR
+        └── NOT ultra-combo::GDR_BEAR
+    ● ultra-combo::ROC_BULL    [offset=0 · AND]
+        Bull ROC composite: PBJ-bull AND ROC+WaveTrend dual-confirmation (b1+…
+        ├── hvd-pbj-ppd::PBJ_BULL
+        ├── ultra-combo::ROC_BULL_PRIMITIVE
+        ├── ultra-combo::LBWT_BULL_CROSS
+        └── (any HW bull: heavy-pentagon::SAAB-style components are NOT used here — only RVOL family)
+    ● ultra-combo::ROC_BEAR    [offset=0 · AND]
+        Bear ROC composite mirror
+        ├── hvd-pbj-ppd::PBJ_BEAR
+        ├── ultra-combo::ROC_BEAR_PRIMITIVE
+        └── ultra-combo::LBWT_BEAR_CROSS
+    ● ultra-combo::PBJ_F2    [offset=0 · OR]
+        PBJ + F2 same bar (bull or bear)
+        ├── (hvd-pbj-ppd::PBJ_BULL AND ultra-combo::F2_BULL)
+        └── (hvd-pbj-ppd::PBJ_BEAR AND ultra-combo::F2_BEAR)
+    ● ultra-combo::PBJ_E3    [offset=0 · OR]
+        PBJ + E3 same bar
+        ├── (hvd-pbj-ppd::PBJ_BULL AND ultra-combo::E3_BULL)
+        └── (hvd-pbj-ppd::PBJ_BEAR AND ultra-combo::E3_BEAR)
+    ● ultra-combo::PBJ_CLUSTER    [offset=0 · OR]
+        PBJ + FC cluster same bar
+        ├── (hvd-pbj-ppd::PBJ_BULL AND ultra-combo::FC_BULL)
+        └── (hvd-pbj-ppd::PBJ_BEAR AND ultra-combo::FC_BEAR)
+    ● ultra-combo::PB_F2    [offset=0 · OR]
+        PB + F2 same bar
+        ├── (hvd-pbj-ppd::PB_BULL AND ultra-combo::F2_BULL)
+        └── (hvd-pbj-ppd::PB_BEAR AND ultra-combo::F2_BEAR)
+    ● ultra-combo::PB_E3    [offset=0 · OR]
+        PB + E3 same bar
+        ├── (hvd-pbj-ppd::PB_BULL AND ultra-combo::E3_BULL)
+        └── (hvd-pbj-ppd::PB_BEAR AND ultra-combo::E3_BEAR)
+    ● ultra-combo::PB_CLUSTER    [offset=0 · OR]
+        PB + FC cluster same bar
+        ├── (hvd-pbj-ppd::PB_BULL AND ultra-combo::FC_BULL)
+        └── (hvd-pbj-ppd::PB_BEAR AND ultra-combo::FC_BEAR)
+    ● ultra-combo::F2CL_THEN_E3    [offset=0 · AND]
+        Yesterday-bar F2 AND yesterday-bar FC, then today E3 (one-bar lag)
+        ├── ultra-combo::F2_BULL[1] (or F2_BEAR[1])
+        ├── ultra-combo::FC_BULL[1] (or FC_BEAR[1])
+        └── ultra-combo::E3_BULL (or E3_BEAR)
+    ● ultra-combo::F2CL_PLUS_B2B    [offset=0 · AND]
+        F2 + FC cluster + back-to-back PUP (or PPD) on same bar
+        ├── ultra-combo::F2_BULL (or F2_BEAR)
+        ├── ultra-combo::FC_BULL (or FC_BEAR)
+        └── (b2bPUP — internal back-to-back PUP) (or b2bPPD)
+    ● ultra-combo::B2B_PLUS_F2    [offset=0 · AND]
+        Back-to-back PUP + F2 same bar
+        ├── (b2bPUP) or (b2bPPD)
+        └── ultra-combo::F2_BULL (or F2_BEAR)
+    ● ultra-combo::E3_2OF3_PUPPPD    [offset=0 · AND]
+        E3 with at least 2 of last 3 bars being PUP (bull) or PPD (bear)
+        ├── ultra-combo::E3_BULL (or E3_BEAR)
+        └── (2 of {sPPBull, sPPBull[1], sPPBull[2]} — internal PUP) or PPD mirror
+    ● ultra-combo::F2_B2B_DAYS    [offset=0 · AND]
+        F2 today AND F2 fired some time in the prior ~2 trading days
+        ├── ultra-combo::F2_BULL (or F2_BEAR)
+        └── f_hadSignalYesterday(F2 same direction)
+    ● ultra-combo::E3_B2B_DAYS    [offset=0 · AND]
+        E3 today AND E3 fired in prior ~2 days
+        ├── ultra-combo::E3_BULL (or E3_BEAR)
+        └── f_hadSignalYesterday(E3 same direction)
+    ● ultra-combo::F2E3_CONSEC    [offset=0 · OR]
+        Cross-day F2/E3 sequence: F2 today + E3 in prior ~2 days, OR E3 today…
+        ├── (F2_DIR AND f_hadSignalYesterday(E3_DIR))
+        └── (E3_DIR AND f_hadSignalYesterday(F2_DIR))
+    ● ultra-combo::CLUSTER_B2B_DAYS    [offset=0 · AND]
+        FC cluster today AND FC cluster in prior ~2 days
+        ├── ultra-combo::FC_BULL (or FC_BEAR)
+        └── f_hadSignalYesterday(FC same direction)
+    ● ultra-combo::HW_PLUS_ANY_BULL    [offset=0 · AND]
+        Any bull HW (RVOL family + sigROCBull + Super combos) AND any of (F2/…
+        ├── (anyBullHW: heavy-weapon::SIG_RVOL_1X_BULL or heavy-weapon::SIG_GRANDSLAM or heavy-weapon::SIG_WTC or heavy-weapon::SIG_HIROSHIMA or heavy-weapon::SIG_NAGASAKI or ultra-combo::ROC_BULL or ultra-combo::SUPER_BULL_PBJ or ultra-combo::SUPER_BULL_PB)
+        └── (sAnyBull = ultra-combo::FC_BULL or ultra-combo::E3_BULL or ultra-combo::F2_BULL)
+    ● ultra-combo::HW_PLUS_ANY_BEAR    [offset=0 · AND]
+        Mirror of HW_PLUS_ANY_BULL
+        ├── (anyBearHW)
+        └── (sAnyBear)
+    ● ultra-combo::GZHV_ANY_BULL    [offset=-1 · OR]
+        (GZ1-bull OR HV-bull FVG) AND (sAnyBull this bar OR last bar)
+        ├── (comboHV_AnyBull = ultra-combo::HV_BULL_FVG AND (sAnyBull or sAnyBull[1]))
+        └── (comboGZ_AnyBull = ultra-combo::GZI_BULL AND (sAnyBull or sAnyBull[1]))
+    ● ultra-combo::GZHV_ANY_BEAR    [offset=-1 · OR]
+        Mirror
+        ├── (comboHV_AnyBear)
+        └── (comboGZ_AnyBear)
+    ● ultra-combo::HV_GZI_COMBO_BULL    [offset=-1 · AND]
+        Session bar 2: HV bull on prior AND HV bull AND GZI bull (all same di…
+        ├── (sessBar == 2)
+        ├── ultra-combo::HV_BULL_FVG[1]
+        ├── ultra-combo::HV_BULL_FVG
+        └── ultra-combo::GZI_BULL
+    ● ultra-combo::HV_GZI_COMBO_BEAR    [offset=-1 · AND]
+        Mirror
+        ├── (sessBar == 2)
+        ├── ultra-combo::HV_BEAR_FVG[1]
+        ├── ultra-combo::HV_BEAR_FVG
+        └── ultra-combo::GZI_BEAR
 
-TIER 2 COMPOSITES
-──────────────────
-comboPBJ_F2_BULL/BEAR     = PBJ AND F2
-comboPBJ_E3_BULL/BEAR     = PBJ AND E3
-comboPBJ_CLUSTER_BULL/BEAR= PBJ AND FC
-comboPB_F2 / comboPB_E3 / comboPB_CLUSTER = PB AND F2/E3/FC
+  Tier 3:
+    ● ultra-combo::SUPER_BULL_PBJ    [offset=0 · AND]
+        Super Bull PBJ: Disp-bull AND PBJ-bull AND FAUNA-bull AND any RVOL-bu…
+        ├── ultra-combo::DISP_BULL
+        ├── hvd-pbj-ppd::PBJ_BULL
+        ├── ultra-combo::FAUNA_BULL
+        └── (anyBullRVOL — heavy-pentagon::SAAB explicitly excluded)
+    ● ultra-combo::SUPER_BULL_PB    [offset=0 · AND]
+        Super Bull PB mirror
+        ├── ultra-combo::DISP_BULL
+        ├── hvd-pbj-ppd::PB_BULL
+        ├── ultra-combo::FAUNA_BULL
+        └── (anyBullRVOL ex-SAAB)
+    ● ultra-combo::SUPER_BEAR_PBJ    [offset=0 · AND]
+        Super Bear PBJ
+        ├── ultra-combo::DISP_BEAR
+        ├── hvd-pbj-ppd::PBJ_BEAR
+        ├── ultra-combo::FAUNA_BEAR
+        └── (anyBearRVOL ex-SAAB)
+    ● ultra-combo::SUPER_BEAR_PB    [offset=0 · AND]
+        Super Bear PB
+        ├── ultra-combo::DISP_BEAR
+        ├── hvd-pbj-ppd::PB_BEAR
+        ├── ultra-combo::FAUNA_BEAR
+        └── (anyBearRVOL ex-SAAB)
+    ● ultra-combo::OPENER_BULL    [offset=0 · AND]
+        First session bar (sessBar==1) with (GZ1-bull OR HV-bull) AND (any HW…
+        ├── (sessBar == 1)
+        ├── (ultra-combo::GZI_BULL OR ultra-combo::HV_BULL_FVG)
+        └── (anyBullHW OR hvd-pbj-ppd::PBJ_BULL OR ultra-combo::ROC_BULL OR (firstPUPPass AND superPup))
+    ● ultra-combo::OPENER_BEAR    [offset=0 · AND]
+        Mirror
+        ├── (sessBar == 1)
+        ├── (ultra-combo::GZI_BEAR OR ultra-combo::HV_BEAR_FVG)
+        └── (anyBearHW OR hvd-pbj-ppd::PBJ_BEAR OR ultra-combo::ROC_BEAR OR (firstPPDPass AND superPPD))
+    ● ultra-combo::THREE_BAR_BULL    [offset=0 · OR]
+        PBJ bull within last 3 bars AND (b2bPUP within last 3 bars OR ≥2 PUPs…
+        ├── (scenarioA = pbjIn3Bull AND b2bIn3Bull)
+        └── (scenarioB = pbjIn3Bull AND pupsIn3Bull >= 2)
+    ● ultra-combo::THREE_BAR_BEAR    [offset=0 · OR]
+        Mirror
+        ├── (scenarioA_Bear = pbjIn3Bear AND b2bIn3Bear)
+        └── (scenarioB_Bear = pbjIn3Bear AND ppdsIn3Bear >= 2)
+    ● ultra-combo::FOSTER_PLUS_HEAVY    [offset=0 · AND]
+        Any Foster variant fires AND (ROC bull OR any HW bull OR any Super bu…
+        ├── (anyFoster = ultra-combo::FOSTER OR fosterPBJSignal OR fosterPBSignal)
+        └── (ultra-combo::ROC_BULL OR anyBullHW OR anySuperBull)
+    ● ultra-combo::TB_PLUS_HEAVY    [offset=0 · AND]
+        Any TB variant fires AND (ROC bear OR any HW bear OR any Super bear)
+        ├── (anyTB = ultra-combo::TB OR tbPBJSignal OR tbPBSignal)
+        └── (ultra-combo::ROC_BEAR OR anyBearHW OR anySuperBear)
+    ● ultra-combo::GZHV_HEAVY_BULL    [offset=-1 · AND]
+        (GZ1 bull OR HV bull) AND (any HW bull OR any Super bull OR ROC bull)
+        ├── (ultra-combo::GZI_BULL OR ultra-combo::HV_BULL_FVG)
+        └── (anyBullHW OR anySuperBull OR ultra-combo::ROC_BULL)
+    ● ultra-combo::GZHV_HEAVY_BEAR    [offset=-1 · AND]
+        Mirror
+        ├── (ultra-combo::GZI_BEAR OR ultra-combo::HV_BEAR_FVG)
+        └── (anyBearHW OR anySuperBear OR ultra-combo::ROC_BEAR)
 
-TIER 3 COMPOSITES
-──────────────────
-comboF2Cluster_E3_BULL    = F2[1] AND FC[1] AND E3
-comboF2ClusterB2B_Bull    = F2 AND FC AND B2B_PUP
-comboB2B_F2_Bull          = B2B_PUP AND F2
-comboE3_2of3PUP_Bull      = E3 AND (PUP count in last 3 ≥ 2)
-comboF2_B2BDays_Bull      = F2 today AND F2 yesterday
-comboE3_B2BDays_Bull      = E3 today AND E3 yesterday
-comboF2E3_Consec_Bull     = F2[1] AND E3 OR E3[1] AND F2
-comboCluster_B2BDays_Bull = FC today AND FC yesterday
-anyBullHW                 = OR over (RVOL1x, GS, WTC, Hiro, Naga, ROC, Super-PBJ, Super-PB)
-comboHW_AnyBull           = anyHW AND (F2 OR E3 OR FC)
-comboHV_AnyBull           = bullHV AND (sAnyBull OR sAnyBull[1])
-comboGZ_AnyBull           = bullGZI AND (sAnyBull OR sAnyBull[1])
-comboGZHV_AnyBull         = comboHV_AnyBull OR comboGZ_AnyBull   offset=-1
-hvGziComboBull            = sessBar==2 AND HV[1] AND HV AND GZI  offset=-1
-sigSuperBullPBJ/PB        = DISP AND (PBJ|PB) AND FAUNA AND anyBullRVOL  (Super for Mega)
-fosterHeavyBull           = anyFoster AND (ROC OR HW-set OR Super)        offset=0
-tbHeavyBear               = anyTB AND (ROC OR HW-set OR Super)            offset=0
-gzHvHeavyBull             = (GZI OR HV) AND (HW OR Super OR ROC)          offset=-1
+  Tier 4:
+    ● ultra-combo::GZ1_MEGA_BULL    [offset=0 · AND]
+        GZ1 bull AND any Super-bull AND PUP AND FAUNA-bull AND DISP-bull — hi…
+        ├── ultra-combo::GZI_BULL
+        ├── (anySuperBull = ultra-combo::SUPER_BULL_PBJ or SUPER_BULL_PB)
+        ├── (sPPBull — internal PUP primitive)
+        ├── ultra-combo::FAUNA_BULL
+        └── ultra-combo::DISP_BULL
+    ● ultra-combo::HV_MEGA_BULL    [offset=0 · AND]
+        Mirror with HV instead of GZ1
+        ├── ultra-combo::HV_BULL_FVG
+        ├── (anySuperBull)
+        ├── (sPPBull)
+        ├── ultra-combo::FAUNA_BULL
+        └── ultra-combo::DISP_BULL
+    ● ultra-combo::GZ1_MEGA_BEAR    [offset=0 · AND]
+        Mirror of GZ1_MEGA_BULL
+        ├── ultra-combo::GZI_BEAR
+        ├── (anySuperBear)
+        ├── (sPPBear)
+        ├── ultra-combo::FAUNA_BEAR
+        └── ultra-combo::DISP_BEAR
+    ● ultra-combo::HV_MEGA_BEAR    [offset=0 · AND]
+        Mirror of HV_MEGA_BULL
+        ├── ultra-combo::HV_BEAR_FVG
+        ├── (anySuperBear)
+        ├── (sPPBear)
+        ├── ultra-combo::FAUNA_BEAR
+        └── ultra-combo::DISP_BEAR
+    ● ultra-combo::GZHV_MEGA_BULL    [offset=-1 · OR]
+        Aggregation: gz1MegaBull OR hvMegaBull, plotted as MEGA+
+        ├── ultra-combo::GZ1_MEGA_BULL
+        └── ultra-combo::HV_MEGA_BULL
+    ● ultra-combo::GZHV_MEGA_BEAR    [offset=-1 · OR]
+        Mirror
+        ├── ultra-combo::GZ1_MEGA_BEAR
+        └── ultra-combo::HV_MEGA_BEAR
+    ● ultra-combo::SUPER_B2B_DAYS_BULL    [offset=0 · AND]
+        Any Super-bull (PBJ or PB) today AND any Super-bull fired in prior ~2…
+        ├── (anySuperBull = ultra-combo::SUPER_BULL_PBJ OR SUPER_BULL_PB)
+        └── f_hadSignalYesterday(anySuperBull)
+    ● ultra-combo::SUPER_B2B_DAYS_BEAR    [offset=0 · AND]
+        Mirror
+        ├── (anySuperBear)
+        └── f_hadSignalYesterday(anySuperBear)
 
-TIER 4 TOP-LEVEL COMPOSITES (30 plotshapes total)
-──────────────────────────────────────────────────
-gz1MegaBull / hvMegaBull / gz1hvMegaBull
-                          = (GZ1 OR HV OR both) AND anySuperBull AND PUP AND FAUNA AND DISP   offset=-1
-openerBull                = sessBar==1 AND (GZI OR HV) AND (HW OR PBJ OR ROC OR (1stPUP+superPUP))  offset=0
-threeBar_Bull             = PBJ-in-3 AND (B2B-PUP-in-3 OR ≥2 PUPs-in-3)   offset=0
-superB2BDaysBull          = anySuperBull AND f_hadSignalYesterday(anySuperBull) offset=0
-scanTrigger               = Super-PBJ OR Super-PB OR GS OR MOAB           (alert-only)
+  Tier 5:
+    ● ultra-combo::GZ1_HV_MEGA_BULL    [offset=-1 · AND]
+        BOTH GZ1 and HV bull simultaneously, plus full Super/PUP/FAUNA/DISP s…
+        ├── ultra-combo::GZI_BULL
+        ├── ultra-combo::HV_BULL_FVG
+        ├── (anySuperBull)
+        ├── (sPPBull)
+        ├── ultra-combo::FAUNA_BULL
+        └── ultra-combo::DISP_BULL
+    ● ultra-combo::GZ1_HV_MEGA_BEAR    [offset=-1 · AND]
+        Mirror of GZ1_HV_MEGA_BULL
+        ├── ultra-combo::GZI_BEAR
+        ├── ultra-combo::HV_BEAR_FVG
+        ├── (anySuperBear)
+        ├── (sPPBear)
+        ├── ultra-combo::FAUNA_BEAR
+        └── ultra-combo::DISP_BEAR
 
-NAGA standalone plot      offset=0 (no offset arg)
 
-V5 PORT (ULTRA_COMBO_v57_pine5.pine)
-─────────────────────────────────────
-Verified 1:1 logic. Differences are mechanical:
-- //@version=5 vs //@version=6
-- inline ta.sma vs tv_ta.relativeVolume library import
-- comma-chain split onto separate lines
-- method-style array calls rewritten function-style for v5 parser tolerance
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → hvd-pbj-ppd::PBJ_BULL
+  → hvd-pbj-ppd::PBJ_BEAR
+  → hvd-pbj-ppd::PB_BULL
+  → hvd-pbj-ppd::PB_BEAR
+  → hvd-pbj-ppd::PUP
+  → hvd-pbj-ppd::PPD
+  → hvd-pbj-ppd::B2B_PUP
+  → hvd-pbj-ppd::B2B_PPD
+  → hvd-pbj-ppd::SUPER_PUP
+  → hvd-pbj-ppd::SUPER_PPD
+  → hvd-pbj-ppd::FIRST_PUP_PASS
+  → hvd-pbj-ppd::FIRST_PPD_PASS
+  → hvd-pbj-ppd::ANISH_BULL_PASS
+  → hvd-pbj-ppd::ANISH_BEAR_PASS
+  → heavy-weapon::SIG_RVOL_1X_BULL
+  → heavy-weapon::SIG_RVOL_1X_BEAR
+  → heavy-weapon::SIG_GRANDSLAM
+  → heavy-weapon::SIG_MOAB
+  → heavy-weapon::SIG_WTC
+  → heavy-weapon::SIG_HIROSHIMA
+  → heavy-weapon::SIG_NAGASAKI
+  → heavy-pentagon::SAAB (deliberately EXCLUDED from anyBullRVOL/anyBearRVOL — see header L7 + L302)
+  → hv-fvg-gz1-og::GZI_BULL
+  → hv-fvg-gz1-og::GZI_BEAR
+  → hv-fvg-gz1-og::HV_BULL_FVG
+  → hv-fvg-gz1-og::HV_BEAR_FVG
 
-15 alertcondition + 19 alert() calls.

@@ -7,38 +7,79 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 
 | Top-level composite | Tier | Indicator | Offset | One-line |
 |---|---|---|---|---|
-| [`anish-50-1st-combo::ALL_THREE_BULL`](anish-50-1st-combo__ALL_THREE_BULL.md) | 2 | anish_50_1st_combo | 0 | PUP + Gap-Up + Anish Stage 2 on the same bar. |
-| [`anish-50-1st-combo::TB_SELL`](anish-50-1st-combo__TB_SELL.md) | 2 | anish_50_1st_combo | 0 | After ≥minAnishBars consecutive Anish-Bull bars, fires one-bar pulse once follow |
-| [`anish-50-1st-combo::FOSTER_BUY`](anish-50-1st-combo__FOSTER_BUY.md) | 2 | anish_50_1st_combo | 0 | Symmetric mirror of TB_SELL. |
-| [`b2b-pup::B2B_PUP`](b2b-pup__B2B_PUP.md) | 1 | b2b_pup_combined_v4_32 | 0 | PUP fires on the current bar AND on the prior bar (back-to-back). |
-| [`b2b-pup::B2B_PPD`](b2b-pup__B2B_PPD.md) | 1 | b2b_pup_combined_v4_32 | 0 |  |
-| [`b2b-pup::S1_B2B_PUP_BULL`](b2b-pup__S1_B2B_PUP_BULL.md) | 1 | b2b_pup_combined_v4_32 | 0 |  |
-| [`b2b-pup::S2_B2B_PUP_FAUNA_BULL`](b2b-pup__S2_B2B_PUP_FAUNA_BULL.md) | 2 | b2b_pup_combined_v4_32 | 0 |  |
-| [`b2b-pup::S3_B2B_PUP_DISP_HVD_BULL`](b2b-pup__S3_B2B_PUP_DISP_HVD_BULL.md) | 2 | b2b_pup_combined_v4_32 | -1 |  |
-| [`b2b-pup::S4_B2B_PUP_FAU_DISP_HVD_BULL`](b2b-pup__S4_B2B_PUP_FAU_DISP_HVD_BULL.md) | 3 | b2b_pup_combined_v4_32 | -1 |  |
-| [`hvdpbjppd::HW_BULL`](hvdpbjppd__HW_BULL.md) | 3 | hvdpbjppd_the_only_one | 0 |  |
-| [`hvdpbjppd::SUPER_BULL`](hvdpbjppd__SUPER_BULL.md) | 3 | hvdpbjppd_the_only_one | 0 |  |
-| [`hvdpbjppd::SDUPER_BULL`](hvdpbjppd__SDUPER_BULL.md) | 3 | hvdpbjppd_the_only_one | 0 |  |
-| [`hct::S1_HEAVY_COMBO_BULL`](hct__S1_HEAVY_COMBO_BULL.md) | 2 | heavy_combo_toggles_v1 | -1 |  |
-| [`hct::S2_HEAVY_COMBO_BEAR`](hct__S2_HEAVY_COMBO_BEAR.md) | 2 | heavy_combo_toggles_v1 | -1 |  |
-| [`hct::S3_HEAVY_COMBO_NEUTRAL`](hct__S3_HEAVY_COMBO_NEUTRAL.md) | 2 | heavy_combo_toggles_v1 | 0 |  |
-| [`squarify::S1_SDUPER_BULL`](squarify__S1_SDUPER_BULL.md) | 4 | squarify_46_v2 | -1 |  |
-| [`squarify::S2_SUPER_BULL`](squarify__S2_SUPER_BULL.md) | 3 | squarify_46_v2 | -1 |  |
-| [`squarify::S3_HW_BULL`](squarify__S3_HW_BULL.md) | 3 | squarify_46_v2 | 0 |  |
-| [`squarify::S27_CO_BULL`](squarify__S27_CO_BULL.md) | 3 | squarify_46_v2 | -1 |  |
-| [`squarify::S32_GRAIL_BULL`](squarify__S32_GRAIL_BULL.md) | 4 | squarify_46_v2 | -1 |  |
-| [`squarify::T1_OPENING_CONFLU_BULL`](squarify__T1_OPENING_CONFLU_BULL.md) | 4 | squarify_46_v2 | 0 |  |
-| [`squarify::T2_OPENING_CONFLU_BULL`](squarify__T2_OPENING_CONFLU_BULL.md) | 4 | squarify_46_v2 | 0 |  |
-| [`tnt-od::B2B_NAPALM_BULL`](tnt-od__B2B_NAPALM_BULL.md) | 1 | tnt_od_v2_dated | -1 |  |
-| [`tnt-od::FUSE_BULL`](tnt-od__FUSE_BULL.md) | 1 | tnt_od_v2_dated | 0 | Sequential cascade NPM → TNT → CONT all within SUDDEN_PROX bars, in-session. |
-| [`tnt-od::CATALYST_BULL`](tnt-od__CATALYST_BULL.md) | 1 | tnt_od_v2_dated | -1 | Napalm + CS1 (FVG combo) on same visual bar. |
-| [`tnt-od::IGNITE_TC_BULL`](tnt-od__IGNITE_TC_BULL.md) | 1 | tnt_od_v2_dated | 0 |  |
-| [`tnt-od::IGNITE_NC_BULL`](tnt-od__IGNITE_NC_BULL.md) | 1 | tnt_od_v2_dated | -1 |  |
-| [`tnt-od::DYNAMITE_BULL`](tnt-od__DYNAMITE_BULL.md) | 1 | tnt_od_v2_dated | -1 | Bespoke dyn-displacement (Engine #2, dynStdMult=5.0) + B2B + FAUNA + FVG. |
-| [`tnt-od::WBUSH_BULL`](tnt-od__WBUSH_BULL.md) | 3 | tnt_od_v2_dated | 0 |  |
-| [`ultra-combo::OPENER_BULL`](ultra-combo__OPENER_BULL.md) | 4 | ultra_combo_v57 | 0 |  |
-| [`ultra-combo::MEGA_BULL`](ultra-combo__MEGA_BULL.md) | 4 | ultra_combo_v57 | -1 |  |
-| [`vob-asym::T3_LADDER`](vob-asym__T3_LADDER.md) | 3 | vob_asym_t3x6_v8 | ? | Six parallel T3 super-signal engines per sensitivity tier A-F. |
-| [`vob-ladder::FIRE_FULL`](vob-ladder__FIRE_FULL.md) | 3 | vob_ladder_watch_v1 | 0 |  |
-| [`hvdpbjppd::COMBO_CHAIN_BULL`](hvdpbjppd__COMBO_CHAIN_BULL.md) | 3 | hvdpbjppd_the_only_one | 0 | Latched while csNew2 (Matrix combo) is firing AND ≥cc_min_hits Matrix combo in w |
-| [`hvdpbjppd::LSC_BULL`](hvdpbjppd__LSC_BULL.md) | 2 | hvdpbjppd_the_only_one | 0 | Latches when ≥lsc_min_hits Long1/Long2 hits in window AND PBJ/PB inside window. |
+| [`b2b-pup::B2B_PUP`](b2b-pup__B2B_PUP.md) | 1 | b2b-pup | 0 | Back-to-back PUP: PUP fires on bar[0] AND PUP fired on bar[1]. |
+| [`b2b-pup::B2B_PPD`](b2b-pup__B2B_PPD.md) | 1 | b2b-pup | 0 | Back-to-back PPD. |
+| [`b2b-pup::B2B_NAPALM_BULL`](b2b-pup__B2B_NAPALM_BULL.md) | 2 | b2b-pup | 0 | Back-to-back consolidated Napalm bull (Napalm OR Charge fires on this bar AND on |
+| [`b2b-pup::B2B_NAPALM_BEAR`](b2b-pup__B2B_NAPALM_BEAR.md) | 2 | b2b-pup | 0 | Mirror B2B_NAPALM_BULL bear. |
+| [`b2b-pup::S19_UC2`](b2b-pup__S19_UC2.md) | 3 | b2b-pup | -1 | Standalone Unified Combo ×2: count visual bars in [1, uc2_window] where BOTH FVG |
+| [`b2b-pup::S20_FMU`](b2b-pup__S20_FMU.md) | 3 | b2b-pup | -1 | Standalone FVG/MAT/Uni Combo ×2: count visual bars where ANY of FVG-combo, Matri |
+| [`hvd-pbj-ppd::SUPER_BULL`](hvd-pbj-ppd__SUPER_BULL.md) | 0 | hvd-pbj-ppd | 0 | Tier-0 priority bull: PBJ + DISP + (FAUNA bull or LSLong1) + HW-volume slot + (( |
+| [`hvd-pbj-ppd::SDUPER_BULL`](hvd-pbj-ppd__SDUPER_BULL.md) | 0 | hvd-pbj-ppd | 0 | 'Super Duper' priority: Floor/2F + PBJ + HW-volume slot + Combo-set + PUP + DISP |
+| [`hvd-pbj-ppd::SDUPER_BEAR`](hvd-pbj-ppd__SDUPER_BEAR.md) | 0 | hvd-pbj-ppd | 0 | Bear mirror of SDUPER_BULL. |
+| [`hvd-pbj-ppd::OMEGA_LONG`](hvd-pbj-ppd__OMEGA_LONG.md) | 1 | hvd-pbj-ppd | 0 | Boom Hunter omega trigger + any of ~35 bull cosignals + NOT MOAB + NOT bearish D |
+| [`hvd-pbj-ppd::HW_BULL`](hvd-pbj-ppd__HW_BULL.md) | 3 | hvd-pbj-ppd | 0 | HW Bull: green bar + DISP5 (5σ) + PBJ_BULL + HW-volume slot + (Floor or 2F). |
+| [`squarify::S1_SD_BANG`](squarify__S1_SD_BANG.md) | 3 | squarify | -1 | SD! (Super Duper) — REDEFINED v2: Unified Combo + consolidated NPM + PUP. All on |
+| [`squarify::S2_SUPER`](squarify__S2_SUPER.md) | 3 | squarify | -1 | SUPER — REDEFINED v2: Unified Combo + consolidated NPM. Suppressed when SD! also |
+| [`squarify::S3_HW`](squarify__S3_HW.md) | 3 | squarify | 0 | Heavy Weapon: green bar + 5x-std displacement (no FVG) + PBJ + (GS or WTC or Hir |
+| [`squarify::S4_FLOOR`](squarify__S4_FLOOR.md) | 3 | squarify | 0 | Floor: Ping-Pong bull + PBJ + directional RVOL slot (1x/GS/WTC/Hiro/dirNag) + on |
+| [`squarify::S5_2F`](squarify__S5_2F.md) | 3 | squarify | 0 | 2nd Floor: Ping-Pong bull + PB (not PBJ) + directional RVOL + one-of-these + che |
+| [`squarify::S6_UUUU`](squarify__S6_UUUU.md) | 3 | squarify | 0 | UUUU: 4+ consecutive qualified U bars. Path-OR (pA/pB/pC/pD/pE/pF + new pG = >=4 |
+| [`squarify::S7_UUU`](squarify__S7_UUU.md) | 3 | squarify | 0 | UUU: exactly 3 consecutive qualified U bars. Same path-OR (pA-pE + pG = >=3 dist |
+| [`squarify::S8_UU`](squarify__S8_UU.md) | 3 | squarify | 0 | UU: exactly 2 consecutive qualified U bars + one-of-these-for-UU gate. Suppresse |
+| [`squarify::S9_ALPHA_STRIKE`](squarify__S9_ALPHA_STRIKE.md) | 3 | squarify | 0 | A* (Alpha Strike): first signal of session + Ping-Pong bull + (GS or RVOL1x) + P |
+| [`squarify::S10_OMEGA_A`](squarify__S10_OMEGA_A.md) | 3 | squarify | 0 | Omega-A: Boom Hunter omega event + high-confidence cosignal subset. Excludes MOA |
+| [`squarify::S11_FOX`](squarify__S11_FOX.md) | 3 | squarify | 0 | Foxtrot: 4 consecutive FAUNA-confirmed bullish bars, gated by (HV+D + PBJ) OR on |
+| [`squarify::S12_OD`](squarify__S12_OD.md) | 3 | squarify | -1 | Opening Drive: session bar <= max+1 + FVG/UC + prior-bar displacement + PUP[1] + |
+| [`squarify::S13_GOLF`](squarify__S13_GOLF.md) | 3 | squarify | -1 | Golf: 3-bar sequence: bar[2] FAUNA+PUP, bar[1] FAUNA+PUP+DISP, bar[0] DISP confi |
+| [`squarify::S14_PBJ_F2_OR_E3`](squarify__S14_PBJ_F2_OR_E3.md) | 3 | squarify | 0 | PBJ + Foster Pair OR PBJ + Exhaustion Triple. |
+| [`squarify::S15_PBJ_CL`](squarify__S15_PBJ_CL.md) | 3 | squarify | 0 | PBJ + full FAUNA Cluster bull. |
+| [`squarify::S16_F2CL_TO_E3`](squarify__S16_F2CL_TO_E3.md) | 3 | squarify | 0 | Sequential: prior-bar Foster Pair + prior-bar Cluster -> current-bar Exhaustion  |
+| [`squarify::S17_E3_TWOTHIRDS_PUP`](squarify__S17_E3_TWOTHIRDS_PUP.md) | 3 | squarify | 0 | Exhaustion Triple where 2 of 3 bars are PUP. |
+| [`squarify::S18_F2_TIMES_2D`](squarify__S18_F2_TIMES_2D.md) | 3 | squarify | 0 | Foster Pair on consecutive trading sessions. |
+| [`squarify::S19_E3_TIMES_2D`](squarify__S19_E3_TIMES_2D.md) | 3 | squarify | 0 | Exhaustion Triple on consecutive trading sessions. |
+| [`squarify::S20_F2E3_SEQ`](squarify__S20_F2E3_SEQ.md) | 3 | squarify | 0 | Foster Pair one session then Exhaustion Triple next session. |
+| [`squarify::S21_CL_TIMES_2D`](squarify__S21_CL_TIMES_2D.md) | 3 | squarify | 0 | FAUNA Cluster on consecutive trading sessions. |
+| [`squarify::S22_NPM_PLUS`](squarify__S22_NPM_PLUS.md) | 3 | squarify | -1 | NPM+: consolidated NPM AND ((PBJ[1] AND (UC OR HW[1] OR WMD[1])) OR WMD[1]). |
+| [`squarify::S23_NPM12`](squarify__S23_NPM12.md) | 3 | squarify | -1 | NPM12: consolidated NPM + checkbox qualifier Set 1 OR Set 2 (napalm-aligned [1]) |
+| [`squarify::S24_NPM3`](squarify__S24_NPM3.md) | 3 | squarify | -1 | NPM3: consolidated NPM + checkbox Set 3 only. Suppressed when NPM12 fires. |
+| [`squarify::S25_B2BNPM`](squarify__S25_B2BNPM.md) | 3 | squarify | -1 | Back-to-back consolidated NPM (this bar AND prior bar). |
+| [`squarify::S26_NPM_PLUS_TNT`](squarify__S26_NPM_PLUS_TNT.md) | 3 | squarify | -1 | Napalm + prior-bar TNT on same visual candle. |
+| [`squarify::S27_CO`](squarify__S27_CO.md) | 3 | squarify | -1 | CO — RESTRUCTURED v2: HV+D + PBJ[1] + (UC OR FVG Combo Set). No longer fires on  |
+| [`squarify::S28_HVD_PBJ`](squarify__S28_HVD_PBJ.md) | 3 | squarify | -1 | HV+D + PBJ on same candle. Sub-3min requires checkbox Set 1 (napalm-aligned). Ex |
+| [`squarify::S29_B2BHVD_PBJ`](squarify__S29_B2BHVD_PBJ.md) | 3 | squarify | -1 | Consecutive HV+D bars + PBJ on either bar. |
+| [`squarify::S30_B2BHVD`](squarify__S30_B2BHVD.md) | 3 | squarify | -1 | Consecutive HV+D bars without PBJ or PB. |
+| [`squarify::S31_UU_PLUS_UC`](squarify__S31_UU_PLUS_UC.md) | 3 | squarify | -1 | Any UU family + Unified Combo on same candle. |
+| [`squarify::S32_GRAIL`](squarify__S32_GRAIL.md) | 3 | squarify | -1 | Holy Grail: consolidated NPM + PBJ[1] + PUP[1] + Unified Combo on same visual ca |
+| [`squarify::S33_FLR_NPM`](squarify__S33_FLR_NPM.md) | 3 | squarify | -1 | Floor[1] + consolidated NPM same window. |
+| [`squarify::S34_NPM_PBJ_PUP`](squarify__S34_NPM_PBJ_PUP.md) | 3 | squarify | -1 | Consolidated NPM + PBJ[1] + PUP[1] WITHOUT Unified Combo. Suppressed when GRAIL  |
+| [`squarify::S35_NAG_PLUS`](squarify__S35_NAG_PLUS.md) | 3 | squarify | 0 | Nagasaki + any directional bullish signal (RVOL1x/GS/FAUNA/DISP/PBJ/PUP/HV-FVG-b |
+| [`squarify::S36_UU_HVD`](squarify__S36_UU_HVD.md) | 3 | squarify | -1 | Any UU family[1] + HV+D + PBJ on same candle (UU shifted to [1] because hvd_pbj_ |
+| [`squarify::S37_UU_NPM`](squarify__S37_UU_NPM.md) | 3 | squarify | -1 | Any UU family[1] + consolidated NPM same window. |
+| [`squarify::S38_FLR_UU`](squarify__S38_FLR_UU.md) | 3 | squarify | 0 | Floor or 2F + any UU family (both offset 0). |
+| [`squarify::S39_FOS_PUP_1X`](squarify__S39_FOS_PUP_1X.md) | 3 | squarify | 0 | Foster (PBJ-resolved) + PUP + (RVOL1x OR consolidated NPM). |
+| [`squarify::S40_NPM_UC`](squarify__S40_NPM_UC.md) | 3 | squarify | -1 | Consolidated NPM + Unified Combo WITHOUT PBJ. Suppressed when NPM+UC+PBJ (S44) f |
+| [`squarify::S41_WBUSH_BULL`](squarify__S41_WBUSH_BULL.md) | 3 | squarify | 0 | WBUSH bull aggregate plot — any of 5 Heavy Pentagon families fired bullish. |
+| [`squarify::S42_WBUSH_BEAR`](squarify__S42_WBUSH_BEAR.md) | 3 | squarify | 0 | WBUSH bear aggregate plot. |
+| [`squarify::S43_WBUSH_NEUTRAL`](squarify__S43_WBUSH_NEUTRAL.md) | 3 | squarify | 0 | WBUSH neutral aggregate plot. |
+| [`squarify::S44_NPM_UC_PBJ`](squarify__S44_NPM_UC_PBJ.md) | 3 | squarify | -1 | Consolidated NPM + Unified Combo + PBJ[1]. |
+| [`squarify::S45_UC_NAGASAKI_BULL`](squarify__S45_UC_NAGASAKI_BULL.md) | 3 | squarify | -1 | UC NAGASAKI Bull: Unified Combo (csNew3) + Nagasaki[1] on same visual bar. |
+| [`squarify::S46_UC_NAGASAKI_BEAR`](squarify__S46_UC_NAGASAKI_BEAR.md) | 3 | squarify | -1 | UC NAGASAKI Bear mirror: Unified Combo bear (csNew3_Bear) + Nagasaki[1]. |
+| [`squarify::T1_OPENING_CONFLU`](squarify__T1_OPENING_CONFLU.md) | 3 | squarify | 0 | Tier-1 opening confluence plot — see TIER1_OPENING_CONFLU_BULL root. |
+| [`squarify::T2_OPENING_CONFLU`](squarify__T2_OPENING_CONFLU.md) | 3 | squarify | 0 | Tier-2 opening confluence plot — see TIER2_OPENING_CONFLU_BULL root. |
+| [`tnt-od::RC_NPM_TNT`](tnt-od__RC_NPM_TNT.md) | 1 | tnt-od | ? |  |
+| [`tnt-od::FUSE`](tnt-od__FUSE.md) | 1 | tnt-od | ? |  |
+| [`tnt-od::WBUSH_Bull`](tnt-od__WBUSH_Bull.md) | 3 | tnt-od | ? |  |
+| [`tnt-od::WBUSH_Bear`](tnt-od__WBUSH_Bear.md) | 3 | tnt-od | ? |  |
+| [`tnt-od::WBUSH_Neutral`](tnt-od__WBUSH_Neutral.md) | 3 | tnt-od | ? |  |
+| [`ultra-combo::SUPER_BULL_PBJ`](ultra-combo__SUPER_BULL_PBJ.md) | 3 | ultra-combo | 0 | Super Bull PBJ: Disp-bull AND PBJ-bull AND FAUNA-bull AND any RVOL-bull (SAAB ex |
+| [`ultra-combo::SUPER_BULL_PB`](ultra-combo__SUPER_BULL_PB.md) | 3 | ultra-combo | 0 | Super Bull PB mirror |
+| [`ultra-combo::GZ1_MEGA_BULL`](ultra-combo__GZ1_MEGA_BULL.md) | 4 | ultra-combo | 0 | GZ1 bull AND any Super-bull AND PUP AND FAUNA-bull AND DISP-bull — high-water co |
+| [`ultra-combo::HV_MEGA_BULL`](ultra-combo__HV_MEGA_BULL.md) | 4 | ultra-combo | 0 | Mirror with HV instead of GZ1 |
+| [`ultra-combo::GZ1_HV_MEGA_BULL`](ultra-combo__GZ1_HV_MEGA_BULL.md) | 5 | ultra-combo | -1 | BOTH GZ1 and HV bull simultaneously, plus full Super/PUP/FAUNA/DISP stack |
+| [`ultra-combo::GZ1_MEGA_BEAR`](ultra-combo__GZ1_MEGA_BEAR.md) | 4 | ultra-combo | 0 | Mirror of GZ1_MEGA_BULL |
+| [`ultra-combo::HV_MEGA_BEAR`](ultra-combo__HV_MEGA_BEAR.md) | 4 | ultra-combo | 0 | Mirror of HV_MEGA_BULL |
+| [`ultra-combo::GZ1_HV_MEGA_BEAR`](ultra-combo__GZ1_HV_MEGA_BEAR.md) | 5 | ultra-combo | -1 | Mirror of GZ1_HV_MEGA_BULL |
+| [`ultra-combo::GZHV_MEGA_BULL`](ultra-combo__GZHV_MEGA_BULL.md) | 4 | ultra-combo | -1 | Aggregation: gz1MegaBull OR hvMegaBull, plotted as MEGA+ |
+| [`ultra-combo::GZHV_MEGA_BEAR`](ultra-combo__GZHV_MEGA_BEAR.md) | 4 | ultra-combo | -1 | Mirror |
+| [`ultra-combo::OPENER_BULL`](ultra-combo__OPENER_BULL.md) | 3 | ultra-combo | 0 | First session bar (sessBar==1) with (GZ1-bull OR HV-bull) AND (any HW bull OR PB |
+| [`ultra-combo::OPENER_BEAR`](ultra-combo__OPENER_BEAR.md) | 3 | ultra-combo | 0 | Mirror |

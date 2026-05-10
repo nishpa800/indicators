@@ -1,0 +1,514 @@
+indicator:
+  id: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  branch: claude/organize-indicators-hierarchy-8JDw1
+  pine_version: 5
+  line_count: 444
+  overlay: true
+  one_line_purpose: "Canonical RVOL engine; owns 10 RVOL roots and 15 Heavy Combo composites"
+  is_canonical_for:
+    - "RVOL family roots (SAAB, Kratos, RVOL1x, GrandSlam, MOAB, Pentagon, WTC, Hiroshima, Nagasaki)"
+    - "15 Heavy Combo composites"
+  consumed_by:
+    - "heavy-combo-toggles (lifts 5 base + 15 directional verbatim)"
+
+internal_helpers:
+  - name: dispBull / dispBear / noDisp
+    purpose: Internal direction classifier; gates Heavy Combo composites into Bull/Bear/Neutral buckets
+    pine_source_line_range: "L232-L256, L290"
+    notes: "Computed from bar[1] range > σ × strength + bar[0] FVG confirmation. dispBull requires bar[1] bullish candle + range exceeds σ threshold + bar[0] bullish FVG. dispBear is the bearish mirror. noDisp = neither dispBull nor dispBear. Internal FVG detection (bFVG/sFVG) and σ range check (dispCandleMet) are sub-internals of this helper. NOT a root; NOT a composite. Used ONLY by Stage 5 Heavy Combo direction classification."
+
+roots:
+  - id: heavy-pentagon::SAAB
+    family: rvol
+    plain_english: "Bullish bar with normalized price spike in the SAAB/Kratos band (between 0.56× the RVOL-1x threshold and the RVOL-1x threshold)."
+    boolean_summary: "Bar confirmed, bullish candle (close>open), positive price-vs-volume divergence above its SMA, and normalized price spike sits in [SAAB/Kratos threshold, RVOL-1x threshold)."
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_SAAB,       title="SAAB",            style=shape.square,       location=location.top,    size=size.tiny,   color=color.lime,    text="SAAB")'
+    alertcondition_id: "SAAB"
+    pine_source_line_range: "L185, L363, L410"
+    pipeline: "P1 Standard RVOL"
+    notes: "Lower-band bullish RVOL spike. Threshold scales with chart timeframe via f_saab_kratos_threshold = 0.56 × f_rvol_1x_threshold(tfSec)."
+
+  - id: heavy-pentagon::KRATOS
+    family: rvol
+    plain_english: "Bearish bar with normalized price spike in the SAAB/Kratos band (Kratos = bearish mirror of SAAB)."
+    boolean_summary: "Bar confirmed, bearish candle (close<open), positive price-vs-volume divergence above its SMA, and normalized price spike sits in [SAAB/Kratos threshold, RVOL-1x threshold)."
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_Kratos,     title="Kratos",           style=shape.square,       location=location.bottom, size=size.tiny,   color=color.orange,  text="Krat")'
+    alertcondition_id: "Kratos"
+    pine_source_line_range: "L186, L364, L411"
+    pipeline: "P1 Standard RVOL"
+    notes: "Lower-band bearish RVOL spike. Mirror of SAAB."
+
+  - id: heavy-pentagon::RVOL_1X_BULL
+    family: rvol
+    plain_english: "Bullish bar with normalized price spike in the RVOL-1x band (between RVOL-1x threshold and Grand Slam / MOAB threshold)."
+    boolean_summary: "Bar confirmed, bullish candle, positive price-vs-volume divergence above its SMA, and normalized price spike sits in [RVOL-1x threshold, Grand Slam/MOAB threshold)."
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_BullRVOL1x, title="Bull RVOL 1x",    style=shape.xcross,       location=location.bottom, size=size.small,  color=color.green,   text="RV1x+")'
+    alertcondition_id: "Bull RVOL 1x"
+    pine_source_line_range: "L187, L365, L412"
+    pipeline: "P1 Standard RVOL"
+    notes: "Mid-band bullish RVOL spike."
+
+  - id: heavy-pentagon::RVOL_1X_BEAR
+    family: rvol
+    plain_english: "Bearish bar with normalized price spike in the RVOL-1x band."
+    boolean_summary: "Bar confirmed, bearish candle, positive price-vs-volume divergence above its SMA, and normalized price spike sits in [RVOL-1x threshold, Grand Slam/MOAB threshold)."
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_BearRVOL1x, title="Bear RVOL 1x",    style=shape.xcross,       location=location.bottom, size=size.small,  color=color.red,     text="RV1x-")'
+    alertcondition_id: "Bear RVOL 1x"
+    pine_source_line_range: "L188, L366, L413"
+    pipeline: "P1 Standard RVOL"
+    notes: "Mid-band bearish RVOL spike."
+
+  - id: heavy-pentagon::GRAND_SLAM
+    family: rvol
+    plain_english: "Bullish bar with normalized price spike at or above the Grand Slam / MOAB threshold (top tier of P1)."
+    boolean_summary: "Bar confirmed, bullish candle, positive price-vs-volume divergence above its SMA, and normalized price spike >= Grand Slam/MOAB threshold."
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_GrandSlam,  title="Grand Slam",       style=shape.triangleup,   location=location.bottom, size=size.normal, color=color.aqua,    text="DINGER")'
+    alertcondition_id: "Grand Slam"
+    pine_source_line_range: "L189, L367, L414"
+    pipeline: "P1 Standard RVOL"
+    notes: "Highest-tier bullish RVOL spike (P1). Threshold scales with timeframe via f_gs_moab_threshold."
+
+  - id: heavy-pentagon::MOAB
+    family: rvol
+    plain_english: "Bearish bar with normalized price spike at or above the Grand Slam / MOAB threshold (top tier of P1, bearish mirror)."
+    boolean_summary: "Bar confirmed, bearish candle, positive price-vs-volume divergence above its SMA, and normalized price spike >= Grand Slam/MOAB threshold."
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_MOAB,       title="MOAB",             style=shape.triangledown, location=location.top,    size=size.normal, color=color.fuchsia, text="MOAB")'
+    alertcondition_id: "MOAB"
+    pine_source_line_range: "L190, L368, L415"
+    pipeline: "P1 Standard RVOL"
+    notes: "Highest-tier bearish RVOL spike (P1). Bearish mirror of Grand Slam."
+
+  - id: heavy-pentagon::PENTAGON
+    family: rvol
+    plain_english: "Time-regularized relative volume ratio sits in the Pentagon band (between RVOL-1x threshold and the WTC threshold)."
+    boolean_summary: "Bar confirmed and relVolRatio is in [RVOL-1x threshold, WTC threshold]."
+    parameters:
+      - name: reg_anchorTimeframe
+        default: ""
+        units: timeframe
+      - name: reg_length
+        default: 30
+        units: bars
+      - name: reg_calculationMode
+        default: "Cumulative"
+        units: ratio
+      - name: reg_adjustRealtime
+        default: true
+        units: ratio
+    offset: 0
+    plot_call: 'plotshape(fire_Pentagon,   title="Pentagon",          style=shape.diamond,      location=location.top,    size=size.small,  color=color.teal,    text="PENT")'
+    alertcondition_id: "Pentagon"
+    pine_source_line_range: "L208, L369, L416"
+    pipeline: "P2 Reg@Time RVOL"
+    notes: "Lowest-tier time-regularized volume ratio (neutral, no candle direction). Uses TradingView/ta/7 relativeVolume()."
+
+  - id: heavy-pentagon::WTC
+    family: rvol
+    plain_english: "Time-regularized relative volume ratio sits in the WTC band (above WTC threshold up to Hiroshima threshold)."
+    boolean_summary: "Bar confirmed and relVolRatio is in (WTC threshold, Hiroshima threshold]."
+    parameters:
+      - name: reg_anchorTimeframe
+        default: ""
+        units: timeframe
+      - name: reg_length
+        default: 30
+        units: bars
+      - name: reg_calculationMode
+        default: "Cumulative"
+        units: ratio
+      - name: reg_adjustRealtime
+        default: true
+        units: ratio
+    offset: 0
+    plot_call: 'plotshape(fire_WTC,        title="WTC",              style=shape.xcross,       location=location.bottom, size=size.normal, color=color.yellow,  text="WTC")'
+    alertcondition_id: "WTC"
+    pine_source_line_range: "L209, L370, L417"
+    pipeline: "P2 Reg@Time RVOL"
+    notes: "Mid-tier time-regularized volume ratio. WTC threshold = 2.0 × RVOL-1x threshold."
+
+  - id: heavy-pentagon::HIROSHIMA
+    family: rvol
+    plain_english: "Time-regularized relative volume ratio exceeds the Hiroshima threshold (top tier of P2)."
+    boolean_summary: "Bar confirmed and relVolRatio > Hiroshima threshold."
+    parameters:
+      - name: reg_anchorTimeframe
+        default: ""
+        units: timeframe
+      - name: reg_length
+        default: 30
+        units: bars
+      - name: reg_calculationMode
+        default: "Cumulative"
+        units: ratio
+      - name: reg_adjustRealtime
+        default: true
+        units: ratio
+    offset: 0
+    plot_call: 'plotshape(fire_Hiroshima,  title="Hiroshima",         style=shape.diamond,      location=location.top,    size=size.normal, color=color.white,   text="H")'
+    alertcondition_id: "Hiroshima"
+    pine_source_line_range: "L210, L371, L418"
+    pipeline: "P2 Reg@Time RVOL"
+    notes: "Top-tier time-regularized volume ratio. Hiroshima threshold equals f_gs_moab_threshold."
+
+  - id: heavy-pentagon::NAGASAKI
+    family: rvol
+    plain_english: "All-time high volume bar — current bar volume exceeds the running max volume since bar 0."
+    boolean_summary: "Bar confirmed and current volume strictly exceeds the running maximum volume seen so far."
+    parameters: []
+    offset: 0
+    plot_call: 'plotshape(fire_Nagasaki,   title="Nagasaki (HEV)",   style=shape.flag,         location=location.top,    size=size.normal, color=color.purple,  text="N")'
+    alertcondition_id: "Nagasaki"
+    pine_source_line_range: "L218-L229, L372, L419"
+    pipeline: "P3 All-Time High Volume"
+    notes: "HEV = Highest Ever Volume. No user inputs. Tracked via persistent var maxVol."
+
+composites:
+  - id: heavy-pentagon::HEAVY_YIN_YANG_BULL
+    tier: 1
+    plain_english: "Heavy Yin-Yang fires bullish: a directional P1 RVOL spike (Bull RVOL 1x or Grand Slam) co-occurs with any neutral P2 tier (Pentagon/WTC/Hiroshima), and the displacement engine reads bullish."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - "heavy-pentagon::GRAND_SLAM"
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - "heavy-pentagon::MOAB"
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: dispBull
+    offset: 0
+    plot_call: 'plotshape(fire_HYYBull,    title="Heavy Yin-Yang Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="HYY")'
+    alertcondition_id: "Heavy Yin-Yang Bull"
+    pine_source_line_range: "L278-L283, L293, L381, L422"
+    notes: "baseYinYang = (groupA_Bull or groupA_Bear) and groupB. groupA_Bull = sigBullRVOL1x or sigGrandSlam; groupA_Bear = sigBearRVOL1x or sigMOAB; groupB = sigPentagon or sigWTC or sigHiroshima. Direction gate dispBull selects the Bull variant."
+
+  - id: heavy-pentagon::HEAVY_YIN_YANG_BEAR
+    tier: 1
+    plain_english: "Heavy Yin-Yang fires bearish: same directional-P1 + neutral-P2 base, gated by displacement bearish."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - "heavy-pentagon::GRAND_SLAM"
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - "heavy-pentagon::MOAB"
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: dispBear
+    offset: 0
+    plot_call: 'plotshape(fire_HYYBear,    title="Heavy Yin-Yang Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="HYY")'
+    alertcondition_id: "Heavy Yin-Yang Bear"
+    pine_source_line_range: "L278-L283, L294, L382, L423"
+    notes: "Bearish directional gate of baseYinYang."
+
+  - id: heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL
+    tier: 1
+    plain_english: "Heavy Yin-Yang fires neutral: same base, but displacement engine produced neither a bull nor bear classification."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - "heavy-pentagon::GRAND_SLAM"
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - "heavy-pentagon::MOAB"
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: noDisp
+    offset: 0
+    plot_call: 'plotshape(fire_HYYNeutral, title="Heavy Yin-Yang Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="HYY")'
+    alertcondition_id: "Heavy Yin-Yang Neutral"
+    pine_source_line_range: "L278-L283, L295, L383, L424"
+    notes: "Neutral (no-displacement) gate of baseYinYang."
+
+  - id: heavy-pentagon::HEAVY_NAGASAKI_BULL
+    tier: 1
+    plain_english: "Heavy Nagasaki fires bullish: an all-time high volume bar (Nagasaki) co-occurs with any directional P1 (Bull RVOL 1x / Grand Slam / Bear RVOL 1x / MOAB), gated bullish."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::NAGASAKI"
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - "heavy-pentagon::GRAND_SLAM"
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - "heavy-pentagon::MOAB"
+      direction_gate: dispBull
+    offset: 0
+    plot_call: 'plotshape(fire_HNBull,     title="Heavy Nagasaki Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="HN")'
+    alertcondition_id: "Heavy Nagasaki Bull"
+    pine_source_line_range: "L278-L284, L298, L386, L427"
+    notes: "baseNagasaki = sigNagasaki and (groupA_Bull or groupA_Bear). dispBull gate."
+
+  - id: heavy-pentagon::HEAVY_NAGASAKI_BEAR
+    tier: 1
+    plain_english: "Heavy Nagasaki fires bearish: Nagasaki co-occurs with any directional P1, gated bearish by displacement."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::NAGASAKI"
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - "heavy-pentagon::GRAND_SLAM"
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - "heavy-pentagon::MOAB"
+      direction_gate: dispBear
+    offset: 0
+    plot_call: 'plotshape(fire_HNBear,     title="Heavy Nagasaki Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="HN")'
+    alertcondition_id: "Heavy Nagasaki Bear"
+    pine_source_line_range: "L278-L284, L299, L387, L428"
+    notes: "Bearish gate of baseNagasaki."
+
+  - id: heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL
+    tier: 1
+    plain_english: "Heavy Nagasaki fires neutral: Nagasaki co-occurs with any directional P1, but no displacement classification."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::NAGASAKI"
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - "heavy-pentagon::GRAND_SLAM"
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - "heavy-pentagon::MOAB"
+      direction_gate: noDisp
+    offset: 0
+    plot_call: 'plotshape(fire_HNNeutral,  title="Heavy Nagasaki Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="HN")'
+    alertcondition_id: "Heavy Nagasaki Neutral"
+    pine_source_line_range: "L278-L284, L300, L388, L429"
+    notes: "Neutral gate of baseNagasaki."
+
+  - id: heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL
+    tier: 1
+    plain_english: "Heavy Nagasaki Vol fires bullish: an all-time high volume bar (Nagasaki) co-occurs with any neutral P2 (Pentagon/WTC/Hiroshima), gated bullish."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::NAGASAKI"
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: dispBull
+    offset: 0
+    plot_call: 'plotshape(fire_HNVBull,    title="Heavy Nagasaki Vol Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="HNV")'
+    alertcondition_id: "Heavy Nagasaki Vol Bull"
+    pine_source_line_range: "L280, L285, L303, L391, L432"
+    notes: "baseNagasakiV = sigNagasaki and groupB. dispBull gate."
+
+  - id: heavy-pentagon::HEAVY_NAGASAKI_VOL_BEAR
+    tier: 1
+    plain_english: "Heavy Nagasaki Vol fires bearish: Nagasaki + any P2 tier, gated bearish."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::NAGASAKI"
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: dispBear
+    offset: 0
+    plot_call: 'plotshape(fire_HNVBear,    title="Heavy Nagasaki Vol Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="HNV")'
+    alertcondition_id: "Heavy Nagasaki Vol Bear"
+    pine_source_line_range: "L280, L285, L304, L392, L433"
+    notes: "Bearish gate of baseNagasakiV."
+
+  - id: heavy-pentagon::HEAVY_NAGASAKI_VOL_NEUTRAL
+    tier: 1
+    plain_english: "Heavy Nagasaki Vol fires neutral: Nagasaki + any P2 tier, no displacement classification."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::NAGASAKI"
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: noDisp
+    offset: 0
+    plot_call: 'plotshape(fire_HNVNeutral, title="Heavy Nagasaki Vol Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="HNV")'
+    alertcondition_id: "Heavy Nagasaki Vol Neutral"
+    pine_source_line_range: "L280, L285, L305, L393, L434"
+    notes: "Neutral gate of baseNagasakiV."
+
+  - id: heavy-pentagon::HEAVY_TRIDENT_BULL
+    tier: 1
+    plain_english: "Heavy Trident fires bullish: all three RVOL axes co-occur — Nagasaki (P3) + any directional P1 + any neutral P2 — gated bullish."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::NAGASAKI"
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - "heavy-pentagon::GRAND_SLAM"
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - "heavy-pentagon::MOAB"
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: dispBull
+    offset: 0
+    plot_call: 'plotshape(fire_HTBull,     title="Heavy Trident Bull",    style=shape.circle, location=location.bottom, size=size.normal, color=color.lime,    text="HT")'
+    alertcondition_id: "Heavy Trident Bull"
+    pine_source_line_range: "L278-L286, L308, L396, L437"
+    notes: "baseTrident = sigNagasaki and (groupA_Bull or groupA_Bear) and groupB. P1+P2+P3 all-axes co-occurrence. dispBull gate."
+
+  - id: heavy-pentagon::HEAVY_TRIDENT_BEAR
+    tier: 1
+    plain_english: "Heavy Trident fires bearish: all three RVOL axes co-occur, gated bearish."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::NAGASAKI"
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - "heavy-pentagon::GRAND_SLAM"
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - "heavy-pentagon::MOAB"
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: dispBear
+    offset: 0
+    plot_call: 'plotshape(fire_HTBear,     title="Heavy Trident Bear",    style=shape.circle, location=location.top,    size=size.normal, color=color.red,     text="HT")'
+    alertcondition_id: "Heavy Trident Bear"
+    pine_source_line_range: "L278-L286, L309, L397, L438"
+    notes: "Bearish gate of baseTrident."
+
+  - id: heavy-pentagon::HEAVY_TRIDENT_NEUTRAL
+    tier: 1
+    plain_english: "Heavy Trident fires neutral: all three RVOL axes co-occur, no displacement classification."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::NAGASAKI"
+        - "heavy-pentagon::RVOL_1X_BULL"
+        - "heavy-pentagon::GRAND_SLAM"
+        - "heavy-pentagon::RVOL_1X_BEAR"
+        - "heavy-pentagon::MOAB"
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: noDisp
+    offset: 0
+    plot_call: 'plotshape(fire_HTNeutral,  title="Heavy Trident Neutral", style=shape.circle, location=location.top,    size=size.normal, color=color.white,   text="HT")'
+    alertcondition_id: "Heavy Trident Neutral"
+    pine_source_line_range: "L278-L286, L310, L398, L439"
+    notes: "Neutral gate of baseTrident."
+
+  - id: heavy-pentagon::NEUTRAL_HEAVY_X2_BULL
+    tier: 1
+    plain_english: "Neutral Heavy x2 fires bullish: at least two of the three Reg@Time tiers (Pentagon, WTC, Hiroshima) co-occur on the same bar, gated bullish by displacement."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: dispBull
+    offset: 0
+    plot_call: 'plotshape(fire_NHx2Bull,    title="Neutral Heavy x2 Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="NHx2")'
+    alertcondition_id: "Neutral Heavy x2 Bull"
+    pine_source_line_range: "L287, L313, L401, L442"
+    notes: "baseNHx2 = (sigPentagon and sigWTC) or (sigPentagon and sigHiroshima) or (sigWTC and sigHiroshima). Two-of-three P2 tiers. dispBull gate."
+
+  - id: heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR
+    tier: 1
+    plain_english: "Neutral Heavy x2 fires bearish: two-of-three P2 tier co-occurrence, gated bearish."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: dispBear
+    offset: 0
+    plot_call: 'plotshape(fire_NHx2Bear,    title="Neutral Heavy x2 Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="NHx2")'
+    alertcondition_id: "Neutral Heavy x2 Bear"
+    pine_source_line_range: "L287, L314, L402, L443"
+    notes: "Bearish gate of baseNHx2."
+
+  - id: heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL
+    tier: 1
+    plain_english: "Neutral Heavy x2 fires neutral: two-of-three P2 tier co-occurrence, no displacement classification."
+    composition:
+      type: AND
+      operands:
+        - "heavy-pentagon::PENTAGON"
+        - "heavy-pentagon::WTC"
+        - "heavy-pentagon::HIROSHIMA"
+      direction_gate: noDisp
+    offset: 0
+    plot_call: 'plotshape(fire_NHx2Neutral, title="Neutral Heavy x2 Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="NHx2")'
+    alertcondition_id: "Neutral Heavy x2 Neutral"
+    pine_source_line_range: "L287, L315, L403, L444"
+    notes: "Neutral gate of baseNHx2."
+
+phantom_toggles:
+  - show_FAUNABull   # "FAUNA Bull"  (L61) — input only, no engine connected
+  - show_FAUNABear   # "FAUNA Bear"  (L62)
+  - show_DISPABull   # "DISP A Bull" (L64)
+  - show_DISPABear   # "DISP A Bear" (L65)
+  - show_DISPBBull   # "DISP B Bull" (L67)
+  - show_DISPBBear   # "DISP B Bear" (L68)
+  - show_DISPCBull   # "DISP C Bull" (L70)
+  - show_DISPCBear   # "DISP C Bear" (L71)
+  - show_Long1       # "LONG 1"      (L73)
+  - show_Short1      # "SHORT 1"     (L74)
+  - show_Long2       # "LONG 2"      (L75)
+  - show_Short2      # "SHORT 2"     (L76)
+  - show_HV75        # "HV 75"       (L78)
+  - show_HV150       # "HV 150"      (L79)
+  - show_HV250       # "HV 250"      (L80)
+  - show_HV500       # "HV 500"      (L81)
+  - show_HV1000     # "HV 1000"     (L82)
+  - show_HotSpot     # "Hot Spot"    (L83)
+
+uncertain_or_questions:
+  - "Heavy Combo composites use OR-of-roots inside their AND structure (e.g. baseYinYang = (sigBullRVOL1x or sigGrandSlam or sigBearRVOL1x or sigMOAB) and (sigPentagon or sigWTC or sigHiroshima)). The composition.type is recorded as AND because the top-level operator combining the two operand groups is AND, but the operand list flattens the inner ORs — every listed root is a potential contributor, not a required co-occurrence. Downstream consumers should treat operand lists as 'any-of within group, AND across groups' per the helper definitions in L278-L287."
+  - "boolean_summary fields for P1 roots paraphrase bb_baseBullish/bb_baseBearish (close>open + bb_positiveDiff>bb_smaDiff) as 'positive price-vs-volume divergence above its SMA' to stay above the σ/SMA implementation level — flag for review if more or less detail is desired at root level."
+  - "alertcondition_id values are taken from the second positional argument of alertcondition() (the alert title), since Pine alertcondition has no separate id parameter."

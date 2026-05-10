@@ -1,59 +1,94 @@
-VOB ASYM T3×6 v8 — dependency tree
-====================================
+VISUAL TREE — vob-asym
+=======================
+File: vob/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine
+Pine v6  ·  1473 lines  ·  overlay=True
+Purpose: VOB asymmetric T3 x6 mutex - staged structural ladder with mutually-exclusive state markers (six sensitivity tiers A..F, bullish/bearish zone-creation markers, T3 SUPER signals, Nagasaki ATH-volume, MutEx priority-line drawing)
 
-ROOTS (tier 0; 100% self-contained — zero imports, zero request.security)
-─────────────────────────────────────────────────────────────────────────
-vob-asym::VOB_CROSS                  (per-tier EMA fast/slow crossover trigger)
-vob-asym::BULL_ZONE_PUSH             (lower_X push)
-vob-asym::BEAR_ZONE_PUSH             (upper_X push)
-vob-asym::ZONE_INVALIDATION          (close-through + dedup-nuke)
-vob-asym::T3_SUPER_BUY/SELL          (per-tier dominant-zone confluence)
-vob-asym::NAGASAKI                   (re-implemented — uses volume[1] + offset=-1; SEMANTIC drift vs canonical heavy-pentagon)
+ROOTS
+-----
+  ◆ vob-asym::zA-bull    [structural · offset=?]
+      
+  ◆ vob-asym::zA-bear    [structural · offset=?]
+      
+  ◆ vob-asym::zB-bull    [structural · offset=?]
+      
+  ◆ vob-asym::zB-bear    [structural · offset=?]
+      
+  ◆ vob-asym::zC-bull    [structural · offset=?]
+      
+  ◆ vob-asym::zC-bear    [structural · offset=?]
+      
+  ◆ vob-asym::zD-bull    [structural · offset=?]
+      
+  ◆ vob-asym::zD-bear    [structural · offset=?]
+      
+  ◆ vob-asym::zE-bull    [structural · offset=?]
+      
+  ◆ vob-asym::zE-bear    [structural · offset=?]
+      
+  ◆ vob-asym::zF-bull    [structural · offset=?]
+      
+  ◆ vob-asym::zF-bear    [structural · offset=?]
+      
+  ◆ vob-asym::T3a-buy    [structural · offset=?]
+      
+  ◆ vob-asym::T3a-sell    [structural · offset=?]
+      
+  ◆ vob-asym::T3b-buy    [structural · offset=?]
+      
+  ◆ vob-asym::T3b-sell    [structural · offset=?]
+      
+  ◆ vob-asym::T3c-buy    [structural · offset=?]
+      
+  ◆ vob-asym::T3c-sell    [structural · offset=?]
+      
+  ◆ vob-asym::T3d-buy    [structural · offset=?]
+      
+  ◆ vob-asym::T3d-sell    [structural · offset=?]
+      
+  ◆ vob-asym::T3e-buy    [structural · offset=?]
+      
+  ◆ vob-asym::T3e-sell    [structural · offset=?]
+      
+  ◆ vob-asym::T3f-buy    [structural · offset=?]
+      
+  ◆ vob-asym::T3f-sell    [structural · offset=?]
+      
+  ◆ vob-asym::Nagasaki    [structural · offset=?]
+      
 
-PER-TIER STRUCTURE (6 instances, sensitivities A-F)
-────────────────────────────────────────────────────
-Tier  EMA len1  EMA len2 (=len1+13)
-A     2500      2513
-B     2250      2263
-C     2000      2013
-D     1500      1513
-E     1250      1263
-F     1000      1013
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● vob-asym::any_t3    [offset=? · ?]
+    ● vob-asym::any_zone    [offset=? · ?]
 
-Each tier emits: (T3 buy, T3 sell, bull_pool, bear_pool, lower_X array, upper_X array)
-Per-(tier, direction) cooldown: 100 bars after firing.
-Zone array hard cap: 15 per tier per direction.
+  Tier 2:
+    ● vob-asym::mutex_zone_lines    [offset=? · ?]
+    ● vob-asym::bull_pool / bear_pool (per-tier)    [offset=? · ?]
+    ● vob-asym::cnt_bull_all / cnt_bear_all    [offset=? · ?]
+    ● vob-asym::nearest_bull_dist / nearest_bear_dist    [offset=? · ?]
+    ● vob-asym::stk_bull / stk_bear    [offset=? · ?]
+    ● vob-asym::bull_gap / bear_gap    [offset=? · ?]
 
-COMPOSITES
-───────────
-T3 LADDER (tier 3)         — six parallel T3 super-signal engines per tier A-F
-ZONE CREATION MARKER (T2)  — 12 plotshapes (ZoneBull A-F + ZoneBear A-F)
-MUTEX OVERLAP RENDER (visual layer; processing order A→F)
-  Priority 0 (no overlap):    full draw (top + bot + dashed mid + filled body)
-  Priority 1 (1 overlap):     single solid mid line
-  Priority 2 (2 overlaps):    single dotted mid line
-  Priority 3+ (3+ overlaps):  thin dotted mid line
-PANCAKE ASSESSMENT (emission heuristic) — bull/bear pancake = stack≥3 AND gap≥30%
+  Tier 3:
+    ● vob-asym::pancake_bull / pancake_bear    [offset=? · ?]
+    ● vob-asym::any_t3_alert    [offset=? · ?]
+    ● vob-asym::any_zone_alert    [offset=? · ?]
+    ● vob-asym::T3_bloomberg_alert    [offset=? · ?]
+    ● vob-asym::ZONE_FORMATION_bloomberg_alert    [offset=? · ?]
+    ● vob-asym::zone_formation_label    [offset=? · ?]
 
-PLOTSHAPES (25)
-────────────────
-T3 Buy A-F (6) + T3 Sell A-F (6) at varied locations.
-Nagasaki (1, offset=-1).
-ZoneBull A-F (6) + ZoneBear A-F (6) at varied locations.
+  Tier 4:
+    ● vob-asym::log_emission_stream    [offset=? · ?]
+    ● vob-asym::comprehensive_emission_table    [offset=? · ?]
+    ● vob-asym::audit_table    [offset=? · ?]
+    ● vob-asym::T3_signal_table    [offset=? · ?]
 
-ALERTCONDITION (2): any_t3, any_zone.
-14 alert() calls in Bloomberg pipe-delimited format.
 
-NAMING CONVENTION (inverted from intuition)
-────────────────────────────────────────────
-Bullish → lower_X array (zone forms at swing LOW)
-Bearish → upper_X array (zone forms at swing HIGH)
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → {'target': 'vob-ladder-watch', 'relationship': 'parent_engine_donor', 'notes': "VOB_LADDER_WATCH_v1.pine derives its f_bull_vob (lines 59-85 there) by mirroring this file's f_vob (lines 562-679 here) with the bear half and T3/MutEx logic stripped. The ladder-watch's zA..zF roots conceptually map onto this file's zA-bull..zF-bull roots, but the two indicators run independent state arrays (no live data sharing inside Pine)."}
+  → {'target': 'external (TradingView alert engine)', 'relationship': 'alert_consumer', 'notes': "Two alertcondition() entries (lines 861, 1136) plus 13 alert() calls for T3+Nagasaki (lines 879-904) plus one zone-formation alert() (line 1164) expect TradingView 'Any alert() function call' wiring."}
+  → {'target': 'external (Claude Code MCP readers)', 'relationship': 'emission_consumer', 'notes': 'File is explicitly designed to emit through six MCP channels (data_get_study_values disabled - plot budget consumed; data_get_pine_labels via f_emit_label; data_get_pine_tables via comprehensive emission table; pine_get_console via log.info; alert() via Bloomberg-format strings; data_get_pine_lines via MutEx zone lines). See file header comments 54-64 and 1090-1099.'}
 
-DEAD INPUT
-───────────
-asym_threshold (default 99.0) "Reserved for future Tier 1 asymmetric signals" — not used.
-
-PROVENANCE NOTE
-────────────────
-File header line 559: "*** THIS FUNCTION IS PRESERVED EXACTLY FROM THE ORIGINAL — DO NOT MODIFY ***"
-suggests the core VOB+T3 logic was inherited from a parent file; v8 changes are emission-layer scaffolding only.

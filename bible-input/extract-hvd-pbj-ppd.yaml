@@ -1,0 +1,917 @@
+indicator:
+  id: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  branch: claude/add-txt-indicator-format-b4FUu
+  pine_version: 5
+  line_count: 1767
+  overlay: true
+  one_line_purpose: "Canonical PBJ/PPD/PB/Displacement engine; consolidated 'THE_ONLY_ONE' build with four decoupled pipelines (A=HV+D, B=PBJ/PB, C=USE 45-signal alarm, D=Triple AND co-occurrence) plus a Back-to-Back HV+D section"
+  is_canonical_for:
+    - "PBJ"
+    - "PB"
+    - "PUP"
+    - "PPD"
+    - "Displacement (DISP)"
+    - "HV+D (volume rank ∧ disp ∧ FVG primitive)"
+    - "HV ladder tiers exposed standalone (HV5K/HVY/HVQ inside GZI; HV75/HV150/HV500/HV1000 in USE engine)"
+  predecessor: "HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine"
+  predecessor_relationship: "drifted-subset — current is a tightened consolidation: 1767 vs 1939 lines, 59 vs 58 plotshapes; 4.26 file is older fragmented variant. The 2026-05-10 build adds the formalized 4-pipeline architecture, the new B2B HV+D section (6 toggles) and the explicit Pipeline-D triple AND. CHANGELOG calls it the canonical build superseding the predecessor."
+
+internal_helpers:
+  - name: Supertrend (Zoo ST)
+    purpose: "Trend direction (st_dir ±1) used inside Pipeline B (PBJ/PB engine) — `zoo_st_period=10`, `zoo_st_mult=2.0`."
+    notes: "Internal to PBJ/PB roots; NOT a separate root."
+  - name: Zoo MA (VWMA)
+    purpose: "Base MA for the PBJ/PB lander system (`zoo_ma_type=VWMA`, `zoo_ma_len=5`)."
+    notes: "Internal to PBJ/PB roots; NOT a separate root."
+  - name: PB&J filter (pbj_buy / pbj_sell)
+    purpose: "ATR-pullback gate on lowest-low / highest-high over 25 bars + volume>SMA*0.1; gates `wait_pbj_*` flags consumed by buy/sell crosses."
+    notes: "Internal to PBJ root; do NOT decompose."
+  - name: PB lander (lvl array)
+    purpose: "Maintains an array of `lvl` boxes derived from buy/sell crosses + reaccel events; `f_check_approach` sets `wait_buy/sell` consumed by the PB cross."
+    notes: "Internal to PB root."
+  - name: ATR (atr14)
+    purpose: "Shared 14-period ATR for displacement, PB lander box sizing, and PBJ ATR threshold."
+    notes: "Internal helper."
+  - name: Stdev range (ta.stdev of |O-C| or H-L)
+    purpose: "Volatility yardstick used by all displacement primitives (D1/D2/D3 in Pipeline A and Engine 3 in Pipeline C)."
+    notes: "Internal helper."
+  - name: BB normalized price/volume (bb_normalizedPrice, bb_normalizedVolume)
+    purpose: "Spike size and volume normalized vs 30-bar SMA, drives RVOL tier classification (SAAB/Kratos/1x/GS/MOAB/Pentagon)."
+    notes: "Internal to RVOL tier classification (Pipeline C engine 1)."
+  - name: TradingView/ta/7 relativeVolume (regular + cumulative)
+    purpose: "Imported library used to build relVolRatio (WTC/Hiroshima) and ls_regRatio/ls_cumRatio (Long/Short engine)."
+    notes: "Internal helper."
+  - name: Boom Hunter Ehlers filter (HP/Filt/Quotient1..3, wt1/wt2)
+    purpose: "Multi-stage Ehlers band-pass + traditional CCI hybrid producing `bh_anyOmega` etc."
+    notes: "Internal to Omega Long composite — NOT a separate root."
+  - name: Ping Pong SR engine (srLevels array, swings, body-flat detect)
+    purpose: "Maintains support/resistance levels; emits `bull_pp` / `bear_pp` floor/ceiling state booleans."
+    notes: "Internal to Floor/Rooftop/2F/Penthouse composites."
+  - name: FAUNA NRA core (MB/RE/TA/GG patterns)
+    purpose: "ATR/body/range/volume hybrid emitting sigFAUNABull/Bear with TR/ES/GDR/GG exclusions."
+    notes: "Internal to many composites; not exposed as a standalone plot here."
+
+roots:
+  - id: hvd-pbj-ppd::HVD_BULL
+    family: hv
+    plain_english: "Pipeline-A primitive: prior bar was a high-volume bar (one of the toggled rank tiers 50–1000 base, or HTF profile rank, or all-time HEV) AND prior bar's range exceeded stdev*mult AND a bullish FVG opened on the current bar. Fires on bar N to describe bar N-1; plotted with offset=-1."
+    boolean_summary: "hvd_fire_bull = base_combo_bull or htf1_combo_bull or htf2_combo_bull"
+    parameters:
+      - { name: d1_std_len, default: 100, units: bars }
+      - { name: d1_mult, default: 5.0, units: stdev_multiplier }
+      - { name: d2_mult, default: 2.5, units: stdev_multiplier }
+      - { name: d3_mult, default: 1.5, units: stdev_multiplier }
+      - { name: base_rank_tiers, default: "50,75,100,150,200,250,300,350,400,450,500,550,600,650,700,750,1000+HEV", units: bars_lookback }
+      - { name: htf1_tiers, default: "5,10,20,25,30,40,50,60,70,75,80,90", units: bars_lookback }
+      - { name: htf2_tiers, default: "5,10,20,25,30,40,50,60,70,75,80,90", units: bars_lookback }
+    offset: -1
+    plot_call: "plotshape(en_hvd_bull and hvd_fire_bull, \"HV+D Bull\", shape.triangleup,   location.belowbar, color.new(#00E676, 0), text=\"HV+D\", textcolor=color.white, size=size.small, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L112-L273, plot L1311"
+    notes: "Composite of three internal primitives (volume-rank, stdev displacement, FVG) but treated as a single root per definition. Internal: ta.highest(volume,N), ta.stdev range, FVG geometry. Plot offset=-1; alert at L1326 (excludes co-occurrence cases)."
+
+  - id: hvd-pbj-ppd::HVD_BEAR
+    family: hv
+    plain_english: "Bear mirror of HVD_BULL: prior bar high-volume rank ∧ prior bar disp ∧ bearish FVG. Pipeline A terminal output."
+    boolean_summary: "hvd_fire_bear = base_combo_bear or htf1_combo_bear or htf2_combo_bear"
+    parameters:
+      - { name: see_HVD_BULL, default: same, units: same }
+    offset: -1
+    plot_call: "plotshape(en_hvd_bear and hvd_fire_bear, \"HV+D Bear\", shape.triangledown, location.abovebar, color.new(#FF1744, 0), text=\"HV+D\", textcolor=color.white, size=size.small, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L112-L273, plot L1312"
+    notes: "Same internals as HVD_BULL with reversed FVG/displacement direction. Alert at L1328."
+
+  - id: hvd-pbj-ppd::PBJ_BULL
+    family: candle
+    plain_english: "Pipeline-B bullish PBJ landing: a Supertrend buy_cross (Zoo VWMA-5 vs ATR-band Supertrend) coincident with the PB&J filter (low<EMA20*(1-ATR/close*3) AND low==25-bar lowest AND volume>SMA20*0.1)."
+    boolean_summary: "sigBullPBJ = conf and ta.crossover(close, st_signal_line) and wait_pbj_buy"
+    parameters:
+      - { name: zoo_ma_type, default: VWMA, units: enum }
+      - { name: zoo_ma_len, default: 5, units: bars }
+      - { name: zoo_st_period, default: 10, units: bars }
+      - { name: zoo_st_mult, default: 2.0, units: atr_multiplier }
+      - { name: zoo_pbj_ma_period, default: 20, units: bars }
+      - { name: zoo_pbj_atr_period, default: 14, units: bars }
+      - { name: zoo_pbj_hh_ll, default: 25, units: bars }
+      - { name: zoo_pbj_atr_mult, default: 3.0, units: multiplier }
+      - { name: zoo_pbj_vol_period, default: 20, units: bars }
+      - { name: zoo_pbj_vol_mult, default: 0.1, units: multiplier }
+    offset: 0
+    plot_call: "(no standalone plot; consumed by composites + Pipeline D — see PBJ Bull at L1318 within HV+D co-occurrence at offset=-1, and SUPER/FLOOR/HW etc.)"
+    alertcondition_id: null
+    pine_source_line_range: "L622-L761"
+    notes: "Internal: VWMA + ATR-band Supertrend + PB&J filter. Do NOT decompose into Supertrend/Zoo/VWMA/ATR — those are internal helpers. Pipeline B fires bar N, describes bar N, offset=0. Note: there is no offset=0 standalone plot for sigBullPBJ in this file — it surfaces only via composites and Pipeline D's `hvd_pbj_bull`."
+
+  - id: hvd-pbj-ppd::PBJ_BEAR
+    family: candle
+    plain_english: "Bear mirror of PBJ_BULL: Supertrend sell_cross + PB&J sell filter (high>EMA20*(1+thresh), high==25-bar highest, volume>SMA20*0.1)."
+    boolean_summary: "sigBearPBJ = conf and ta.crossunder(close, st_signal_line) and wait_pbj_sell"
+    parameters:
+      - { name: see_PBJ_BULL, default: same, units: same }
+    offset: 0
+    plot_call: "(no standalone plot; surfaces via composites and Pipeline D)"
+    alertcondition_id: null
+    pine_source_line_range: "L622-L761"
+    notes: "Mirror of PBJ_BULL with crossunder/highest/upper-band ATR threshold."
+
+  - id: hvd-pbj-ppd::PB_BULL
+    family: candle
+    plain_english: "Pipeline-B bullish 'plain' Pullback (PB) landing: Supertrend buy_cross when price has approached a previously-recorded bullish lander box (from a prior cross or reaccel). Fires only when PBJ filter did NOT also fire."
+    boolean_summary: "sigBullPB = conf and enable_PB and (buy_cross and wait_buy) and not (buy_cross and wait_pbj_buy)"
+    parameters:
+      - { name: enable_PB, default: true, units: bool }
+      - { name: lander_box_atr_mult, default: 0.5, units: atr_multiplier }
+    offset: 0
+    plot_call: "(no standalone plot; consumed via composites and Pipeline D — see HV+D+PB co-shape at L1317)"
+    alertcondition_id: null
+    pine_source_line_range: "L622-L761"
+    notes: "Internal: Zoo lander array `bull_lvls` of `lvl` (upper/lower/vol/approached) populated by f_add_lander on buy_cross and f_add_reaccel on bull_reaccel; f_check_approach sets wait_buy."
+
+  - id: hvd-pbj-ppd::PB_BEAR
+    family: candle
+    plain_english: "Bear mirror of PB_BULL: Supertrend sell_cross + bear lander box approached, excluding PBJ-sell coincidence."
+    boolean_summary: "sigBearPB = conf and enable_PB and (sell_cross and wait_sell) and not (sell_cross and wait_pbj_sell)"
+    parameters:
+      - { name: see_PB_BULL, default: same, units: same }
+    offset: 0
+    plot_call: "(no standalone plot; surfaces via composites and Pipeline D)"
+    alertcondition_id: null
+    pine_source_line_range: "L622-L761"
+    notes: "Mirror of PB_BULL on bear lvls."
+
+  - id: hvd-pbj-ppd::PUP
+    family: push
+    plain_english: "Push-Up Day: bar's percent body (close-open)/open*100 > 3% AND volume > 10-bar highest red-bar volume. The classic 'green push' primitive."
+    boolean_summary: "sigPUP = conf and pp_priceUp and volume > pp_hiRedVol"
+    parameters:
+      - { name: pp_barSize, default: 3.0, units: percent }
+      - { name: pp_lookback, default: 10, units: bars }
+    offset: 0
+    plot_call: "(no standalone plot in this file; consumed by composites only — Golf, PAF, OD, SUPER, SDuper, alpha-strike etc.)"
+    alertcondition_id: null
+    pine_source_line_range: "L622-L627"
+    notes: "Engine 5 'PUP/PPD'. Defined locally; NOT plotted as its own shape but is a named root used by many composites."
+
+  - id: hvd-pbj-ppd::PPD
+    family: push
+    plain_english: "Push-Down Day: bar's percent body (open-close)/open*100 > 3% AND volume > 10-bar highest green-bar volume. Bear mirror of PUP."
+    boolean_summary: "sigPPD = conf and pp_priceDn and volume > pp_hiGreenVol"
+    parameters:
+      - { name: pp_barSize, default: 3.0, units: percent }
+      - { name: pp_lookback, default: 10, units: bars }
+    offset: 0
+    plot_call: "(no standalone plot; consumed by composites only — Golf Bear, PAF Bear, OD Bear, SUPER/SD Bear etc.)"
+    alertcondition_id: null
+    pine_source_line_range: "L622-L627"
+    notes: "Engine 5; named root."
+
+  - id: hvd-pbj-ppd::DISP_BULL
+    family: displacement
+    plain_english: "Pipeline-C displacement: prior bar range > stdev*3.0 (capped *100), AND a bullish FVG opened on current bar (or current-bar disp+green if i_req_fvg=false)."
+    boolean_summary: "sigDISPBull = conf and (i_req_fvg ? (disp_prevDisp and disp_bullFVG) : (disp_currDisp and close>open))"
+    parameters:
+      - { name: i_std_len, default: 100, units: bars }
+      - { name: i_std_min, default: 3.0, units: stdev_multiplier }
+      - { name: i_std_max, default: 100.0, units: stdev_multiplier }
+      - { name: i_req_fvg, default: true, units: bool }
+    offset: 0
+    plot_call: "(no standalone plot; named root that gates many composites)"
+    alertcondition_id: null
+    pine_source_line_range: "L518-L526"
+    notes: "Engine 3 USE Displacement. Distinct from Pipeline-A HVD's displacement (which uses different multipliers and FVG semantics)."
+
+  - id: hvd-pbj-ppd::DISP_BEAR
+    family: displacement
+    plain_english: "Bear mirror of DISP_BULL."
+    boolean_summary: "sigDISPBear = conf and (i_req_fvg ? (disp_prevDisp and disp_bearFVG) : (disp_currDisp and close<open))"
+    parameters:
+      - { name: see_DISP_BULL, default: same, units: same }
+    offset: 0
+    plot_call: "(no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L518-L526"
+    notes: "Engine 3 mirror."
+
+  - id: hvd-pbj-ppd::DISP5_BULL
+    family: displacement
+    plain_english: "5x-stdev displacement primitive (close>open ∧ range>stdev*5.0). Used inside HW Bull composite."
+    boolean_summary: "disp5_bull = conf and disp_std>0 and disp_rng>disp_std*5.0 and close>open"
+    parameters:
+      - { name: mult, default: 5.0, units: stdev_multiplier }
+    offset: 0
+    plot_call: "(no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L527-L529"
+    notes: "Hardcoded 5x; named primitive used by HW + UU exception."
+
+  - id: hvd-pbj-ppd::DISP5_BEAR
+    family: displacement
+    plain_english: "Bear mirror of DISP5_BULL."
+    boolean_summary: "disp5_bear = conf and disp_std>0 and disp_rng>disp_std*5.0 and close<open"
+    parameters:
+      - { name: mult, default: 5.0, units: stdev_multiplier }
+    offset: 0
+    plot_call: "(no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L527-L529"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::HV5K
+    family: hv
+    plain_english: "Volume on prior bar equals 5000-bar highest. The 'all-time' tier of the GZI HV ladder."
+    boolean_summary: "gz_v1 == ta.highest(volume,5000)[1]"
+    parameters:
+      - { name: lookback, default: 5000, units: bars }
+    offset: 0
+    plot_call: "(no standalone plot; rolled into gz_isHV and gz_bullHV/gz_bearHV)"
+    alertcondition_id: null
+    pine_source_line_range: "L574-L575"
+    notes: "Named tier of HV ladder used inside GZ1/HV-FVG (Engine 4)."
+
+  - id: hvd-pbj-ppd::HVY
+    family: hv
+    plain_english: "Yearly tier — volume on prior bar equals 252-bar highest."
+    boolean_summary: "gz_v1 == ta.highest(volume,252)[1]"
+    parameters:
+      - { name: lookback, default: 252, units: bars }
+    offset: 0
+    plot_call: "(no standalone plot; rolled into gz_isHV)"
+    alertcondition_id: null
+    pine_source_line_range: "L574-L575"
+    notes: "Named tier."
+
+  - id: hvd-pbj-ppd::HVQ
+    family: hv
+    plain_english: "Quarterly tier — volume on prior bar equals 63-bar highest."
+    boolean_summary: "gz_v1 == ta.highest(volume,63)[1]"
+    parameters:
+      - { name: lookback, default: 63, units: bars }
+    offset: 0
+    plot_call: "(no standalone plot; rolled into gz_isHV)"
+    alertcondition_id: null
+    pine_source_line_range: "L574-L575"
+    notes: "Named tier."
+
+  - id: hvd-pbj-ppd::HV75
+    family: hv
+    plain_english: "Volume >= 75-bar highest of prior bar. Named USE-side HV tier."
+    boolean_summary: "sigHV75 = conf and volume >= ta.highest(volume,75)[1]"
+    parameters:
+      - { name: lookback, default: 75, units: bars }
+    offset: 0
+    plot_call: "(no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L1067"
+    notes: "Used by TF gate count and as a named root primitive."
+
+  - id: hvd-pbj-ppd::HV150
+    family: hv
+    plain_english: "Volume >= 150-bar (configurable hv150_len) highest of prior bar."
+    boolean_summary: "sigHV150 = conf and volume >= ta.highest(volume,hv150_len)[1]"
+    parameters:
+      - { name: hv150_len, default: 150, units: bars }
+    offset: 0
+    plot_call: "(no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L1067"
+    notes: "Used by TF gate."
+
+  - id: hvd-pbj-ppd::HV500
+    family: hv
+    plain_english: "Volume >= 500-bar highest of prior bar."
+    boolean_summary: "sigHV500 = conf and volume >= ta.highest(volume,500)[1]"
+    parameters:
+      - { name: lookback, default: 500, units: bars }
+    offset: 0
+    plot_call: "(no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L1068"
+    notes: "Used by Omega Long cosignal + TF gate."
+
+  - id: hvd-pbj-ppd::HV1000
+    family: hv
+    plain_english: "Volume >= 1000-bar highest of prior bar."
+    boolean_summary: "sigHV1000 = conf and volume >= ta.highest(volume,1000)[1]"
+    parameters:
+      - { name: lookback, default: 1000, units: bars }
+    offset: 0
+    plot_call: "(no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L1068"
+    notes: "Used by Omega Long cosignal + TF gate."
+
+  - id: hvd-pbj-ppd::HEV
+    family: hv
+    plain_english: "All-time-high volume primitive (volume[1] strictly greater than running maxVolEver). Cumulative monotonic ratchet."
+    boolean_summary: "isHEV when volume[1] > maxVolEver (then maxVolEver := volume[1])"
+    parameters: []
+    offset: 0
+    plot_call: "(no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L246-L250"
+    notes: "Named primitive driving Pipeline-A base_hv_hit. There is also a separate sigNagasaki primitive on USE side using a similar all-time-high construction (L465-L472)."
+
+  - id: hvd-pbj-ppd::NAGASAKI
+    family: rvol
+    plain_english: "USE-side all-time-high volume primitive (volume strictly greater than running maxVol since bar 0)."
+    boolean_summary: "sigNagasaki = isNagasaki when volume>maxVol"
+    parameters: []
+    offset: 0
+    plot_call: "(no standalone plot; used as cosignal across many composites; alerted in aggregator at L1765-L1767)"
+    alertcondition_id: null
+    pine_source_line_range: "L465-L472"
+    notes: "Distinct from HEV (uses bar-zero seeding rather than first-rise seeding). Family: RVOL/HV hybrid."
+
+composites:
+  # ── Tier 0: PRIORITY ──
+  - id: hvd-pbj-ppd::SUPER_BULL
+    tier: 0
+    plain_english: "Tier-0 priority bull: PBJ + DISP + (FAUNA bull or LSLong1) + HW-volume slot + ((Combo-set + PUP) OR Floor/2F)."
+    composition:
+      type: AND
+      operands: [PBJ_BULL, DISP_BULL, "(FAUNA_BULL or LS_LONG1)", "(RVOL_1x or GS or WTC or HIRO or NAG)", "((csNew1_Bull or csNew2_Bull) and PUP) or (FLOOR_BULL or SECOND_FLOOR_BULL)"]
+    offset: 0
+    plot_call: "plotshape(fire_SuperBull,\"S! Bull\",shape.flag,location.top,color.new(#00FF00,0),text=\"S!\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: null
+    pine_source_line_range: "L1254, plot L1361"
+    notes: "Aggregator alert L1622-L1627. Boolean: superBull."
+
+  - id: hvd-pbj-ppd::SUPER_BEAR
+    tier: 0
+    plain_english: "Bear mirror of SUPER_BULL."
+    composition: { type: AND, operands: [PBJ_BEAR, DISP_BEAR, "(FAUNA_BEAR or LS_SHORT1)", "(RVOL_1x_bear or MOAB or WTC or HIRO or NAG)", "((csNew1_Bear or csNew2_Bear) and PPD) or (ROOFTOP or PENTHOUSE)"] }
+    offset: 0
+    plot_call: "plotshape(fire_SuperBear,\"S! Bear\",shape.flag,location.top,color.new(#FF0000,0),text=\"S!\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: null
+    pine_source_line_range: "L1255, plot L1386"
+    notes: "Aggregator alert L1694-L1696."
+
+  - id: hvd-pbj-ppd::SDUPER_BULL
+    tier: 0
+    plain_english: "'Super Duper' priority: Floor/2F + PBJ + HW-volume slot + Combo-set + PUP + DISP + (FAUNA or LSLong1)."
+    composition: { type: AND, operands: [FLOOR_BULL, PBJ_BULL, "(RVOL_1x or GS or WTC or HIRO or NAG)", "(csNew1_Bull or csNew2_Bull)", PUP, DISP_BULL, "(FAUNA_BULL or LS_LONG1)"] }
+    offset: 0
+    plot_call: "plotshape(fire_SDuperBull,\"SD! Bull\",shape.flag,location.bottom,color.new(#FFD700,0),text=\"SD!\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: null
+    pine_source_line_range: "L1256, plot L1362"
+    notes: "Aggregator L1622-L1624."
+
+  - id: hvd-pbj-ppd::SDUPER_BEAR
+    tier: 0
+    plain_english: "Bear mirror of SDUPER_BULL."
+    composition: { type: AND, operands: ["(ROOFTOP or PENTHOUSE)", PBJ_BEAR, "(RVOL_1x_bear or MOAB or WTC or HIRO or NAG)", "(csNew1_Bear or csNew2_Bear)", PPD, DISP_BEAR, "(FAUNA_BEAR or LS_SHORT1)"] }
+    offset: 0
+    plot_call: "plotshape(fire_SDuperBear,\"SD! Bear\",shape.flag,location.bottom,color.new(#FFD700,0),text=\"SD!\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L1257, plot L1387"
+    notes: "Aggregator L1691-L1693."
+
+  # ── Tier 1: streaks/patterns ──
+  - id: hvd-pbj-ppd::BULL_UUUU
+    tier: 1
+    plain_english: "4 consecutive bullish bars + must include first bar of trading day + PBJ on at least one of the 4 bars + DISP on at least one of the 4 bars."
+    composition: { type: STREAK, operands: ["close>open x4", "is_new_day in window", PBJ_BULL, DISP_BULL] }
+    offset: 0
+    plot_call: "plotshape(fire_BullUUUU,\"Bull UUUU\",shape.labelup,location.belowbar,color.new(#00FF00,0),text=\"UUUU\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L915-L946, plot L1341"
+    notes: "u4_bull_streak ≥ 4 over 4-bar window with day-1 + PBJ + DISP scan."
+
+  - id: hvd-pbj-ppd::BEAR_UUUU
+    tier: 1
+    plain_english: "Bear mirror of BULL_UUUU."
+    composition: { type: STREAK, operands: ["close<open x4", "is_new_day in window", PBJ_BEAR, DISP_BEAR] }
+    offset: 0
+    plot_call: "plotshape(fire_BearUUUU,\"Bear UUUU\",shape.labeldown,location.abovebar,color.new(#FF00FF,0),text=\"DDDD\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L915-L946, plot L1367"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::BULL_UUU
+    tier: 1
+    plain_english: "3 consecutive bullish bars each with bb_normalizedPrice>1.0 + first-of-day in window + PBJ on any + DISP on any."
+    composition: { type: STREAK, operands: ["bb_baseBullish ∧ normPrice>1 x3", "is_new_day in window", PBJ_BULL, DISP_BULL] }
+    offset: 0
+    plot_call: "plotshape(fire_BullUUU,\"Bull UUU\",shape.labelup,location.belowbar,color.new(#76FF03,0),text=\"UUU\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: null
+    pine_source_line_range: "L948-L980, plot L1342"
+    notes: "u3_bull_streak ≥ 3."
+
+  - id: hvd-pbj-ppd::BEAR_UUU
+    tier: 1
+    plain_english: "Bear mirror of BULL_UUU."
+    composition: { type: STREAK, operands: ["bb_baseBearish ∧ normPrice>1 x3", "is_new_day in window", PBJ_BEAR, DISP_BEAR] }
+    offset: 0
+    plot_call: "plotshape(fire_BearUUU,\"Bear UUU\",shape.labeldown,location.abovebar,color.new(#FF4081,0),text=\"DDD\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: null
+    pine_source_line_range: "L948-L980, plot L1368"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::BULL_UU
+    tier: 1
+    plain_english: "2 consecutive bullish bars each ≥ normPrice 2.0 + cumulative ≥ RVOL 1x threshold + ((PBJ ∧ DISP on either) OR session-start excA OR PUP×2 excC)."
+    composition: { type: STREAK, operands: ["p21_bull_streak == 2", "p21_bull_sum ≥ th_1x", "(PBJ_BULL_window ∧ DISP_BULL_window) OR uu_excA_bull OR uu_excC_bull"] }
+    offset: 0
+    plot_call: "plotshape(fire_BullUU,\"Bull UU\",shape.labelup,location.belowbar,color.new(#A5D6A7,0),text=\"UU\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L982-L990, plot L1343"
+    notes: "Three exception paths (A/B/C) gate the simpler PBJ∧DISP path."
+
+  - id: hvd-pbj-ppd::BEAR_UU
+    tier: 1
+    plain_english: "Bear mirror of BULL_UU."
+    composition: { type: STREAK, operands: ["p21_bear_streak == 2", "p21_bear_sum ≥ th_1x", "(PBJ_BEAR_window ∧ DISP_BEAR_window) OR uu_excA_bear OR uu_excC_bear"] }
+    offset: 0
+    plot_call: "plotshape(fire_BearUU,\"Bear UU\",shape.labeldown,location.abovebar,color.new(#EF9A9A,0),text=\"DD\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L982-L990, plot L1369"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::BULL_USUB
+    tier: 1
+    plain_english: "3+ consecutive bullish bars each ≥ normPrice 2.0 + cum ≥ th_1x + PBJ on any + DISP on any."
+    composition: { type: STREAK, operands: ["p21_bull_streak ≥ 3", "p21_bull_sum ≥ th_1x", PBJ_BULL, DISP_BULL] }
+    offset: 0
+    plot_call: "plotshape(fire_BullUSub,\"Bull U-Sub\",shape.labelup,location.belowbar,color.new(#00BCD4,0),text=\"U-SUB\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L992-L1007, plot L1344"
+    notes: ""
+
+  - id: hvd-pbj-ppd::BEAR_USUB
+    tier: 1
+    plain_english: "Bear mirror of BULL_USUB."
+    composition: { type: STREAK, operands: ["p21_bear_streak ≥ 3", "p21_bear_sum ≥ th_1x", PBJ_BEAR, DISP_BEAR] }
+    offset: 0
+    plot_call: "plotshape(fire_BearUSub,\"Bear D-Sub\",shape.labeldown,location.abovebar,color.new(#E91E63,0),text=\"D-SUB\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: null
+    pine_source_line_range: "L992-L1007, plot L1370"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::ALPHA_STRIKE_BULL
+    tier: 1
+    plain_english: "First USE-signal of the day + Ping-Pong bull state + (GS or RVOL1x) + (PBJ or PB) + expanded FAUNA slot."
+    composition: { type: AND, operands: [firstOfDay, bull_pp, "(sigGrandSlam or sigBullRVOL1x)", "(PBJ_BULL or PB_BULL)", as_fauna_bull] }
+    offset: 0
+    plot_call: "plotshape(fire_AlphaStrikeB,\"A★ Bull\",shape.flag,location.belowbar,color.new(#00E676,0),text=\"A★\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: null
+    pine_source_line_range: "L1054-L1058, plot L1345"
+    notes: "as_fauna_bull = FAUNA bull OR LSLong1 OR DISP_BULL OR PUP OR WTC OR Hiro OR Nag."
+
+  - id: hvd-pbj-ppd::ALPHA_STRIKE_BEAR
+    tier: 1
+    plain_english: "Bear mirror of ALPHA_STRIKE_BULL."
+    composition: { type: AND, operands: [firstOfDay, bear_pp, "(sigMOAB or sigBearRVOL1x)", "(PBJ_BEAR or PB_BEAR)", as_fauna_bear] }
+    offset: 0
+    plot_call: "plotshape(fire_AlphaStrikeR,\"A★ Bear\",shape.flag,location.abovebar,color.new(#FF4081,0),text=\"A★\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L1054-L1058, plot L1371"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::FOXTROT_BULL
+    tier: 1
+    plain_english: "4 consecutive FAUNA-confirmed bullish bars."
+    composition: { type: STREAK, operands: [sigFAUNABull, "sigFAUNABull[1]", "sigFAUNABull[2]", "sigFAUNABull[3]"] }
+    offset: 0
+    plot_call: "plotshape(fire_FoxtrotB,\"FOX Bull\",shape.triangleup,location.top,color.new(#1B5E20,0),text=\"FOX\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L1019, plot L1346"
+    notes: "Pure FAUNA streak."
+
+  - id: hvd-pbj-ppd::FOXTROT_BEAR
+    tier: 1
+    plain_english: "Bear mirror — 4 consecutive FAUNA-confirmed bearish bars."
+    composition: { type: STREAK, operands: [sigFAUNABear, "sigFAUNABear[1]", "sigFAUNABear[2]", "sigFAUNABear[3]"] }
+    offset: 0
+    plot_call: "plotshape(fire_FoxtrotR,\"FOX Bear\",shape.triangledown,location.bottom,color.new(#B71C1C,0),text=\"FOX\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L1020, plot L1372"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::OMEGA_LONG
+    tier: 1
+    plain_english: "Boom Hunter omega trigger + any of ~35 bull cosignals + NOT MOAB + NOT bearish DISP."
+    composition: { type: AND, operands: [bh_anyOmega, omega_cosignal, "not sigMOAB", "not DISP_BEAR"] }
+    offset: 0
+    plot_call: "plotshape(fire_OmegaLong,\"Omega\",shape.circle,location.abovebar,color.new(#00BFFF,0),text=\"Ω\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: null
+    pine_source_line_range: "L1146-L1226, plot L1347"
+    notes: "Boom Hunter Ehlers internals; cosignal OR-bag of ~35 named bull primitives/composites."
+
+  - id: hvd-pbj-ppd::OD_BULL
+    tier: 1
+    plain_english: "Opening Drive Bull: within first od_max_bars of session + any FVG combo set + DISP prevDisp + PUP + PBJ_BULL."
+    composition: { type: AND, operands: ["sessionBarCount ≤ od_max_bars", "(gz_bullGZI or comboSet1..4_Bull)", disp_prevDisp, PUP, PBJ_BULL] }
+    offset: 0
+    plot_call: "plotshape(fire_ODBull,\"OD Bull\",shape.flag,location.bottom,color.new(#00FFFF,0),text=\"OD\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: null
+    pine_source_line_range: "L1060-L1064, plot L1348"
+    notes: "od_max_bars default 1."
+
+  - id: hvd-pbj-ppd::OD_BEAR
+    tier: 1
+    plain_english: "Bear mirror of OD_BULL."
+    composition: { type: AND, operands: ["sessionBarCount ≤ od_max_bars", "(gz_bearGZI or comboSet1..4_Bear)", disp_prevDisp, PPD, PBJ_BEAR] }
+    offset: 0
+    plot_call: "plotshape(fire_ODBear,\"OD Bear\",shape.flag,location.top,color.new(#FF6E40,0),text=\"OD\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: null
+    pine_source_line_range: "L1060-L1064, plot L1373"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::DISP_CONS_BULL2
+    tier: 1
+    plain_english: "2+ consecutive DISP2 bars (range > stdev*3) AND FAUNA bull on current and prior."
+    composition: { type: STREAK, operands: ["sigDISP2Bull x2", sigFAUNABull, "sigFAUNABull[1]"] }
+    offset: 0
+    plot_call: "plotshape(fire_DispConsBull2,\"D2+ Bull\",shape.triangleup,location.belowbar,color.new(#69F0AE,0),text=\"D2\",textcolor=color.white,size=size.tiny)"
+    alertcondition_id: null
+    pine_source_line_range: "L531-L546, plot L1349"
+    notes: "DISP2 has its own group inputs (i_disp2_*)."
+
+  - id: hvd-pbj-ppd::DISP_CONS_BEAR2
+    tier: 1
+    plain_english: "Bear mirror — 2+ consecutive DISP2 bear bars + FAUNA bear x2."
+    composition: { type: STREAK, operands: ["sigDISP2Bear x2", sigFAUNABear, "sigFAUNABear[1]"] }
+    offset: 0
+    plot_call: "plotshape(fire_DispConsBear2,\"D2+ Bear\",shape.triangledown,location.abovebar,color.new(#FF1744,0),text=\"D2\",textcolor=color.white,size=size.tiny)"
+    alertcondition_id: null
+    pine_source_line_range: "L531-L546, plot L1374"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::DISP_CONS_BULL3
+    tier: 1
+    plain_english: "3+ consecutive DISP3 bull bars + FAUNA bull on current, [1], and [2]."
+    composition: { type: STREAK, operands: ["sigDISP3Bull x3", "sigFAUNABull on 3 bars"] }
+    offset: 0
+    plot_call: "plotshape(fire_DispConsBull3,\"D3+ Bull\",shape.triangleup,location.belowbar,color.new(#00C853,0),text=\"D3\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L548-L563, plot L1350"
+    notes: ""
+
+  - id: hvd-pbj-ppd::DISP_CONS_BEAR3
+    tier: 1
+    plain_english: "Bear mirror — 3+ consecutive DISP3 bear bars + FAUNA bear x3."
+    composition: { type: STREAK, operands: ["sigDISP3Bear x3", "sigFAUNABear on 3 bars"] }
+    offset: 0
+    plot_call: "plotshape(fire_DispConsBear3,\"D3+ Bear\",shape.triangledown,location.abovebar,color.new(#D50000,0),text=\"D3\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L548-L563, plot L1375"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::GOLF_BULL
+    tier: 1
+    plain_english: "3-bar confirmed bull sequence: DISP_BULL now + FAUNA[1] + PUP[1] + DISP_BULL[1] + FAUNA[2] + PUP[2]."
+    composition: { type: WINDOW, operands: [DISP_BULL, "sigFAUNABull[1]", "PUP[1]", "sigDISPBull[1]", "sigFAUNABull[2]", "PUP[2]"] }
+    offset: -1
+    plot_call: "plotshape(fire_GolfBull,\"Golf Bull\",shape.labelup,location.bottom,color.new(#00FF00,25),text=\"G\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1071, plot L1351"
+    notes: "Note: plotted with offset=-1."
+
+  - id: hvd-pbj-ppd::GOLF_BEAR
+    tier: 1
+    plain_english: "Bear mirror — DISP_BEAR + FAUNA bear[1] + PPD[1] + DISP_BEAR[1] + FAUNA bear[2] + PPD[2]."
+    composition: { type: WINDOW, operands: [DISP_BEAR, "sigFAUNABear[1]", "PPD[1]", "sigDISPBear[1]", "sigFAUNABear[2]", "PPD[2]"] }
+    offset: -1
+    plot_call: "plotshape(fire_GolfBear,\"Golf Bear\",shape.labeldown,location.abovebar,color.new(#FF0000,25),text=\"G\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1072, plot L1376"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::PAF_BULL
+    tier: 1
+    plain_english: "Back-to-back PUP + FAUNA bull (PUP now + FAUNA now + PUP[1] + FAUNA[1])."
+    composition: { type: STREAK, operands: [PUP, sigFAUNABull, "PUP[1]", "sigFAUNABull[1]"] }
+    offset: 0
+    plot_call: "plotshape(fire_PAFBull,\"PAF+\",shape.flag,location.belowbar,color.new(#E040FB,25),text=\"PAF+\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: null
+    pine_source_line_range: "L1073, plot L1352"
+    notes: "Inline 'k' toggled label says PAF PUP B2B in inputs."
+
+  - id: hvd-pbj-ppd::PAF_BEAR
+    tier: 1
+    plain_english: "Bear mirror — PPD + FAUNA bear, with [1] also true."
+    composition: { type: STREAK, operands: [PPD, sigFAUNABear, "PPD[1]", "sigFAUNABear[1]"] }
+    offset: 0
+    plot_call: "plotshape(fire_PAFBear,\"PAF-\",shape.flag,location.bottom,color.new(#E040FB,25),text=\"PAF-\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L1074, plot L1377"
+    notes: "Inline 'k' label PAF PPD B2B."
+
+  # ── Tier 1B: Combo Sets ──
+  - id: hvd-pbj-ppd::CS1_FVG_BULL
+    tier: 1B
+    plain_english: "FVG Combo (consolidated): body% ≥ 0.85 on prior bar + (gz_bullHV OR gz_bullGZI) + (SAAB or RVOL1x or GS) on prior."
+    composition: { type: AND, operands: ["cs_vb (body% prior ≥ 0.85)", "(HV5K|HVY|HVQ via gz_bullHV) OR gz_bullGZI", "(sigSAAB|sigBullRVOL1x|sigGrandSlam)[1]", "OR comboSet2_Bull (Pentagon/WTC/Hiro/Nag tier-2)"] }
+    offset: 0
+    plot_call: "plotshape(fire_CS1B,\"CS1 FVG\",shape.labelup,location.top,color.new(#00BCD4,0),text=\"FVG\",textcolor=color.white,size=size.tiny,offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1037-L1050 (csNew1_Bull = comboSet1_Bull or comboSet2_Bull), plot L1353"
+    notes: "csNew1_Bull is the consolidated FVG combo (RVOL slot OR HW slot). Plot offset=-1."
+
+  - id: hvd-pbj-ppd::CS1_FVG_BEAR
+    tier: 1B
+    plain_english: "Bear mirror of CS1_FVG_BULL."
+    composition: { type: AND, operands: ["cs_vb prior", "(gz_bearHV OR gz_bearGZI)", "(Kratos|BearRVOL1x|MOAB|Pentagon|WTC|Hiro|Nag)[1]"] }
+    offset: 0
+    plot_call: "plotshape(fire_CS1R,\"CS1 FVG Bear\",shape.labeldown,location.top,color.new(#FF1744,0),text=\"FVG\",textcolor=color.white,size=size.tiny,offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1037-L1050, plot L1378"
+    notes: "Plot offset=-1."
+
+  - id: hvd-pbj-ppd::CS2_MAT_BULL
+    tier: 1B
+    plain_english: "Matrix Combo (consolidated): body% ≥ 0.85 + matrix_any_bull (Neo/Trinity/aligned) + (SAAB|RVOL1x|GS or Pentagon|WTC|Hiro|Nag)."
+    composition: { type: AND, operands: [cs_vm, matrix_any_bull, "(RVOL slot or HW slot)"] }
+    offset: 0
+    plot_call: "plotshape(fire_CS2B,\"CS2 MAT\",shape.labelup,location.abovebar,color.new(#00897B,0),text=\"MAT\",textcolor=color.white,size=size.tiny)"
+    alertcondition_id: null
+    pine_source_line_range: "L1042-L1051, plot L1354"
+    notes: "csNew2_Bull = comboSet3_Bull or comboSet4_Bull."
+
+  - id: hvd-pbj-ppd::CS2_MAT_BEAR
+    tier: 1B
+    plain_english: "Bear mirror of CS2_MAT_BULL."
+    composition: { type: AND, operands: [cs_vm, matrix_any_bear, "(Kratos|BearRVOL1x|MOAB or Pentagon|WTC|Hiro|Nag)"] }
+    offset: 0
+    plot_call: "plotshape(fire_CS2R,\"CS2 MAT Bear\",shape.labeldown,location.abovebar,color.new(#D50000,0),text=\"MAT\",textcolor=color.white,size=size.tiny)"
+    alertcondition_id: null
+    pine_source_line_range: "L1042-L1051, plot L1379"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::CS3_UNIFIED_BULL
+    tier: 1B
+    plain_english: "Unified Combo Bull: CS1 (FVG) AND CS2 (MAT) both present."
+    composition: { type: AND, operands: [CS1_FVG_BULL, CS2_MAT_BULL] }
+    offset: 0
+    plot_call: "plotshape(fire_CS3B,\"Combo Bull\",shape.labelup,location.belowbar,color.new(#43A047,0),text=\"COMBO\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L1052, plot L1355"
+    notes: "csNew3_Bull = csNew1_Bull and csNew2_Bull."
+
+  - id: hvd-pbj-ppd::CS3_UNIFIED_BEAR
+    tier: 1B
+    plain_english: "Bear mirror — CS1 ∧ CS2 both bear."
+    composition: { type: AND, operands: [CS1_FVG_BEAR, CS2_MAT_BEAR] }
+    offset: 0
+    plot_call: "plotshape(fire_CS3R,\"Combo Bear\",shape.labeldown,location.belowbar,color.new(#9C27B0,0),text=\"COMBO\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L1052, plot L1380"
+    notes: "Mirror."
+
+  # ── Tier 1C: Chains ──
+  - id: hvd-pbj-ppd::CC_BULL
+    tier: 1C
+    plain_english: "Combo Chain Bull: ≥ cc_min_hits Combo windows in last cc_window bars + a PBJ_BULL or PB_BULL within the window. Latches active until any/all combo expire."
+    composition: { type: WINDOW, operands: ["cc_win_bull ≥ cc_min_hits", "PBJ_BULL or PB_BULL inside window"] }
+    offset: 0
+    plot_call: "plotshape(fire_CCBull,\"CC Bull\",shape.square,location.belowbar,color.new(#00BFA5,0),text=\"CC\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: null
+    pine_source_line_range: "L1077-L1111, plot L1356"
+    notes: "Includes shifted operand (comboSet1/2_Bull[i-1] for i≥1)."
+
+  - id: hvd-pbj-ppd::CC_BEAR
+    tier: 1C
+    plain_english: "Bear mirror of CC_BULL."
+    composition: { type: WINDOW, operands: ["cc_win_bear ≥ cc_min_hits", "PBJ_BEAR or PB_BEAR inside window"] }
+    offset: 0
+    plot_call: "plotshape(fire_CCBear,\"CC Bear\",shape.square,location.bottom,color.new(#E91E63,0),text=\"CC\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L1088-L1111, plot L1381"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::LSC_BULL
+    tier: 1C
+    plain_english: "Long/Short Chain Bull: ≥ lsc_min_hits LS-Long bars (lsc_L1 or lsc_L2 — Reg+Cum+body thresholds) within lsc_window bars + a PBJ_BULL or PB_BULL inside the window."
+    composition: { type: WINDOW, operands: ["count(lsc_L1∨lsc_L2)[0..win-1] ≥ lsc_min_hits", "PBJ_BULL or PB_BULL inside window"] }
+    offset: 0
+    plot_call: "plotshape(fire_LSCBull,\"LSC Bull\",shape.square,location.top,color.new(#651FFF,0),text=\"LSC\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L1113-L1143, plot L1357"
+    notes: ""
+
+  - id: hvd-pbj-ppd::LSC_BEAR
+    tier: 1C
+    plain_english: "Bear mirror of LSC_BULL."
+    composition: { type: WINDOW, operands: ["count(lsc_S1∨lsc_S2) ≥ lsc_min_hits", "PBJ_BEAR or PB_BEAR inside window"] }
+    offset: 0
+    plot_call: "plotshape(fire_LSCBear,\"LSC Bear\",shape.square,location.belowbar,color.new(#9C27B0,0),text=\"LSC\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L1113-L1143, plot L1382"
+    notes: "Mirror."
+
+  # ── Tier 2: Structure ──
+  - id: hvd-pbj-ppd::FLOOR_BULL
+    tier: 2
+    plain_english: "Floor: Ping-Pong bull state + PBJ_BULL + (RVOL1x or GS or WTC or Hiro or directional Nag)."
+    composition: { type: AND, operands: [bull_pp, PBJ_BULL, bull_hw_slot] }
+    offset: 0
+    plot_call: "plotshape(fire_BullFloor,\"Floor\",shape.circle,location.belowbar,color.new(#00E5FF,0),text=\"FLOOR\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L1239-L1241, plot L1358"
+    notes: "anyBullFloor."
+
+  - id: hvd-pbj-ppd::SECOND_FLOOR_BULL
+    tier: 2
+    plain_english: "2nd Floor: Ping-Pong bull + PB_BULL + HW-volume slot."
+    composition: { type: AND, operands: [bull_pp, PB_BULL, bull_hw_slot] }
+    offset: 0
+    plot_call: "plotshape(fire_Bull2ndFloor,\"2F\",shape.cross,location.abovebar,color.new(#80DEEA,0),text=\"2F\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: null
+    pine_source_line_range: "L1242, plot L1359"
+    notes: "anyBull2nd."
+
+  - id: hvd-pbj-ppd::ROOFTOP_BEAR
+    tier: 2
+    plain_english: "Rooftop: Ping-Pong bear + PBJ_BEAR + HW-volume slot bear."
+    composition: { type: AND, operands: [bear_pp, PBJ_BEAR, bear_hw_slot] }
+    offset: 0
+    plot_call: "plotshape(fire_BearRooftop,\"Rooftop\",shape.circle,location.abovebar,color.new(#FF1744,0),text=\"ROOF\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L1243, plot L1383"
+    notes: "anyBearRoof."
+
+  - id: hvd-pbj-ppd::PENTHOUSE_BEAR
+    tier: 2
+    plain_english: "Penthouse: Ping-Pong bear + PB_BEAR + HW-volume slot bear."
+    composition: { type: AND, operands: [bear_pp, PB_BEAR, bear_hw_slot] }
+    offset: 0
+    plot_call: "plotshape(fire_BearPent,\"Penthouse\",shape.cross,location.belowbar,color.new(#D50000,0),text=\"PH\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: null
+    pine_source_line_range: "L1244, plot L1384"
+    notes: "anyBearPent."
+
+  # ── Tier 3: HW ──
+  - id: hvd-pbj-ppd::HW_BULL
+    tier: 3
+    plain_english: "HW Bull: green bar + DISP5 (5σ) + PBJ_BULL + HW-volume slot + (Floor or 2F)."
+    composition: { type: AND, operands: ["close>open", DISP5_BULL, PBJ_BULL, "(GS or WTC or Hiro or directional Nag)", "(FLOOR_BULL or SECOND_FLOOR_BULL)"] }
+    offset: 0
+    plot_call: "plotshape(fire_HWBull,\"HW Bull\",shape.xcross,location.abovebar,color.new(#FF6D00,0),text=\"HW\",textcolor=color.white,size=size.large)"
+    alertcondition_id: null
+    pine_source_line_range: "L1247, plot L1360"
+    notes: "hwBull."
+
+  - id: hvd-pbj-ppd::HW_BEAR
+    tier: 3
+    plain_english: "HW Bear: red bar + DISP5 bear + PBJ_BEAR + HW-volume slot bear + (Rooftop or Penthouse)."
+    composition: { type: AND, operands: ["close<open", DISP5_BEAR, PBJ_BEAR, "(MOAB or WTC or Hiro or directional Nag)", "(ROOFTOP_BEAR or PENTHOUSE_BEAR)"] }
+    offset: 0
+    plot_call: "plotshape(fire_HWBear,\"HW Bear\",shape.xcross,location.belowbar,color.new(#FF6D00,0),text=\"HW\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: null
+    pine_source_line_range: "L1248, plot L1385"
+    notes: "hwBear."
+
+  # ── Pipeline A standalone HV+D plots already represented as roots above ──
+
+  # ── Pipeline A × B co-occurrence (HV+D ↔ PBJ/PB) ──
+  - id: hvd-pbj-ppd::HVD_PB_BULL
+    tier: 2
+    plain_english: "HV+D bull AND PB_BULL on prior bar (offset alignment for the same described candle)."
+    composition: { type: AND, operands: [HVD_BULL, "PB_BULL[1]"] }
+    offset: -1
+    plot_call: "plotshape(en_hvd_pb_bull  and hvd_pb_bull,  \"PB Bull\",  shape.labelup,  location.bottom, color.new(color.aqua, 75),   size=size.small,  text=\"HV+D\\nPB\",  textcolor=color.white, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1303-L1306, plot L1317; alert L1331-L1332"
+    notes: "Cross-pipeline AND. Plot offset=-1."
+
+  - id: hvd-pbj-ppd::HVD_PBJ_BULL
+    tier: 2
+    plain_english: "HV+D bull AND PBJ_BULL on prior bar."
+    composition: { type: AND, operands: [HVD_BULL, "PBJ_BULL[1]"] }
+    offset: -1
+    plot_call: "plotshape(en_hvd_pbj_bull and hvd_pbj_bull, \"PBJ Bull\", shape.diamond,  location.bottom, color.new(color.yellow, 25), size=size.normal, text=\"HV+D\\nPBJ\", textcolor=color.white, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1303-L1306, plot L1318; alert L1329-L1330"
+    notes: "Cross-pipeline AND."
+
+  - id: hvd-pbj-ppd::HVD_PB_BEAR
+    tier: 2
+    plain_english: "HV+D bear AND PB_BEAR on prior bar."
+    composition: { type: AND, operands: [HVD_BEAR, "PB_BEAR[1]"] }
+    offset: -1
+    plot_call: "plotshape(en_hvd_pb_bear  and hvd_pb_bear,  \"PB Bear\",  shape.labeldown, location.top,   color.new(color.orange, 75), size=size.small,  text=\"HV+D\\nPB\",  textcolor=color.white, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1303-L1306, plot L1319; alert L1335-L1336"
+    notes: "Cross-pipeline AND."
+
+  - id: hvd-pbj-ppd::HVD_PBJ_BEAR
+    tier: 2
+    plain_english: "HV+D bear AND PBJ_BEAR on prior bar."
+    composition: { type: AND, operands: [HVD_BEAR, "PBJ_BEAR[1]"] }
+    offset: -1
+    plot_call: "plotshape(en_hvd_pbj_bear and hvd_pbj_bear, \"PBJ Bear\", shape.diamond,  location.top,    color.new(color.red, 25),    size=size.normal, text=\"HV+D\\nPBJ\", textcolor=color.white, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1303-L1306, plot L1320; alert L1333-L1334"
+    notes: "Cross-pipeline AND."
+
+  # ── Pipeline D: Triple AND ──
+  - id: hvd-pbj-ppd::CO_BULL_PBJ
+    tier: 3
+    plain_english: "Triple AND: HV+D bull (Pipeline A) ∧ PBJ_BULL[1] (Pipeline B) ∧ use_any_bull[1] (Pipeline C OR-bag)."
+    composition: { type: AND, operands: [HVD_BULL, "PBJ_BULL[1]", "use_any_bull[1]"] }
+    offset: -1
+    plot_call: "plotshape(co_bull_pbj, \"CO: HV+D+PBJ+USE Bull\", shape.diamond,      location.belowbar, color.new(#FFD700, 0), text=\"CO\\nPBJ\", textcolor=color.white, size=size.huge, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1431, plot L1439; alert L1509-L1604"
+    notes: "use_any_bull is the OR of 22 USE bull signals. The alert at L1604 itemizes which USE signals were active."
+
+  - id: hvd-pbj-ppd::CO_BULL_PB
+    tier: 3
+    plain_english: "Triple AND: HV+D bull ∧ PB_BULL[1] ∧ use_any_bull[1]."
+    composition: { type: AND, operands: [HVD_BULL, "PB_BULL[1]", "use_any_bull[1]"] }
+    offset: -1
+    plot_call: "plotshape(co_bull_pb,  \"CO: HV+D+PB+USE Bull\",  shape.triangleup,   location.belowbar, color.new(#00E5FF, 0), text=\"CO\\nPB\",  textcolor=color.white, size=size.large, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1432, plot L1440"
+    notes: "Same alert as CO_BULL_PBJ."
+
+  - id: hvd-pbj-ppd::CO_BEAR_PBJ
+    tier: 3
+    plain_english: "Bear mirror of CO_BULL_PBJ."
+    composition: { type: AND, operands: [HVD_BEAR, "PBJ_BEAR[1]", "use_any_bear[1]"] }
+    offset: -1
+    plot_call: "plotshape(co_bear_pbj, \"CO: HV+D+PBJ+USE Bear\", shape.diamond,      location.abovebar, color.new(#FF1744, 0), text=\"CO\\nPBJ\", textcolor=color.white, size=size.huge, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1433, plot L1441"
+    notes: ""
+
+  - id: hvd-pbj-ppd::CO_BEAR_PB
+    tier: 3
+    plain_english: "Bear mirror of CO_BULL_PB."
+    composition: { type: AND, operands: [HVD_BEAR, "PB_BEAR[1]", "use_any_bear[1]"] }
+    offset: -1
+    plot_call: "plotshape(co_bear_pb,  \"CO: HV+D+PB+USE Bear\",  shape.triangledown, location.abovebar, color.new(#FF6D00, 0), text=\"CO\\nPB\",  textcolor=color.white, size=size.large, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1434, plot L1442"
+    notes: ""
+
+  # ── Back-to-Back HV+D ──
+  - id: hvd-pbj-ppd::B2B_HVD_BULL_NOPB
+    tier: 2
+    plain_english: "Two consecutive HV+D bull bars (bar N-1 and bar N-2) with NEITHER PBJ nor PB on either of those candles."
+    composition: { type: AND, operands: [HVD_BULL, "HVD_BULL[1]", "not (PBJ_BULL[1] or PBJ_BULL[2])", "not (PB_BULL[1] or PB_BULL[2])"] }
+    offset: -1
+    plot_call: "plotshape(b2b_en_bull     and b2b_bull_nopb, \"B2B HV+D Bull\",      shape.flag,         location.belowbar, color.new(#00E676, 0), text=\"B2B\",         textcolor=color.white, size=size.large, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1468-L1481, plot L1484; alert L1492-L1493"
+    notes: "Mutually exclusive with the PBJ and PB B2B variants."
+
+  - id: hvd-pbj-ppd::B2B_HVD_PBJ_BULL
+    tier: 2
+    plain_english: "Two consecutive HV+D bull bars + PBJ_BULL on either of the two."
+    composition: { type: AND, operands: [HVD_BULL, "HVD_BULL[1]", "(PBJ_BULL[1] or PBJ_BULL[2])"] }
+    offset: -1
+    plot_call: "plotshape(b2b_en_bull_pbj and b2b_bull_pbj,  \"B2B HV+D+PBJ Bull\",  shape.flag,         location.belowbar, color.new(#FFD700, 0), text=\"B2B\\nPBJ\",    textcolor=color.white, size=size.huge,  offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1472, plot L1485; alert L1496-L1497"
+    notes: ""
+
+  - id: hvd-pbj-ppd::B2B_HVD_PB_BULL
+    tier: 2
+    plain_english: "Two consecutive HV+D bull bars + PB_BULL on either of the two AND not B2B+PBJ."
+    composition: { type: AND, operands: [HVD_BULL, "HVD_BULL[1]", "(PB_BULL[1] or PB_BULL[2])", "not B2B_HVD_PBJ_BULL"] }
+    offset: -1
+    plot_call: "plotshape(b2b_en_bull_pb  and b2b_bull_pb,   \"B2B HV+D+PB Bull\",   shape.flag,         location.belowbar, color.new(#00E5FF, 0), text=\"B2B\\nPB\",     textcolor=color.white, size=size.large, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1476, plot L1486; alert L1500-L1501"
+    notes: "PBJ has priority over PB."
+
+  - id: hvd-pbj-ppd::B2B_HVD_BEAR_NOPB
+    tier: 2
+    plain_english: "Bear mirror of B2B_HVD_BULL_NOPB."
+    composition: { type: AND, operands: [HVD_BEAR, "HVD_BEAR[1]", "not (PBJ_BEAR[1] or PBJ_BEAR[2])", "not (PB_BEAR[1] or PB_BEAR[2])"] }
+    offset: -1
+    plot_call: "plotshape(b2b_en_bear     and b2b_bear_nopb, \"B2B HV+D Bear\",      shape.flag,         location.abovebar, color.new(#FF1744, 0), text=\"B2B\",         textcolor=color.white, size=size.large, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1469-L1481, plot L1487; alert L1494-L1495"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::B2B_HVD_PBJ_BEAR
+    tier: 2
+    plain_english: "Bear mirror of B2B_HVD_PBJ_BULL."
+    composition: { type: AND, operands: [HVD_BEAR, "HVD_BEAR[1]", "(PBJ_BEAR[1] or PBJ_BEAR[2])"] }
+    offset: -1
+    plot_call: "plotshape(b2b_en_bear_pbj and b2b_bear_pbj,  \"B2B HV+D+PBJ Bear\",  shape.flag,         location.abovebar, color.new(#FF1744, 0), text=\"B2B\\nPBJ\",    textcolor=color.white, size=size.huge,  offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1473, plot L1488; alert L1498-L1499"
+    notes: "Mirror."
+
+  - id: hvd-pbj-ppd::B2B_HVD_PB_BEAR
+    tier: 2
+    plain_english: "Bear mirror of B2B_HVD_PB_BULL."
+    composition: { type: AND, operands: [HVD_BEAR, "HVD_BEAR[1]", "(PB_BEAR[1] or PB_BEAR[2])", "not B2B_HVD_PBJ_BEAR"] }
+    offset: -1
+    plot_call: "plotshape(b2b_en_bear_pb  and b2b_bear_pb,   \"B2B HV+D+PB Bear\",   shape.flag,         location.abovebar, color.new(#FF6D00, 0), text=\"B2B\\nPB\",     textcolor=color.white, size=size.large, offset=-1)"
+    alertcondition_id: null
+    pine_source_line_range: "L1477, plot L1489; alert L1502-L1503"
+    notes: "Mirror."
+
+uncertain_or_questions:
+  - "PBJ_BULL/PBJ_BEAR/PB_BULL/PB_BEAR have NO offset=0 standalone plotshape in this file. They surface only via composites (HVD-co-shapes at offset=-1, FLOOR/2F/ROOF/PH, SUPER, HW, etc.) and via Pipeline D. If the bible expects a Pipeline-B standalone plot, it would have to be classified 'no plot — terminal-boolean root only'."
+  - "PUP and PPD also have no standalone plot here — they are named primitives consumed only by composites. Listed as roots per the family-instructions ('PUP if defined here'). Confirm whether bible wants them plotted-only or any-named-primitive."
+  - "Volume rank tiers (50,75,100,...,1000) inside Pipeline A are NOT individually exposed as separate roots — they roll up into base_combo_bull via the priority ranker. Listed only HV5K/HVY/HVQ (GZI ladder) and HV75/HV150/HV500/HV1000 (USE-side ladder) as named primitives because those names are explicitly emitted as Boolean variables. The Pipeline-A 50/100/150/.../1000 toggles are all internal to the single HVD root."
+  - "DISP2 / DISP3 are intermediate primitives used only inside DISP_CONS_BULL2/3; not separately rooted. DISP5 is exposed because HW Bull/Bear depend on it (and uses a hardcoded 5σ which differs from DISP's user-input multipliers)."
+  - "Predecessor relationship — assessed as 'drifted-subset' from byte/line counts (1767 vs 1939 lines, 109,787 vs 123,396 bytes) and CHANGELOG header. Did NOT diff the predecessor file in detail per task rules."
+  - "Several composite operands listed as bare Pine identifiers (e.g. sigFAUNABull, bull_pp, gz_bullGZI, sigSAAB, sigGrandSlam, sigPentagon, sigWTC, sigHiroshima, sigMOAB, sigKratos, sigBullRVOL1x, sigBearRVOL1x, sigLong1, sigShort1, sigNeoBull, sigTrinityBull) refer to internal USE-engine primitives. They are documented in `internal_helpers` as engines (RVOL/FAUNA/Matrix-Number/Long-Short/GZI). Whether the bible should treat each of those as its own root from this file or only from the dedicated heavy-pentagon/hv-fvg-gz1-og engines is a Stage-1 merge question."

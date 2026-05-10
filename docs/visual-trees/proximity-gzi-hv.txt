@@ -1,25 +1,24 @@
-PROXIMITY GZI HV — dependency tree
-====================================
+VISUAL TREE — proximity-gzi-hv
+===============================
+File: proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine
+Pine v5  ·  253 lines  ·  overlay=True
+Purpose: Stripped variant of hv-fvg-gz1-og: same FVG/HV/GZI core, dashboard + acceleration metrics removed
 
-This indicator is an ALIAS / RE-SKIN of hv-fvg-gz1-og.
-diff between this file and HV_FVG_GZ1_OG_v1.pine returns EXACTLY 1 LINE OF DIFFERENCE
-— the indicator() declaration (title + shorttitle).
-Lines 3-253 byte-identical.
+ROOTS
+-----
+  ◆ proximity-gzi-hv::GZI_BULL    [gzi · offset=-1]
+      Fires on a newly detected bullish FVG when a same-polarity (bullish) …
+  ◆ proximity-gzi-hv::GZI_BEAR    [gzi · offset=-1]
+      Fires on a newly detected bearish FVG when a same-polarity (bearish) …
+  ◆ proximity-gzi-hv::HV_BULL    [hv · offset=-1]
+      Fires on a newly detected bullish FVG when the prior bar's volume equ…
+  ◆ proximity-gzi-hv::HV_BEAR    [hv · offset=-1]
+      Fires on a newly detected bearish FVG when the prior bar's volume equ…
+  ◆ proximity-gzi-hv::FVG_BULL_RAW    [fvg · offset=-1]
+      Raw bullish 3-bar Fair Value Gap: current low above the high of two b…
+  ◆ proximity-gzi-hv::FVG_BEAR_RAW    [fvg · offset=-1]
+      Raw bearish 3-bar Fair Value Gap: current high below the low of two b…
 
-ROOTS REFERENCED (all cross-refs to hv-fvg-gz1-og::*)
-──────────────────────────────────────────────────────
-FVG_BULL_RAW / FVG_BEAR_RAW (verbatim)
-GZI_BULL / GZI_BEAR  (offset=-1)
-HV_BULL / HV_BEAR    (offset=-1)
+COMPOSITES (by tier)
+-----
 
-COMPOSITES: NONE.
-
-PLOTSHAPES & ALERTS: same 4 + 10 as canonical OG.
-
-DEAD STATE (identical in both files):
-  max_bull_fvg / min_bull_fvg / max_bear_fvg / min_bear_fvg declared but never assigned/read.
-
-STAGE 6 RECOMMENDATION
-───────────────────────
-Tag in bible as `mirror-of: hv-fvg-gz1-og::v1`.
-Consider deletion or symlink. If kept, future edits to OG must be mirrored here.

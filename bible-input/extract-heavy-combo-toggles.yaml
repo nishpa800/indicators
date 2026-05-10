@@ -1,0 +1,172 @@
+indicator:
+  id: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  branch: both
+  pine_version: 5
+  line_count: 268
+  overlay: true
+  one_line_purpose: "Lifts 5 base + 15 directional combos verbatim from heavy-pentagon; lumps them into 3 master toggle plots (Bull / Bear / Neutral) gated by 15 eligibility checkboxes"
+  parent_indicator: heavy-pentagon
+  copy_relationship: "verbatim per heavy-combo-toggles CHANGELOG v1 — pipelines P1/P2/P3, displacement engine, 5 base combos, and 15 directional combo booleans copied unchanged from HEAVY_PENTAGON_v1.pine; verified against heavy-pentagon source (displacement engine L242-L256, base combos L278-L290, 15 directional booleans L293-L315)"
+
+internal_helpers:
+  - name: f_rvol_1x_threshold
+    pine_source_line_range: "L83-L103"
+    notes: "TF-keyed σ-multiplier table for RVOL 1x threshold (verbatim from heavy-pentagon)"
+  - name: f_saab_kratos_threshold
+    pine_source_line_range: "L105"
+    notes: "= f_rvol_1x_threshold * 0.56 (verbatim from heavy-pentagon)"
+  - name: f_gs_moab_threshold
+    pine_source_line_range: "L107-L118"
+    notes: "TF-keyed table for Grand Slam / MOAB threshold (verbatim from heavy-pentagon)"
+  - name: f_wtc_threshold
+    pine_source_line_range: "L120"
+    notes: "= f_rvol_1x_threshold * 2.0 (verbatim from heavy-pentagon)"
+  - name: f_hiroshima_threshold
+    pine_source_line_range: "L121"
+    notes: "= f_gs_moab_threshold (verbatim from heavy-pentagon)"
+  - name: bb_inRange
+    pine_source_line_range: "L143"
+    notes: "v >= lowTh and v < highTh — half-open band check"
+  - name: "P1 intermediates (bb_spike, bb_normalizedPrice, bb_normalizedVolume, bb_diff, bb_positiveDiff, bb_smaDiff, bb_baseBullish, bb_baseBearish)"
+    pine_source_line_range: "L131-L141"
+    notes: "Pipeline 1 derived series, verbatim from heavy-pentagon"
+  - name: "P1 SAAB/Kratos/RVOL1x/GrandSlam/MOAB tier booleans (sigSAAB, sigKratos, sigBullRVOL1x, sigBearRVOL1x, sigGrandSlam, sigMOAB)"
+    pine_source_line_range: "L147-L152"
+    notes: "Pipeline 1 tier classifications — building blocks (no plot in this indicator)"
+  - name: "P2 relVolRatio + Pentagon/WTC/Hiroshima booleans (sigPentagon, sigWTC, sigHiroshima)"
+    pine_source_line_range: "L164-L169"
+    notes: "Pipeline 2 reg@time RVOL ratio + tier classifications — building blocks"
+  - name: "P3 Nagasaki running-max engine (maxVol, isNagasaki, sigNagasaki)"
+    pine_source_line_range: "L175-L186"
+    notes: "Pipeline 3 ATH-volume detection — building block"
+  - name: "Displacement engine (thresh, bFVG, sFVG, barRange_d, rangeStdev, dispCandleMet, dispBull, dispBear)"
+    pine_source_line_range: "L192-L207"
+    notes: "Bar[1] σ-range + bar[0] FVG; verbatim from heavy-pentagon L236-L256"
+  - name: "Base combo booleans (groupA_Bull, groupA_Bear, groupB, baseYinYang, baseNagasaki, baseNagasakiV, baseTrident, baseNHx2, noDisp)"
+    pine_source_line_range: "L213-L223"
+    notes: "5 base combo families + noDisp gate; verbatim from heavy-pentagon L278-L290"
+  - name: "15 directional combo booleans (sigHYYBull/Bear/Neutral, sigHNBull/Bear/Neutral, sigHNVBull/Bear/Neutral, sigHTBull/Bear/Neutral, sigNHx2Bull/Bear/Neutral)"
+    pine_source_line_range: "L226-L244"
+    notes: "5 base combos × {dispBull, dispBear, noDisp} → 15 directional booleans; verbatim from heavy-pentagon L293-L315"
+  - name: "15 eligibility input booleans (en_HYYBull, en_HYYBear, en_HYYNeutral, en_HNBull/Bear/Neutral, en_HNVBull/Bear/Neutral, en_HTBull/Bear/Neutral, en_NHx2Bull/Bear/Neutral)"
+    pine_source_line_range: "L55-L73"
+    notes: "User-toggled gates that select which of the 15 directional combos contribute to each master OR-gate (NEW to heavy-combo-toggles)"
+  - name: masterBull
+    pine_source_line_range: "L249"
+    notes: "Intermediate boolean = OR of (en_X and sigX) across the 5 Bull combos; consumed by S1 plot"
+  - name: masterBear
+    pine_source_line_range: "L250"
+    notes: "Intermediate boolean = OR of (en_X and sigX) across the 5 Bear combos; consumed by S2 plot"
+  - name: masterNeutral
+    pine_source_line_range: "L251"
+    notes: "Intermediate boolean = OR of (en_X and sigX) across the 5 Neutral combos; consumed by S3 plot"
+
+roots: []  # verified — heavy-combo-toggles defines NO new roots; every detection primitive is lifted verbatim from heavy-pentagon
+
+composites:
+  - id: heavy-combo-toggles::HEAVY_COMBO_BULL
+    tier: 4
+    plain_english: "Master Bull OR-gate: fires on bar[1] when ANY enabled Bull combo (Heavy Yin-Yang Bull, Heavy Nagasaki Bull, Heavy Nagasaki Vol Bull, Heavy Trident Bull, Neutral Heavy x2 Bull) co-occurs with displacement+FVG (dispBull). Eligibility checkboxes gate which of the 5 Bull combos may contribute."
+    composition:
+      type: OR_TOGGLED
+      operands:
+        - "heavy-pentagon::HEAVY_YIN_YANG_BULL"
+        - "heavy-pentagon::HEAVY_NAGASAKI_BULL"
+        - "heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL"
+        - "heavy-pentagon::HEAVY_TRIDENT_BULL"
+        - "heavy-pentagon::NEUTRAL_HEAVY_X2_BULL"
+      gate_inputs:
+        - en_HYYBull
+        - en_HNBull
+        - en_HNVBull
+        - en_HTBull
+        - en_NHx2Bull
+    offset: -1
+    plot_call: 'plotshape(masterBull,    title="S1: Heavy Combo Bull",    style=shape.circle, location=location.bottom, size=size.normal, color=color.lime,  text="HC▲", offset=-1)'
+    pine_source_line_range: "L249, L258"
+    notes: "Bull master uses dispBull (displacement+FVG, bar[1] is the displacement candle) → offset = -1 per Verification Protocol v3.2 Part 5 Rule 2. 1:1 alertcondition at L265."
+  - id: heavy-combo-toggles::HEAVY_COMBO_BEAR
+    tier: 4
+    plain_english: "Master Bear OR-gate: fires on bar[1] when ANY enabled Bear combo (Heavy Yin-Yang Bear, Heavy Nagasaki Bear, Heavy Nagasaki Vol Bear, Heavy Trident Bear, Neutral Heavy x2 Bear) co-occurs with displacement+FVG (dispBear). Eligibility checkboxes gate which of the 5 Bear combos may contribute."
+    composition:
+      type: OR_TOGGLED
+      operands:
+        - "heavy-pentagon::HEAVY_YIN_YANG_BEAR"
+        - "heavy-pentagon::HEAVY_NAGASAKI_BEAR"
+        - "heavy-pentagon::HEAVY_NAGASAKI_VOL_BEAR"
+        - "heavy-pentagon::HEAVY_TRIDENT_BEAR"
+        - "heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR"
+      gate_inputs:
+        - en_HYYBear
+        - en_HNBear
+        - en_HNVBear
+        - en_HTBear
+        - en_NHx2Bear
+    offset: -1
+    plot_call: 'plotshape(masterBear,    title="S2: Heavy Combo Bear",    style=shape.circle, location=location.top,    size=size.normal, color=color.red,   text="HC▼", offset=-1)'
+    pine_source_line_range: "L250, L259"
+    notes: "Bear master uses dispBear (displacement+FVG, bar[1] is the displacement candle) → offset = -1 per Verification Protocol v3.2 Part 5 Rule 2. 1:1 alertcondition at L266."
+  - id: heavy-combo-toggles::HEAVY_COMBO_NEUTRAL
+    tier: 4
+    plain_english: "Master Neutral OR-gate: fires on bar[0] when ANY enabled Neutral combo (Heavy Yin-Yang Neutral, Heavy Nagasaki Neutral, Heavy Nagasaki Vol Neutral, Heavy Trident Neutral, Neutral Heavy x2 Neutral) occurs while there is NO displacement (noDisp = NOT dispBull AND NOT dispBear). Eligibility checkboxes gate which of the 5 Neutral combos may contribute."
+    composition:
+      type: OR_TOGGLED
+      operands:
+        - "heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL"
+        - "heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL"
+        - "heavy-pentagon::HEAVY_NAGASAKI_VOL_NEUTRAL"
+        - "heavy-pentagon::HEAVY_TRIDENT_NEUTRAL"
+        - "heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL"
+      gate_inputs:
+        - en_HYYNeutral
+        - en_HNNeutral
+        - en_HNVNeutral
+        - en_HTNeutral
+        - en_NHx2Neutral
+    offset: 0
+    plot_call: 'plotshape(masterNeutral, title="S3: Heavy Combo Neutral", style=shape.circle, location=location.top,    size=size.normal, color=color.white, text="HC—")'
+    pine_source_line_range: "L251, L260"
+    notes: "Neutral master uses noDisp (= NOT dispBull AND NOT dispBear). No displacement candle to mark → offset = 0 (constituent signals all fire on bar[0]) per Verification Protocol v3.2 Part 5 Rule 2. 1:1 alertcondition at L267."
+
+cross_indicator_dependencies:
+  # 5 base combos (heavy-pentagon Stage 5 base)
+  - "heavy-pentagon::baseYinYang"
+  - "heavy-pentagon::baseNagasaki"
+  - "heavy-pentagon::baseNagasakiV"
+  - "heavy-pentagon::baseTrident"
+  - "heavy-pentagon::baseNHx2"
+  # 15 directional combo booleans (heavy-pentagon Stage 5)
+  - "heavy-pentagon::HEAVY_YIN_YANG_BULL"
+  - "heavy-pentagon::HEAVY_YIN_YANG_BEAR"
+  - "heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL"
+  - "heavy-pentagon::HEAVY_NAGASAKI_BULL"
+  - "heavy-pentagon::HEAVY_NAGASAKI_BEAR"
+  - "heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL"
+  - "heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL"
+  - "heavy-pentagon::HEAVY_NAGASAKI_VOL_BEAR"
+  - "heavy-pentagon::HEAVY_NAGASAKI_VOL_NEUTRAL"
+  - "heavy-pentagon::HEAVY_TRIDENT_BULL"
+  - "heavy-pentagon::HEAVY_TRIDENT_BEAR"
+  - "heavy-pentagon::HEAVY_TRIDENT_NEUTRAL"
+  - "heavy-pentagon::NEUTRAL_HEAVY_X2_BULL"
+  - "heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR"
+  - "heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL"
+  # Pipeline outputs consumed by Stage 5 (also lifted verbatim and used as building blocks here)
+  - "heavy-pentagon::sigBullRVOL1x"
+  - "heavy-pentagon::sigBearRVOL1x"
+  - "heavy-pentagon::sigGrandSlam"
+  - "heavy-pentagon::sigMOAB"
+  - "heavy-pentagon::sigPentagon"
+  - "heavy-pentagon::sigWTC"
+  - "heavy-pentagon::sigHiroshima"
+  - "heavy-pentagon::sigNagasaki"
+  - "heavy-pentagon::dispBull"
+  - "heavy-pentagon::dispBear"
+  - "heavy-pentagon::noDisp"
+
+uncertain_or_questions:
+  - "Verbatim-lift verdict: VERBATIM. Spot-checks pass: (a) displacement engine L192-L207 here matches heavy-pentagon L236-L256 (same disp_strength=6.0 default, same disp_lookback=100, same threshPct=2 default, same auto=true, same FVG formulas, same dispCandleMet, same dispBull/dispBear); (b) base combos L213-L221 here match heavy-pentagon L278-L287 character-for-character (groupA_Bull, groupA_Bear, groupB, baseYinYang, baseNagasaki, baseNagasakiV, baseTrident, baseNHx2); (c) noDisp L223 matches heavy-pentagon L290; (d) all 15 directional booleans L226-L244 match heavy-pentagon L293-L315; (e) P1/P2/P3 thresholds and tier formulas (L83-L186) match heavy-pentagon helpers and pipeline definitions. SAAB/Kratos sigs are still computed here (L147-L148) but unused — they are not part of any Heavy Combo, consistent with heavy-pentagon."
+  - "Line count noted as 268 (file ends at L268 per Read; CHANGELOG describes 14,346-byte file but Pine source has 268 lines including blank tail)."
+  - "No new roots introduced. The 3 master plots are pure OR-toggles over heavy-pentagon's existing 15 named heavy-combo composites — modeled here as composition.type=OR_TOGGLED with explicit gate_inputs (the en_* checkboxes)."
+  - "SAAB / Kratos / RVOL1x / Grand Slam / MOAB / Pentagon / WTC / Hiroshima / Nagasaki tier booleans are computed but have NO standalone plotshape in this indicator (CHANGELOG confirms). Only the 3 master OR-gates are plotted."

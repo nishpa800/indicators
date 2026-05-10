@@ -1,41 +1,39 @@
-ANISH 50% 1ST COMBO — dependency tree
-======================================
+VISUAL TREE — anish-50-1st-combo
+=================================
+File: anish-50-1st-combo/versions/ANISH_50_1ST_COMBO_v1.pine
+Pine v6  ·  181 lines  ·  overlay=True
+Purpose: PUP/PPD + Anish Stage 2/4 EMA stack + Gap Up/Down + Super PUP/PPD + TB/Foster transitions
 
-ROOTS (tier 0, lifecycle stage 2)
-──────────────────────────────────
-pocket-pivot::PUP, pocket-pivot::PPD              (canonical here per oldest definition)
-anish-stage::BULL_PASS, anish-stage::BEAR_PASS    (canonical here; tentative — may be cross-ref)
+ROOTS
+-----
+  ◆ anish-50-1st-combo::PPBull    [pocket-pivot · offset=?]
+      
+  ◆ anish-50-1st-combo::PPBear    [pocket-pivot · offset=?]
+      
+  ◆ anish-50-1st-combo::AnishBull    [stage-trend · offset=?]
+      
+  ◆ anish-50-1st-combo::AnishBear    [stage-trend · offset=?]
+      
+  ◆ anish-50-1st-combo::GapUp    [gap · offset=?]
+      
+  ◆ anish-50-1st-combo::GapDown    [gap · offset=?]
+      
 
-INTERNAL HELPERS (NOT roots)
-─────────────────────────────
-gapUp, gapDn (raw price/open vs prior close — internal mechanics of GAP_*_SIG)
+COMPOSITES (by tier)
+-----
+  Tier 2:
+    ● anish-50-1st-combo::AllThreeBull    [offset=? · ?]
+    ● anish-50-1st-combo::AllThreeBear    [offset=? · ?]
+    ● anish-50-1st-combo::SuperPup    [offset=? · ?]
+    ● anish-50-1st-combo::SuperPPD    [offset=? · ?]
 
-TIER 1 COMPOSITES (offset 0)
-─────────────────────────────
-SUPER_PUP   = PUP AND BULL_PASS
-SUPER_PPD   = PPD AND BEAR_PASS
-GAP_UP_SIG  = gapUpEnabled AND gapUp     (not plotted; consumed by ALL_THREE_BULL only)
-GAP_DN_SIG  = gapDownEnabled AND gapDn   (not plotted; consumed by ALL_THREE_BEAR only)
+  Tier 3:
+    ● anish-50-1st-combo::TB    [offset=? · ?]
+    ● anish-50-1st-combo::Foster    [offset=? · ?]
 
-TIER 2 COMPOSITES (offset 0)
-─────────────────────────────
-ALL_THREE_BULL = PUP AND GAP_UP_SIG AND BULL_PASS
-ALL_THREE_BEAR = PPD AND GAP_DN_SIG AND BEAR_PASS
 
-TIER 2 STATEFUL (FSM, var counters)
-────────────────────────────────────
-TB_SELL    = After ≥minAnishBars=5 consecutive BULL_PASS bars,
-             window=2 opens; first PPD without BULL_PASS fires one-bar pulse.
-FOSTER_BUY = symmetric mirror.
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → PUP — locally redefined as sPPBull (line 59); also a known cross-indicator primitive (e.g. b2b-pup::PUP)
+  → PPD — locally redefined as sPPBear (line 60); also a known cross-indicator primitive (e.g. hvd-pbj-ppd::PPD)
 
-PLOTSHAPES (10, all offset=0, all 1:1 with alertcondition)
-──────────────────────────────────────────────────────────
-fire_PPBull, fire_PPBear, fire_bullPass, fire_bearPass,
-fire_allBull, fire_allBear, fire_superPup, fire_superPPD,
-fire_foster, fire_tb.
-
-CAVEATS
-────────
-- All var-state mutations gated by barstate.isconfirmed (non-repainting design).
-- Gap toggles default OFF — All-Three composites are opt-in.
-- TB/Foster fire as one-bar pulses with explicit reset.

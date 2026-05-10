@@ -1,107 +1,342 @@
-SQUARIFY 46 v2 — dependency tree (top-level fund signal)
-=========================================================
+VISUAL TREE — squarify
+=======================
+File: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+Pine v5  ·  2622 lines  ·  overlay=True
+Purpose: Top-level fund signal: 60 atoms feed 46 numbered Tier-3 composites (foundational -> U-streak -> Ultra57 -> NPM -> HV+D -> fusion -> WBUSH) plus 2 opening-confluence tier plots
 
-ROOTS (re-implemented locally; cross-refs to other indicators)
-───────────────────────────────────────────────────────────────
-RVOL ladder         → cross-ref heavy-pentagon::*
-FVG / GZI / HV-FVG  → cross-ref hv-fvg-gz1-og::*
-PBJ / PB            → cross-ref hvdpbjppd::PBJ_BULL/BEAR/PB_BULL/BEAR
-PUP / PPD           → cross-ref pocket-pivot::*
-DISPLACEMENT        → cross-ref hvdpbjppd::DISP_BULL/BEAR
-HV+D                → cross-ref hvdpbjppd::HVD_BULL/BEAR
-MATRIX_NUMBER       → cross-ref hvdpbjppd::MATRIX_NUMBER
-LONG1/2, SHORT1/2   → cross-ref hvdpbjppd::*
-HV75/150/500/1000   → cross-ref hvdpbjppd::*
-BOOM_HUNTER_OMEGA   → cross-ref hvdpbjppd::BOOM_HUNTER_OMEGA
-PING_PONG           → cross-ref hvdpbjppd::PING_PONG_*
-TNT_RAW             → cross-ref tnt-od::TNT_RAW_*
-NAPALM, CHARGE      → cross-ref tnt-od::*
-FAUNA atomics       → fauna::MB, RE, TA, GG, TR, ES, GDR (distributed)
+ROOTS
+-----
+  ◆ squarify::HVD_BULL    [hv-displacement · offset=-1]
+      HV+D bullish: any of base/HTF1/HTF2 volume-rank ladder confirmed AND …
+  ◆ squarify::HVD_BEAR    [hv-displacement · offset=-1]
+      HV+D bearish mirror of HVD_BULL.
+  ◆ squarify::F2_BULL    [ultra57-foster · offset=0]
+      Foster Pair (bull): two consecutive bullish FAUNA-MB bars on session …
+  ◆ squarify::F2_BEAR    [ultra57-foster · offset=0]
+      Foster Pair (bear) mirror.
+  ◆ squarify::E3_BULL    [ultra57-exhaustion · offset=0]
+      Exhaustion Triple (bull): 3 consecutive bullish FAUNA-event bars on s…
+  ◆ squarify::E3_BEAR    [ultra57-exhaustion · offset=0]
+      Exhaustion Triple (bear) mirror.
+  ◆ squarify::FC_BULL    [ultra57-cluster · offset=0]
+      FAUNA Cluster (bull): 2-of-3 streak indicators (MB-streak, any-FAUNA …
+  ◆ squarify::FC_BEAR    [ultra57-cluster · offset=0]
+      FAUNA Cluster (bear) mirror.
+  ◆ squarify::B2B_DAYS_TRACKER    [session-history · offset=0]
+      f_hadYesterday(sig): scans 1..500 bars back for the same boolean duri…
+  ◆ squarify::FOSTER_PBJ_WINDOW    [ultra57-foster · offset=0]
+      Foster window: opens on first bullish-MB; if next bar fires PBJ, fost…
+  ◆ squarify::WBUSH_BULL    [heavy-pentagon-aggregator · offset=0]
+      WBUSH bull: any of 5 Heavy Pentagon Combo families (HYY, HN, HNV, HT,…
+  ◆ squarify::WBUSH_BEAR    [heavy-pentagon-aggregator · offset=0]
+      WBUSH bear: 5 Heavy Pentagon families × bear-displacement OR'd.
+  ◆ squarify::WBUSH_NEUTRAL    [heavy-pentagon-aggregator · offset=0]
+      WBUSH neutral: 5 Heavy Pentagon families fired but no FVG-confirmed d…
+  ◆ squarify::NPM_CONS_BULL    [tnt-napalm-consolidated · offset=-1]
+      Consolidated NPM bull: raw napalm OR raw charge (Anish framework: nap…
+  ◆ squarify::NPM_CONS_BEAR    [tnt-napalm-consolidated · offset=-1]
+      Consolidated NPM bear mirror.
+  ◆ squarify::B2B_PUP    [pup-back-to-back · offset=0]
+      Two consecutive PUP bars (bull). Used as scaffolding for B2B-PUP comp…
+  ◆ squarify::B2B_PPD    [pup-back-to-back · offset=0]
+      Two consecutive PPD bars (bear) mirror.
+  ◆ squarify::NEO_BULL    [matrix-number · offset=0]
+      Neo bull: matrix-number bar (volume == highest of last 67) AND FAUNA …
+  ◆ squarify::NEO_BEAR    [matrix-number · offset=0]
+      Neo bear mirror.
+  ◆ squarify::TRINITY_BULL    [matrix-number · offset=0]
+      Trinity bull: matrix-number bar AND NOT FAUNA bull AND green close. R…
+  ◆ squarify::TRINITY_BEAR    [matrix-number · offset=0]
+      Trinity bear mirror.
+  ◆ squarify::UNIFIED_COMBO_BULL    [combo-set-fvg · offset=-1]
+      Unified Combo (UC) bull = csNew3_Bull = csNew1_Bull on bar[0] AND csN…
+  ◆ squarify::UNIFIED_COMBO_BEAR    [combo-set-fvg · offset=-1]
+      UC bear mirror.
+  ◆ squarify::TIER1_OPENING_CONFLU_BULL    [opening-confluence · offset=0]
+      Tier-1 opening confluence (Anish CRWV recipe): first session bar AND …
+  ◆ squarify::TIER2_OPENING_CONFLU_BULL    [opening-confluence · offset=0]
+      Tier-2 opening confluence (Anish CRWV 2m recipe): first 2 session bar…
 
-INTERMEDIATE COMPOSITES
-────────────────────────
-csNew1 (FVG_COMBO)    = comboSet1 OR comboSet2
-csNew2 (MATRIX_COMBO) = comboSet3 OR comboSet4
-csNew3 (UNIFIED_COMBO) = csNew1 AND csNew2[1]   ← LAGGED-AND in Squarify (canonical hvdpbjppd uses same-bar AND)
-                                                  CRITICAL DRIFT
+COMPOSITES (by tier)
+-----
+  Tier 3:
+    ● squarify::S1_SD_BANG    [offset=-1 · AND]
+        SD! (Super Duper) — REDEFINED v2: Unified Combo + consolidated NPM + …
+        ├── squarify::UNIFIED_COMBO_BULL
+        ├── squarify::NPM_CONS_BULL
+        └── squarify::PUP[1]
+    ● squarify::S2_SUPER    [offset=-1 · AND_NOT]
+        SUPER — REDEFINED v2: Unified Combo + consolidated NPM. Suppressed wh…
+        ├── squarify::UNIFIED_COMBO_BULL
+        ├── squarify::NPM_CONS_BULL
+        └── NOT squarify::S1_SD_BANG
+    ● squarify::S3_HW    [offset=0 · AND]
+        Heavy Weapon: green bar + 5x-std displacement (no FVG) + PBJ + (GS or…
+        ├── close>open
+        ├── disp5_bull
+        ├── hvd-pbj-ppd::PBJ_BULL
+        ├── (heavy-pentagon::GRAND_SLAM OR heavy-pentagon::WTC OR heavy-pentagon::HIROSHIMA OR (heavy-pentagon::NAGASAKI AND nag_dir_bull))
+        └── (squarify::ANY_FLOOR OR squarify::ANY_2F)
+    ● squarify::S4_FLOOR    [offset=0 · AND]
+        Floor: Ping-Pong bull + PBJ + directional RVOL slot (1x/GS/WTC/Hiro/d…
+        ├── heavy-pentagon::PING_PONG_BULL
+        ├── hvd-pbj-ppd::PBJ_BULL
+        ├── bull_hw_slot
+        ├── oneOfThese
+        └── cb1_pass_floor
+    ● squarify::S5_2F    [offset=0 · AND_NOT]
+        2nd Floor: Ping-Pong bull + PB (not PBJ) + directional RVOL + one-of-…
+        ├── heavy-pentagon::PING_PONG_BULL
+        ├── hvd-pbj-ppd::PB_BULL
+        ├── bull_hw_slot
+        ├── oneOfThese
+        ├── cb1_pass
+        └── NOT squarify::S4_FLOOR
+    ● squarify::S6_UUUU    [offset=0 · OR_PATHS]
+        UUUU: 4+ consecutive qualified U bars. Path-OR (pA/pB/pC/pD/pE/pF + n…
+        ├── pA
+        ├── pB
+        ├── pC
+        ├── pD
+        ├── pE
+        ├── pF
+        └── pG
+    ● squarify::S7_UUU    [offset=0 · OR_PATHS_AND_NOT]
+        UUU: exactly 3 consecutive qualified U bars. Same path-OR (pA-pE + pG…
+        ├── pA
+        ├── pB
+        ├── pC
+        ├── pD
+        ├── pE
+        ├── pG
+        └── NOT squarify::S6_UUUU
+    ● squarify::S8_UU    [offset=0 · OR_PATHS_AND_GATE_AND_NOT]
+        UU: exactly 2 consecutive qualified U bars + one-of-these-for-UU gate…
+        ├── pA
+        ├── pB
+        ├── pC
+        ├── pD
+        ├── pE
+        ├── pG
+        ├── oneOfThese_forUU
+        ├── NOT squarify::S6_UUUU
+        └── … and 1 more
+    ● squarify::S9_ALPHA_STRIKE    [offset=0 · AND]
+        A* (Alpha Strike): first signal of session + Ping-Pong bull + (GS or …
+        ├── firstOfDay
+        ├── heavy-pentagon::PING_PONG_BULL
+        ├── (heavy-pentagon::GRAND_SLAM OR heavy-pentagon::RVOL1x_BULL)
+        ├── hvd-pbj-ppd::PBJ_BULL
+        └── as_fauna_expanded
+    ● squarify::S10_OMEGA_A    [offset=0 · AND_NOT]
+        Omega-A: Boom Hunter omega event + high-confidence cosignal subset. E…
+        ├── bh_anyOmega
+        ├── omega_cosignal_A
+        ├── NOT heavy-pentagon::MOAB
+        └── NOT sigDISPBear
+    ● squarify::S11_FOX    [offset=0 · AND]
+        Foxtrot: 4 consecutive FAUNA-confirmed bullish bars, gated by (HV+D +…
+        ├── sigFoxtrotBull
+        └── (hvd_pbj_bull OR oneOfThese)
+    ● squarify::S12_OD    [offset=-1 · AND]
+        Opening Drive: session bar <= max+1 + FVG/UC + prior-bar displacement…
+        ├── sessionBarCount<=od_max+1
+        ├── od_fvg_bull
+        ├── disp_prevDisp
+        ├── b2b-pup::PUP[1]
+        └── hvd-pbj-ppd::PBJ_BULL[1]
+    ● squarify::S13_GOLF    [offset=-1 · SEQUENCE]
+        Golf: 3-bar sequence: bar[2] FAUNA+PUP, bar[1] FAUNA+PUP+DISP, bar[0]…
+        ├── sigDISPBull
+        ├── sigFAUNABull[1]
+        ├── sigPUP[1]
+        ├── sigDISPBull[1]
+        ├── sigFAUNABull[2]
+        └── sigPUP[2]
+    ● squarify::S14_PBJ_F2_OR_E3    [offset=0 · OR]
+        PBJ + Foster Pair OR PBJ + Exhaustion Triple.
+        ├── (hvd-pbj-ppd::PBJ_BULL AND squarify::F2_BULL)
+        └── (hvd-pbj-ppd::PBJ_BULL AND squarify::E3_BULL)
+    ● squarify::S15_PBJ_CL    [offset=0 · AND]
+        PBJ + full FAUNA Cluster bull.
+        ├── hvd-pbj-ppd::PBJ_BULL
+        └── squarify::FC_BULL
+    ● squarify::S16_F2CL_TO_E3    [offset=0 · SEQUENCE]
+        Sequential: prior-bar Foster Pair + prior-bar Cluster -> current-bar …
+        ├── squarify::F2_BULL[1]
+        ├── squarify::FC_BULL[1]
+        └── squarify::E3_BULL
+    ● squarify::S17_E3_TWOTHIRDS_PUP    [offset=0 · AND]
+        Exhaustion Triple where 2 of 3 bars are PUP.
+        ├── squarify::E3_BULL
+        └── pupCntE3>=2
+    ● squarify::S18_F2_TIMES_2D    [offset=0 · AND]
+        Foster Pair on consecutive trading sessions.
+        ├── squarify::F2_BULL
+        └── squarify::B2B_DAYS_TRACKER(F2_BULL)
+    ● squarify::S19_E3_TIMES_2D    [offset=0 · AND]
+        Exhaustion Triple on consecutive trading sessions.
+        ├── squarify::E3_BULL
+        └── squarify::B2B_DAYS_TRACKER(E3_BULL)
+    ● squarify::S20_F2E3_SEQ    [offset=0 · SEQUENCE]
+        Foster Pair one session then Exhaustion Triple next session.
+        ├── squarify::F2_BULL[yesterday]
+        └── squarify::E3_BULL[today]
+    ● squarify::S21_CL_TIMES_2D    [offset=0 · AND]
+        FAUNA Cluster on consecutive trading sessions.
+        ├── squarify::FC_BULL
+        └── squarify::B2B_DAYS_TRACKER(FC_BULL)
+    ● squarify::S22_NPM_PLUS    [offset=-1 · AND]
+        NPM+: consolidated NPM AND ((PBJ[1] AND (UC OR HW[1] OR WMD[1])) OR W…
+        ├── squarify::NPM_CONS_BULL
+        └── ((hvd-pbj-ppd::PBJ_BULL[1] AND (squarify::UNIFIED_COMBO_BULL OR squarify::S3_HW[1] OR squarify::WBUSH_BULL[1])) OR squarify::WBUSH_BULL[1])
+    ● squarify::S23_NPM12    [offset=-1 · AND]
+        NPM12: consolidated NPM + checkbox qualifier Set 1 OR Set 2 (napalm-a…
+        ├── squarify::NPM_CONS_BULL
+        └── (cb1_pass_npm OR cb2_pass_npm)
+    ● squarify::S24_NPM3    [offset=-1 · AND_NOT]
+        NPM3: consolidated NPM + checkbox Set 3 only. Suppressed when NPM12 f…
+        ├── squarify::NPM_CONS_BULL
+        ├── cb3_pass_npm
+        └── NOT squarify::S23_NPM12
+    ● squarify::S25_B2BNPM    [offset=-1 · AND]
+        Back-to-back consolidated NPM (this bar AND prior bar).
+        ├── squarify::NPM_CONS_BULL
+        └── squarify::NPM_CONS_BULL[1]
+    ● squarify::S26_NPM_PLUS_TNT    [offset=-1 · AND]
+        Napalm + prior-bar TNT on same visual candle.
+        ├── raw_napalmBull
+        └── raw_bullTNT[1]
+    ● squarify::S27_CO    [offset=-1 · AND]
+        CO — RESTRUCTURED v2: HV+D + PBJ[1] + (UC OR FVG Combo Set). No longe…
+        ├── squarify::HVD_BULL
+        ├── hvd-pbj-ppd::PBJ_BULL[1]
+        └── (squarify::UNIFIED_COMBO_BULL OR csNew1_Bull)
+    ● squarify::S28_HVD_PBJ    [offset=-1 · AND_NOT]
+        HV+D + PBJ on same candle. Sub-3min requires checkbox Set 1 (napalm-a…
+        ├── squarify::HVD_BULL
+        ├── hvd-pbj-ppd::PBJ_BULL[1]
+        ├── (tfSec>=180 OR cb1_pass_npm)
+        └── NOT squarify::S27_CO
+    ● squarify::S29_B2BHVD_PBJ    [offset=-1 · AND]
+        Consecutive HV+D bars + PBJ on either bar.
+        ├── squarify::HVD_BULL
+        ├── squarify::HVD_BULL[1]
+        └── (hvd-pbj-ppd::PBJ_BULL[1] OR hvd-pbj-ppd::PBJ_BULL[2])
+    ● squarify::S30_B2BHVD    [offset=-1 · AND_NOT]
+        Consecutive HV+D bars without PBJ or PB.
+        ├── squarify::HVD_BULL
+        ├── squarify::HVD_BULL[1]
+        ├── NOT squarify::S29_B2BHVD_PBJ
+        └── NOT b2b_bull_pb
+    ● squarify::S31_UU_PLUS_UC    [offset=-1 · AND]
+        Any UU family + Unified Combo on same candle.
+        ├── uu_any
+        └── squarify::UNIFIED_COMBO_BULL
+    ● squarify::S32_GRAIL    [offset=-1 · AND]
+        Holy Grail: consolidated NPM + PBJ[1] + PUP[1] + Unified Combo on sam…
+        ├── squarify::NPM_CONS_BULL
+        ├── hvd-pbj-ppd::PBJ_BULL[1]
+        ├── b2b-pup::PUP[1]
+        └── squarify::UNIFIED_COMBO_BULL
+    ● squarify::S33_FLR_NPM    [offset=-1 · AND]
+        Floor[1] + consolidated NPM same window.
+        ├── squarify::S4_FLOOR[1]
+        └── squarify::NPM_CONS_BULL
+    ● squarify::S34_NPM_PBJ_PUP    [offset=-1 · AND_NOT]
+        Consolidated NPM + PBJ[1] + PUP[1] WITHOUT Unified Combo. Suppressed …
+        ├── squarify::NPM_CONS_BULL
+        ├── hvd-pbj-ppd::PBJ_BULL[1]
+        ├── b2b-pup::PUP[1]
+        └── NOT squarify::S32_GRAIL
+    ● squarify::S35_NAG_PLUS    [offset=0 · AND]
+        Nagasaki + any directional bullish signal (RVOL1x/GS/FAUNA/DISP/PBJ/P…
+        ├── heavy-pentagon::NAGASAKI
+        └── (heavy-pentagon::RVOL1x_BULL OR heavy-pentagon::GRAND_SLAM OR fauna::BULL OR sigDISPBull OR hvd-pbj-ppd::PBJ_BULL OR b2b-pup::PUP OR hv-fvg-gz1-og::HV_BULL OR hv-fvg-gz1-og::GZI_BULL)
+    ● squarify::S36_UU_HVD    [offset=-1 · AND]
+        Any UU family[1] + HV+D + PBJ on same candle (UU shifted to [1] becau…
+        ├── uu_any[1]
+        ├── squarify::HVD_BULL
+        └── hvd-pbj-ppd::PBJ_BULL[1]
+    ● squarify::S37_UU_NPM    [offset=-1 · AND]
+        Any UU family[1] + consolidated NPM same window.
+        ├── uu_any[1]
+        └── squarify::NPM_CONS_BULL
+    ● squarify::S38_FLR_UU    [offset=0 · AND]
+        Floor or 2F + any UU family (both offset 0).
+        ├── (squarify::S4_FLOOR OR squarify::S5_2F)
+        └── uu_any
+    ● squarify::S39_FOS_PUP_1X    [offset=0 · AND]
+        Foster (PBJ-resolved) + PUP + (RVOL1x OR consolidated NPM).
+        ├── squarify::FOSTER_PBJ_WINDOW
+        ├── b2b-pup::PUP
+        └── (heavy-pentagon::RVOL1x_BULL OR squarify::NPM_CONS_BULL)
+    ● squarify::S40_NPM_UC    [offset=-1 · AND_NOT]
+        Consolidated NPM + Unified Combo WITHOUT PBJ. Suppressed when NPM+UC+…
+        ├── squarify::NPM_CONS_BULL
+        ├── squarify::UNIFIED_COMBO_BULL
+        └── NOT squarify::S44_NPM_UC_PBJ
+    ● squarify::S41_WBUSH_BULL    [offset=0 · ALIAS]
+        WBUSH bull aggregate plot — any of 5 Heavy Pentagon families fired bu…
+        └── squarify::WBUSH_BULL
+    ● squarify::S42_WBUSH_BEAR    [offset=0 · ALIAS]
+        WBUSH bear aggregate plot.
+        └── squarify::WBUSH_BEAR
+    ● squarify::S43_WBUSH_NEUTRAL    [offset=0 · ALIAS]
+        WBUSH neutral aggregate plot.
+        └── squarify::WBUSH_NEUTRAL
+    ● squarify::S44_NPM_UC_PBJ    [offset=-1 · AND]
+        Consolidated NPM + Unified Combo + PBJ[1].
+        ├── squarify::NPM_CONS_BULL
+        ├── squarify::UNIFIED_COMBO_BULL
+        └── hvd-pbj-ppd::PBJ_BULL[1]
+    ● squarify::S45_UC_NAGASAKI_BULL    [offset=-1 · AND]
+        UC NAGASAKI Bull: Unified Combo (csNew3) + Nagasaki[1] on same visual…
+        ├── squarify::UNIFIED_COMBO_BULL
+        └── heavy-pentagon::NAGASAKI[1]
+    ● squarify::S46_UC_NAGASAKI_BEAR    [offset=-1 · AND]
+        UC NAGASAKI Bear mirror: Unified Combo bear (csNew3_Bear) + Nagasaki[…
+        ├── squarify::UNIFIED_COMBO_BEAR
+        └── heavy-pentagon::NAGASAKI[1]
+    ● squarify::T1_OPENING_CONFLU    [offset=0 · ALIAS]
+        Tier-1 opening confluence plot — see TIER1_OPENING_CONFLU_BULL root.
+        └── squarify::TIER1_OPENING_CONFLU_BULL
+    ● squarify::T2_OPENING_CONFLU    [offset=0 · ALIAS]
+        Tier-2 opening confluence plot — see TIER2_OPENING_CONFLU_BULL root.
+        └── squarify::TIER2_OPENING_CONFLU_BULL
 
-anyBullFloor = bull_pp AND PBJ AND HW-slot
-anyBull2nd   = bull_pp AND PB AND HW-slot
-anyBearRoof, anyBearPent (mirrors)
 
-hwBull       = (close>open) AND disp5 AND PBJ AND HW-slot AND (anyBullFloor OR anyBull2nd)
-superBull    = csNew3 AND det_bullNapalmCons
-sduperBull   = csNew3 AND det_bullNapalmCons AND PUP[1]
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → hvd-pbj-ppd::PBJ_BULL
+  → hvd-pbj-ppd::PBJ_BEAR
+  → hvd-pbj-ppd::PB_BULL
+  → hvd-pbj-ppd::PB_BEAR
+  → hvd-pbj-ppd::PPD
+  → b2b-pup::PUP
+  → hv-fvg-gz1-og::GZI_BULL
+  → hv-fvg-gz1-og::GZI_BEAR
+  → hv-fvg-gz1-og::HV_BULL
+  → hv-fvg-gz1-og::HV_BEAR
+  → hv-fvg-gz1-og::DISP_BULL
+  → hv-fvg-gz1-og::DISP_BEAR
+  → hv-fvg-gz1-og::HV75/HV150/HV500/HV1000
+  → fauna::BULL
+  → fauna::BEAR
+  → fauna::FOXTROT_BULL
+  → fauna::FOXTROT_BEAR
+  → fauna::MB_BULL/RE_BULL/TA_BULL
+  → fauna::MB_BEAR/RE_BEAR/TA_BEAR
+  → heavy-pentagon::SAAB
+  → heavy-pentagon::KRATOS
+  → heavy-pentagon::RVOL1x_BULL
+  → heavy-pentagon::RVOL1x_BEAR
+  → heavy-pentagon::GRAND_SLAM
+  → heavy-pentagon::MOAB
+  → heavy-pentagon::WTC
+  → heavy-pentagon::HIROSHIMA
+  → heavy-pentagon::PENTAGON
+  → heavy-pentagon::NAGASAKI
+  → heavy-pentagon::PING_PONG_BULL
+  … and 9 more
 
-WBUSH variants = OR-aggregator over 5 Heavy Pentagon family bases × USE V5 disp classifier
-
-TNT propulsion engine (re-implemented):
-  raw_bullTNT, raw_napalmBull, raw_bullCharge,
-  det_bullNapalmCons = raw_napalmBull OR raw_bullCharge
-  det_b2bBullNapalm  = det_bullNapalmCons[0] AND det_bullNapalmCons[1]
-  det_npmTntBull     = raw_napalmBull AND raw_bullTNT[1]
-
-UU/UUU/UUUU streak qualifiers (paths pA-pG over PBJ/DISP/FAUNA/SAAB/RVOL1x/GS)
-  sigUUBull, sigP21BullUUU, sigP21BullUUUU
-  uu_any = UU OR UUU OR UUUU
-
-46 NUMBERED TOP-LEVEL COMPOSITES (S1-S46, 48 plotshapes total)
-───────────────────────────────────────────────────────────────
-  S1  SDUPER       (T4) sduperBull                                offset=-1
-  S2  SUPER        (T3) superBull                                  offset=-1
-  S3  HW           (T3) hwBull                                     offset=0
-  S4  FLOOR        (T3) anyBullFloor AND oneOfThese AND cb1_pass   offset=0
-  S5  2F           (T3) anyBull2nd AND oneOfThese AND cb1_pass     offset=0
-  S6  UUUU         (T2) sigP21BullUUUU                             offset=0
-  S7  UUU          (T2) sigP21BullUUU AND NOT UUUU                 offset=0
-  S8  UU           (T3) uu_gated AND NOT UUU AND NOT UUUU          offset=0
-  S9  A★ (Alpha)   (T3) firstOfDay AND bull_pp AND (GS OR RVOL1x) AND PBJ AND as_fauna   offset=0
-  S10 ΩA (OmegaA)  (T3) bh_anyOmega AND omega_cosignal_A AND NOT MOAB AND NOT DISP_BEAR  offset=0
-  S11 FOX          (T3) Foxtrot AND (hvd_pbj_bull OR oneOfThese)    offset=0
-  S12 OD           (T2) sigODBull                                   offset=-1
-  S13 GOLF         (T2) sigGolfBull                                 offset=-1
-  S14 PBJ+F2/E3    (T2) PBJ AND (sBullF2 OR sBullE3)                offset=0
-  S15 PBJ+CL       (T2) PBJ AND sBullFC                             offset=0
-  S16 F2CL→E3      (T2) sBullF2[1] AND sBullFC[1] AND sBullE3       offset=0
-  S17 E3⅔PP        (T2) sBullE3 AND pupCntE3≥2                      offset=0
-  S18 F2×2D        (T2) sBullF2 day-over-day                        offset=0
-  S19 E3×2D        (T2) sBullE3 day-over-day                        offset=0
-  S20 F2E3seq      (T2) sBullE3 today AND sBullF2 yesterday         offset=0
-  S21 CL×2D        (T2) sBullFC day-over-day                        offset=0
-  S22 NPM+         (T4) det_bullNapalmCons AND ((PBJ[1] AND (csNew3 OR HW[1] OR sigWMD[1])) OR sigWMD[1])  offset=-1
-  S23 NPM12        (T3) det_bullNapalmCons AND (cb1_pass OR cb2_pass)  offset=-1
-  S24 NPM3         (T3) det_bullNapalmCons AND cb3_pass               offset=-1
-  S25 B2BNPM       (T2) det_b2bBullNapalm                              offset=-1
-  S26 NPM+TNT      (T2) raw_napalmBull AND raw_bullTNT[1]              offset=-1
-  S27 CO           (T3) hvd_fire_bull AND PBJ[1] AND (csNew3 OR csNew1)  offset=-1
-  S28 HVD+PBJ      (T2) hvd_pbj_bull AND NOT co_bull_pbj                  offset=-1
-  S29 B2BHVD+PBJ   (T2) b2b_bull_pbj                                       offset=-1
-  S30 B2BHVD       (T2) b2b_bull_nopb AND NOT b2b_bull_pbj                offset=-1
-  S31 UU+UC        (T3) uu_any AND csNew3                                  offset=-1
-  S32 GRAIL        (T4) det_bullNapalmCons AND PBJ[1] AND PUP[1] AND csNew3   offset=-1
-  S33 FLR+NPM      (T4) anyBullFloor[1] AND det_bullNapalmCons              offset=-1
-  S34 NPM+PBJ+PUP  (T3) det_bullNapalmCons AND PBJ[1] AND PUP[1] AND NOT GRAIL  offset=-1
-  S35 NAG+         (T2) sigNagasaki AND (RVOL1x OR GS OR FAUNA OR DISP OR PBJ OR PUP OR HV-FVG OR GZI)  offset=0
-  S36 UU+HVD       (T3) (UUUU OR UUU OR UU)[1] AND hvd_pbj_bull            offset=-1
-  S37 UU+NPM       (T3) (UUUU OR UUU OR UU)[1] AND det_bullNapalmCons      offset=-1
-  S38 FLR+UU       (T4) (anyBullFloor OR anyBull2nd) AND uu_any            offset=0
-  S39 FOS+PUP+1x   (T2) fosterPBJSignal AND PUP AND (RVOL1x OR det_bullNapalmCons)  offset=0
-  S40 NPM+UC       (T3) det_bullNapalmCons AND csNew3                       offset=-1
-  S41 WBUSH+ANY Bull (T3) sig_WBUSH_Bull                                    offset=0
-  S42 WBUSH+ANY Bear (T3) sig_WBUSH_Bear                                    offset=0
-  S43 WBUSH Neutral  (T3) sig_WBUSH_Neutral                                 offset=0
-  S44 NPM+UC+PBJ   (T3) det_bullNapalmCons AND csNew3 AND PBJ[1]            offset=-1
-  S45 UC NAGASAKI Bull (T3) csNew3 AND sigNagasaki[1]                       offset=-1
-  S46 UC NAGASAKI Bear (T3) csNew3_Bear AND sigNagasaki[1]                  offset=-1
-
-T1 OPENING CONFLU (T4) sessBar==1 AND disp_std_mult≥t1_disp_thresh AND csNew3 AND HVD_BULL AND BULL_RVOL_1X
-                  Has alertcondition. offset=0.
-T2 OPENING CONFLU (T4) sessBar∈[1,2] AND det_b2bPUP AND uu_any
-                  Has alertcondition. offset=0.
-
-OFFSET BUG OBSERVATIONS (for diagnostic SOP)
-─────────────────────────────────────────────
-- S35 NAG+ uses sigDISPBull (FVG-bearing) but plotted offset=0
-  vs S22 NPM+ which uses offset=-1. Potential inconsistency.
-- WBUSH (S41/42/43) uses sigDISPBull but plotted offset=0
-  vs other DISP+FVG fusions at offset=-1. Potential inconsistency.

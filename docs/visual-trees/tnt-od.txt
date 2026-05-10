@@ -1,68 +1,133 @@
-TNT OD (v2 dated 05-04 / v3 dated 05-08) — dependency tree
-============================================================
+VISUAL TREE — tnt-od
+=====================
+File: tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine
+Pine v5  ·  1802 lines  ·  overlay=True
+Purpose: TNT Opening Drive — VOB cross + Apex break + Failed-Apex Flip + density/UU + T1 Relay/Stack composites
 
-ROOTS (tier 0, lifecycle stage 2)
-──────────────────────────────────
-tnt-od::TNT_RAW_BULL, TNT_RAW_BEAR    (composite-by-construction VOB+ANISH+FLUX, treated as root)
-tnt-od::OD                            (anemic — session-first-bar gate only)
-tnt-od::NAPALM_BULL/BEAR, CHARGE_BULL/BEAR
-tnt-od::RET_BULL_TNT, RET_BEAR_TNT
-tnt-od::TNT2_BULL/BEAR (Super TNT)
-tnt-od::SUPER_TNT_BULL/BEAR
-tnt-od::CONT_BULL/BEAR
-tnt-od::DISP_BULL/BEAR (Engine #1)
+ROOTS
+-----
+  ◆ tnt-od::TNT    [structural · offset=?]
+      
+  ◆ tnt-od::Napalm    [structural · offset=?]
+      
+  ◆ tnt-od::Charge    [structural · offset=?]
+      
+  ◆ tnt-od::TNT2    [structural · offset=?]
+      
+  ◆ tnt-od::Return    [structural · offset=?]
+      
+  ◆ tnt-od::Continuous    [structural · offset=?]
+      
+  ◆ tnt-od::Dynamite    [structural · offset=?]
+      
+  ◆ tnt-od::Density1    [other · offset=?]
+      
+  ◆ tnt-od::Density2    [other · offset=?]
+      
+  ◆ tnt-od::Density3    [other · offset=?]
+      
 
-USE V5 INLINE PORTS (cross-refs to other indicators)
-─────────────────────────────────────────────────────
-u5_PBJBull/Bear  → cross-ref hvdpbjppd::PBJ_*
-u5_FAUNABull/Bear → cross-ref squarify::FAUNA / fauna::*
-u5_SAAB, u5_Kratos, u5_RVOL1xB/R, u5_GS, u5_MOAB, u5_Pentagon, u5_WTC, u5_Hiroshima, u5_Nagasaki
-                  → cross-ref heavy-pentagon::*
-u5_PUP, u5_PPD   → cross-ref pocket-pivot::*
-u5_CS1_Bull/Bear → cross-ref squarify::COMBOSET1
-u5_HV1000        → cross-ref hvdpbjppd::HV1000
-u5_DISPBull/Bear (USE V5 variant — separate from Engine #1 disp)
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● tnt-od::B2B_Napalm    [offset=? · AND]
+        ├── det_bullNapalm (Napalm)
+        ├── det_bullNapalm[1] (Napalm on prior visual bar)
+        ├── NOT supp_bullNPM
+        └── session-bound
+    ● tnt-od::RC_NPM_TNT    [offset=? · AND]
+        ├── det_bullNapalm (Napalm, offset -1)
+        └── det_bullTNT[1] (TNT on prior detection bar = same visual bar)
+    ● tnt-od::FUSE    [offset=? · SEQUENCE]
+        ├── last bull NPM bar < last bull TNT bar < current bar (CONT detection bar)
+        ├── all gaps ≤ SUDDEN_PROX
+        └── session-bound
+    ● tnt-od::Catalyst    [offset=? · AND]
+        ├── det_bullNapalm (Napalm)
+        └── u5_CS1_Bull (CS1 FVG Combo, USE V5)
+    ● tnt-od::PBJ_NPM    [offset=? · AND]
+        ├── det_bullNapalm (Napalm)
+        ├── u5_PBJBull[1] (PBJ on prior detection bar = same visual bar)
+        └── pnGateBull (sub-minute TF gate)
+    ● tnt-od::PBJ_TNT    [offset=? · AND]
+        ├── det_bullTNT (TNT)
+        ├── u5_PBJBull (PBJ same bar)
+        └── ptGateBull (sub-minute TF gate)
+    ● tnt-od::Ignite    [offset=? · OR]
+        ├── ign_tc_bull = det_bullTNT AND det_contBull (offset 0)
+        └── ign_nc_bull = det_bullNapalm AND det_contBull[1] (offset -1)
 
-TIER 1 COMPOSITES (selected; 45 plotshapes total v2, 49 v3)
-────────────────────────────────────────────────────────────
-B2B Napalm        = NAPALM AND NAPALM[1]                    offset=-1
-RC NPM+TNT        = NAPALM AND TNT[1]                       offset=-1
-FUSE              = sequential cascade NPM→TNT→CONT in SUDDEN_PROX, in-session  offset=0
-CATALYST          = NAPALM AND u5_CS1_Bull                  offset=-1
-PBJ+NPM           = NAPALM AND PBJ[1] AND pnGateBull        offset=-1
-PBJ+TNT           = TNT AND PBJ AND ptGateBull              offset=0
-IGNITE T+C        = TNT AND CONT                            offset=0
-IGNITE N+C        = NAPALM AND CONT[1]                      offset=-1
-DYNAMITE          = bespoke 5σ bar[1]+bar[2] AND FAUNA AND FVG  offset=-1
+  Tier 2:
+    ● tnt-od::TNT_Enriched    [offset=? · AND]
+        ├── det_bullTNT (TNT)
+        ├── NOT supp_bullTNT
+        └── enrichBull_N (USE V5 enrichment co-signal on bar N)
+    ● tnt-od::NPM_Enriched    [offset=? · AND]
+        ├── det_bullNapalm (Napalm)
+        ├── NOT supp_bullNPM
+        └── enrichBull_N1 (USE V5 enrichment on visual bar N-1)
+    ● tnt-od::CONT_Enriched    [offset=? · AND]
+        ├── det_contBull (Continuous)
+        └── enrichBull_N
+    ● tnt-od::RC_TNT_RET_Enriched    [offset=? · AND]
+        ├── det_bullTNT (TNT)
+        ├── det_bullRetTNT (Return)
+        └── enrichBull_N
+    ● tnt-od::RC_RET_NPM_Enriched    [offset=? · AND]
+        ├── det_bullNapalm (Napalm)
+        ├── det_bullRetTNT[1] (Return on prior detection bar)
+        └── enrichBull_N1
+    ● tnt-od::PBJ_RET_Enriched    [offset=? · AND]
+        ├── det_bullRetTNT (Return)
+        ├── u5_PBJBull (PBJ)
+        └── enrichBull_N
+    ● tnt-od::UU_TNT_Any    [offset=? · AND]
+        ├── u_pathBull2 (2-bar bullish RVOL streak qualifies via paths pA/pB/pC/pE/pF OR pG ≥2 distinct qualifiers)
+        └── hasTntBull2 (any TNTOD bull detection within 2-bar window)
+    ● tnt-od::UUU_TNT_Any    [offset=? · AND]
+        ├── u_pathBull3 (3-bar streak qualified, pG ≥3 distinct)
+        └── hasTntBull3 (TNTOD bull within 3-bar window)
+    ● tnt-od::UUUU_TNT_Any    [offset=? · AND]
+        ├── u_pathBull4 (4+ bar streak qualified, pG ≥4 distinct)
+        └── hasTntBull4 (TNTOD bull within 4-bar window)
 
-TIER 2 ENRICHED COMPOSITES
-───────────────────────────
-TNT ENRICHED      = TNT_RAW AND enrichBull_N                offset=0
-NPM ENRICHED      = NAPALM AND enrichBull_N1                offset=-1
-CONT ENRICHED     = CONT AND enrichBull_N                   offset=0
-RC TNT+RET ENR    = TNT AND RET_TNT AND enrichBull_N        offset=0
-RC RET+NPM ENR    = NAPALM AND RET_TNT[1] AND enrichBull_N1 offset=-1
-PBJ+RET ENR       = RET_TNT AND PBJ AND enrichBull_N        offset=0
+  Tier 3:
+    ● tnt-od::WBUSH_Bull    [offset=? · AND]
+        ├── sig_WBUSH_Bull = any of {hp_HYYBull, hp_HNBull, hp_HNVBull, hp_HTBull, hp_NHx2Bull} (line 954) — HEAVY PENTAGON 5 Heavy Combo bull classifications using USE V5 RVOL/WMD/Nagasaki + u5_DISPBull
+        └── tntod_any_bull (line 1368 — any TNTOD bull plot fires this bar)
+    ● tnt-od::WBUSH_Bear    [offset=? · AND]
+        ├── sig_WBUSH_Bear (line 955)
+        └── tntod_any_bear (line 1369)
+    ● tnt-od::WBUSH_Neutral    [offset=? · PASSTHROUGH]
+        └── sig_WBUSH_Neutral = any of 5 Heavy Combo Neutrals (line 956) — base × hp_noDisp (no FVG-confirmed displacement either direction). Standalone — does NOT require TNTOD pairing.
 
-DENSITY (other tier; rolling-window event count)
-─────────────────────────────────────────────────
-Density 1 (X=2 events in Y=2 bars), Density 2 (3 in 3), Density 3 (2 in 6)  all offset=-1
+  Tier aggregator:
+    ● tnt-od::tntod_any_bull    [offset=? · OR]
+        ├── p_b2bBull
+        ├── sig_rcNTBull
+        ├── p_fuseBull
+        ├── p_catBull
+        ├── p_pnBull
+        ├── p_ptBull
+        ├── p_ignBull
+        ├── p_dynBull
+        └── … and 12 more
+    ● tnt-od::tntod_any_bear    [offset=? · OR]
+        ├── p_b2bBear
+        ├── sig_rcNTBear
+        ├── p_fuseBear
+        ├── p_catBear
+        ├── p_pnBear
+        ├── p_ptBear
+        ├── p_ignBear
+        ├── p_dynBear
+        └── … and 12 more
 
-UU/UUU/UUUU + TNT ANY (paths pA-pG over PBJ/DISP/FAUNA/SAAB/RVOL1x/GS + TNT-detection)
-all offset=-1
 
-WBUSH+TNTOD ANY (Bull/Bear/Neutral) (T3)
-  = HEAVY PENTAGON family (HYY OR HN OR HNV OR HT OR NHx2)
-    AND USE V5 dispBull/Bear/noDisp
-    AND tntod_any_bull/bear (master OR over all TNTOD plots)
-  offset=0
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → {'name': 'USE V5 (Bowl)', 'line_range': '626-873', 'role': 'Inline-ported enrichment + atom engine: RVOL (SAAB/Kratos/RVOL1x/GrandSlam/MOAB), WMD (Pentagon/WTC/Hiroshima/Nagasaki), HV1000, FAUNA (MB/RE/TA/GG bull+bear with exclusion logic), Displacement (u5_DISPBull/Bear), PUP/PPD, PBJ supertrend (u5_PBJBull/u5_PBJBear), CS1 FVG Combo. Drives Tier 2 enrichment, U-streak qualifier path pG, CATALYST CS1, WBUSH HEAVY PENTAGON ports.'}
+  → {'name': 'HEAVY PENTAGON (Stage 5)', 'line_range': '905-956', 'role': '5 Heavy Combo classifications (Heavy Yin-Yang, Heavy Nagasaki, Heavy Nagasaki Vol, Heavy Trident, Neutral Heavy x2) ported using USE V5 atoms; classified by u5_DISPBull/Bear into bull/bear/neutral (15 sub-signals total). Aggregated as WBUSH bull/bear/neutral.'}
+  → {'name': 'TradingView/ta/7', 'line_range': '146, 666', 'role': 'tv_ta.relativeVolume(30, ...) for WMD ratio.'}
+  → {'name': 'B2B PUP (downstream — not consumed)', 'line_range': 'README ref', 'role': 'TNT OD is canonical source-of-truth for Napalm/TNT/CONT for downstream auditing per README.'}
 
-V3-ONLY ADDITIONS (in TNT_OD_v3.pine, not in v2)
-──────────────────────────────────────────────────
-- HCT engine (Engine #4)
-- UC placeholder (uc_bull/uc_bear)
-- T1 RELAY, T1 STACK plots
-- en_newGate / gateStdMult master gate
-
-ALERTS: 0 alertcondition (uses runtime alert() in DIRECTION|FIRST_STATUS|NAME format).
-masterAggregate (default ON) bundles non-Nagasaki alerts.
