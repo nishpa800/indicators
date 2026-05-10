@@ -6,6 +6,20 @@ Stage 6.8 fact-finding pass. Byte-diffs the most-likely-drift candidates per
 **Method**: grep canonical primitives across every Pine file that names them;
 compare boolean assignments line-by-line.
 
+## Taxonomy
+
+Three classes of finding (per `docs/glossary.md` "IPSF vs TRUE DRIFT"):
+
+- **IPSF** — both copies are exposed as `input.*` in their respective files.
+  Numeric default may differ but Anish can tune either in TradingView
+  settings. **Not corruption.** False-alarm if mis-classified as drift.
+- **TRUE DRIFT** — hardcoded constant divergence across files. Source-edit
+  required to reconcile. Invisible to the user.
+- **IPSF asymmetry** — same parameter is `input.*` in some files but
+  hardcoded in others. Numeric values may match today, but tuning is
+  asymmetric: changing the input-bound copy is a settings click; changing
+  the hardcoded copy is a source edit. Real corruption risk over time.
+
 ## 1. RVOL family — VERIFIED VERBATIM
 
 `heavy-pentagon` is canonical. `heavy-combo-toggles` lifts the entire
@@ -40,52 +54,62 @@ volume gate (`pp_hiRedVol = ta.highest(pp_redVol[1], pp_lookback=10)`).
 (per Stage-1 extraction). Consider Stage-7 normalisation to unify the
 variable name across both files (`sigPUP` on both, or `det_PUP` on both).
 
-## 3. GZI proximity defaults — CONFIRMED DRIFT (6 vs 7)
+## 3. GZI proximity defaults — IPSF (NOT drift)
 
-| File | Line | Parameter name | Default |
+| File | Line | Parameter name | Default | Pine binding |
+|---|---|---|---|---|
+| `hv-fvg-gz1-og/versions/HV_FVG_GZ1_OG_v1.pine` (canonical) | L21 | `gziProximity` | 6 | `input.int(6, "Max Bar Distance", ...)` |
+| `proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine` (variant) | L21 | `gziProximity` | 6 | `input.int(6, "Max Bar Distance", ...)` |
+| `hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine` | L380 | `gz1_dist` | 7 | `input.int(7, "GZ1 Max Bar Distance", ...)` |
+
+**Verdict: IPSF — both copies are `input.int(...)`.** Anish can change either
+to match the other in TradingView settings. The 6-vs-7 default difference
+is a packaging choice, not corruption.
+
+**Action**: none required. If Anish wants the defaults to align, he
+edits the Pine source's `input.int(...)` default values in source (or
+just keeps the running TradingView setting overridden per-chart).
+Recorded as informational in `docs/redundancy.md` "IPSF default
+variation" subsection.
+
+## 4. DISP σ-multiplier defaults — IPSF (NOT drift)
+
+| File | Line | Parameter name | Default | Pine binding |
+|---|---|---|---|---|
+| `heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine` | L237 | `disp_strength` | 6.0 | `input.float(6.0, "Strength (σ multiplier)", ...)` |
+| `hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine` | L358 | `i_std_min` | 3.0 | `input.float(3.0, "Min Mult", ...)` |
+| `squarify/versions/SQUARIFY_46_v2_2026-05-04.pine` | L351 | `i_std_min` | 3.0 | `input.float(3.0, "Min Mult", ...)` |
+
+**Verdict: IPSF — all three copies are `input.float(...)`.** Tunable per
+indicator on the TradingView settings panel.
+
+The 6.0 default in heavy-pentagon vs 3.0 in HVDPBJPPD/Squarify is likely
+intentional — heavy-pentagon's displacement engine is internal to its 15
+Heavy Combo composites and runs at a stricter gate (6×); HVDPBJPPD's
+Engine 3 displacement primitive feeds dozens of downstream composites
+and runs at 3×.
+
+**Action**: none required. False-alarm if mis-classified as drift.
+
+## 5. pp_barSize / pp_lookback (PUP threshold + lookback) — IPSF ASYMMETRY (TRUE DRIFT-class concern)
+
+| File | Line | Pine binding | Tunability |
 |---|---|---|---|
-| `hv-fvg-gz1-og/versions/HV_FVG_GZ1_OG_v1.pine` (canonical) | L21 | `gziProximity` | **6** |
-| `proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine` (variant) | L21 | `gziProximity` | 6 |
-| `hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine` | L380 | `gz1_dist` | **7** |
+| `hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine` | L386 | `pp_barSize=3.0, pp_lookback=10` | **HARDCODED** — source-edit only |
+| `b2b-pup/versions/B2B_PUP_Combined_v4.32_2026-05-04.pine` | L74-L75 | `pp_barSize=input.float(3.0,...), pp_lookback=input.int(10,...)` | **IPSF** — TradingView-tunable |
 
-**Verdict**: real numeric drift. `gz1_dist=7` in HVDPBJPPD's local copy
-diverges from the canonical `gziProximity=6` by 1 bar.
+**Verdict: IPSF asymmetry.** The numeric values match today (`3.0` and `10`),
+so PUP fires identically across both indicators right now. But tuning is
+asymmetric: changing `pp_barSize` from 3.0 to 2.5 is a settings click in
+b2b-pup and a source-edit in HVDPBJPPD. Over time, the values WILL drift if
+Anish tunes b2b-pup's input without remembering HVDPBJPPD has the constant
+hardcoded.
 
-**Recommendation**: Anish to decide whether HVDPBJPPD's GZI window should
-align to canonical 6 or whether the +1 was intentional (e.g. to capture an
-edge case the canonical misses). Until decided, the bible records both
-values as the actual defaults; `data/indicators.yaml` annotates the
-parameter on each indicator's GZI-related composite.
+**Action**: Stage 7 — promote HVDPBJPPD's hardcoded constants to `input.*`
+to match b2b-pup, OR add a source comment in HVDPBJPPD pointing at b2b-pup
+as the canonical PUP-tuning surface.
 
-## 4. DISP σ-multiplier defaults — CONFIRMED DRIFT (3.0 vs 6.0)
-
-| File | Line | Parameter name | Default |
-|---|---|---|---|
-| `heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine` | L237 | `disp_strength` | **6.0** |
-| `hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine` | L358 | `i_std_min` | **3.0** |
-| `squarify/versions/SQUARIFY_46_v2_2026-05-04.pine` | L351 | `i_std_min` | **3.0** |
-
-`b2b-pup`, `tnt-od`, `ultra-combo` did not surface a top-level DISP
-σ-multiplier input under either name — they likely use hardcoded
-multipliers inline or alternative parameter names. Followup grep needed.
-
-**Verdict**: real semantic drift. heavy-pentagon's `disp_strength=6.0` is
-2× the HVDPBJPPD/Squarify `i_std_min=3.0` for what is conceptually the
-same gate (bar range exceeds N stdevs of recent ranges).
-
-The handoff comment on PR #2 reported "5.0 elsewhere" but the search did
-not corroborate that; either the 5.0 reference is a hardcoded constant
-inside displacement helpers (not exposed as input) or my search missed a
-parameter alias.
-
-**Recommendation**: This is likely an INTENTIONAL difference — heavy-pentagon's
-displacement engine is internal to its 15 Heavy Combo composites and
-operates as a stricter gate (6×); HVDPBJPPD's Engine 3 is the displacement
-primitive that feeds dozens of downstream composites and runs at 3×.
-Bible records both defaults faithfully. No source change recommended
-without Anish's call.
-
-## 5. anyBearPent — namespace flag re-evaluated
+## 6. anyBearPent — namespace flag re-evaluated
 
 The Stage-6.1 plan recommended renaming `anyBearPent` → `anyBear2F` to
 free the `Pent` prefix from `heavy-pentagon::PENTAGON`. Re-examining the
@@ -120,10 +144,11 @@ references the old name externally.
 | # | Candidate | Verdict | Action |
 |---|---|---|---|
 | 1 | RVOL ladder (heavy-pentagon → heavy-combo-toggles) | identical | none |
-| 2 | PUP (hvd-pbj-ppd vs b2b-pup) | cosmetic-drift | optional Stage-7 name unification |
-| 3 | GZI proximity (6 vs 7) | semantic drift | Anish decision |
-| 4 | DISP σ-multiplier (3.0 vs 6.0) | semantic drift, likely intentional | Anish decision |
-| 5 | anyBearPent rename target | plan correction | rename to `anyBearPenthouse` not `anyBear2F` |
+| 2 | PUP boolean (hvd-pbj-ppd vs b2b-pup) | cosmetic name drift (`sigPUP` vs `det_PUP`); booleans byte-identical after inlining | optional Stage-7 unification |
+| 3 | GZI proximity (6 vs 7 default) | **IPSF** — both `input.int(...)` | none required; tunable in TV settings |
+| 4 | DISP σ-multiplier (6.0 vs 3.0 default) | **IPSF** — all three `input.float(...)` | none required; tunable in TV settings |
+| 5 | pp_barSize / pp_lookback (HVDPBJPPD hardcoded vs b2b-pup IPSF) | **IPSF asymmetry** — values match today (3.0, 10) but tuning surfaces are asymmetric | Stage-7 promotion of HVDPBJPPD constants to `input.*` |
+| 6 | anyBearPent rename target | plan correction | rename to `anyBearPenthouse` not `anyBear2F` |
 
 Pending byte-diffs (not run this session — would extend the file beyond
 useful bounds):
