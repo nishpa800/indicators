@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Claw Code Foundation Plan — Agentic OS for the Org (2026-05-11)</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 1100px; margin: 2em auto; padding: 0 1.5em; color: #1a1a1a; line-height: 1.55; }
+  h1 { border-bottom: 3px solid #1a1a1a; padding-bottom: 0.3em; font-size: 1.95em; }
+  h2 { color: #003366; border-left: 5px solid #003366; padding-left: 0.6em; margin-top: 2.2em; font-size: 1.4em; }
+  h3 { color: #4a4a4a; margin-top: 1.5em; font-size: 1.13em; }
+  h4 { color: #5a5a5a; margin-top: 1em; font-size: 1em; }
+  .critical { background: #ffe7e7; border-left: 5px solid #cc0000; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .callout  { background: #fff8e7; border-left: 5px solid #d18800; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .ok       { background: #e7f8ee; border-left: 5px solid #1f7a3f; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .info     { background: #eef4fb; border-left: 5px solid #003366; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ccc; padding: 0.45em 0.7em; vertical-align: top; }
+  th { background: #f0f0f0; text-align: left; }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-family: "SF Mono", Menlo, monospace; font-size: 0.91em; }
+  pre  { background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; padding: 0.8em 1em; overflow-x: auto; font-family: "SF Mono", Menlo, monospace; font-size: 0.86em; line-height: 1.42; }
+  svg { margin: 1em auto; display: block; }
+  .footer { color: #888; font-size: 0.85em; margin-top: 3em; border-top: 1px solid #ccc; padding-top: 1em; }
+  .toc { background: #f8f9fa; border: 1px solid #ddd; padding: 1em 1.5em; margin: 1.5em 0; border-radius: 4px; }
+  .toc ol { margin: 0.5em 0; padding-left: 1.6em; }
+  .toc li { padding: 2px 0; }
+  .yes { color: #1f7a3f; font-weight: 600; }
+  .no  { color: #cc0000; font-weight: 600; }
+  .tbd { color: #d18800; font-weight: 600; }
+  a { color: #003366; }
+  .verdict { display: inline-block; padding: 3px 10px; border-radius: 11px; font-size: 0.82em; font-weight: 700; }
+  .v-keep   { background: #d4f0dd; color: #1f7a3f; }
+  .v-adopt  { background: #ffe6cc; color: #7a3300; }
+  .v-kill   { background: #ffd6d6; color: #990000; }
+  .v-watch  { background: #e0e0ff; color: #003366; }
+</style>
+</head>
+<body>
+
+<h1>Claw Code Foundation Plan — Agentic OS for the Org</h1>
+
+<p><em>Authored 2026-05-11 by the cloud Claude Code session, in response to Anish's directive: "I want you to search GitHub, and I want you to identify Claw Code repositories. I want to take the Claw Code, and I want us to make our Agentic OS off of the Claw Code. Go find it, and go build it… build a plan, the full plan for our organization."</em></p>
+
+<div class="critical">
+<strong>Headline recommendation.</strong> Adopt the four-layer Claw stack as the foundation: <strong>(L0) <code>ultraworkers/claw-code</code></strong> as the runtime harness (clean-room Rust rewrite of Claude Code, 191K GitHub stars), <strong>(L1) <code>openclaw/openclaw</code></strong> as the workspace + multi-agent surface (MIT-licensed, ships AGENTS.md / SOUL.md / SKILL.md format, macOS + iOS + Android companion apps), <strong>(L2) <code>openclaw/clawhub</code></strong> as the skill registry (MIT, publish/search/install — like npm for skills), <strong>(L3) <code>Enderfga/claw-orchestrator</code></strong> as the multi-engine layer (MIT TypeScript, unifies Claude Code + Codex + Gemini + Cursor under one programmatic runtime with council mode for parallel verification). Keep everything we already have — Python ports, Path-A loggers, live leaderboard, standing decisions ledger, 8 Anthropic-format skills — and migrate them into the Claw stack with one-to-one mappings. Net result: open-source foundation we can fork and modify, multi-engine cost optimization (cheap engines for grunt work), workspace-native multi-agent routing replaces our hand-rolled Plot Owner / 4-square scheme, and a public skill marketplace we can both pull from and seed.
+</div>
+
+<h2>Ecosystem inventory — what is "Claw Code"</h2>
+
+<p>Claw Code is not one repo. It is a six-week-old open-source ecosystem that exploded in March-April 2026, built around a clean-room Rust rewrite of Claude Code's harness architecture. The headline repo (<code>ultraworkers/claw-code</code>) crossed 100K GitHub stars faster than any project in history — currently 191,037 stars, 109,829 forks. The disclaimer in every Claw repo: <em>"This repository does not claim ownership of any third-party source material and is not affiliated with, endorsed by, or maintained by Anthropic."</em> The stated purpose is <em>"to advance open research into harness engineering and AI coding infrastructure."</em></p>
+
+<p>Below is the full inventory I surfaced via GitHub repo search + web search. The four boxed entries are the ones this plan adopts.</p>
+
+<table>
+<tr><th>Repo</th><th>Lang</th><th>Stars</th><th>Role</th><th>License</th><th>Verdict</th></tr>
+<tr><td><strong><code>ultraworkers/claw-code</code></strong></td><td>Rust</td><td>191,037</td><td>The harness binary. <code>claw</code> CLI (<code>claw prompt</code>, <code>claw doctor</code>, <code>claw acp</code>). Source of truth for the Claw runtime. 96.5% Rust, 3% Python helpers. Reads <code>ANTHROPIC_API_KEY</code> or <code>OPENAI_API_KEY</code>. Sessions in <code>.claude/sessions/</code> (same dir as Claude Code, deliberate).</td><td>Unspecified in README — must verify</td><td><span class="verdict v-adopt">ADOPT</span> as L0</td></tr>
+<tr><td><strong><code>openclaw/openclaw</code></strong></td><td>TS / Node</td><td>~8K (extrapolated from clawhub)</td><td>The workspace + multi-agent surface. <code>npm install -g openclaw</code>. CLI (<code>openclaw onboard</code>, <code>openclaw agent</code>, <code>openclaw message send</code>), macOS menu-bar app, iOS / Android companion nodes. Built for "Molty, the space lobster AI assistant." 25+ messaging channels (Discord, Slack, Gmail, SMS). Multi-agent routing — route inbound channels to isolated agents.</td><td>MIT</td><td><span class="verdict v-adopt">ADOPT</span> as L1</td></tr>
+<tr><td><strong><code>openclaw/clawhub</code></strong></td><td>TS</td><td>8,556</td><td>Skill registry. <code>clawhub search &lt;slug&gt;</code> / <code>clawhub install &lt;slug&gt;</code> / <code>clawhub skill publish &lt;path&gt;</code>. Versioning, tags (incl. <code>latest</code>), changelog. Skills use the SAME <code>SKILL.md</code> format as Anthropic's <code>github.com/anthropics/skills</code> (frontmatter + body). Parallel "souls" registry uses SOUL.md.</td><td>MIT</td><td><span class="verdict v-adopt">ADOPT</span> as L2</td></tr>
+<tr><td><strong><code>Enderfga/claw-orchestrator</code></strong></td><td>TS</td><td>445</td><td>Multi-engine runtime. Unifies Claude Code + Codex + Gemini + Cursor + custom CLIs under one programmable API. <code>SessionManager</code> with named persistent sessions. <em>Council mode</em>: parallel agents with isolated git worktrees. Registers as OpenClaw plugin (40+ tools exposed cross-agent). <code>npm install -g @enderfga/claw-orchestrator</code>; <code>clawo serve</code>.</td><td>MIT</td><td><span class="verdict v-adopt">ADOPT</span> as L3</td></tr>
+<tr><td><code>HarnessLab/claw-code-agent</code></td><td>Python</td><td>470</td><td>Pure-Python Claw harness fork. Zero external deps. Slower iteration than Rust but easier to mod.</td><td>Open</td><td><span class="verdict v-watch">WATCH</span> — fallback if Rust harness license blocks us</td></tr>
+<tr><td><code>GPT-AGI/Clawd-Code</code></td><td>Python</td><td>341</td><td>Another Python Claude Code reconstruction</td><td>Open</td><td><span class="verdict v-watch">WATCH</span> — comparison reference</td></tr>
+<tr><td><code>mergisi/awesome-openclaw-agents</code></td><td>Markdown</td><td>~500</td><td>162 production-ready SOUL.md templates across 24 categories (Productivity, Dev, Finance, Data, Security, Voice, Automation, Customer Success, Supply Chain, etc.). Copy-paste agent configs.</td><td>Open</td><td><span class="verdict v-keep">PULL</span> — seed our SOUL.md library from this</td></tr>
+<tr><td><code>NVIDIA/NemoClaw</code></td><td>TS</td><td>20,275</td><td>Run OpenClaw securely inside NVIDIA OpenShell with managed inference</td><td>Open</td><td><span class="verdict v-watch">WATCH</span> — if we ever need on-prem GPU inference</td></tr>
+<tr><td><code>aiming-lab/AutoResearchClaw</code></td><td>Python</td><td>12,050</td><td>"Fully autonomous, self-evolving research from idea to paper"</td><td>Open</td><td><span class="verdict v-watch">WATCH</span> — interesting pattern for autonomous research loops</td></tr>
+<tr><td><code>HKUDS/ClawWork</code></td><td>Python</td><td>8,084</td><td>"OpenClaw as Your AI Coworker" — claims $15K earned in 11 hours</td><td>Open</td><td><span class="verdict v-watch">WATCH</span></td></tr>
+<tr><td><code>ValueCell-ai/ClawX</code></td><td>TS</td><td>7,135</td><td>Desktop GUI for OpenClaw agents — turns CLI orchestration into a desktop experience</td><td>Open</td><td><span class="verdict v-watch">WATCH</span> — alternative to OpenClaw's native macOS menubar</td></tr>
+<tr><td><code>BlockRunAI/ClawRouter</code></td><td>TS</td><td>6,547</td><td>Agent-native LLM router. 41+ models, sub-1ms routing, USDC payments on Base + Solana via x402.</td><td>Open</td><td><span class="verdict v-watch">WATCH</span> — useful if we want to route on cost per request</td></tr>
+<tr><td><code>Gen-Verse/OpenClaw-RL</code></td><td>Python</td><td>5,280</td><td>RL training framework for OpenClaw agents</td><td>Open</td><td><span class="verdict v-watch">WATCH</span></td></tr>
+<tr><td><code>HKUDS/ClawTeam</code></td><td>Python</td><td>5,154</td><td>"Agent Swarm Intelligence" — one-command full automation</td><td>Open</td><td><span class="verdict v-watch">WATCH</span></td></tr>
+<tr><td><code>espressif/esp-claw</code></td><td>C</td><td>1,118</td><td>"Chat Coding" AI agent framework for IoT devices</td><td>Open</td><td><span class="verdict v-kill">SKIP</span> — IoT, not our use case</td></tr>
+<tr><td><code>realkimbarrett/advertising-skills</code></td><td>MD</td><td>615</td><td>Direct-response / paid-ads / funnels SOUL.md skills</td><td>Open</td><td><span class="verdict v-kill">SKIP</span> — Anish: zero marketing</td></tr>
+</table>
+
+<h2>Why this matters for Anish's org</h2>
+
+<p>Today the org runs on Claude Code (Anthropic's official agent CLI). That has been good. The constraints we have felt:</p>
+
+<ol>
+<li><strong>Roadmap gates.</strong> Anthropic chooses when to ship features. We cannot fork.</li>
+<li><strong>Single-engine cost profile.</strong> Every token of grunt work — diagnosis-card extraction, parity-test bar diffs, label parsing — pays Anthropic Opus / Sonnet prices, even though the work is tractable for cheap models.</li>
+<li><strong>Multi-agent we hand-rolled.</strong> Plot Owners, the dialectic chain, the 4-square matrix, the bull-case / bear-case workers — we built each as a SKILL.md piece on top of a single-session runtime. OpenClaw ships workspace-level multi-agent routing natively.</li>
+<li><strong>No public marketplace.</strong> Our skills live in <code>.claude/skills/</code> on Anish's machine. We cannot pull community work; we cannot publish (or seed a private registry); we have no way to grade external skills against ours.</li>
+<li><strong>One channel.</strong> Claude Code is a CLI. OpenClaw ships macOS menu bar, iOS / Android, and 25+ messaging channels. Anish gets fire alerts on his phone, not a terminal.</li>
+</ol>
+
+<p>The Claw stack solves all five without us writing the foundation. The trade is that we move off Anthropic's official harness onto a six-week-old community fork — which means license diligence (Section 9) and bus-factor diligence are mandatory before commit.</p>
+
+<h2>Table of contents</h2>
+
+<div class="toc">
+<ol>
+<li><a href="#current">Current agentic-OS state — what we keep</a></li>
+<li><a href="#target">Target architecture — the four Claw layers</a></li>
+<li><a href="#migration">Migration plan — Phases A–H</a></li>
+<li><a href="#identity">Identity model — SOUL.md files we'll author</a></li>
+<li><a href="#skills">Skill migration map — 8 existing skills → new locations</a></li>
+<li><a href="#engines">Multi-engine cost model</a></li>
+<li><a href="#license">License + governance review</a></li>
+<li><a href="#risks">Risks + mitigations</a></li>
+<li><a href="#decision">Keep / kill / adopt decision tree</a></li>
+<li><a href="#timeline">Timeline + Gantt</a></li>
+<li><a href="#open">Open questions for Anish</a></li>
+<li><a href="#glossary">Glossary</a></li>
+<li><a href="#refs">References + URLs</a></li>
+<li><a href="#starter">Starter prompt — Phase A kickoff</a></li>
+</ol>
+</div>
+
+<h2 id="current">1. Current agentic-OS state — what we keep</h2>
+
+<p>Everything we have built in this repo is portable. None of it is Claude Code-specific in a way that blocks migration. The translation table:</p>
+
+<table>
+<tr><th>Asset</th><th>Today</th><th>In Claw stack</th><th>Migration effort</th></tr>
+<tr><td>Skills</td><td><code>.claude/skills/&lt;name&gt;/SKILL.md</code> — 8 skills (detection-plot-validation, detection-plot-diagnosis, detection-plot-tv-firing, bull-bear-dialectic, four-square-matrix, bull-vs-bear-debate (SUPERSEDED), simplify, init, etc.)</td><td><code>~/.openclaw/workspace/skills/&lt;name&gt;/SKILL.md</code> — same format, same frontmatter, copy across.</td><td>Trivial — <code>cp -r</code> + 1 symlink</td></tr>
+<tr><td>Standing decisions ledger</td><td><code>docs/agentic-os/STANDING_DECISIONS.md</code> — SD-001…SD-010 (SD-011 pending)</td><td>Stays at same path. Append-only.</td><td>Zero — file move only</td></tr>
+<tr><td>Python ports</td><td><code>python_ports/&lt;family&gt;/canonical*.py</code> — 8 indicator families, byte-deterministic detection registries</td><td>Stay where they are. The harness invokes them the same way (<code>python -m ...</code>).</td><td>Zero</td></tr>
+<tr><td>Path-A loggers</td><td><code>path-a-loggers/versions/&lt;LOGGER&gt;_v&lt;N&gt;.pine</code> — 9 loggers</td><td>Stay. TV is the runtime; OpenClaw is the orchestrator.</td><td>Zero</td></tr>
+<tr><td>Live leaderboard</td><td><code>live/server.py</code> + <code>live/port_runner.py</code> + adapters</td><td>Stays. Becomes one OpenClaw agent ("trader-leaderboard") with its own SOUL.md.</td><td>Author one SOUL.md</td></tr>
+<tr><td>Master identity</td><td>Implicit in CLAUDE.md + chat history ("hyper-aggressive alpha-max")</td><td>Codified as <code>souls/hyper-alpha-trader.SOUL.md</code> — sourced into every agent's identity bootstrap.</td><td>Author one SOUL.md (canonical statement of self)</td></tr>
+<tr><td>MCP servers</td><td>TradingView MCP + Massive.com MCP (configured per-machine in <code>~/.claude/mcp.json</code>)</td><td>OpenClaw's <code>MCP Registry</code> — managed per workspace, mirrored across all agents in the workspace.</td><td>Re-register against OpenClaw — 5 minutes</td></tr>
+<tr><td>Hooks / SessionStart</td><td><code>~/.claude/hooks/</code> (if any)</td><td>OpenClaw cron + webhook + Pub/Sub automation surface — richer than Claude Code's hooks.</td><td>Re-author hooks against OpenClaw's lifecycle</td></tr>
+<tr><td>Validation reports + Bible</td><td><code>docs/validation/</code>, <code>docs/bible/</code></td><td>Stay where they are. Path conventions unchanged.</td><td>Zero</td></tr>
+<tr><td>Plot Owners / dialectic chain / 4-square</td><td>Currently a hand-rolled SKILL.md composition in our codebase</td><td>Each Plot Owner becomes one OpenClaw agent with its own SOUL.md. Workspace-native multi-agent routing replaces the hand-rolled wiring.</td><td>Author N SOUL.md files (one per Plot Owner / role)</td></tr>
+</table>
+
+<div class="ok">
+<strong>Bottom line on portability.</strong> Nothing we have built gets thrown away. Everything either stays at its current path or moves with a one-line config change. The new value comes from what Claw + OpenClaw bring on top, not from rewriting our work.
+</div>
+
+<h2 id="target">2. Target architecture — the four Claw layers</h2>
+
+<svg width="980" height="540" viewBox="0 0 980 540" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <!-- L3 top: orchestrator -->
+  <rect x="40" y="20" width="900" height="80" rx="8" fill="#d9c2ff" stroke="#330066" stroke-width="2"/>
+  <text x="490" y="48" text-anchor="middle" font-size="15" font-weight="700">L3 — Multi-Engine Orchestrator: claw-orchestrator (MIT TS, @enderfga/claw-orchestrator)</text>
+  <text x="490" y="68" text-anchor="middle" font-size="12">SessionManager · Council mode (parallel agents, isolated worktrees) · Routes work across Claude / Codex / Gemini / Cursor / custom CLIs</text>
+  <text x="490" y="88" text-anchor="middle" font-size="12">Exposes 40+ tools to other agents · Registers as OpenClaw plugin · clawo serve</text>
+
+  <!-- L2: clawhub -->
+  <rect x="40" y="125" width="900" height="70" rx="8" fill="#ffd9b3" stroke="#663300" stroke-width="2"/>
+  <text x="490" y="153" text-anchor="middle" font-size="15" font-weight="700">L2 — Skill Registry: clawhub (MIT, openclaw/clawhub)</text>
+  <text x="490" y="173" text-anchor="middle" font-size="12">clawhub search/install/publish · SKILL.md format (same as github.com/anthropics/skills) · Versioned, tagged, changelogs</text>
+  <text x="490" y="190" text-anchor="middle" font-size="12">Parallel SOUL.md registry for full-agent definitions · Pull from public · Seed a private registry for our proprietary skills</text>
+
+  <!-- L1: openclaw -->
+  <rect x="40" y="220" width="900" height="120" rx="8" fill="#a8d0ff" stroke="#003366" stroke-width="2"/>
+  <text x="490" y="247" text-anchor="middle" font-size="15" font-weight="700">L1 — Workspace + Multi-Agent Surface: openclaw (MIT, npm install -g openclaw)</text>
+  <text x="490" y="268" text-anchor="middle" font-size="12">AGENTS.md (workspace agent directory) · TOOLS.md (tool config) · SOUL.md (per-agent identity) · SKILL.md (per-skill)</text>
+  <text x="490" y="285" text-anchor="middle" font-size="12">Multi-agent routing: inbound channels (Discord, Slack, Gmail, SMS, 25+ channels) → isolated agents (per-agent sandbox + session)</text>
+  <text x="490" y="302" text-anchor="middle" font-size="12">macOS menu-bar app · iOS / Android companion nodes · Cron + webhook + Pub/Sub automation · MCP Registry</text>
+  <text x="490" y="319" text-anchor="middle" font-size="12">Anish gets fire alerts on his phone. Trading desk gets a menu-bar agent. Slack DM from the leaderboard.</text>
+
+  <!-- L0: claw-code (the runtime) -->
+  <rect x="40" y="365" width="900" height="80" rx="8" fill="#e7f8ee" stroke="#1f7a3f" stroke-width="2"/>
+  <text x="490" y="393" text-anchor="middle" font-size="15" font-weight="700">L0 — Runtime Harness: claw-code (Rust binary, ultraworkers/claw-code, 191K stars)</text>
+  <text x="490" y="413" text-anchor="middle" font-size="12">claw prompt · claw doctor · claw acp · Reads ANTHROPIC_API_KEY or OPENAI_API_KEY · Sessions in .claude/sessions/</text>
+  <text x="490" y="433" text-anchor="middle" font-size="12">Clean-room rewrite of Claude Code's agent loop · Forkable · No Anthropic dependency for the harness itself</text>
+
+  <!-- Our assets -->
+  <rect x="40" y="470" width="900" height="55" rx="8" fill="#ffe7c2" stroke="#996600" stroke-width="2"/>
+  <text x="490" y="495" text-anchor="middle" font-size="14" font-weight="700">L-1 — Our domain assets (unchanged)</text>
+  <text x="490" y="513" text-anchor="middle" font-size="12">python_ports/ · path-a-loggers/ · live/ · docs/agentic-os/ · docs/validation/ · docs/bible/ · 8 SKILL.md skills</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 1 — Target four-layer architecture. L0 is the harness; L1 is the workspace + multi-agent surface; L2 is the skill marketplace; L3 is the multi-engine orchestrator. Our domain assets sit underneath, untouched.</p>
+
+<h3>2.1 What each layer earns its place by doing</h3>
+
+<table>
+<tr><th>Layer</th><th>Solves</th><th>Concrete win</th></tr>
+<tr><td>L0 claw-code</td><td>Open-source, forkable runtime</td><td>We can read every line, add features Anthropic won't ship, run on either Anthropic or OpenAI keys</td></tr>
+<tr><td>L1 openclaw</td><td>Workspace multi-agent + multi-channel I/O</td><td>Plot Owners become real agents. Anish gets phone alerts. Slack DM from the leaderboard.</td></tr>
+<tr><td>L2 clawhub</td><td>Skill discovery + publishing</td><td>Pull battle-tested community skills (finance, data, automation). Publish ours (privately if needed).</td></tr>
+<tr><td>L3 claw-orchestrator</td><td>Multi-engine cost + verification</td><td>Codex / Gemini do the grunt diagnosis work for 1/10th the cost. Council mode runs 3 engines in parallel on parity tests for cross-engine drift detection.</td></tr>
+</table>
+
+<h2 id="migration">3. Migration plan — Phases A–H</h2>
+
+<p>Eight phases, sequential. Phases A–C are the foundation (no behavior change yet). D–F migrate the live work. G–H decommission Claude Code-specific config and harden. Total effort: 5–7 working days at single-operator pace, less with the parallel sub-agents Phase D enables.</p>
+
+<svg width="980" height="280" viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg">
+  <line x1="40" y1="220" x2="940" y2="220" stroke="#333" stroke-width="2"/>
+  <!-- Day markers: 7 days, 130px each -->
+  <text x="40"  y="245" font-size="11" text-anchor="middle">Day 1</text>
+  <text x="170" y="245" font-size="11" text-anchor="middle">Day 2</text>
+  <text x="300" y="245" font-size="11" text-anchor="middle">Day 3</text>
+  <text x="430" y="245" font-size="11" text-anchor="middle">Day 4</text>
+  <text x="560" y="245" font-size="11" text-anchor="middle">Day 5</text>
+  <text x="690" y="245" font-size="11" text-anchor="middle">Day 6</text>
+  <text x="820" y="245" font-size="11" text-anchor="middle">Day 7</text>
+  <text x="940" y="245" font-size="11" text-anchor="middle">Day 8</text>
+  <!-- Phase bars -->
+  <rect x="40"  y="40" width="60"  height="20" fill="#7eddc1" stroke="#1f7a3f"/>
+  <text x="70"  y="54" text-anchor="middle" font-size="10" font-weight="700">A audit</text>
+  <rect x="100" y="40" width="90"  height="20" fill="#a8d0ff" stroke="#003366"/>
+  <text x="145" y="54" text-anchor="middle" font-size="10" font-weight="700">B install</text>
+  <rect x="190" y="40" width="110" height="20" fill="#ffd9b3" stroke="#663300"/>
+  <text x="245" y="54" text-anchor="middle" font-size="10" font-weight="700">C skill migrate</text>
+  <rect x="200" y="65" width="200" height="20" fill="#ffb38a" stroke="#7a3300"/>
+  <text x="300" y="79" text-anchor="middle" font-size="10" font-weight="700">D SOUL.md authoring (parallel)</text>
+  <rect x="400" y="40" width="160" height="20" fill="#d9c2ff" stroke="#330066"/>
+  <text x="480" y="54" text-anchor="middle" font-size="10" font-weight="700">E AGENTS.md + TOOLS.md</text>
+  <rect x="400" y="90" width="280" height="20" fill="#ffd6d6" stroke="#990000"/>
+  <text x="540" y="104" text-anchor="middle" font-size="10" font-weight="700">F orchestrator wiring + multi-engine routing</text>
+  <rect x="680" y="40" width="130" height="20" fill="#7eddc1" stroke="#1f7a3f"/>
+  <text x="745" y="54" text-anchor="middle" font-size="10" font-weight="700">G publish + sync</text>
+  <rect x="810" y="40" width="130" height="20" fill="#ffe7c2" stroke="#996600"/>
+  <text x="875" y="54" text-anchor="middle" font-size="10" font-weight="700">H cutover</text>
+  <!-- Legend -->
+  <text x="40" y="135" font-size="11" font-weight="700">Phases (sequential except D, which parallelizes with C, and F, which parallelizes with E):</text>
+  <text x="40" y="155" font-size="11">A — Audit + license diligence + decision freeze · B — Install L0/L1/L2/L3 in dev env · C — Migrate 8 SKILL.md files</text>
+  <text x="40" y="170" font-size="11">D — Author SOUL.md per identity (Anish master + plot-owner per detection plot + bull/bear/grunt/dialectic-host/matrix-collapser)</text>
+  <text x="40" y="185" font-size="11">E — Compose AGENTS.md / TOOLS.md at workspace root · F — Wire orchestrator + multi-engine routing (Codex for grunt, Opus for dialectic)</text>
+  <text x="40" y="200" font-size="11">G — Publish skills to clawhub (or private fork) + clawhub sync setup · H — Cutover: claude → claw, decommission deprecated config</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 2 — Migration phase Gantt. ~7 working days. Phases D and F parallelize, compressing the critical path.</p>
+
+<h3>3.1 Phase A — Audit + license diligence + decision freeze (Day 1)</h3>
+
+<ol>
+<li><strong>License verification.</strong> Read <code>LICENSE</code> on <code>ultraworkers/claw-code</code> (Rust). README does not state. If proprietary or non-permissive, fall back to <code>HarnessLab/claw-code-agent</code> (Python, less mature). License must allow commercial modification + redistribution.</li>
+<li><strong>Bus-factor scan.</strong> Top 5 contributors on each L0/L1/L2/L3 repo. Single-developer projects flagged for risk plan.</li>
+<li><strong>Vendor diligence on creators.</strong> Sigrid Jin (claw-code creator, profiled in WSJ as one of the world's most active Claude Code users — 25B+ tokens). InstructKR org. OpenClaw maintainers.</li>
+<li><strong>MCP support deep-dive.</strong> Confirm both <code>claw-code</code> harness and <code>openclaw</code> speak MCP natively for TradingView MCP + Massive.com MCP. Test against a hello-world MCP server.</li>
+<li><strong>Decision freeze.</strong> Anish signs off (verbal or written) that we are going Claw. Append SD-012 to <code>docs/agentic-os/STANDING_DECISIONS.md</code>: <em>"Adopt Claw Code as the foundation of the agentic OS. Migration per the plan in <code>docs/agentic-os/strategy/2026-05-11-claw-code-foundation-plan.html</code>."</em></li>
+</ol>
+
+<h3>3.2 Phase B — Install L0/L1/L2/L3 in dev env (Day 2 morning)</h3>
+
+<pre><code># L0 — claw-code (Rust binary)
+git clone https://github.com/ultraworkers/claw-code ~/src/claw-code
+cd ~/src/claw-code/rust &amp;&amp; cargo build --release
+ln -s ~/src/claw-code/rust/target/release/claw /usr/local/bin/claw
+claw doctor                       # health check; API keys, model access, tool config
+
+# L1 — openclaw (workspace + multi-agent)
+npm install -g openclaw@latest
+openclaw onboard --install-daemon
+
+# L2 — clawhub (skill registry CLI)
+npm install -g @openclaw/clawhub
+clawhub search trading            # smoke-test discovery
+
+# L3 — claw-orchestrator (multi-engine)
+npm install -g @enderfga/claw-orchestrator
+clawo serve                       # background; control plane on default port
+</code></pre>
+
+<p>Verification: <code>claw doctor</code> green, <code>openclaw agent --message "hello" --thinking high</code> returns, <code>clawhub install peekaboo</code> installs the example skill, <code>clawo session-start smoke --engine claude --cwd .</code> creates a session.</p>
+
+<h3>3.3 Phase C — Migrate 8 SKILL.md files (Day 2 afternoon)</h3>
+
+<p>Same format. Move them.</p>
+
+<pre><code>mkdir -p ~/.openclaw/workspace/skills
+cp -r .claude/skills/* ~/.openclaw/workspace/skills/
+ls ~/.openclaw/workspace/skills/        # expect: detection-plot-validation, detection-plot-diagnosis,
+                                        #         detection-plot-tv-firing, bull-bear-dialectic,
+                                        #         four-square-matrix, simplify, init,
+                                        #         (bull-vs-bear-debate kept for traceability per SD-002)
+</code></pre>
+
+<p>Smoke-test by invoking each skill via <code>openclaw agent --skill detection-plot-diagnosis --input "<sample fire>"</code>. Diff the output against the same skill invoked through Claude Code on the same input. Acceptance: identical output, modulo timestamps.</p>
+
+<h3>3.4 Phase D — Author SOUL.md per identity (Day 2 afternoon → Day 4)</h3>
+
+<p>This is the bulk of the new authoring work. Each agent identity gets one SOUL.md. See <a href="#identity">Section 4</a> for the canonical list.</p>
+
+<h3>3.5 Phase E — Compose AGENTS.md + TOOLS.md at workspace root (Day 4)</h3>
+
+<p>AGENTS.md is the workspace agent directory — names + roles + which SOUL.md to load. TOOLS.md declares which tools / MCP servers / commands are allowed at the workspace level. Both files live at <code>~/.openclaw/workspace/AGENTS.md</code> and <code>~/.openclaw/workspace/TOOLS.md</code> respectively.</p>
+
+<h3>3.6 Phase F — Wire orchestrator + multi-engine routing (Day 3 → Day 5)</h3>
+
+<p>The big win. See <a href="#engines">Section 6</a> for the routing matrix. Key wiring:</p>
+
+<pre><code>// orchestrator config — clawo.config.ts
+import { SessionManager } from "@enderfga/claw-orchestrator";
+
+const manager = new SessionManager({
+  defaultEngines: {
+    "grunt":     { engine: "codex",   model: "gpt-5.1-mini" },     // diagnosis cards, bar diffs
+    "knowledge": { engine: "claude",  model: "claude-opus-4-7" },  // bull-case / bear-case dialectic
+    "verifier":  { engine: "gemini",  model: "gemini-3-flash" },   // composition checks
+    "council":   { engines: ["claude", "codex", "gemini"] },       // parallel parity verification
+  },
+});
+
+// Plot Owner agent for "PBJ Bull" routes diagnosis to grunt, dialectic to knowledge:
+await manager.startSession({
+  name:   "plot-owner-pbj-bull",
+  soul:   "plot-owner-pbj-bull",
+  agents: { diagnosis: "grunt", bull_case: "knowledge", bear_case: "knowledge", matrix: "verifier" }
+});
+</code></pre>
+
+<h3>3.7 Phase G — Publish to clawhub (Day 6)</h3>
+
+<p>Two options:</p>
+<ul>
+<li><strong>Public publish</strong> of generic skills (e.g. <code>detection-plot-diagnosis</code> is generic enough — others can use it for non-trading detection plots). Earns goodwill + reverse-discovery (others fork our patterns, which surfaces variants we'd never write).</li>
+<li><strong>Private fork</strong> of clawhub for proprietary skills (the Pine-source-specific validators, the bull-bear-dialectic with our trading priors, the four-square-matrix with our SD-010 calibration). Self-hosted on a private domain; <code>clawhub --registry https://hub.alpha.internal</code>.</li>
+</ul>
+<p>Recommendation: hybrid. Public-publish the 3 generic skills (init, simplify, detection-plot-diagnosis structure). Private-fork the 5 proprietary skills.</p>
+
+<h3>3.8 Phase H — Cutover (Day 7)</h3>
+
+<ol>
+<li>Switch shell aliases: <code>alias claude=claw</code> (or remove and use <code>claw</code> directly).</li>
+<li>Update CLAUDE.md → AGENTS.md cross-link; preserve CLAUDE.md as a one-line pointer for any external tools still looking at it.</li>
+<li>Decommission <code>.claude/settings.json</code> Claude-Code-specific hooks; re-author against OpenClaw lifecycle.</li>
+<li>Append SD-013: <em>"Cutover complete. Claw is the primary runtime."</em></li>
+<li>Keep Claude Code installed for emergency fallback for 30 days. Then uninstall.</li>
+</ol>
+
+<h2 id="identity">4. Identity model — SOUL.md files we'll author</h2>
+
+<p>Every identity that operates in our workspace gets one SOUL.md. The schema (inferred from the awesome-openclaw-agents inventory):</p>
+
+<pre><code>---
+name: plot-owner-pbj-bull
+emoji: 🥪
+role: Plot Owner
+model: claude-opus-4-7
+parent_soul: hyper-alpha-trader
+heartbeat:
+  interval: 1m
+  scope: monitor live/leaderboard for PBJ Bull fires; tabulate; escalate to bull-case + bear-case on fire
+tools:
+  - tradingview_mcp
+  - massive_mcp
+  - python_port: hvd_pbj_ppd.the_only_one
+skills:
+  - detection-plot-diagnosis
+  - bull-bear-dialectic
+  - four-square-matrix
+rules:
+  - Never modify .pine source (SD-002)
+  - Use offset=-1 (SD-011)
+  - Tabulate concurrent fires on the visual bar (SD-011)
+---
+
+# Plot Owner — PBJ Bull
+
+Owns the PBJ Bull detection plot end-to-end. On each fire:
+1. Pull diagnosis card via detection-plot-diagnosis skill (grunt engine).
+2. Spawn bull-case and bear-case knowledge agents in parallel.
+3. Collapse to 4-square matrix via four-square-matrix skill (verifier engine).
+4. Post outcome to live leaderboard and Slack #plot-fires channel.
+5. If outcome is high-conviction (matrix corner = "compliance high"), push iOS notification.
+</code></pre>
+
+<h3>4.1 The SOUL.md library we'll author</h3>
+
+<table>
+<tr><th>SOUL ID</th><th>Role</th><th>Parent</th><th>Default engine</th><th>Notes</th></tr>
+<tr><td><code>hyper-alpha-trader</code></td><td>Master identity (Anish's voice in code)</td><td>—</td><td>claude-opus-4-7</td><td>Canonical statement of self. Every agent inherits via <code>parent_soul</code>.</td></tr>
+<tr><td><code>plot-owner-pbj-bull</code></td><td>Plot Owner</td><td>hyper-alpha-trader</td><td>claude-opus-4-7</td><td>Owns PBJ Bull end-to-end. One like this per plot — 13 plots → 13 SOULs (or 26 if we split bull / bear; recommend one per direction).</td></tr>
+<tr><td><code>plot-owner-pbj-bear</code></td><td>Plot Owner</td><td>hyper-alpha-trader</td><td>claude-opus-4-7</td><td>Mirror of above for bear side.</td></tr>
+<tr><td>(13 plot pairs → ~26 plot-owner SOULs)</td><td>Plot Owner</td><td>hyper-alpha-trader</td><td>varies</td><td>Per the 13-row priority table in the parity hand-off doc (Section 6).</td></tr>
+<tr><td><code>bull-case-worker</code></td><td>Knowledge worker — bull arguments</td><td>hyper-alpha-trader</td><td>claude-opus-4-7</td><td>Spawned per fire by Plot Owner. Returns bull dialectic.</td></tr>
+<tr><td><code>bear-case-worker</code></td><td>Knowledge worker — bear arguments</td><td>hyper-alpha-trader</td><td>claude-opus-4-7</td><td>Mirror.</td></tr>
+<tr><td><code>dialectic-host</code></td><td>Knowledge worker — moderates bull vs bear</td><td>hyper-alpha-trader</td><td>claude-opus-4-7</td><td>Runs <code>bull-bear-dialectic</code> skill. Produces transcript.</td></tr>
+<tr><td><code>matrix-collapser</code></td><td>Verifier worker — collapses dialectic to 4-square matrix</td><td>hyper-alpha-trader</td><td>gemini-3-flash</td><td>Cheap engine. Runs <code>four-square-matrix</code> skill. Per SD-010.</td></tr>
+<tr><td><code>grunt-runner</code></td><td>Cheap-engine grunt worker — diagnosis cards, bar diffs, label parsing</td><td>hyper-alpha-trader</td><td>codex (gpt-5.1-mini)</td><td>Runs <code>detection-plot-diagnosis</code>. Cost-optimized.</td></tr>
+<tr><td><code>parity-verifier</code></td><td>Verifier — Python port vs TV-MCP labels</td><td>hyper-alpha-trader</td><td>council (3 engines)</td><td>Council mode catches cross-engine drift in parity verification.</td></tr>
+<tr><td><code>trader-leaderboard</code></td><td>Service agent — the live <code>live/server.py</code> wrapped as an OpenClaw agent</td><td>hyper-alpha-trader</td><td>none (passthrough)</td><td>Persistent. Listens on TradingView MCP. Streams fires to Slack + iOS.</td></tr>
+<tr><td><code>session-on-deck</code></td><td>Anish-on-call agent — escalates ambiguous Pine intent</td><td>hyper-alpha-trader</td><td>n/a</td><td>Pages Anish via iOS push when an agent escalates. Maps to AskUserQuestion equivalent.</td></tr>
+</table>
+
+<h2 id="skills">5. Skill migration map</h2>
+
+<p>Each existing <code>.claude/skills/&lt;name&gt;/SKILL.md</code> moves to <code>~/.openclaw/workspace/skills/&lt;name&gt;/SKILL.md</code>. The frontmatter survives verbatim because OpenClaw reads the same Anthropic Agent Skills format. The body survives verbatim. The skill IDs we use today work tomorrow.</p>
+
+<table>
+<tr><th>#</th><th>Skill</th><th>Status today</th><th>Action</th></tr>
+<tr><td>1</td><td>detection-plot-validation</td><td>Active — runs the 4-phase validation (ENUMERATE → STATIC-DIFF → TV-FIRING → RECONCILE)</td><td>Copy. Re-test against <code>openclaw agent --skill detection-plot-validation</code>.</td></tr>
+<tr><td>2</td><td>detection-plot-diagnosis</td><td>Active — grunt-worker diagnosis card extraction</td><td>Copy. Wire to grunt-runner SOUL.</td></tr>
+<tr><td>3</td><td>detection-plot-tv-firing</td><td>Active — TV-MCP label scraping (Anish at desk only)</td><td>Copy. Re-bind to OpenClaw's MCP Registry entry for TradingView.</td></tr>
+<tr><td>4</td><td>bull-bear-dialectic</td><td>Active — post-setup outcome dialectic per SD-008/SD-010</td><td>Copy. Wire to dialectic-host SOUL.</td></tr>
+<tr><td>5</td><td>four-square-matrix</td><td>Active — collapses dialectic transcript to 2x2 matrix</td><td>Copy. Wire to matrix-collapser SOUL.</td></tr>
+<tr><td>6</td><td>bull-vs-bear-debate</td><td>SUPERSEDED 2026-05-11 — kept for SD-002 traceability</td><td>Copy as-is. Mark in frontmatter <code>status: superseded</code>. Do not invoke from new agents.</td></tr>
+<tr><td>7</td><td>simplify</td><td>Active — code review for reuse / quality / efficiency</td><td>Copy. Public-publish to clawhub (generic).</td></tr>
+<tr><td>8</td><td>init</td><td>Active — initialize CLAUDE.md / AGENTS.md</td><td>Copy. Modify to author AGENTS.md (OpenClaw native) instead of CLAUDE.md. Public-publish to clawhub.</td></tr>
+<tr><td>9</td><td>offset-application</td><td>Pending — skeletoned in parity hand-off Phase 6</td><td>Author directly in new home.</td></tr>
+</table>
+
+<h2 id="engines">6. Multi-engine cost model</h2>
+
+<p>The biggest concrete win. Today every token of every skill invocation runs against Anthropic Opus or Sonnet pricing. Tomorrow we route work by job type:</p>
+
+<svg width="980" height="380" viewBox="0 0 980 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar5" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <!-- Plot Owner box -->
+  <rect x="380" y="20" width="220" height="60" rx="8" fill="#fff3a8" stroke="#996600" stroke-width="2"/>
+  <text x="490" y="45" text-anchor="middle" font-size="14" font-weight="700">Plot Owner (per detection plot)</text>
+  <text x="490" y="65" text-anchor="middle" font-size="11">claude-opus-4-7 — coordinates work</text>
+
+  <!-- Routes -->
+  <line x1="430" y1="80" x2="150" y2="160" stroke="#444" stroke-width="1.5" marker-end="url(#ar5)"/>
+  <text x="270" y="115" font-size="11" fill="#444">diagnosis card</text>
+  <line x1="490" y1="80" x2="490" y2="160" stroke="#444" stroke-width="1.5" marker-end="url(#ar5)"/>
+  <text x="500" y="115" font-size="11" fill="#444">bull / bear dialectic</text>
+  <line x1="550" y1="80" x2="830" y2="160" stroke="#444" stroke-width="1.5" marker-end="url(#ar5)"/>
+  <text x="710" y="115" font-size="11" fill="#444">matrix collapse</text>
+
+  <!-- Grunt -->
+  <rect x="40" y="160" width="220" height="80" rx="8" fill="#d0e8ff" stroke="#003366" stroke-width="2"/>
+  <text x="150" y="186" text-anchor="middle" font-size="13" font-weight="700">Grunt worker</text>
+  <text x="150" y="205" text-anchor="middle" font-size="11">codex / gpt-5.1-mini</text>
+  <text x="150" y="222" text-anchor="middle" font-size="11">~10x cheaper than Opus</text>
+  <text x="150" y="238" text-anchor="middle" font-size="10" font-style="italic">tabulate concurrent fires, parse labels, run port</text>
+
+  <!-- Knowledge -->
+  <rect x="380" y="160" width="220" height="80" rx="8" fill="#fff3a8" stroke="#996600" stroke-width="2"/>
+  <text x="490" y="186" text-anchor="middle" font-size="13" font-weight="700">Knowledge worker</text>
+  <text x="490" y="205" text-anchor="middle" font-size="11">claude-opus-4-7</text>
+  <text x="490" y="222" text-anchor="middle" font-size="11">judgment + dialectic</text>
+  <text x="490" y="238" text-anchor="middle" font-size="10" font-style="italic">bull-case + bear-case + host moderation</text>
+
+  <!-- Verifier -->
+  <rect x="720" y="160" width="220" height="80" rx="8" fill="#d9c2ff" stroke="#330066" stroke-width="2"/>
+  <text x="830" y="186" text-anchor="middle" font-size="13" font-weight="700">Verifier worker</text>
+  <text x="830" y="205" text-anchor="middle" font-size="11">gemini-3-flash</text>
+  <text x="830" y="222" text-anchor="middle" font-size="11">~15x cheaper than Opus</text>
+  <text x="830" y="238" text-anchor="middle" font-size="10" font-style="italic">matrix collapse, composition checks</text>
+
+  <!-- Council -->
+  <rect x="280" y="280" width="420" height="80" rx="8" fill="#ffd6d6" stroke="#990000" stroke-width="2"/>
+  <text x="490" y="306" text-anchor="middle" font-size="13" font-weight="700">Council mode (parity verification)</text>
+  <text x="490" y="325" text-anchor="middle" font-size="11">claude + codex + gemini in parallel, isolated worktrees</text>
+  <text x="490" y="342" text-anchor="middle" font-size="11">cross-engine drift detection on Python port vs TV</text>
+  <text x="490" y="357" text-anchor="middle" font-size="10" font-style="italic">3-way disagreement triggers Anish escalation</text>
+
+  <line x1="150" y1="240" x2="380" y2="280" stroke="#999" stroke-width="1.5" marker-end="url(#ar5)"/>
+  <line x1="490" y1="240" x2="490" y2="280" stroke="#999" stroke-width="1.5" marker-end="url(#ar5)"/>
+  <line x1="830" y1="240" x2="600" y2="280" stroke="#999" stroke-width="1.5" marker-end="url(#ar5)"/>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 3 — Multi-engine routing. Plot Owner (Opus) coordinates; grunt work goes to Codex; knowledge dialectic stays on Opus; verifier work goes to Gemini Flash; parity council fires three engines in parallel for cross-engine drift.</p>
+
+<h3>6.1 Cost ratio estimate (illustrative — verify against actual pricing)</h3>
+
+<table>
+<tr><th>Work type</th><th>% of total tokens today</th><th>Engine today</th><th>Engine tomorrow</th><th>Relative cost</th></tr>
+<tr><td>Grunt tabulation (diagnosis cards, label parsing, bar diffs)</td><td>~55%</td><td>Opus</td><td>Codex gpt-5.1-mini</td><td>0.10x</td></tr>
+<tr><td>Knowledge dialectic (bull-case, bear-case, dialectic-host)</td><td>~25%</td><td>Opus</td><td>Opus (unchanged)</td><td>1.0x</td></tr>
+<tr><td>Verifier (matrix collapse, composition checks)</td><td>~15%</td><td>Opus</td><td>Gemini-3 Flash</td><td>0.07x</td></tr>
+<tr><td>Council parity (3-way parallel on critical plots only)</td><td>~5%</td><td>Opus</td><td>Opus + Codex + Gemini</td><td>1.17x</td></tr>
+<tr><td><strong>Weighted total</strong></td><td>100%</td><td>1.00x</td><td><strong>~0.37x</strong></td><td><strong>~63% cost reduction</strong></td></tr>
+</table>
+
+<div class="callout">
+<strong>Caveat.</strong> Estimates assume rough cost-per-token ratios across providers as of 2026-05. Verify against current pricing before claiming the number. The directional savings are robust; the exact multiplier is not.
+</div>
+
+<h2 id="license">7. License + governance review</h2>
+
+<h3>7.1 Per-layer license status (as of 2026-05-11)</h3>
+
+<table>
+<tr><th>Layer</th><th>Repo</th><th>License</th><th>Commercial use OK?</th><th>Fork + redistribute OK?</th><th>Action</th></tr>
+<tr><td>L0</td><td>ultraworkers/claw-code</td><td><span class="tbd">UNSPECIFIED in README</span></td><td>?</td><td>?</td><td><strong>Phase A blocker — must verify</strong></td></tr>
+<tr><td>L1</td><td>openclaw/openclaw</td><td><span class="yes">MIT</span></td><td>Yes</td><td>Yes</td><td>Clear to adopt</td></tr>
+<tr><td>L2</td><td>openclaw/clawhub</td><td><span class="yes">MIT</span></td><td>Yes</td><td>Yes</td><td>Clear to adopt</td></tr>
+<tr><td>L3</td><td>Enderfga/claw-orchestrator</td><td><span class="yes">MIT</span></td><td>Yes</td><td>Yes</td><td>Clear to adopt</td></tr>
+<tr><td>Fallback L0</td><td>HarnessLab/claw-code-agent</td><td>Open (verify exact)</td><td>?</td><td>?</td><td>Fallback if L0 license blocks</td></tr>
+</table>
+
+<h3>7.2 Anthropic-relationship posture</h3>
+
+<p>All Claw repos disclaim Anthropic affiliation. None claim ownership of Claude Code source. We are not violating any Anthropic terms by adopting Claw — we are simply using an alternative open-source harness. The Anthropic API itself is still consumed (via <code>ANTHROPIC_API_KEY</code>), so the revenue relationship with Anthropic continues.</p>
+
+<h2 id="risks">8. Risks + mitigations</h2>
+
+<table>
+<tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr>
+<tr><td>L0 license unspecified — may forbid commercial use or modification</td><td>HIGH</td><td>Phase A blocker. Fall back to HarnessLab/claw-code-agent (Python) if blocked.</td></tr>
+<tr><td>Six-week-old ecosystem — battle-testing limited</td><td>MEDIUM</td><td>Keep Claude Code installed in parallel for 30 days post-cutover. Maintain ability to roll back via shell alias swap.</td></tr>
+<tr><td>Bus factor on single-developer repos (e.g. claw-orchestrator)</td><td>MEDIUM</td><td>Vendor the orchestrator source into our repo (<code>vendor/claw-orchestrator/</code>) so we can patch in-place if upstream stalls.</td></tr>
+<tr><td>MCP support depth unclear in claw-code harness</td><td>MEDIUM</td><td>Phase A includes hello-world MCP smoke test. If MCP is shallow, run TradingView MCP under OpenClaw (L1) which explicitly ships MCP Registry.</td></tr>
+<tr><td>Multi-engine routing introduces cross-engine drift on results</td><td>MEDIUM</td><td>Council mode in L3 catches this — three engines run in parallel on critical plots and disagreement triggers Anish escalation.</td></tr>
+<tr><td>SOUL.md format changes between OpenClaw versions</td><td>LOW</td><td>Pin to specific version; upgrade only after the SOUL.md schema test suite passes.</td></tr>
+<tr><td>Anthropic ships a new official multi-agent feature mid-migration that obsoletes parts of this plan</td><td>LOW</td><td>Migration is reversible. Skills move back to <code>.claude/skills/</code> with one <code>cp</code>.</td></tr>
+<tr><td>Anish doesn't like the migration overhead and rolls it back</td><td>LOW (but visible)</td><td>Sequence the phases so each one delivers visible value before the next. Phase F (cost model) and Phase G (skill marketplace pulls) are both standalone wins.</td></tr>
+</table>
+
+<h2 id="decision">9. Keep / kill / adopt — decision tree</h2>
+
+<svg width="980" height="280" viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar6" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <rect x="380" y="10" width="220" height="40" rx="6" fill="#ffe7e7" stroke="#cc0000" stroke-width="2"/>
+  <text x="490" y="34" text-anchor="middle" font-size="13" font-weight="700">Existing asset — what do we do?</text>
+
+  <rect x="40" y="100" width="220" height="60" rx="6" fill="#d4f0dd" stroke="#1f7a3f" stroke-width="2"/>
+  <text x="150" y="124" text-anchor="middle" font-size="13" font-weight="700">KEEP</text>
+  <text x="150" y="143" text-anchor="middle" font-size="11">Python ports, loggers, live/,</text>
+  <text x="150" y="158" text-anchor="middle" font-size="11">SD ledger, validation reports, Bible</text>
+
+  <rect x="380" y="100" width="220" height="60" rx="6" fill="#ffe6cc" stroke="#7a3300" stroke-width="2"/>
+  <text x="490" y="124" text-anchor="middle" font-size="13" font-weight="700">ADOPT</text>
+  <text x="490" y="143" text-anchor="middle" font-size="11">claw-code (L0), openclaw (L1),</text>
+  <text x="490" y="158" text-anchor="middle" font-size="11">clawhub (L2), claw-orchestrator (L3)</text>
+
+  <rect x="720" y="100" width="220" height="60" rx="6" fill="#ffd6d6" stroke="#990000" stroke-width="2"/>
+  <text x="830" y="124" text-anchor="middle" font-size="13" font-weight="700">KILL / DEPRECATE</text>
+  <text x="830" y="143" text-anchor="middle" font-size="11">bull-vs-bear-debate v1 (already</text>
+  <text x="830" y="158" text-anchor="middle" font-size="11">superseded), hand-rolled Plot Owner wiring</text>
+
+  <line x1="450" y1="50" x2="200" y2="100" stroke="#444" stroke-width="1.5" marker-end="url(#ar6)"/>
+  <line x1="490" y1="50" x2="490" y2="100" stroke="#444" stroke-width="1.5" marker-end="url(#ar6)"/>
+  <line x1="530" y1="50" x2="780" y2="100" stroke="#444" stroke-width="1.5" marker-end="url(#ar6)"/>
+
+  <rect x="40" y="200" width="900" height="60" rx="6" fill="#e0e0ff" stroke="#003366" stroke-width="2"/>
+  <text x="490" y="225" text-anchor="middle" font-size="13" font-weight="700">PULL FROM COMMUNITY (clawhub + awesome-openclaw-agents)</text>
+  <text x="490" y="245" text-anchor="middle" font-size="11">Finance category SOUL.mds (10 agents), Data category (7), Automation (6), Voice (3 — useful for Anish's voice workflow)</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 4 — Keep / adopt / kill triage with community-pull layer.</p>
+
+<h2 id="timeline">10. Timeline</h2>
+
+<p>One week to first usable state. Each day has one major milestone:</p>
+
+<table>
+<tr><th>Day</th><th>Milestone</th><th>Validation</th></tr>
+<tr><td>Day 1</td><td>License diligence complete; SD-012 appended; Anish signs off</td><td>L0 license confirmed in writing; SD-012 in <code>STANDING_DECISIONS.md</code></td></tr>
+<tr><td>Day 2 AM</td><td>L0/L1/L2/L3 installed in dev env</td><td><code>claw doctor</code> green; <code>openclaw agent</code> returns; <code>clawhub install</code> works; <code>clawo serve</code> running</td></tr>
+<tr><td>Day 2 PM</td><td>8 SKILL.md migrated; smoke-tested under OpenClaw</td><td>Diff-test passes against Claude Code on a sample fire</td></tr>
+<tr><td>Day 3</td><td>SOUL.md library Day 1: <code>hyper-alpha-trader</code>, <code>plot-owner-pbj-bull</code>/<code>bear</code> (template), <code>grunt-runner</code>, <code>bull-case-worker</code>, <code>bear-case-worker</code></td><td>Manual invocation of each SOUL returns expected role behavior</td></tr>
+<tr><td>Day 4</td><td>Remaining SOUL.mds (~26 plot-owners + dialectic-host + matrix-collapser + parity-verifier + trader-leaderboard + session-on-deck); AGENTS.md + TOOLS.md composed</td><td>Workspace boots into multi-agent mode; <code>openclaw agent list</code> shows all roles</td></tr>
+<tr><td>Day 5</td><td>L3 orchestrator wired with engine routing; council mode tested on PBJ Bull parity</td><td>Cross-engine drift report generated; routing manifest committed</td></tr>
+<tr><td>Day 6</td><td>3 skills public-published to clawhub; private fork of clawhub stood up for proprietary skills</td><td>Skills discoverable via <code>clawhub search</code>; private registry returns proprietary skill list</td></tr>
+<tr><td>Day 7</td><td>Cutover. <code>claude</code> alias removed; CLAUDE.md → AGENTS.md pointer; SD-013 appended</td><td>30-day rollback retention; Claude Code still installed but unused</td></tr>
+</table>
+
+<h2 id="open">11. Open questions for Anish</h2>
+
+<ol>
+<li><strong>Which layer is "Claw Code" to you?</strong> This plan assumes the full four-layer stack. If you meant only L0 (replace the harness, keep everything else), say so and I'll re-cut the plan around that minimal scope.</li>
+<li><strong>Hybrid clawhub publish strategy OK?</strong> Public-publish 3 generic skills; private-fork for the 5 proprietary trading skills. Or do you want everything private?</li>
+<li><strong>Engine mix.</strong> I'm proposing Opus for knowledge, Codex for grunt, Gemini Flash for verifier. Are you OK with bringing Codex and Gemini into the loop, or do you want to stay Anthropic-only (uses Haiku for grunt instead — smaller savings but single-vendor)?</li>
+<li><strong>Plot Owner granularity.</strong> One SOUL per direction (26 total) or one SOUL per plot family (13)? The former gives finer routing; the latter is half the authoring effort.</li>
+<li><strong>Public agents.</strong> Should we ever publish a "alpha-trader" public agent template? Could attract talent + cross-pollination. Or strict private?</li>
+<li><strong>Voice channel.</strong> OpenClaw ships 25+ messaging channels including voice. Want fire alerts delivered as a voice call to your phone for high-conviction matrix corners?</li>
+<li><strong>NemoClaw on-prem.</strong> NVIDIA ships NemoClaw for on-prem GPU inference. Do we ever want to host our own inference? Cost / latency / sovereignty trade.</li>
+<li><strong>ClawRouter for cost arbitrage.</strong> BlockRunAI's ClawRouter does per-request routing across 41+ models. Sub-1ms routing. Worth adding above L3 for marginal cost optimization, or premature?</li>
+</ol>
+
+<h2 id="glossary">12. Glossary</h2>
+
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>Claw Code</td><td>Open-source clean-room rewrite of Claude Code's harness architecture. Lead repo: <code>ultraworkers/claw-code</code> (Rust, 191K stars). Launched March 2026.</td></tr>
+<tr><td>OpenClaw</td><td>Workspace + multi-agent surface built on Claw Code. Lead repo: <code>openclaw/openclaw</code>. MIT-licensed. Ships AGENTS.md / SOUL.md / SKILL.md + 25+ messaging channels + macOS / iOS / Android companion.</td></tr>
+<tr><td>clawhub</td><td>Skill registry for OpenClaw. <code>openclaw/clawhub</code>. MIT. CLI: <code>clawhub search/install/publish</code>.</td></tr>
+<tr><td>claw-orchestrator</td><td>Multi-engine runtime. <code>Enderfga/claw-orchestrator</code>. MIT. <code>clawo</code> CLI. Unifies Claude Code + Codex + Gemini + Cursor + custom CLIs.</td></tr>
+<tr><td>SOUL.md</td><td>Per-agent identity config. Declares <code>name</code>, <code>emoji</code>, <code>role</code>, <code>model</code>, <code>parent_soul</code>, <code>heartbeat</code>, <code>tools</code>, <code>skills</code>, <code>rules</code>. Lives at <code>~/.openclaw/workspace/souls/&lt;id&gt;.SOUL.md</code> (recommended).</td></tr>
+<tr><td>SKILL.md</td><td>Per-skill config. Same Anthropic Agent Skills format we use today. Lives at <code>~/.openclaw/workspace/skills/&lt;name&gt;/SKILL.md</code>.</td></tr>
+<tr><td>AGENTS.md</td><td>Workspace-level agent directory. Lists all agents in the workspace + which SOUL each loads.</td></tr>
+<tr><td>TOOLS.md</td><td>Workspace-level tool config. Declares which MCP servers + commands are available to which agents.</td></tr>
+<tr><td>Council mode</td><td>L3 orchestrator feature. Runs N engines in parallel on the same task with isolated git worktrees; surfaces inter-engine disagreement for review.</td></tr>
+<tr><td>Heartbeat</td><td>Agent's periodic self-check loop. Configured in SOUL.md.</td></tr>
+<tr><td>Skill registry / clawhub</td><td>Public marketplace for skills (and souls). Versioned, tagged, changelogged. Like npm for agent skills.</td></tr>
+<tr><td>Plot Owner</td><td>An agent identity that owns one detection plot end-to-end. Maps a fire to a diagnosis card, dialectic, and matrix outcome.</td></tr>
+<tr><td>Grunt worker</td><td>Cheap-engine agent (Codex / Haiku / Gemini Flash) that does tabulation work — diagnosis cards, label parsing, bar diffs.</td></tr>
+<tr><td>Knowledge worker</td><td>Opus-class agent that does judgment work — bull-case, bear-case, dialectic moderation.</td></tr>
+<tr><td>Verifier worker</td><td>Cheap-but-capable agent (Gemini Flash) that runs structured verifier tasks — matrix collapse, composition checks.</td></tr>
+</table>
+
+<h2 id="refs">13. References + URLs</h2>
+
+<ul>
+<li><a href="https://github.com/ultraworkers/claw-code">https://github.com/ultraworkers/claw-code</a> — L0 harness</li>
+<li><a href="https://github.com/openclaw/openclaw">https://github.com/openclaw/openclaw</a> — L1 workspace</li>
+<li><a href="https://github.com/openclaw/clawhub">https://github.com/openclaw/clawhub</a> — L2 skill registry</li>
+<li><a href="https://github.com/Enderfga/claw-orchestrator">https://github.com/Enderfga/claw-orchestrator</a> — L3 orchestrator</li>
+<li><a href="https://github.com/mergisi/awesome-openclaw-agents">https://github.com/mergisi/awesome-openclaw-agents</a> — 162 SOUL.md templates</li>
+<li><a href="https://github.com/HarnessLab/claw-code-agent">https://github.com/HarnessLab/claw-code-agent</a> — Python fallback for L0</li>
+<li><a href="https://github.com/NVIDIA/NemoClaw">https://github.com/NVIDIA/NemoClaw</a> — on-prem GPU inference variant</li>
+<li><a href="https://github.com/BlockRunAI/ClawRouter">https://github.com/BlockRunAI/ClawRouter</a> — cost-arbitrage LLM router</li>
+<li><a href="https://github.com/anthropics/skills">https://github.com/anthropics/skills</a> — canonical Anthropic Agent Skills repo (SKILL.md format we already use)</li>
+<li><a href="https://github.com/anthropics/claude-code">https://github.com/anthropics/claude-code</a> — what we're migrating off (still keep for 30 days rollback)</li>
+<li><a href="https://claw-code.codes/">https://claw-code.codes/</a> — Claw Code project site</li>
+<li><a href="https://www.24-7pressrelease.com/press-release/533389/claw-code-launches-open-source-ai-coding-agent-framework-with-72000-github-stars-in-first-days">Press release — Claw Code 72K stars in first days</a></li>
+</ul>
+
+<h2 id="starter">14. Starter prompt — Phase A kickoff</h2>
+
+<div class="callout">
+<strong>Anish: paste this into the cloud Claude Code session (or whichever session you want to drive Phase A) when you're ready to start. It is self-contained.</strong>
+</div>
+
+<pre><code>Read docs/agentic-os/strategy/2026-05-11-claw-code-foundation-plan.html end-to-end. That document
+is the org's adopted plan for migrating the agentic OS from Claude Code onto the Claw Code stack.
+
+Execute Phase A — Audit + license diligence + decision freeze. Specifically:
+
+1. Verify the LICENSE on ultraworkers/claw-code via the GitHub API. Report the
+   exact license text. If proprietary or non-permissive, immediately pivot
+   to HarnessLab/claw-code-agent (Python fallback) and flag the change to me.
+
+2. Pull the top 5 contributors on each of ultraworkers/claw-code,
+   openclaw/openclaw, openclaw/clawhub, Enderfga/claw-orchestrator. Flag any
+   repo with a single primary contributor (bus factor) so we plan vendoring.
+
+3. Smoke-test that claw-code speaks MCP natively against a hello-world MCP
+   server. Report what you find. If MCP support is shallow, propose running
+   our TradingView MCP under OpenClaw's MCP Registry (L1) instead of L0.
+
+4. Author SD-012 in docs/agentic-os/STANDING_DECISIONS.md (next entry after
+   SD-011 — which is the offset-semantics entry from the parity hand-off):
+
+      ## SD-012 — Adopt Claw Code as the foundation of the agentic OS
+
+      Date: 2026-05-11
+      Decision: Migrate agentic OS from Claude Code to the four-layer Claw stack
+      (claw-code L0 / openclaw L1 / clawhub L2 / claw-orchestrator L3) per the
+      plan in docs/agentic-os/strategy/2026-05-11-claw-code-foundation-plan.html.
+      Rationale: open-source forkable foundation; native multi-agent + multi-channel;
+      multi-engine cost optimization (Codex + Gemini for grunt / verifier work);
+      community skill marketplace.
+      Effect: Phase A starts immediately. Migration target: 7 working days.
+
+5. Reply with: the LICENSE finding, the bus-factor table, the MCP smoke-test
+   result, and the commit hash for SD-012. Then await my green light to
+   proceed to Phase B (install L0/L1/L2/L3 in dev env).
+
+Do NOT execute Phases B–H without explicit go-ahead from me after Phase A
+reports back.
+
+Begin.</code></pre>
+
+<div class="footer">
+Authored by the cloud Claude Code session 2026-05-11. Source documents referenced: the eight GitHub repos linked in Section 13, the existing standing decisions ledger at <code>docs/agentic-os/STANDING_DECISIONS.md</code> (SD-001 through SD-010, SD-011 pending), the parity hand-off doc at <code>docs/handoffs/2026-05-11-parity-handoff-local-mcp.html</code>, and the GPS satellite hand-off at <code>docs/agentic-os/prompts/gps-satellite-handoff-prompt.html</code>. This plan supersedes any prior "agentic OS roadmap" document.
+</div>
+
+</body>
+</html>
