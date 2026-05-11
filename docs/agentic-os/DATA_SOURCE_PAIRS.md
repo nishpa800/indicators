@@ -19,7 +19,7 @@ This decision is recorded as SD-009 in `STANDING_DECISIONS.md`.
 |---|---|---|---|---|
 | Benzinga news | `DS::benzinga-news::bull` | `DS::benzinga-news::bear` | `gw-benzinga-news-ingest` | not yet hired |
 | Benzinga earnings calendar | `DS::benzinga-earnings::bull` | `DS::benzinga-earnings::bear` | `gw-benzinga-earnings-ingest` | not yet hired |
-| 13F filings | `DS::13f::bull` | `DS::13f::bear` | `gw-13f-ingest` | not yet hired |
+| WhaleWisdom 13F filings (per SD-015) | `DS::whalewisdom::bull` | `DS::whalewisdom::bear` | `gw-whalewisdom-ingest` | not yet hired |
 | Options historical | `DS::options-hist::bull` | `DS::options-hist::bear` | `gw-options-hist-ingest` | not yet hired |
 | ETF rotation | `DS::etf-rotation::bull` | `DS::etf-rotation::bear` | `gw-etf-rotation-ingest` | not yet hired |
 | Volume footprint | `DS::vol-footprint::bull` | `DS::vol-footprint::bear` | `gw-vol-footprint-ingest` | not yet hired |

@@ -1,8 +1,9 @@
 # VOB GPS Four-Satellite Architecture
 
-_Authored 2026-05-11. **Status: deferred future work** — flagged by Anish
-2026-05-11 but not yet built. This doc captures the design so it isn't
-lost between now and Stage 7+ when it gets built._
+_Authored 2026-05-11. **Status: SCHEDULED — Stage 7 begins after parity
+sweep completes and the first Plot Owner ships.** Promoted from "deferred"
+by SD-014 (2026-05-11). Build sequence (G1–G7) is documented in
+`docs/agentic-os/strategy/2026-05-11-agentic-os-full-build-spec.html` §5.2._
 
 > Anish 2026-05-11: "We aren't there yet, but we do need to update the
 > approach that we're taking on the VOB because I have a really good

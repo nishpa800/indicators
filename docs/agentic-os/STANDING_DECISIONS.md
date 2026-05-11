@@ -361,3 +361,130 @@ defy?" That has no algorithmic answer. It requires reasoning over
 situational context (data sources, session position, regime,
 historical analogues). Krishna argues compliance; Shiva argues defiance.
 Both consume the diagnosis as truth.
+
+---
+
+> **SD-011 and SD-012 are RESERVED**:
+> - **SD-011** — offset semantics canonicalization. Documented in
+>   `docs/handoffs/2026-05-11-parity-handoff-local-mcp.html` §3.2 + Phase 0.
+>   Will be written by the local Claude Code MCP session as the first act of
+>   the parity sweep, after Anish signs off on the two proposed canonical
+>   definitions.
+> - **SD-012** — Claw Code foundation adoption. Documented in
+>   `docs/agentic-os/strategy/2026-05-11-claw-code-foundation-plan.html`
+>   Phase A. Will be written after license diligence completes on
+>   `ultraworkers/claw-code` and Anish signs off on the migration.
+
+---
+
+## SD-013 — Six strategic pillars canonicalized as load-bearing skills
+
+- **Date**: 2026-05-11
+- **Source**: Anish 2026-05-11 (verbatim): "given the axis, the steelman,
+  the red team (Krishna vs Shiva), premortem, inversion strategy, Pareto
+  leverage strategic principles build our GPS based agentic OS with the
+  grunt workers, knowledge workers"
+- **Decision**: Six strategic principles are canonicalized as load-bearing
+  structural elements of the agentic OS, each implemented as a skill
+  at a specific worker tier. They are: (1) **AXIS** decomposition along
+  12 canonical dimensions (grunt-tier skill `axis-decomposition`),
+  (2) **KRISHNA** steelman — strongest case FOR a setup type at strategy
+  scale (knowledge-tier `krishna-steelman`), (3) **SHIVA** red team —
+  strongest case AGAINST at strategy scale (knowledge-tier
+  `shiva-redteam`), (4) **PREMORTEM** — failure-mode prep in past tense
+  (owner-tier `premortem`), (5) **INVERSION** — Munger's never-do rules
+  (owner-tier `inversion`, outputs become SD-N entries), (6) **PARETO
+  LEVERAGE** — 80/20 ranking (owner-tier `pareto-leverage`).
+- **Scope**: All Plot Owners, all Indicator Owners, all strategy reviews,
+  and the daily pre-market premortem hook. Per-fire chain uses Axis
+  (always) + the Inversion gate (always) + the Pareto-derived priority
+  (passive ranking). Krishna + Shiva + Premortem + Pareto run at
+  strategy review cadence (weekly per plot, monthly per book) — NOT
+  per-fire (cost discipline).
+- **Acknowledgment**: Krishna and Shiva are Hindu cosmological figures
+  (Preserver and Destroyer) used as functional role names per
+  `THESIS.md` §"Balance, not morality" and SD-008 (which retired
+  good/evil and angel/devil framing in formal artifacts). Krishna /
+  Shiva nomenclature is permitted in skill names and informal logs but
+  formal per-fire payloads continue to use neutral `bull-case` /
+  `bear-case` per SD-008.
+- **Operational consequence**:
+  - Six SKILL.md files at `.claude/skills/{axis-decomposition,
+    krishna-steelman, shiva-redteam, premortem, inversion,
+    pareto-leverage}/SKILL.md` (committed this turn).
+  - Inversion rule outputs are appended to this ledger as new SD-N
+    entries (per `.claude/skills/inversion/SKILL.md`).
+  - Strategy review chain (Axis → Krishna || Shiva → Premortem →
+    Inversion → Pareto → Decision) is documented in master spec
+    `docs/agentic-os/strategy/2026-05-11-agentic-os-full-build-spec.html`
+    §9 with the per-fire chain in §10.
+
+---
+
+## SD-014 — GPS four-satellite system promoted from deferred to scheduled
+
+- **Date**: 2026-05-11
+- **Source**: Anish 2026-05-11 (verbatim): "build our GPS based agentic
+  OS... GPS satellites VOB × 3 and HV FVG GZ1"
+- **Decision**: The four-satellite triangulation architecture documented
+  in `docs/agentic-os/VOB_GPS_FOUR_SATELLITE.md` is promoted from status
+  "deferred future work — flagged by Anish but not yet built" to status
+  "scheduled — Stage 7 begins after parity sweep completes and the first
+  Plot Owner ships". The four satellites are: Sat 1 (HV+FVG+GZ1), Sat 2
+  (vob-single-sens), Sat 3 (vob-asym at sensitivity threshold A), Sat 4
+  (vob-asym at sensitivity threshold B). The agreement count N-of-4
+  becomes a new axis on the axis-card (per SD-013's axis-decomposition
+  skill) and a new field `gps_conviction` in the per-fire payload
+  (successor field to SD-007's payload schema).
+- **Scope**: Every Plot Owner consumes the GPS satellite agreement count
+  via the `axis-decomposition` skill. The empirical search for the optimal
+  (threshold A, threshold B) sensitivity pair runs as a council-mode
+  parity verification task in Stage 7 (per Claw foundation plan L3).
+- **Acknowledgment**: The GPS layer cannot ship today because (a) the
+  `hv-fvg-gz1-og` zone emission is currently visual-only, not
+  bar-tagged; (b) the empirical (thr_A, thr_B) pair has not been
+  searched; (c) the `four-satellite-triangulator` grunt skill is not
+  yet authored; (d) the `situational-context-share` skill that consumes
+  satellite output is also TODO. All four prerequisites are documented
+  in the master spec §5.2 build sequence (steps G1–G7).
+- **Operational consequence**:
+  - `VOB_GPS_FOUR_SATELLITE.md` status header updated.
+  - Stage 7 work queue is open: G1 (zone emission reformulation), G2
+    (empirical sensitivity-pair search), G3 (triangulator skill author),
+    G4 (situational-context-share wire), G5 (payload schema bump),
+    G6 (N-of-4 predictive-value backtest), G7 (DS::gps-sat::* hire).
+  - The Stage 7 work begins after the parity sweep passes and
+    `PO::unified-combo` has ~30 days of calibration data.
+
+---
+
+## SD-015 — WhaleWisdom is the canonical 13-F filings data source
+
+- **Date**: 2026-05-11
+- **Source**: Anish 2026-05-11 (verbatim): "WhaleWisdom 13-F/filings"
+- **Decision**: WhaleWisdom is the canonical vendor for 13-F
+  institutional filings data. The previously-generic `DS::13f::*` pair
+  in `DATA_SOURCE_PAIRS.md` is renamed to `DS::whalewisdom::*` to make
+  the vendor binding explicit. The ingest grunt is renamed from
+  `gw-13f-ingest` to `gw-whalewisdom-ingest`. The MCP server backing
+  the integration is to be built / subscribed against WhaleWisdom's API
+  (paid tier required).
+- **Scope**: The `axis-decomposition` skill's `institutional` axis
+  (top_quartile_13f / bottom_quartile_13f / no_data) is computed from
+  WhaleWisdom's per-symbol quarterly aggregate. The Plot Owner
+  dialectic at fire time consumes the WhaleWisdom-derived context via
+  `situational-context-share` (TODO).
+- **Acknowledgment**: SEC EDGAR 13-F filings (the underlying public
+  filings) remain the ground truth. WhaleWisdom is chosen as the
+  canonical aggregator/normalizer because Anish has named it specifically
+  and because the alternative aggregators (HedgeFollow, MarketBeat,
+  Insider Monkey) have less reliable data freshness within the 45-day
+  SEC filing window.
+- **Operational consequence**:
+  - `DATA_SOURCE_PAIRS.md` row #3 (13F filings) updated to reference
+    WhaleWisdom explicitly.
+  - `gw-whalewisdom-ingest` grunt skill is queued for authoring (Stage 4
+    per master spec §11 roadmap).
+  - The WhaleWisdom API subscription is a hard dependency — Anish
+    decision pending per master spec §13 open question #2.
+
