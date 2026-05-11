@@ -1,0 +1,98 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: B2B_NAPALM_BULL
+aliases_searched:
+- B2B_NAPALM_BULL
+- B2B_NAPALM_BEAR
+- B2B_NAPALM
+- b2b_napalm
+- b2bNapalmBull
+- b2bNapalmBear
+- p_b2bBull
+- p_b2bBear
+- sigB2BNapalmBull
+- sigB2BNapalmBear
+pine_files_scanned: 54
+definitions:
+- indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v1.pine
+  line: 915
+  pine_variable: p_b2bBull
+  raw_line: bool p_b2bBull = det_bullNapalm and not supp_bullNPM and (det_bullNapalm[1] == true) and not na(sessionFirstBarIdx)
+    and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBull
+- indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v1.pine
+  line: 916
+  pine_variable: p_b2bBear
+  raw_line: bool p_b2bBear = det_bearNapalm and not supp_bearNPM and (det_bearNapalm[1] == true) and not na(sessionFirstBarIdx)
+    and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBear
+- indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v2.pine
+  line: 1030
+  pine_variable: p_b2bBull
+  raw_line: bool p_b2bBull = det_bullNapalm and not supp_bullNPM and (det_bullNapalm[1] == true) and not na(sessionFirstBarIdx)
+    and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBull
+- indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v2.pine
+  line: 1031
+  pine_variable: p_b2bBear
+  raw_line: bool p_b2bBear = det_bearNapalm and not supp_bearNPM and (det_bearNapalm[1] == true) and not na(sessionFirstBarIdx)
+    and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBear
+- indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1247
+  pine_variable: p_b2bBull
+  raw_line: bool p_b2bBull = det_bullNapalm and not supp_bullNPM and (det_bullNapalm[1] == true) and not na(sessionFirstBarIdx)
+    and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBull and nz(gate_bull[1])
+- indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1248
+  pine_variable: p_b2bBear
+  raw_line: bool p_b2bBear = det_bearNapalm and not supp_bearNPM and (det_bearNapalm[1] == true) and not na(sessionFirstBarIdx)
+    and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBear and nz(gate_bear[1])
+- indicator_family: tnt-od
+  file: tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine
+  line: 1030
+  pine_variable: p_b2bBull
+  raw_line: bool p_b2bBull = det_bullNapalm and not supp_bullNPM and (det_bullNapalm[1] == true) and not na(sessionFirstBarIdx)
+    and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBull
+- indicator_family: tnt-od
+  file: tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine
+  line: 1031
+  pine_variable: p_b2bBear
+  raw_line: bool p_b2bBear = det_bearNapalm and not supp_bearNPM and (det_bearNapalm[1] == true) and not na(sessionFirstBarIdx)
+    and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBear
+occurrences_per_indicator:
+  tnt-od:
+    DEFINITION: 8
+    REFERENCE: 18
+    INPUT: 0
+    PLOT: 8
+    ALERT: 0
+    COMMENT: 1
+yaml_cross_check:
+  yaml_matching_records:
+  - id: b2b-pup::B2B_NAPALM_BULL
+    indicator: b2b-pup
+    pine_source_line_range: L695-L697
+  - id: b2b-pup::B2B_NAPALM_BEAR
+    indicator: b2b-pup
+    pine_source_line_range: L696-L698
+  - id: tnt-od::B2B_Napalm
+    indicator: tnt-od
+    pine_source_line_range: null
+  orphans:
+  - id: b2b-pup::B2B_NAPALM_BULL
+    indicator: b2b-pup
+    pine_source_line_range: L695-L697
+    reason: no Pine DEFINITION in b2b-pup
+  - id: b2b-pup::B2B_NAPALM_BEAR
+    indicator: b2b-pup
+    pine_source_line_range: L696-L698
+    reason: no Pine DEFINITION in b2b-pup
+  - id: tnt-od::B2B_Napalm
+    indicator: tnt-od
+    pine_source_line_range: null
+    reason: no line range in YAML
+  missings: []
+status: COMPLETE
