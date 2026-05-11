@@ -121,3 +121,16 @@ Values appearing as numeric literals in body code (not `input.*` defaults):
 - Exclusive to 1939 (vs THE_ONLY_ONE): `sigOmegaLongA`, `fire_OmegaLongA`, `sigNagPlusBull/Bear`, `fire_NagPlusBull`, all `floor_gated`/`floor2_gated`/`uu_gated_bull` gating helpers, `oneOfThese`/`cb1_pass*`/`cb_uu_any`/`cb_disp9`, `f_uu_bull_scan`/`f_uu_bear_scan` helper functions, `masterGate`/`en_firstBarOnly` first-bar restriction.
 - Absent from 1939 (vs THE_ONLY_ONE): `sigUSubBull/Bear`, `fire_BullUSub/BearUSub`, `u4_*`/`u3_*` separate-streak helpers, `uu_excA_bull/bear`/`uu_excC_bull/bear` exception clauses, `p21_qual_bull/bear`.
 - The detection-plot identity table for this variant should be drawn from `bible-input/extract-hvd-pbj-ppd-1939-masterdir.yaml` (42 roots + 23 composites) — that's authoritative for plot enumeration. The drift table above covers every plot whose underlying boolean differs from at least one sibling.
+
+## Phase 2 / Phase 3 — Python port log
+
+- Output: `python_ports/hvd_pbj_ppd/v_1939_masterdir.py`
+- `python3 -c "import python_ports.hvd_pbj_ppd.v_1939_masterdir as m; print(len(m.DETECTIONS), 'detections,', len(m.STUBBED), 'stubbed')"` → **15 detections, 104 stubbed**
+- 1 STATE_MACHINES entry (`UStreak`).
+- Ported leaf detections (no engine deps): `sigPUP`, `sigPPD`, `sigDISPBull`, `sigDISPBear`, `disp5_bull`, `disp5_bear`, `sigDispConsBull2/3`, `sigDispConsBear2/3` (streak portion only — full body requires `sigFAUNABull` which is stubbed), `sigHV75`, `sigHV150`, `sigHV500`, `sigHV1000`, plus `pp_pct_gate` convenience.
+- All other detections are stubbed with reasons; primary blockers are: FAUNA NRA core, Ping-Pong SR engine, PB&J Supertrend lander, GZ1 FVG bookkeeper, Boom Hunter omega DSP cascade, Matrix-number engine, RVOL/Pentagon/Nagasaki tfSec threshold tables, the U-streak path A..F decision body (`f_uu_bull_scan`/`f_uu_bear_scan`), and CC/LSC chain FSMs.
+- Smoke test against synthetic OHLCV (200 bars, seed=0): all 15 detection callables and the `UStreak` state machine return correctly-shaped Series/DataFrame; no exceptions.
+
+## Phase 4 — completion note
+
+Audit complete for `HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine`. Section 0 confirms the file is a byte-near-twin of `HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine` (only IPSF defaults differ; zero body changes). Real semantic drift exists vs THE_ONLY_ONE (1767) and 2246 across: DispCons offset shifts, csNew3 lag, Alpha Strike inclusion/condition deltas, CC chain reset clause, the entire UU/UUU/UUUU body decision logic, the as_fauna_bull/bear OR-set, multiple added Floor/2nd/UU gating layers, and the masterGate first-bar wrapper. Python port file written, imports cleanly, smoke-tested. No `.pine` files modified, no files deleted.

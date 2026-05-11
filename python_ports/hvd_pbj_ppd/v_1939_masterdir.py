@@ -38,12 +38,13 @@ import pandas as pd
 DEFAULTS: Dict[str, object] = {
     # First-bar gating
     "en_firstBarOnly": False,
-    # Pipeline-A: Displacement 1 (base)
+    # Pipeline-A: Displacement 1 (base) — Pine names: i_disp_type, i_std_len, i_std_min, i_std_max, i_req_fvg
+    # (renamed to share the `i_disp` prefix used by `_disp_components`)
     "i_disp_type": "Open to Close",
-    "i_std_len": 100,
-    "i_std_min": 4.5,
-    "i_std_max": 100.0,
-    "i_req_fvg": True,
+    "i_disp_std_len": 100,
+    "i_disp_std_min": 4.5,
+    "i_disp_std_max": 100.0,
+    "i_disp_req_fvg": True,
     # Pipeline-A: Displacement 2 (HTF1) — duplicated under different prefix in pine
     "i_disp2_type": "Open to Close",
     "i_disp2_std_len": 100,
@@ -230,7 +231,7 @@ def detect_ppd(df: pd.DataFrame, params: Mapping[str, object] | None = None) -> 
 def detect_disp_bull(df: pd.DataFrame, params: Mapping[str, object] | None = None) -> pd.Series:
     """sigDISPBull — Pipeline-A displacement-1 primitive (line 550).
     if req_fvg: prev-bar disp + bullish FVG; else: current-bar disp + green."""
-    h = _disp_components(df, params, "i_")
+    h = _disp_components(df, params, "i_disp")
     rng, th_min, th_max, req_fvg = h["rng"], h["th_min"], h["th_max"], h["req_fvg"]
     bull_fvg = (df["low"] > df["high"].shift(2)) & (df["close"].shift(1) > df["open"].shift(1))
     prev_disp = (rng.shift(1) > th_min.shift(1)) & (rng.shift(1) <= th_max.shift(1))
@@ -242,7 +243,7 @@ def detect_disp_bull(df: pd.DataFrame, params: Mapping[str, object] | None = Non
 
 def detect_disp_bear(df: pd.DataFrame, params: Mapping[str, object] | None = None) -> pd.Series:
     """sigDISPBear (line 551)."""
-    h = _disp_components(df, params, "i_")
+    h = _disp_components(df, params, "i_disp")
     rng, th_min, th_max, req_fvg = h["rng"], h["th_min"], h["th_max"], h["req_fvg"]
     bear_fvg = (df["high"] < df["low"].shift(2)) & (df["close"].shift(1) < df["open"].shift(1))
     prev_disp = (rng.shift(1) > th_min.shift(1)) & (rng.shift(1) <= th_max.shift(1))
@@ -254,13 +255,13 @@ def detect_disp_bear(df: pd.DataFrame, params: Mapping[str, object] | None = Non
 
 def detect_disp5_bull(df: pd.DataFrame, params: Mapping[str, object] | None = None) -> pd.Series:
     """disp5_bull — 5x displacement (line 553). Hardcoded multiplier 5.0."""
-    h = _disp_components(df, params, "i_")
+    h = _disp_components(df, params, "i_disp")
     rng, std = h["rng"], h["std"]
     return _conf_mask(df) & (std > 0) & (rng > std * 5.0) & (df["close"] > df["open"])
 
 
 def detect_disp5_bear(df: pd.DataFrame, params: Mapping[str, object] | None = None) -> pd.Series:
-    h = _disp_components(df, params, "i_")
+    h = _disp_components(df, params, "i_disp")
     rng, std = h["rng"], h["std"]
     return _conf_mask(df) & (std > 0) & (rng > std * 5.0) & (df["close"] < df["open"])
 
@@ -273,7 +274,7 @@ def detect_disp_cons_bull2(df: pd.DataFrame, params: Mapping[str, object] | None
     DISP2-streak portion only and ANDs with a stub-aware NaN-mask. Once
     detect_fauna_bull is implemented, re-enable the conjunction below.
     """
-    h2 = _disp_components(df, params, "i_disp2_")
+    h2 = _disp_components(df, params, "i_disp2")
     rng, std = h2["rng"], h2["std"]
     std_min = float(_p(params, "i_disp2_std_min"))
     std_max = float(_p(params, "i_disp2_std_max"))
@@ -303,7 +304,7 @@ def detect_disp_cons_bull2(df: pd.DataFrame, params: Mapping[str, object] | None
 
 def detect_disp_cons_bear2(df: pd.DataFrame, params: Mapping[str, object] | None = None) -> pd.Series:
     """sigDispConsBear2 (line 571). See bull twin notes."""
-    h2 = _disp_components(df, params, "i_disp2_")
+    h2 = _disp_components(df, params, "i_disp2")
     rng, std = h2["rng"], h2["std"]
     std_min = float(_p(params, "i_disp2_std_min"))
     std_max = float(_p(params, "i_disp2_std_max"))
@@ -327,7 +328,7 @@ def detect_disp_cons_bear2(df: pd.DataFrame, params: Mapping[str, object] | None
 
 def detect_disp_cons_bull3(df: pd.DataFrame, params: Mapping[str, object] | None = None) -> pd.Series:
     """sigDispConsBull3 (line 587). Streak portion only — see bull2 notes."""
-    h3 = _disp_components(df, params, "i_disp3_")
+    h3 = _disp_components(df, params, "i_disp3")
     rng, std = h3["rng"], h3["std"]
     std_min = float(_p(params, "i_disp3_std_min"))
     std_max = float(_p(params, "i_disp3_std_max"))
@@ -350,7 +351,7 @@ def detect_disp_cons_bull3(df: pd.DataFrame, params: Mapping[str, object] | None
 
 
 def detect_disp_cons_bear3(df: pd.DataFrame, params: Mapping[str, object] | None = None) -> pd.Series:
-    h3 = _disp_components(df, params, "i_disp3_")
+    h3 = _disp_components(df, params, "i_disp3")
     rng, std = h3["rng"], h3["std"]
     std_min = float(_p(params, "i_disp3_std_min"))
     std_max = float(_p(params, "i_disp3_std_max"))

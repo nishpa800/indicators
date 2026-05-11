@@ -201,3 +201,76 @@ Format:
   - Per-fire payload schema defined in
     `docs/agentic-os/ARCHITECTURE.md` "Heaven-vs-Hell" section.
   - Long-run calibration table: `docs/agentic-os/calibration/<plot>.md`.
+
+---
+
+## SD-008 — Bull/Bear is balance, not good vs evil
+
+- **Date**: 2026-05-11
+- **Source**: Anish (verbatim): "people don't understand. People think,
+  oh, you know, the devil is bad. You can call whatever you want. I
+  mean, like, you need balance. There's gonna be balance in everything
+  in life. There's this concept in every culture, religion, philosophy
+  of balancing act. There's balance. And some man-made things and
+  Claude just called things good and evil. It's not really even that
+  true. There's Shiva who is a destroyer. But, like, you need things
+  to be destroyed. That is nature. That is the truth. There's creation,
+  and there's destruction. That is literally life. And so sometimes,
+  what is thought to be poison, you can turn it in. You get something
+  good. Look at chemotherapy."
+- **Decision**: Skill names, agent identifiers, file paths, debate logs,
+  memory files, and per-fire payload schemas use NEUTRAL terminology.
+  Approved terms: bull-case, bear-case, dialectic, thesis, antithesis,
+  creation, destruction. Avoided terms in formal artifacts: good, evil,
+  angel, devil, God, Satan, heaven, hell.
+- **Scope**: All skills, all agent prompts, all logs, all schemas, all
+  documentation. Anish's casual conversational use of "Heaven vs Hell"
+  remains permitted as informal shorthand.
+- **Acknowledgment**: The bull-case agent and the bear-case agent are
+  EQUALLY VALID counterparts. Neither is "the right one." A trade is
+  approved when the dialectic produces a high-confidence row in the
+  4-square matrix — not when one side wins a fight.
+- **Operational consequence**:
+  - The v1 monolithic skill `.claude/skills/bull-vs-bear-debate/` is
+    SUPERSEDED. Per SD-002 the file remains; a header points at the
+    new split skills.
+  - Active skills: `detection-plot-diagnosis` (grunt),
+    `bull-bear-dialectic` (knowledge), `four-square-matrix` (output).
+  - 4-square cell labels are renamed: `P_true_bull`,
+    `P_bear_in_bull_clothing`, `P_bull_in_bear_clothing`, `P_true_bear`
+    (replacing `P_true_angel` etc.).
+
+---
+
+## SD-009 — Every external data source gets a bull+bear agent pair
+
+- **Date**: 2026-05-11
+- **Source**: Anish (verbatim): "we need a skill on how to share this
+  information to provide the situational context for each agent. And
+  then we also need to have an agent who's responsible for the,
+  quote-unquote, good and quote-unquote, evil for each of those data
+  sources. So Benzinga good news. Benzinga earnings calendar, options,
+  historical data. We're gonna need two agents for volume footprints,
+  two agents — collision barriers, that is. Two agents for volume
+  session analysis. Two agents for TPO."
+- **Decision**: Every external data source feeding the agentic OS gets
+  TWO dedicated agents — a bull-case interpreter and a bear-case
+  interpreter — plus one ingestion grunt-worker. The pair's output
+  flows into Plot Owner dialectics via the (TBD)
+  `situational-context-share` skill.
+- **Scope**: First-wave roster (8 sources × 2 agents + 8 ingest grunts =
+  24 data-layer agents). Roster lives in `DATA_SOURCE_PAIRS.md`.
+- **Acknowledgment**: A neutral analyst rubber-stamps the headline read.
+  Two adversarial agents guarantee the bear-case interpretation of
+  "earnings beat" gets constructed (e.g. "buy-the-rumor, sell-the-news"
+  pattern) and the bull-case interpretation of "earnings miss" gets
+  constructed (e.g. "kitchen-sink-quarter, all-bad-news-out, bottom is
+  in") — symmetric to SD-005's reasoning for Indicator Owners.
+- **Operational consequence**:
+  - Memory file naming: `docs/agentic-os/memory/DS__<source>__bull.md`
+    and `DS__<source>__bear.md`
+  - Per-event interpretation log:
+    `docs/agentic-os/data-source-events/<source>/<date>.md`
+  - Hiring order in `DATA_SOURCE_PAIRS.md`: earnings calendar first,
+    then vol-session, then vol-footprint, then TPO, ETF rotation,
+    options, news, 13F.

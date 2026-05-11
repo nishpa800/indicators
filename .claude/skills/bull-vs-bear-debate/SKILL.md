@@ -1,9 +1,29 @@
 ---
 name: bull-vs-bear-debate
-description: Use when a Plot Owner needs to evaluate a single fire of an owned detection plot. Runs the Heaven-vs-Hell debate (angel case + devil case) and emits the 4-square confidence matrix per SD-007. Plot Owners invoke this skill on every fire of their owned plot.
+description: SUPERSEDED 2026-05-11 by 3 split skills (detection-plot-diagnosis + bull-bear-dialectic + four-square-matrix). Per SD-002 this v1 monolith remains for traceability but new code should compose the 3 split skills. Per SD-008, the moralistic "Heaven vs Hell" / angel / devil framing is also retired in favor of neutral terms (bull-case / bear-case / dialectic).
 ---
 
-# Bull-vs-Bear ("Heaven vs Hell") Debate Skill — v1.0.0
+> **SUPERSEDED 2026-05-11.** This v1 monolith has been split into 3
+> composable skills per Anish's worker-tier guidance:
+>
+> 1. `detection-plot-diagnosis` (grunt-worker — what fired, what offset,
+>    what operands, what concurrent fires) — bread-and-butter shared by
+>    bull-case and bear-case agents.
+> 2. `bull-bear-dialectic` (knowledge-worker — the reasoning conversation)
+>    — produces a dialectic transcript with neutral language per SD-008.
+> 3. `four-square-matrix` (output — collapses the dialectic into the 2x2
+>    payload + applies long-run prior calibration).
+>
+> The chain is: diagnosis → dialectic → matrix.
+>
+> This v1 file remains in place per SD-002 (never modify, always
+> new-version) for historical traceability, but new code should use the
+> 3 split skills. Cell labels in this v1 use moralistic language
+> (`P_true_angel`, `P_devil_dressed_as_angel`); the v2 matrix uses
+> neutral labels (`P_true_bull`, `P_bear_in_bull_clothing`, etc.) per
+> SD-008.
+
+# Bull-vs-Bear ("Heaven vs Hell") Debate Skill — v1.0.0 (superseded)
 
 This skill codifies the per-fire debate procedure that every Plot Owner runs
 on every fire of their owned plot. Output: a structured 4-square confidence
