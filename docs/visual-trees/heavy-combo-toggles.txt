@@ -1,0 +1,69 @@
+VISUAL TREE — heavy-combo-toggles
+==================================
+File: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+Pine v5  ·  268 lines  ·  overlay=True
+Purpose: Lifts 5 base + 15 directional combos verbatim from heavy-pentagon; lumps them into 3 master toggle plots (Bull / Bear / Neutral) gated by 15 eligibility checkboxes
+
+ROOTS
+-----
+
+COMPOSITES (by tier)
+-----
+  Tier 4:
+    ● heavy-combo-toggles::HEAVY_COMBO_BULL    [offset=-1 · OR_TOGGLED]
+        Master Bull OR-gate: fires on bar[1] when ANY enabled Bull combo (Hea…
+        ├── heavy-pentagon::HEAVY_YIN_YANG_BULL
+        ├── heavy-pentagon::HEAVY_NAGASAKI_BULL
+        ├── heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL
+        ├── heavy-pentagon::HEAVY_TRIDENT_BULL
+        └── heavy-pentagon::NEUTRAL_HEAVY_X2_BULL
+    ● heavy-combo-toggles::HEAVY_COMBO_BEAR    [offset=-1 · OR_TOGGLED]
+        Master Bear OR-gate: fires on bar[1] when ANY enabled Bear combo (Hea…
+        ├── heavy-pentagon::HEAVY_YIN_YANG_BEAR
+        ├── heavy-pentagon::HEAVY_NAGASAKI_BEAR
+        ├── heavy-pentagon::HEAVY_NAGASAKI_VOL_BEAR
+        ├── heavy-pentagon::HEAVY_TRIDENT_BEAR
+        └── heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR
+    ● heavy-combo-toggles::HEAVY_COMBO_NEUTRAL    [offset=0 · OR_TOGGLED]
+        Master Neutral OR-gate: fires on bar[0] when ANY enabled Neutral comb…
+        ├── heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL
+        ├── heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL
+        ├── heavy-pentagon::HEAVY_NAGASAKI_VOL_NEUTRAL
+        ├── heavy-pentagon::HEAVY_TRIDENT_NEUTRAL
+        └── heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → heavy-pentagon::baseYinYang
+  → heavy-pentagon::baseNagasaki
+  → heavy-pentagon::baseNagasakiV
+  → heavy-pentagon::baseTrident
+  → heavy-pentagon::baseNHx2
+  → heavy-pentagon::HEAVY_YIN_YANG_BULL
+  → heavy-pentagon::HEAVY_YIN_YANG_BEAR
+  → heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL
+  → heavy-pentagon::HEAVY_NAGASAKI_BULL
+  → heavy-pentagon::HEAVY_NAGASAKI_BEAR
+  → heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL
+  → heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL
+  → heavy-pentagon::HEAVY_NAGASAKI_VOL_BEAR
+  → heavy-pentagon::HEAVY_NAGASAKI_VOL_NEUTRAL
+  → heavy-pentagon::HEAVY_TRIDENT_BULL
+  → heavy-pentagon::HEAVY_TRIDENT_BEAR
+  → heavy-pentagon::HEAVY_TRIDENT_NEUTRAL
+  → heavy-pentagon::NEUTRAL_HEAVY_X2_BULL
+  → heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR
+  → heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL
+  → heavy-pentagon::sigBullRVOL1x
+  → heavy-pentagon::sigBearRVOL1x
+  → heavy-pentagon::sigGrandSlam
+  → heavy-pentagon::sigMOAB
+  → heavy-pentagon::sigPentagon
+  → heavy-pentagon::sigWTC
+  → heavy-pentagon::sigHiroshima
+  → heavy-pentagon::sigNagasaki
+  → heavy-pentagon::dispBull
+  → heavy-pentagon::dispBear
+  … and 1 more
+

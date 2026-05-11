@@ -1,0 +1,39 @@
+VISUAL TREE — anish-50-1st-combo
+=================================
+File: anish-50-1st-combo/versions/ANISH_50_1ST_COMBO_v1.pine
+Pine v6  ·  181 lines  ·  overlay=True
+Purpose: PUP/PPD + Anish Stage 2/4 EMA stack + Gap Up/Down + Super PUP/PPD + TB/Foster transitions
+
+ROOTS
+-----
+  ◆ anish-50-1st-combo::PPBull    [pocket-pivot · offset=?]
+      
+  ◆ anish-50-1st-combo::PPBear    [pocket-pivot · offset=?]
+      
+  ◆ anish-50-1st-combo::AnishBull    [stage-trend · offset=?]
+      
+  ◆ anish-50-1st-combo::AnishBear    [stage-trend · offset=?]
+      
+  ◆ anish-50-1st-combo::GapUp    [gap · offset=?]
+      
+  ◆ anish-50-1st-combo::GapDown    [gap · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 2:
+    ● anish-50-1st-combo::AllThreeBull    [offset=? · ?]
+    ● anish-50-1st-combo::AllThreeBear    [offset=? · ?]
+    ● anish-50-1st-combo::SuperPup    [offset=? · ?]
+    ● anish-50-1st-combo::SuperPPD    [offset=? · ?]
+
+  Tier 3:
+    ● anish-50-1st-combo::TB    [offset=? · ?]
+    ● anish-50-1st-combo::Foster    [offset=? · ?]
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → PUP — locally redefined as sPPBull (line 59); also a known cross-indicator primitive (e.g. b2b-pup::PUP)
+  → PPD — locally redefined as sPPBear (line 60); also a known cross-indicator primitive (e.g. hvd-pbj-ppd::PPD)
+

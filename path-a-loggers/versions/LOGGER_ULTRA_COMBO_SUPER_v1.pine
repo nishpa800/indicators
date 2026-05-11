@@ -1,0 +1,81 @@
+//@version=5
+// =============================================================================
+// LOGGER — Ultra-Combo / Fauna-Shifu SUPER decomposition
+//          (sigSuperBullPBJ / sigSuperBullPB / sigSuperBearPBJ / sigSuperBearPB)
+// =============================================================================
+// PURPOSE: capture fires of the 4 decomposed Super-family signals from
+// Ultra-Combo and Fauna-Shifu. These are defined at:
+//   - ultra-combo/.../ULTRA_COMBO_v57_pine6.pine L753-756
+//   - fauna-shifu/.../FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine L1169-1172
+//
+// STRUCTURAL CHALLENGE: neither indicator emits a SEPARATE plotshape per
+// PBJ vs PB variant. Fauna-Shifu has ONE combined plotshape:
+//   plotshape(... sigAnySuperBull or sigAnySuperBear ..., "Super", ...)
+// at L1476. Ultra-Combo does not plot Super at all (it appears only in its
+// internal scrollback log string at L1077). So Path A cannot directly
+// distinguish PBJ vs PB from plot subscription alone.
+//
+// COVERAGE STRATEGY: subscribe to the combined "Super" plot from Fauna-Shifu
+// as the OR-fire signal, then also subscribe to root variants used by both
+// indicators' definition formulas (PBJ Bull/Bear, PB Bull/Bear plots) to
+// reconstruct which leg fired. The logger emits ONE label per fire of the
+// combined Super plot, tagged with the variant inferred from concurrent root
+// fires.
+//
+// SETUP: load AFTER Fauna-Shifu AND Ultra-Combo. Wire:
+//   - Super (Fauna-Shifu)  → "Super" plotshape from Fauna-Shifu (L1476)
+//   - PBJ Bull root        → any plot you wire to sigBullPBJ (e.g. from
+//                              HVDPBJPPD or whichever indicator exposes it)
+//   - PBJ Bear root        → sigBearPBJ plot
+//   - PB Bull root         → sigBullPB plot
+//   - PB Bear root         → sigBearPB plot
+//
+// LABEL TAGS:
+//   "SUP+PBJ" / "SUP+PB" / "SUP-PBJ" / "SUP-PB"  — decomposed when roots fire
+//   "SUP+?"   / "SUP-?"                          — Super fired but no root
+//                                                  variant detected (validate
+//                                                  wiring)
+// =============================================================================
+
+indicator("LOGGER Ultra-Combo SUPER Decomp", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+grp = "★ Source Plots — Fauna-Shifu Super + PBJ/PB root variants ★"
+
+s_super_combined = input.source(close, "Super (Fauna-Shifu combined plot)", group=grp)
+s_pbj_bull       = input.source(close, "sigBullPBJ root source",            group=grp)
+s_pbj_bear       = input.source(close, "sigBearPBJ root source",            group=grp)
+s_pb_bull        = input.source(close, "sigBullPB root source",             group=grp)
+s_pb_bear        = input.source(close, "sigBearPB root source",             group=grp)
+
+f_fire(s) => not na(s) and s != 0 and barstate.isconfirmed
+
+is_super        = f_fire(s_super_combined)
+is_pbj_bull     = f_fire(s_pbj_bull)
+is_pbj_bear     = f_fire(s_pbj_bear)
+is_pb_bull      = f_fire(s_pb_bull)
+is_pb_bear      = f_fire(s_pb_bear)
+
+// Decompose the Super fire using concurrent root variant fires.
+sup_pbj_bull = is_super and is_pbj_bull
+sup_pb_bull  = is_super and is_pb_bull and not is_pbj_bull
+sup_pbj_bear = is_super and is_pbj_bear
+sup_pb_bear  = is_super and is_pb_bear and not is_pbj_bear
+sup_unk_bull = is_super and not (is_pbj_bull or is_pb_bull) and not (is_pbj_bear or is_pb_bear)
+sup_unk_bear = is_super and not (is_pbj_bull or is_pb_bull) and (is_pbj_bear or is_pb_bear)
+
+f_log_b(cond, tag) =>
+    if cond
+        label.new(bar_index, low, tag, color=color.new(color.yellow, 90), style=label.style_label_up, textcolor=color.yellow, size=size.tiny, yloc=yloc.belowbar)
+
+f_log_r(cond, tag) =>
+    if cond
+        label.new(bar_index, high, tag, color=color.new(color.orange, 90), style=label.style_label_down, textcolor=color.orange, size=size.tiny, yloc=yloc.abovebar)
+
+f_log_b(sup_pbj_bull, "SUP+PBJ")
+f_log_b(sup_pb_bull,  "SUP+PB")
+f_log_r(sup_pbj_bear, "SUP-PBJ")
+f_log_r(sup_pb_bear,  "SUP-PB")
+f_log_b(sup_unk_bull, "SUP+?")
+f_log_r(sup_unk_bear, "SUP-?")
+
+plot(0, display=display.data_window)

@@ -1,0 +1,104 @@
+VISUAL TREE — heavy-uncap
+==========================
+File: heavy-uncap/versions/HEAVY_UNCAP_v1.pine
+Pine v5  ·  595 lines  ·  overlay=True
+Purpose: Comprehensive RVOL toolkit — bundles heavy-pentagon RVOL roots locally, adds 7 Hybrid Momentum tiers + 6 RVOL sequences + 6 B2B + 4 Consec Disp + FAUNA label-based composites + HV ladder + Hot Spot calendar
+
+ROOTS
+-----
+  ◆ heavy-uncap::LONG_1    [rvol_hybrid · offset=0]
+      Bar-RVOL > reg_floor (default 5.0) AND cumulative session-RVOL > cum_…
+  ◆ heavy-uncap::SHORT_1    [rvol_hybrid · offset=0]
+      Mirror of LONG_1 for bearish bars
+  ◆ heavy-uncap::LONG_2    [rvol_hybrid · offset=0]
+      Independent second Hybrid-Momentum bull tier with its own IPSF thresh…
+  ◆ heavy-uncap::SHORT_2    [rvol_hybrid · offset=0]
+      Independent second Hybrid-Momentum bear tier
+  ◆ heavy-uncap::LONG_3    [rvol_hybrid · offset=0]
+      Long-only Hybrid-Momentum tier 3 with independent IPSF thresholds
+  ◆ heavy-uncap::LONG_4    [rvol_hybrid · offset=0]
+      Long-only Hybrid-Momentum tier 4
+  ◆ heavy-uncap::LONG_5    [rvol_hybrid · offset=0]
+      Long-only Hybrid-Momentum tier 5
+  ◆ heavy-uncap::UU    [rvol_sequence · offset=0]
+      Two consecutive bullish bars where each bar's bb_normalizedPrice > th…
+  ◆ heavy-uncap::UUU    [rvol_sequence · offset=0]
+      Three consecutive bullish bars; same gates as UU but with its own IPS…
+  ◆ heavy-uncap::UUUU    [rvol_sequence · offset=0]
+      Four consecutive bullish bars; independent IPSF
+  ◆ heavy-uncap::DD    [rvol_sequence · offset=0]
+      Two consecutive bearish bars; bear mirror of UU
+  ◆ heavy-uncap::DDD    [rvol_sequence · offset=0]
+      Three consecutive bearish bars; bear mirror of UUU
+  ◆ heavy-uncap::DDDD    [rvol_sequence · offset=0]
+      Four consecutive bearish bars; bear mirror of UUUU
+  ◆ heavy-uncap::HOT_SPOT    [calendar · offset=-1]
+      Bar falls within at least one of 6 calendar windows known to coincide…
+
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● heavy-uncap::B2B_2X_SAAB    [offset=0 · AND]
+        SAAB fires on bar[-1] AND on bar[0] — back-to-back same-direction RVO…
+        └── heavy-pentagon::SAAB
+        └── heavy-pentagon::SAAB
+    ● heavy-uncap::B2B_2X_KRATOS    [offset=0 · AND]
+        Kratos fires on bar[-1] AND on bar[0]
+        └── heavy-pentagon::KRATOS
+        └── heavy-pentagon::KRATOS
+    ● heavy-uncap::B2B_2X_BULL_1X    [offset=0 · AND]
+        RVOL 1x Bull fires on bar[-1] AND on bar[0]
+        └── heavy-pentagon::RVOL_1X_BULL
+        └── heavy-pentagon::RVOL_1X_BULL
+    ● heavy-uncap::B2B_2X_BEAR_1X    [offset=0 · AND]
+        RVOL 1x Bear fires on bar[-1] AND on bar[0]
+        └── heavy-pentagon::RVOL_1X_BEAR
+        └── heavy-pentagon::RVOL_1X_BEAR
+    ● heavy-uncap::CONSEC_DISP_BULL_2    [offset=-1 · AND]
+        Bullish Displacement fires on the current bar AND its bull-streak cou…
+        └── hvd-pbj-ppd::DISPLACEMENT_BULL
+    ● heavy-uncap::CONSEC_DISP_BEAR_2    [offset=-1 · AND]
+        Bearish Displacement streak ≥ 2
+        └── hvd-pbj-ppd::DISPLACEMENT_BEAR
+    ● heavy-uncap::CONSEC_DISP_BULL_3    [offset=-1 · AND]
+        Bullish Displacement streak ≥ 3
+        └── hvd-pbj-ppd::DISPLACEMENT_BULL
+    ● heavy-uncap::CONSEC_DISP_BEAR_3    [offset=-1 · AND]
+        Bearish Displacement streak ≥ 3
+        └── hvd-pbj-ppd::DISPLACEMENT_BEAR
+    ● heavy-uncap::FAUNA_BULL    [offset=0 · HIERARCHICAL_OR]
+        Hierarchical OR over FAUNA components MB/RE/TA + reversal-component G…
+        ├── ultra-combo::MB_BULL
+        ├── ultra-combo::RE_BULL
+        ├── ultra-combo::TA_BULL
+        ├── ultra-combo::GG_BULL
+        ├── ultra-combo::TR_BULL
+        ├── ultra-combo::ES_BULL
+        └── ultra-combo::GDR_BULL
+    ● heavy-uncap::FAUNA_BEAR    [offset=0 · HIERARCHICAL_OR]
+        Bear mirror of FAUNA_BULL
+        ├── ultra-combo::MB_BEAR
+        ├── ultra-combo::RE_BEAR
+        ├── ultra-combo::TA_BEAR
+        ├── ultra-combo::GG_BEAR
+        ├── ultra-combo::TR_BEAR
+        ├── ultra-combo::ES_BEAR
+        └── ultra-combo::GDR_BEAR
+
+  Tier 2:
+    ● heavy-uncap::B2B_MID_BULL    [offset=0 · AND_GATED]
+        Mixed back-to-back of SAAB and RVOL 1x Bull (one of them on each adja…
+        ├── heavy-uncap::B2B_2X_SAAB
+        └── heavy-uncap::B2B_2X_BULL_1X
+    ● heavy-uncap::B2B_MID_BEAR    [offset=0 · AND_GATED]
+        Mixed back-to-back of Kratos and RVOL 1x Bear, gated by NOT (B2B_2X_K…
+        ├── heavy-uncap::B2B_2X_KRATOS
+        └── heavy-uncap::B2B_2X_BEAR_1X
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → heavy-pentagon::SAAB / KRATOS / RVOL_1X_BULL/BEAR / GRAND_SLAM / MOAB / PENTAGON / WTC / HIROSHIMA / NAGASAKI (locally re-implemented; Stage 7 byte-parity TBD)
+  → hvd-pbj-ppd::DISPLACEMENT_BULL / DISPLACEMENT_BEAR (locally re-implemented; Stage 7 byte-parity TBD)
+  → ultra-combo::MB_BULL / RE_BULL / TA_BULL / GG_BULL / TR_BULL / ES_BULL / GDR_BULL + bear mirrors (FAUNA components — locally re-implemented with different label-text resolution)
+

@@ -1,0 +1,28 @@
+VISUAL TREE — disp-4x
+======================
+File: disp-4x/versions/DISP_4X_v1.pine
+Pine v5  ·  121 lines  ·  overlay=True
+Purpose: Four independent displacement engines (D1/D2/D3/D4) in one indicator; default σ-multipliers 6.5/6.0/5.5/5.0; stack 4 instances on a chart for 16 simultaneous displacement-strength views
+
+ROOTS
+-----
+  ◆ disp-4x::D1_BULL    [displacement · offset=-1]
+      Displacement 1 Bull — bar[1] range exceeds σ-multiplier (default 6.5)…
+  ◆ disp-4x::D1_BEAR    [displacement · offset=-1]
+      Displacement 1 Bear — bar[1] range exceeds σ-multiplier (default 6.5)…
+  ◆ disp-4x::D2_BULL    [displacement · offset=-1]
+      Displacement 2 Bull — bar[1] range exceeds σ-multiplier (default 6.0)…
+  ◆ disp-4x::D2_BEAR    [displacement · offset=-1]
+      Displacement 2 Bear — bar[1] range exceeds σ-multiplier (default 6.0)…
+  ◆ disp-4x::D3_BULL    [displacement · offset=-1]
+      Displacement 3 Bull — bar[1] range exceeds σ-multiplier (default 5.5)…
+  ◆ disp-4x::D3_BEAR    [displacement · offset=-1]
+      Displacement 3 Bear — bar[1] range exceeds σ-multiplier (default 5.5)…
+  ◆ disp-4x::D4_BULL    [displacement · offset=-1]
+      Displacement 4 Bull — bar[1] range exceeds σ-multiplier (default 5.0)…
+  ◆ disp-4x::D4_BEAR    [displacement · offset=-1]
+      Displacement 4 Bear — bar[1] range exceeds σ-multiplier (default 5.0)…
+
+COMPOSITES (by tier)
+-----
+

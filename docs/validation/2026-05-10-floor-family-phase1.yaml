@@ -1,0 +1,352 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: FLOOR_BULL
+aliases_searched:
+- FLOOR_BULL
+- FLOOR_BEAR
+- anyBullFloor
+- anyBull2nd
+- anyBearRoof
+- anyBearPent
+- floor_bull
+- floor_bear
+- sigFloorBull
+- sigFloorBear
+- sigPenthouseBear
+- sigRoofBear
+- sig2FBull
+- sigAlphaStrikeBull
+- sigAlphaStrikeBear
+- sigAlphaStrike
+- alphaStrike
+- ALPHA_STRIKE_BULL
+- ALPHA_STRIKE_BEAR
+pine_files_scanned: 54
+definitions:
+- &id001
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1262
+  pine_variable: sigAlphaStrikeBull
+  raw_line: bool sigAlphaStrikeBull=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and
+    as_fauna_bull
+- &id002
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1263
+  pine_variable: sigAlphaStrikeBear
+  raw_line: bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearRVOL1x) and sigBearPBJ and as_fauna_bear
+- &id003
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1351
+  pine_variable: anyBullFloor
+  raw_line: bool anyBullFloor=conf and bull_pp and sigBullPBJ and bull_hw_slot
+- &id004
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1352
+  pine_variable: anyBull2nd
+  raw_line: bool anyBull2nd=conf and bull_pp and sigBullPB and bull_hw_slot
+- &id005
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1353
+  pine_variable: anyBearRoof
+  raw_line: bool anyBearRoof=conf and bear_pp and sigBearPBJ and bear_hw_slot
+- &id006
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1354
+  pine_variable: anyBearPent
+  raw_line: bool anyBearPent=conf and bear_pp and sigBearPB and bear_hw_slot
+- &id007
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1270
+  pine_variable: sigAlphaStrikeBull
+  raw_line: bool sigAlphaStrikeBull=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and
+    as_fauna_bull
+- &id008
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1271
+  pine_variable: sigAlphaStrikeBear
+  raw_line: bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearRVOL1x) and sigBearPBJ and as_fauna_bear
+- &id009
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1359
+  pine_variable: anyBullFloor
+  raw_line: bool anyBullFloor=conf and bull_pp and sigBullPBJ and bull_hw_slot
+- &id010
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1360
+  pine_variable: anyBull2nd
+  raw_line: bool anyBull2nd=conf and bull_pp and sigBullPB and bull_hw_slot
+- &id011
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1361
+  pine_variable: anyBearRoof
+  raw_line: bool anyBearRoof=conf and bear_pp and sigBearPBJ and bear_hw_slot
+- &id012
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1362
+  pine_variable: anyBearPent
+  raw_line: bool anyBearPent=conf and bear_pp and sigBearPB and bear_hw_slot
+- &id013
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1188
+  pine_variable: sigAlphaStrikeBull
+  raw_line: bool sigAlphaStrikeBull=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and
+    as_fauna_bull
+- &id014
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1189
+  pine_variable: sigAlphaStrikeBear
+  raw_line: bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearRVOL1x) and sigBearPBJ and as_fauna_bear
+- &id015
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1277
+  pine_variable: anyBullFloor
+  raw_line: bool anyBullFloor=conf and bull_pp and sigBullPBJ and bull_hw_slot
+- &id016
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1278
+  pine_variable: anyBull2nd
+  raw_line: bool anyBull2nd=conf and bull_pp and sigBullPB and bull_hw_slot
+- &id017
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1279
+  pine_variable: anyBearRoof
+  raw_line: bool anyBearRoof=conf and bear_pp and sigBearPBJ and bear_hw_slot
+- &id018
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1280
+  pine_variable: anyBearPent
+  raw_line: bool anyBearPent=conf and bear_pp and sigBearPB and bear_hw_slot
+- &id019
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1262
+  pine_variable: sigAlphaStrikeBull
+  raw_line: bool sigAlphaStrikeBull=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and
+    as_fauna_bull
+- &id020
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1263
+  pine_variable: sigAlphaStrikeBear
+  raw_line: bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearRVOL1x) and sigBearPBJ and as_fauna_bear
+- &id021
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1351
+  pine_variable: anyBullFloor
+  raw_line: bool anyBullFloor=conf and bull_pp and sigBullPBJ and bull_hw_slot
+- &id022
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1352
+  pine_variable: anyBull2nd
+  raw_line: bool anyBull2nd=conf and bull_pp and sigBullPB and bull_hw_slot
+- &id023
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1353
+  pine_variable: anyBearRoof
+  raw_line: bool anyBearRoof=conf and bear_pp and sigBearPBJ and bear_hw_slot
+- &id024
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1354
+  pine_variable: anyBearPent
+  raw_line: bool anyBearPent=conf and bear_pp and sigBearPB and bear_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 977
+  pine_variable: anyBullFloor
+  raw_line: bool anyBullFloor=conf and bull_pp and sigBullPBJ and bull_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 978
+  pine_variable: anyBull2nd
+  raw_line: bool anyBull2nd=conf and bull_pp and sigBullPB and bull_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 979
+  pine_variable: anyBearRoof
+  raw_line: bool anyBearRoof=conf and bear_pp and sigBearPBJ and bear_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 980
+  pine_variable: anyBearPent
+  raw_line: bool anyBearPent=conf and bear_pp and sigBearPB and bear_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 1238
+  pine_variable: sigAlphaStrikeBull
+  raw_line: bool sigAlphaStrikeBull=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and
+    as_fauna_bull
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 1239
+  pine_variable: sigAlphaStrikeBear
+  raw_line: bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearRVOL1x) and sigBearPBJ and as_fauna_bear
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1057
+  pine_variable: sigAlphaStrikeBull
+  raw_line: bool sigAlphaStrikeBull=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and (sigBullPBJ or
+    sigBullPB) and as_fauna_bull
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1058
+  pine_variable: sigAlphaStrikeBear
+  raw_line: bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearRVOL1x) and (sigBearPBJ or sigBearPB)
+    and as_fauna_bear
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1241
+  pine_variable: anyBullFloor
+  raw_line: bool anyBullFloor=conf and bull_pp and sigBullPBJ and bull_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1242
+  pine_variable: anyBull2nd
+  raw_line: bool anyBull2nd=conf and bull_pp and sigBullPB and bull_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1243
+  pine_variable: anyBearRoof
+  raw_line: bool anyBearRoof=conf and bear_pp and sigBearPBJ and bear_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1244
+  pine_variable: anyBearPent
+  raw_line: bool anyBearPent=conf and bear_pp and sigBearPB and bear_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 951
+  pine_variable: anyBullFloor
+  raw_line: bool anyBullFloor=conf and bull_pp and sigBullPBJ and bull_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 952
+  pine_variable: anyBull2nd
+  raw_line: bool anyBull2nd=conf and bull_pp and sigBullPB and bull_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 953
+  pine_variable: anyBearRoof
+  raw_line: bool anyBearRoof=conf and bear_pp and sigBearPBJ and bear_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 954
+  pine_variable: anyBearPent
+  raw_line: bool anyBearPent=conf and bear_pp and sigBearPB and bear_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 1503
+  pine_variable: sigAlphaStrikeBull
+  raw_line: bool sigAlphaStrikeBull=conf and sessionBarCount<=od_max_bars and bull_pp and (sigGrandSlam or sigBullRVOL1x)
+    and sigBullPBJ and as_disp_bull and as_fauna_bull
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 1504
+  pine_variable: sigAlphaStrikeBear
+  raw_line: bool sigAlphaStrikeBear=conf and sessionBarCount<=od_max_bars and bear_pp and (sigMOAB or sigBearRVOL1x) and sigBearPBJ
+    and as_disp_bear and as_fauna_bear
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 977
+  pine_variable: anyBullFloor
+  raw_line: bool anyBullFloor=conf and bull_pp and sigBullPBJ and bull_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 978
+  pine_variable: anyBull2nd
+  raw_line: bool anyBull2nd=conf and bull_pp and sigBullPB and bull_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 979
+  pine_variable: anyBearRoof
+  raw_line: bool anyBearRoof=conf and bear_pp and sigBearPBJ and bear_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 980
+  pine_variable: anyBearPent
+  raw_line: bool anyBearPent=conf and bear_pp and sigBearPB and bear_hw_slot
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 1238
+  pine_variable: sigAlphaStrikeBull
+  raw_line: bool sigAlphaStrikeBull=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and
+    as_fauna_bull
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 1239
+  pine_variable: sigAlphaStrikeBear
+  raw_line: bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearRVOL1x) and sigBearPBJ and as_fauna_bear
+occurrences_per_indicator:
+  squarify:
+    DEFINITION: 24
+    REFERENCE: 148
+    INPUT: 0
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 0
+  hvd-pbj-ppd:
+    DEFINITION: 24
+    REFERENCE: 179
+    INPUT: 0
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 0
+yaml_cross_check:
+  yaml_matching_records:
+  - id: hvd-pbj-ppd::ALPHA_STRIKE_BULL
+    indicator: hvd-pbj-ppd
+    pine_source_line_range: L1054-L1058, plot L1345
+  - id: hvd-pbj-ppd::ALPHA_STRIKE_BEAR
+    indicator: hvd-pbj-ppd
+    pine_source_line_range: L1054-L1058, plot L1371
+  - id: hvd-pbj-ppd::FLOOR_BULL
+    indicator: hvd-pbj-ppd
+    pine_source_line_range: L1239-L1241, plot L1358
+  orphans: []
+  missings:
+  - *id001
+  - *id002
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  - *id008
+  - *id009
+  - *id010
+  - *id011
+  - *id012
+  - *id013
+  - *id014
+  - *id015
+  - *id016
+  - *id017
+  - *id018
+  - *id019
+  - *id020
+  - *id021
+  - *id022
+  - *id023
+  - *id024
+status: COMPLETE

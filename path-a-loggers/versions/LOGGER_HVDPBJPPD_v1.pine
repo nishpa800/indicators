@@ -1,0 +1,77 @@
+//@version=5
+// =============================================================================
+// LOGGER — HVD-PBJ-PPD ("THE_ONLY_ONE")
+// =============================================================================
+// PURPOSE: log every fire of HVD-PBJ-PPD's composites — especially
+//   • CS3 Unified Bull/Bear  ("Combo Bull" / "Combo Bear")
+//   • Combo Chain Bull/Bear  ("CC Bull" / "CC Bear")
+//   • Long-Short Chain       ("LSC Bull" / "LSC Bear")
+//   • Floor / 2F / Rooftop / Penthouse
+// so data_get_pine_labels can pull full history per composite.
+//
+// SETUP: load AFTER "HV+D ↔ PBJ ↔ USE THIS IS THE ONLY FUCKING ONE". Point
+// each Source input at the corresponding plot.
+// =============================================================================
+
+indicator("LOGGER HVD-PBJ-PPD", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+grp = "★ Source Plots — point at HVD-PBJ-PPD THE_ONLY_ONE ★"
+
+// "Building" composites — primary focus
+s_floor    = input.source(close, "Floor",     group=grp)
+s_2f       = input.source(close, "2F",        group=grp)
+s_rooftop  = input.source(close, "Rooftop",   group=grp)
+s_penth    = input.source(close, "Penthouse", group=grp)
+
+// CS3 Unified Combo Bull/Bear
+s_combo_bull = input.source(close, "Combo Bull", group=grp)
+s_combo_bear = input.source(close, "Combo Bear", group=grp)
+
+// Chain composites
+s_cc_bull  = input.source(close, "CC Bull",  group=grp)
+s_cc_bear  = input.source(close, "CC Bear",  group=grp)
+s_lsc_bull = input.source(close, "LSC Bull", group=grp)
+s_lsc_bear = input.source(close, "LSC Bear", group=grp)
+
+// Tier-1 / other key composites
+s_uuuu_bull = input.source(close, "Bull UUUU", group=grp)
+s_uuuu_bear = input.source(close, "Bear UUUU", group=grp)
+s_uuu_bull  = input.source(close, "Bull UUU",  group=grp)
+s_uuu_bear  = input.source(close, "Bear UUU",  group=grp)
+s_uu_bull   = input.source(close, "Bull UU",   group=grp)
+s_uu_bear   = input.source(close, "Bear UU",   group=grp)
+s_astar_bull = input.source(close, "A★ Bull",  group=grp)
+s_astar_bear = input.source(close, "A★ Bear",  group=grp)
+s_fox_bull  = input.source(close, "FOX Bull",  group=grp)
+s_fox_bear  = input.source(close, "FOX Bear",  group=grp)
+
+f_fire(s) => not na(s) and s != 0 and barstate.isconfirmed
+f_log(cond, tag, isBull) =>
+    if cond
+        if isBull
+            label.new(bar_index, low,  tag, color=color.new(color.lime, 90),    style=label.style_label_up,   textcolor=color.lime,    size=size.tiny, yloc=yloc.belowbar)
+        else
+            label.new(bar_index, high, tag, color=color.new(color.fuchsia, 90), style=label.style_label_down, textcolor=color.fuchsia, size=size.tiny, yloc=yloc.abovebar)
+
+f_log(f_fire(s_floor),       "FLOOR",   true)
+f_log(f_fire(s_2f),          "2F",      true)
+f_log(f_fire(s_rooftop),     "ROOF",    false)
+f_log(f_fire(s_penth),       "PENT",    false)
+f_log(f_fire(s_combo_bull),  "ComboB",  true)
+f_log(f_fire(s_combo_bear),  "ComboR",  false)
+f_log(f_fire(s_cc_bull),     "CCB",     true)
+f_log(f_fire(s_cc_bear),     "CCR",     false)
+f_log(f_fire(s_lsc_bull),    "LSCB",    true)
+f_log(f_fire(s_lsc_bear),    "LSCR",    false)
+f_log(f_fire(s_uuuu_bull),   "UUUU+",   true)
+f_log(f_fire(s_uuuu_bear),   "UUUU-",   false)
+f_log(f_fire(s_uuu_bull),    "UUU+",    true)
+f_log(f_fire(s_uuu_bear),    "UUU-",    false)
+f_log(f_fire(s_uu_bull),     "UU+",     true)
+f_log(f_fire(s_uu_bear),     "UU-",     false)
+f_log(f_fire(s_astar_bull),  "A★+",    true)
+f_log(f_fire(s_astar_bear),  "A★-",    false)
+f_log(f_fire(s_fox_bull),    "FOX+",    true)
+f_log(f_fire(s_fox_bear),    "FOX-",    false)
+
+plot(0, display=display.data_window)

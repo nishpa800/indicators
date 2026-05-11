@@ -1,0 +1,24 @@
+VISUAL TREE — proximity-gzi-hv
+===============================
+File: proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine
+Pine v5  ·  253 lines  ·  overlay=True
+Purpose: Stripped variant of hv-fvg-gz1-og: same FVG/HV/GZI core, dashboard + acceleration metrics removed
+
+ROOTS
+-----
+  ◆ proximity-gzi-hv::GZI_BULL    [gzi · offset=-1]
+      Fires on a newly detected bullish FVG when a same-polarity (bullish) …
+  ◆ proximity-gzi-hv::GZI_BEAR    [gzi · offset=-1]
+      Fires on a newly detected bearish FVG when a same-polarity (bearish) …
+  ◆ proximity-gzi-hv::HV_BULL    [hv · offset=-1]
+      Fires on a newly detected bullish FVG when the prior bar's volume equ…
+  ◆ proximity-gzi-hv::HV_BEAR    [hv · offset=-1]
+      Fires on a newly detected bearish FVG when the prior bar's volume equ…
+  ◆ proximity-gzi-hv::FVG_BULL_RAW    [fvg · offset=-1]
+      Raw bullish 3-bar Fair Value Gap: current low above the high of two b…
+  ◆ proximity-gzi-hv::FVG_BEAR_RAW    [fvg · offset=-1]
+      Raw bearish 3-bar Fair Value Gap: current high below the low of two b…
+
+COMPOSITES (by tier)
+-----
+

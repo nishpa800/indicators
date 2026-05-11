@@ -1,0 +1,20 @@
+VISUAL TREE — pb-pbj
+=====================
+File: pb-pbj/versions/PB_PBJ_v1.pine
+Pine v5  ·  290 lines  ·  overlay=True
+Purpose: Canonical isolated PB/PBJ engine — 4 dedicated detection roots with OKEH Zoo + PB&J Filter + Supertrend pipeline; all defaults preserved from YY+D+PBJ source
+
+ROOTS
+-----
+  ◆ pb-pbj::PB_BULL    [candle · offset=0]
+      Bullish PB landing — Supertrend buy_cross AND a tracked bull-zone lan…
+  ◆ pb-pbj::PBJ_BULL    [candle · offset=0]
+      Bullish PBJ — Supertrend buy_cross occurs while the PB&J wick filter …
+  ◆ pb-pbj::PB_BEAR    [candle · offset=0]
+      Bearish PB landing — Supertrend sell_cross AND a tracked bear-zone la…
+  ◆ pb-pbj::PBJ_BEAR    [candle · offset=0]
+      Bearish PBJ — Supertrend sell_cross occurs while the PB&J wick filter…
+
+COMPOSITES (by tier)
+-----
+

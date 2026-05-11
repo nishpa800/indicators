@@ -1,0 +1,257 @@
+VISUAL TREE — b2b-pup
+======================
+File: b2b-pup/versions/B2B_PUP_Combined_v4.32_2026-05-04.pine
+Pine v5  ·  1259 lines  ·  overlay=True
+Purpose: Aggregator: 20 numbered S-plots fusing back-to-back PUP/PPD with FAUNA, displacement, HV+D, PBJ, RVOL ladder, TNT/Napalm/Charge/CONT engines, and FVG/Matrix/Unified combos
+
+ROOTS
+-----
+  ◆ b2b-pup::PUP    [push · offset=0]
+      Bullish push: bar closes ≥3% above its open AND its volume exceeds th…
+  ◆ b2b-pup::PPD    [push · offset=0]
+      Bearish pocket-pivot day: bar closes ≥3% below its open AND its volum…
+  ◆ b2b-pup::FAUNA_BULL    [bar-strength-composite · offset=0]
+      FAUNA bull bar: an up-bar that satisfies at least one of MB (Momentum…
+  ◆ b2b-pup::FAUNA_BEAR    [bar-strength-composite · offset=0]
+      FAUNA bear bar: mirror of FAUNA_BULL — down-bar satisfying at least o…
+  ◆ b2b-pup::DISPBull    [displacement · offset=-1]
+      Bullish 3-bar FVG: prior bar's body (or range) exceeds disp_mult × st…
+  ◆ b2b-pup::DISPBear    [displacement · offset=-1]
+      Bearish 3-bar FVG: prior bar's body (or range) exceeds disp_mult × st…
+  ◆ b2b-pup::PBJBull    [pbj · offset=0]
+      PBJ bull cross-firing: a Supertrend (over VWMA/EMA/SMA/WMA/HMA base) …
+  ◆ b2b-pup::PBJBear    [pbj · offset=0]
+      Mirror PBJ bear: Supertrend bearish crossunder + previously-armed PBJ…
+  ◆ b2b-pup::PBBull    [pbj · offset=0]
+      PB-only bull: Supertrend cross-up at an armed PB level approach but N…
+  ◆ b2b-pup::PBBear    [pbj · offset=0]
+      PB-only bear: mirror of PBBull.
+  ◆ b2b-pup::SAAB    [rvol-tier · offset=0]
+      
+  ◆ b2b-pup::Kratos    [rvol-tier · offset=0]
+      RVOL band Kratos = SAAB-bear analogue: rv_baseBear AND rv_normPrice i…
+  ◆ b2b-pup::RVOL1xBull    [rvol-tier · offset=0]
+      RVOL 1× bull: rv_normPrice in [th_1x, th_gs).
+  ◆ b2b-pup::RVOL1xBear    [rvol-tier · offset=0]
+      RVOL 1× bear: mirror of RVOL1xBull on rv_baseBear.
+  ◆ b2b-pup::GrandSlam    [rvol-tier · offset=0]
+      RVOL Grand Slam bull: rv_normPrice >= th_gs.
+  ◆ b2b-pup::MOAB    [rvol-tier · offset=0]
+      RVOL MOAB = Grand Slam bear analogue: rv_baseBear AND rv_normPrice >=…
+  ◆ b2b-pup::Pentagon    [rvol-tier · offset=0]
+      Pentagon: tv_ta.relativeVolume(30, '', cumulative=true, sameTime=true…
+  ◆ b2b-pup::WTC    [rvol-tier · offset=0]
+      WTC: relVol ratio in (th_wtc, th_hiro]. th_wtc = th_1x*2.0.
+  ◆ b2b-pup::Hiroshima    [rvol-tier · offset=0]
+      Hiroshima: relVol ratio > th_hiro.
+  ◆ b2b-pup::Nagasaki    [rvol-tier · offset=0]
+      Nagasaki: bar volume sets a new running all-time max (rv_isNag).
+  ◆ b2b-pup::HVDBull    [hv+disp · offset=-1]
+      Highest-volume + Displacement bull: bar[1] is HV (top of 50/100/200/5…
+  ◆ b2b-pup::HVDBear    [hv+disp · offset=-1]
+      Mirror HVDBull on bear side.
+  ◆ b2b-pup::HVDPBJBull    [hv+disp+pbj · offset=-1]
+      HVDBull AND PBJ bull on bar[1].
+  ◆ b2b-pup::HVDPBJBear    [hv+disp+pbj · offset=-1]
+      Mirror HVDPBJBull bear.
+  ◆ b2b-pup::TNT_RAW_BULL    [tnt · offset=0]
+      Raw bull TNT: simultaneous (within tnt_CW=2*EMA_SLOW window) confluen…
+  ◆ b2b-pup::TNT_RAW_BEAR    [tnt · offset=0]
+      Mirror TNT_RAW_BULL on the bear side.
+  ◆ b2b-pup::RetBullTNT    [tnt-return · offset=0]
+      Return-to-TNT bull: an active bull TNT zone is touched at retLvl = lo…
+  ◆ b2b-pup::RetBearTNT    [tnt-return · offset=0]
+      Mirror RetBullTNT on bear-zone side.
+  ◆ b2b-pup::Napalm_BULL    [napalm · offset=0]
+      Bull Napalm: a bull TNT-internal-displacement bar where the prior bar…
+  ◆ b2b-pup::Napalm_BEAR    [napalm · offset=0]
+      Mirror Napalm_BULL on bear side.
+  ◆ b2b-pup::Charge_BULL    [charge · offset=0]
+      Bull Charge: bull TNT-internal-displacement bar that violates an unvi…
+  ◆ b2b-pup::Charge_BEAR    [charge · offset=0]
+      Mirror Charge_BULL on bear side; pushes a new bear ChargeLvl at high[…
+  ◆ b2b-pup::TNT2_BULL    [tnt-super · offset=0]
+      TNT 2.0 bull (super): the bull event-log has 2+ entries (TNT-raw OR N…
+  ◆ b2b-pup::TNT2_BEAR    [tnt-super · offset=0]
+      Mirror TNT2_BULL on bear side.
+  ◆ b2b-pup::SuperTNT_BULL    [tnt-super · offset=0]
+      Super-TNT bull: raw bull TNT AND bear Charge on the same bar.
+  ◆ b2b-pup::SuperTNT_BEAR    [tnt-super · offset=0]
+      Mirror SuperTNT_BULL on bear side.
+  ◆ b2b-pup::TNT_CONS_BULL    [tnt · offset=0]
+      Consolidated bull TNT (matches TNT OD output): raw OR TNT 2.0 OR supe…
+  ◆ b2b-pup::TNT_CONS_BEAR    [tnt · offset=0]
+      Consolidated bear TNT mirror.
+  ◆ b2b-pup::CONT_BULL    [cont · offset=0]
+      Bull CONT: 3-clause OR matching TNT OD — (Charge with prior Return wi…
+  ◆ b2b-pup::CONT_BEAR    [cont · offset=0]
+      Mirror CONT_BULL on bear side.
+  ◆ b2b-pup::CS1Bull    [combo-fvg · offset=-1]
+      FVG-Combo bull (offset=-1): bar[1] body% ≥ cs_bodyPct_FVG AND a bull …
+  ◆ b2b-pup::CS1Bear    [combo-fvg · offset=-1]
+      Mirror CS1Bull on bear side (Kratos/RVOL1xR/MOAB OR Pentagon-tier neu…
+  ◆ b2b-pup::CS2Bull    [combo-matrix · offset=0]
+      Matrix-Combo bull (offset=0): body% ≥ cs_bodyPct_MAT AND (Neo-bull OR…
+  ◆ b2b-pup::CS2Bear    [combo-matrix · offset=0]
+      Mirror CS2Bull on bear side.
+  ◆ b2b-pup::UnifiedBull    [combo-unified · offset=-1]
+      Unified Combo bull: FVG-Combo bull on bar[0] AND Matrix-Combo bull on…
+  ◆ b2b-pup::UnifiedBear    [combo-unified · offset=-1]
+      Mirror UnifiedBull on bear side.
+  ◆ b2b-pup::Long1    [long1 · offset=0]
+      Long 1 (Squareify): regular RVOL ratio > 7.0 AND cumulative RVOL rati…
+  ◆ b2b-pup::Short1    [long1 · offset=0]
+      Mirror Long1 for the down side.
+  ◆ b2b-pup::UUBull    [uu-streak · offset=0]
+      UU bull (2-bar): 2-bar qualified-bull streak (rv_baseBull AND rv_norm…
+  ◆ b2b-pup::UUUBull    [uu-streak · offset=0]
+      UUU bull (3-bar streak).
+  ◆ b2b-pup::UUUUBull    [uu-streak · offset=0]
+      UUUU bull (4+-bar streak).
+  ◆ b2b-pup::UUBear    [uu-streak · offset=0]
+      UU bear mirror (Squareify A-F bearside).
+  ◆ b2b-pup::UUUBear    [uu-streak · offset=0]
+      UUU bear mirror.
+  ◆ b2b-pup::UUUUBear    [uu-streak · offset=0]
+      UUUU bear mirror.
+
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● b2b-pup::B2B_PUP    [offset=0 · AND_LAGGED]
+        Back-to-back PUP: PUP fires on bar[0] AND PUP fired on bar[1].
+        ├── b2b-pup::PUP
+        └── b2b-pup::PUP[-1]
+    ● b2b-pup::B2B_PPD    [offset=0 · AND_LAGGED]
+        Back-to-back PPD.
+        ├── b2b-pup::PPD
+        └── b2b-pup::PPD[-1]
+    ● b2b-pup::S1    [offset=0 · PLOT_OF]
+        B2B PUP/PPD plot — pure back-to-back PUP (bull) or PPD (bear).
+        ├── b2b-pup::B2B_PUP
+        └── b2b-pup::B2B_PPD
+
+  Tier 2:
+    ● b2b-pup::B2B_HVD_BULL    [offset=-1 · AND_LAGGED]
+        Back-to-back HV+D bull: HVDBull on bar[0] AND HVDBull on bar[1].
+        ├── b2b-pup::HVDBull
+        └── b2b-pup::HVDBull[-1]
+    ● b2b-pup::B2B_HVD_BEAR    [offset=-1 · AND_LAGGED]
+        Mirror B2B_HVD_BULL bear.
+        ├── b2b-pup::HVDBear
+        └── b2b-pup::HVDBear[-1]
+    ● b2b-pup::B2B_NAPALM_BULL    [offset=0 · AND_LAGGED]
+        Back-to-back consolidated Napalm bull (Napalm OR Charge fires on this…
+        ├── (Napalm_BULL OR Charge_BULL)
+        └── (Napalm_BULL OR Charge_BULL)[-1]
+    ● b2b-pup::B2B_NAPALM_BEAR    [offset=0 · AND_LAGGED]
+        Mirror B2B_NAPALM_BULL bear.
+        ├── (Napalm_BEAR OR Charge_BEAR)
+        └── (Napalm_BEAR OR Charge_BEAR)[-1]
+    ● b2b-pup::S2    [offset=0 · AND]
+        B2B PUP + FAUNA on both candles.
+        ├── b2b-pup::B2B_PUP
+        ├── b2b-pup::FAUNA_BULL[0]
+        └── b2b-pup::FAUNA_BULL[-1]
+    ● b2b-pup::S3    [offset=-1 · OR]
+        B2B PUP-on-bar[1]/bar[2] + same-type displacement on bar[0] AND bar[1…
+        ├── b2b-pup::PUP[-1]
+        ├── b2b-pup::PUP[-2]
+        ├── b2b-pup::DISPBull
+        ├── b2b-pup::DISPBull[-1]
+        ├── b2b-pup::PUP[-1]
+        ├── b2b-pup::PUP[-2]
+        ├── b2b-pup::HVDBull
+        └── b2b-pup::HVDBull[-1]
+    ● b2b-pup::S5    [offset=0 · AND_OR]
+        B2B PUP + directional RVOL (SAAB/1×/GS bull or Kratos/1×/MOAB bear) o…
+        ├── b2b-pup::B2B_PUP
+        └── (SAAB OR RVOL1xBull OR GrandSlam) on bars-aware AND/OR (WTC OR Hiroshima)
+
+  Tier 3:
+    ● b2b-pup::B2B_HVDPBJ_BULL    [offset=-1 · AND_OR]
+        B2B HV+D bull AND PBJ bull on bar[1] or bar[2].
+        ├── b2b-pup::B2B_HVD_BULL
+        └── b2b-pup::PBJBull[-1] OR b2b-pup::PBJBull[-2]
+    ● b2b-pup::B2B_HVDPBJ_BEAR    [offset=-1 · AND_OR]
+        Mirror B2B_HVDPBJ_BULL bear.
+        ├── b2b-pup::B2B_HVD_BEAR
+        └── b2b-pup::PBJBear[-1] OR b2b-pup::PBJBear[-2]
+    ● b2b-pup::S4    [offset=-1 · OR]
+        B2B PUP + FAUNA + same-type displacement on both bars. Two disjoint p…
+        ├── b2b-pup::PUP[-1]
+        ├── b2b-pup::PUP[-2]
+        ├── b2b-pup::FAUNA_BULL[-1]
+        ├── b2b-pup::FAUNA_BULL[-2]
+        ├── b2b-pup::DISPBull
+        ├── b2b-pup::DISPBull[-1]
+        ├── b2b-pup::PUP[-1]
+        ├── b2b-pup::PUP[-2]
+        └── … and 4 more
+    ● b2b-pup::S6    [offset=-1 · AND_OR]
+        Any B2B (S1/S2/S5 OR S3/S4 chains) + PBJ bull or HVD-PBJ bull on the …
+        ├── any B2B chain
+        └── PBJBull/Bear or HVDPBJBull/Bear on bar[0/1/2]
+    ● b2b-pup::S8    [offset=-1 · OR]
+        Unified Combo + B2B PUP. Two arms with different UC lag rules: (1) B2…
+        ├── b2b-pup::B2B_PUP
+        ├── b2b-pup::UnifiedBull
+        ├── b2b-pup::S3
+        └── b2b-pup::UnifiedBull OR b2b-pup::UnifiedBull[-1]
+    ● b2b-pup::S9    [offset=-1 · AND_OR]
+        Uni Combo + B2B PUP — fires when EITHER S19 (UC×2) OR S20 (FMU×2) lan…
+        ├── b2b-pup::B2B_PUP OR S3-chain
+        └── b2b-pup::UC2 OR b2b-pup::FMU (current or lagged)
+    ● b2b-pup::S10    [offset=0 · AND_OR]
+        Long1-B2B + B2B PUP: Long1 on this AND prior bar, AND B2B PUP on this…
+        ├── b2b-pup::Long1 ×2
+        └── b2b-pup::B2B_PUP current or [-1]
+    ● b2b-pup::S11    [offset=-1 · AND_OR]
+        (FVG combo or Long1) + B2B PUP.
+        ├── b2b-pup::B2B_PUP
+        └── b2b-pup::CS1Bull OR Long1 (current or [-1])
+    ● b2b-pup::S12    [offset=0 · AND_OR]
+        UU/UUU/UUUU + B2B PUP.
+        ├── b2b-pup::B2B_PUP
+        └── (UU OR UUU OR UUUU) current or [-1]
+    ● b2b-pup::S13    [offset=0 · AND_OR]
+        B2B Napalm + B2B PUP.
+        ├── b2b-pup::B2B_PUP
+        └── b2b-pup::B2B_NAPALM_BULL current or [-1]
+    ● b2b-pup::S14    [offset=0 · AND_OR]
+        CONT + B2B PUP.
+        ├── b2b-pup::B2B_PUP
+        └── b2b-pup::CONT_BULL current or [-1]
+    ● b2b-pup::S15    [offset=0 · AND_OR]
+        Consolidated TNT (raw OR TNT 2.0 OR super) + B2B PUP.
+        ├── b2b-pup::B2B_PUP
+        └── b2b-pup::TNT_CONS_BULL current or [-1]
+    ● b2b-pup::S16    [offset=-1 · AND_OR]
+        Napalm-consolidated (Napalm OR Charge) + B2B PUP.
+        ├── b2b-pup::B2B_PUP
+        └── (Napalm_BULL OR Charge_BULL) current or [-1]
+    ● b2b-pup::S17    [offset=-1 · AND_OR]
+        B2B HV+D + B2B PUP.
+        ├── b2b-pup::B2B_PUP
+        └── b2b-pup::B2B_HVD_BULL current or [-1]
+    ● b2b-pup::S19_UC2    [offset=-1 · COUNT_GE]
+        Standalone Unified Combo ×2: count visual bars in [1, uc2_window] whe…
+        └── b2b-pup::UnifiedBull (per-bar)
+    ● b2b-pup::S20_FMU    [offset=-1 · COUNT_GE]
+        Standalone FVG/MAT/Uni Combo ×2: count visual bars where ANY of FVG-c…
+        └── b2b-pup::CS1Bull OR b2b-pup::CS2Bull (per-bar)
+
+  Tier 4:
+    ● b2b-pup::S18    [offset=-1 · AND_OR]
+        B2B HV+D-PBJ + B2B PUP.
+        ├── b2b-pup::B2B_PUP
+        └── b2b-pup::B2B_HVDPBJ_BULL current or [-1]
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → {'target': 'tnt-od', 'relationship': 'canonical-source mirror', 'notes': "Engine G (TNT/Napalm/Charge/CONT/TNT 2.0/Return-to-TNT) is required by README and CHANGELOG to mirror TNT OD's definitions exactly. Per v4.30 changelog the rewrite ported TNT OD's full architecture; v4.32 fixed a Charge-ladder regression detected by re-auditing against TNT OD."}
+  → {'target': 'hvd-pbj-ppd', 'relationship': 'potential PUP/PPD definition overlap', 'notes': "PUP and PPD are defined locally here at L78-L79 with identical-looking semantics. The bible may need to designate one indicator's definition as canonical and mark the other as a duplicate."}
+  → {'target': 'heavy-pentagon', 'relationship': 'RVOL ladder definition overlap', 'notes': "SAAB/1×/GS/Pentagon/WTC/Hiroshima/Nagasaki/Kratos/MOAB tiers and the f_th_* threshold tables overlap in concept and naming with heavy-pentagon's pipelines P1/P2/P3."}
+  → {'target': 'heavy-combo-toggles', 'relationship': 'FVG/Matrix/Unified combo overlap', 'notes': 'CS1/CS2/CS3 (Unified) here mirror the combo families used by heavy-pentagon → heavy-combo-toggles, but the implementations are local.'}
+

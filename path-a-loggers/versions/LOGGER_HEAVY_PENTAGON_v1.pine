@@ -1,0 +1,98 @@
+//@version=5
+// =============================================================================
+// LOGGER — Heavy Pentagon Individual Members (incl. NEUTRAL_HEAVY_X2)
+// =============================================================================
+// PURPOSE: The existing LOGGER_HEAVY_COMBO_TOGGLES_v1 only logs the 3 master
+// OR-gates (S1/S2/S3). The 12 individual Heavy-Pentagon members (4 families ×
+// {Bull,Bear,Neutral}) are NOT logged anywhere. This file fills that gap so
+// Anish can verify the always-False suspicion on NEUTRAL_HEAVY_X2 + see which
+// member is driving each master fire.
+//
+// MEMBERS COVERED (titles from heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+// L381-403):
+//   - Heavy Yin-Yang Bull/Bear/Neutral       (HYY)
+//   - Heavy Nagasaki  Bull/Bear/Neutral      (HN)
+//   - Heavy Nagasaki Vol Bull/Bear/Neutral   (HNV)
+//   - Heavy Trident   Bull/Bear/Neutral      (HT)
+//   - Neutral Heavy x2 Bull/Bear/Neutral     (NHx2)   ← always-False suspect
+//
+// SETUP: load AFTER "Heavy PENTAGON" on the chart. Point each Source input at
+// the corresponding plotshape title.
+//
+// LABEL TAGS: 5 family prefixes × {+, -, n} suffix encodes direction:
+//   "HYY+" / "HYY-" / "HYYn"
+//   "HN+"  / "HN-"  / "HNn"
+//   "HNV+" / "HNV-" / "HNVn"
+//   "HT+"  / "HT-"  / "HTn"
+//   "NHx2+"/ "NHx2-"/ "NHx2n"
+// =============================================================================
+
+indicator("LOGGER Heavy Pentagon Members", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+grp = "★ Source Plots — point at Heavy PENTAGON ★"
+
+// HYY
+s_hyy_bull = input.source(close, "Heavy Yin-Yang Bull",    group=grp)
+s_hyy_bear = input.source(close, "Heavy Yin-Yang Bear",    group=grp)
+s_hyy_neut = input.source(close, "Heavy Yin-Yang Neutral", group=grp)
+
+// HN
+s_hn_bull = input.source(close, "Heavy Nagasaki Bull",    group=grp)
+s_hn_bear = input.source(close, "Heavy Nagasaki Bear",    group=grp)
+s_hn_neut = input.source(close, "Heavy Nagasaki Neutral", group=grp)
+
+// HNV
+s_hnv_bull = input.source(close, "Heavy Nagasaki Vol Bull",    group=grp)
+s_hnv_bear = input.source(close, "Heavy Nagasaki Vol Bear",    group=grp)
+s_hnv_neut = input.source(close, "Heavy Nagasaki Vol Neutral", group=grp)
+
+// HT
+s_ht_bull = input.source(close, "Heavy Trident Bull",    group=grp)
+s_ht_bear = input.source(close, "Heavy Trident Bear",    group=grp)
+s_ht_neut = input.source(close, "Heavy Trident Neutral", group=grp)
+
+// NHx2 — primary always-False suspect
+s_nhx2_bull = input.source(close, "Neutral Heavy x2 Bull",    group=grp)
+s_nhx2_bear = input.source(close, "Neutral Heavy x2 Bear",    group=grp)
+s_nhx2_neut = input.source(close, "Neutral Heavy x2 Neutral", group=grp)
+
+f_fire(s) => not na(s) and s != 0 and barstate.isconfirmed
+
+f_log_b(cond, tag) =>
+    if cond
+        label.new(bar_index, low, tag, color=color.new(color.lime, 90), style=label.style_label_up, textcolor=color.lime, size=size.tiny, yloc=yloc.belowbar)
+
+f_log_r(cond, tag) =>
+    if cond
+        label.new(bar_index, high, tag, color=color.new(color.red, 90), style=label.style_label_down, textcolor=color.red, size=size.tiny, yloc=yloc.abovebar)
+
+f_log_n(cond, tag) =>
+    if cond
+        label.new(bar_index, high, tag, color=color.new(color.white, 90), style=label.style_label_down, textcolor=color.white, size=size.tiny, yloc=yloc.abovebar)
+
+// HYY
+f_log_b(f_fire(s_hyy_bull), "HYY+")
+f_log_r(f_fire(s_hyy_bear), "HYY-")
+f_log_n(f_fire(s_hyy_neut), "HYYn")
+
+// HN
+f_log_b(f_fire(s_hn_bull), "HN+")
+f_log_r(f_fire(s_hn_bear), "HN-")
+f_log_n(f_fire(s_hn_neut), "HNn")
+
+// HNV
+f_log_b(f_fire(s_hnv_bull), "HNV+")
+f_log_r(f_fire(s_hnv_bear), "HNV-")
+f_log_n(f_fire(s_hnv_neut), "HNVn")
+
+// HT
+f_log_b(f_fire(s_ht_bull), "HT+")
+f_log_r(f_fire(s_ht_bear), "HT-")
+f_log_n(f_fire(s_ht_neut), "HTn")
+
+// NHx2 (always-False suspect)
+f_log_b(f_fire(s_nhx2_bull), "NHx2+")
+f_log_r(f_fire(s_nhx2_bear), "NHx2-")
+f_log_n(f_fire(s_nhx2_neut), "NHx2n")
+
+plot(0, display=display.data_window)

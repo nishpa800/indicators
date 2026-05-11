@@ -1,0 +1,55 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: gateStdMult
+aliases_searched:
+- gateStdMult
+- en_newGate
+- gate_bull
+- gate_bear
+- gate_disp_bull
+- gate_disp_bear
+pine_files_scanned: 54
+definitions:
+- &id001
+  indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1155
+  pine_variable: gate_disp_bull
+  raw_line: bool  gate_disp_bull      = barstate.isconfirmed and (disp_range[1] > nz(gate_disp_threshold[1])) and isBullishFVG
+    and (close[1] > open[1])
+- &id002
+  indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1156
+  pine_variable: gate_disp_bear
+  raw_line: bool  gate_disp_bear      = barstate.isconfirmed and (disp_range[1] > nz(gate_disp_threshold[1])) and isBearishFVG
+    and (close[1] < open[1])
+- &id003
+  indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1167
+  pine_variable: gate_bull
+  raw_line: bool gate_bull = (not en_newGate) or gate_bull_raw
+- &id004
+  indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1168
+  pine_variable: gate_bear
+  raw_line: bool gate_bear = (not en_newGate) or gate_bear_raw
+occurrences_per_indicator:
+  tnt-od:
+    DEFINITION: 4
+    REFERENCE: 27
+    INPUT: 2
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 18
+yaml_cross_check:
+  yaml_matching_records: []
+  orphans: []
+  missings:
+  - *id001
+  - *id002
+  - *id003
+  - *id004
+status: COMPLETE

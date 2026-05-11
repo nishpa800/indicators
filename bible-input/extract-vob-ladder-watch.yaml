@@ -1,0 +1,312 @@
+indicator:
+  id: vob-ladder-watch
+  file: vob-ladder-watch/versions/VOB_LADDER_WATCH_v1.pine
+  branch: both
+  pine_version: 5
+  line_count: 215
+  overlay: true
+  one_line_purpose: "Staged zF -> zA ascending bull-zone ladder escalation detector (depth 0-6 watch gauge + alerts)"
+
+internal_helpers:
+  - name: level
+    kind: udt
+    lines: "27-32"
+    fields: [indx, upper, lower, mid, vol]
+    purpose: "Per-zone record (bar index, upper/lower/mid prices, cumulative volume) used by every tier's bull-zone array."
+  - name: f_bull_vob
+    kind: function
+    lines: "59-85"
+    signature: "f_bull_vob(int len1, array<level> arr, float atr_prox, float atr_adj)"
+    purpose: "Core bull VOB engine — mirrors VOB Asym T3's bull half. On EMA(len1)/EMA(len1+13) crossover (confirmed bar) finds the lowest low in window, builds a level (clamped src vs lowest by atr_adj), pushes onto arr. Then deduplicates near-duplicate mids within atr_prox, invalidates zones whose lower is breached by close, caps array size at 15."
+  - name: f_top_active
+    kind: function
+    lines: "96-104"
+    signature: "f_top_active(array<level> arr) -> float"
+    purpose: "Returns the highest mid-price among non-na levels in the array (i.e. the most-recent / topmost active bull zone for that tier)."
+  - name: f_zone_cell
+    kind: function
+    lines: "195-201"
+    signature: "f_zone_cell(table t, int row, string lbl, float p, color tc)"
+    purpose: "Renders a 2-column row in the depth gauge table — tier label cell + price cell (or em-dash if na)."
+  - name: atr_base / atr_proximity / atr_adjust
+    kind: shared_constants
+    lines: "46-48"
+    purpose: "ATR(200) highest-of-200 baseline, *3 for zone-proximity dedup, *2 for src clamp inside f_bull_vob — shared across all six tiers."
+  - name: bull_a / bull_b / bull_c / bull_d / bull_e / bull_f
+    kind: persistent_state
+    lines: "51-56"
+    purpose: "Per-tier var arrays of level UDTs (bull zones), one per sensitivity (A=2500..F=1000)."
+  - name: p_a / p_b / p_c / p_d / p_e / p_f
+    kind: derived_scalars
+    lines: "106-111"
+    purpose: "Per-tier 'top active zone mid' price; the named primitives the ladder walks."
+  - name: ladder_depth
+    kind: derived_scalar
+    lines: "117-135"
+    purpose: "Walks F->E->D->C->B->A and counts consecutive strictly-ascending non-na tier prices. 0=no zF, max 6."
+  - name: prev_depth / escalated / de_escalated
+    kind: state_and_flags
+    lines: "138-142"
+    purpose: "Tracks ladder_depth across confirmed bars; escalated fires when depth increases."
+  - name: fire_watch / fire_tier3 / fire_tier4 / fire_tier5 / fire_full
+    kind: derived_flags
+    lines: "151-155"
+    purpose: "One-shot escalation flags gated by (escalated AND ladder_depth == N). Used by both plotshape and alertcondition."
+
+roots:
+  - id: vob-ladder-watch::zF
+    family: structural
+    name_in_pine: "p_f"
+    tier_letter: F
+    sensitivity_default: 1000
+    lines:
+      input: "40"
+      array: "56"
+      engine_call: "92"
+      derived_price: "111"
+      table_render: "210"
+    description: "Sensitivity-F (lowest / longest EMA pair: len=1000, paired ema 1013) bull VOB zone — top active mid-price. The ladder's anchor; if na the ladder is depth 0."
+    output:
+      kind: scalar_price
+      symbol: p_f
+    uses_helpers: [f_bull_vob, f_top_active, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-ladder-watch::zE
+    family: structural
+    name_in_pine: "p_e"
+    tier_letter: E
+    sensitivity_default: 1250
+    lines:
+      input: "39"
+      array: "55"
+      engine_call: "91"
+      derived_price: "110"
+      table_render: "211"
+    description: "Sensitivity-E bull VOB zone top active mid-price."
+    output:
+      kind: scalar_price
+      symbol: p_e
+    uses_helpers: [f_bull_vob, f_top_active, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-ladder-watch::zD
+    family: structural
+    name_in_pine: "p_d"
+    tier_letter: D
+    sensitivity_default: 1500
+    lines:
+      input: "38"
+      array: "54"
+      engine_call: "90"
+      derived_price: "109"
+      table_render: "212"
+    description: "Sensitivity-D bull VOB zone top active mid-price."
+    output:
+      kind: scalar_price
+      symbol: p_d
+    uses_helpers: [f_bull_vob, f_top_active, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-ladder-watch::zC
+    family: structural
+    name_in_pine: "p_c"
+    tier_letter: C
+    sensitivity_default: 2000
+    lines:
+      input: "37"
+      array: "53"
+      engine_call: "89"
+      derived_price: "108"
+      table_render: "213"
+    description: "Sensitivity-C bull VOB zone top active mid-price."
+    output:
+      kind: scalar_price
+      symbol: p_c
+    uses_helpers: [f_bull_vob, f_top_active, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-ladder-watch::zB
+    family: structural
+    name_in_pine: "p_b"
+    tier_letter: B
+    sensitivity_default: 2250
+    lines:
+      input: "36"
+      array: "52"
+      engine_call: "88"
+      derived_price: "107"
+      table_render: "214"
+    description: "Sensitivity-B bull VOB zone top active mid-price."
+    output:
+      kind: scalar_price
+      symbol: p_b
+    uses_helpers: [f_bull_vob, f_top_active, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-ladder-watch::zA
+    family: structural
+    name_in_pine: "p_a"
+    tier_letter: A
+    sensitivity_default: 2500
+    lines:
+      input: "35"
+      array: "51"
+      engine_call: "87"
+      derived_price: "106"
+      table_render: "215"
+    description: "Sensitivity-A (highest / shortest EMA pair) bull VOB zone top active mid-price. Ladder's apex."
+    output:
+      kind: scalar_price
+      symbol: p_a
+    uses_helpers: [f_bull_vob, f_top_active, level, atr_base, atr_proximity, atr_adjust]
+
+composites:
+  - id: vob-ladder-watch::ladder_depth
+    tier: 1
+    kind: derived_scalar
+    lines: "117-135"
+    depends_on_roots: [zF, zE, zD, zC, zB, zA]
+    description: >-
+      Counts consecutive strictly-ascending non-na tier mids walking F->E->D->C->B->A.
+      Range 0..6. Any na or non-strictly-greater tier truncates the ladder at that point.
+    rendered_in: "Top-right table 'Depth N/6' cell (lines 207-209), color-coded gray<2 / yellow 2-3 / lime>=4."
+
+  - id: vob-ladder-watch::escalated
+    tier: 2
+    kind: edge_event
+    lines: "138-142"
+    depends_on_roots: []
+    depends_on_composites: [ladder_depth]
+    description: "True on a confirmed bar where ladder_depth strictly increased vs prev_depth. Drives every plotshape and alert."
+
+  - id: vob-ladder-watch::WATCH
+    tier: 3
+    kind: escalation_signal
+    depth_trigger: 2
+    fire_flag: fire_watch
+    lines:
+      flag: "151"
+      plotshape: "157-158"
+      alertcondition: "169-170"
+    depends_on_composites: [ladder_depth, escalated]
+    visual:
+      shape: labelup
+      location: belowbar
+      color_hex: "#FFFF00"
+      size: small
+      text: "WATCH\\nF+E"
+    alert_message: "VOB Ladder reached depth 2 (zF + zE ascending). Ticker on watch."
+    description: "First escalation — zF and zE present and ascending. 'Put it on radar' per CHANGELOG rationale."
+
+  - id: vob-ladder-watch::TIER3
+    tier: 3
+    kind: escalation_signal
+    depth_trigger: 3
+    fire_flag: fire_tier3
+    lines:
+      flag: "152"
+      plotshape: "159-160"
+      alertcondition: "171-172"
+    depends_on_composites: [ladder_depth, escalated]
+    visual:
+      shape: labelup
+      location: belowbar
+      color_hex: "#FF9800"
+      size: normal
+      text: "LDR3\\n+D"
+    alert_message: "VOB Ladder reached depth 3 (zF + zE + zD ascending). Escalating."
+
+  - id: vob-ladder-watch::TIER4
+    tier: 3
+    kind: escalation_signal
+    depth_trigger: 4
+    fire_flag: fire_tier4
+    lines:
+      flag: "153"
+      plotshape: "161-162"
+      alertcondition: "173-174"
+    depends_on_composites: [ladder_depth, escalated]
+    visual:
+      shape: labelup
+      location: belowbar
+      color_hex: "#FF6D00"
+      size: normal
+      text: "LDR4\\n+C"
+    alert_message: "VOB Ladder reached depth 4 (zF..zC ascending). High conviction."
+
+  - id: vob-ladder-watch::TIER5
+    tier: 3
+    kind: escalation_signal
+    depth_trigger: 5
+    fire_flag: fire_tier5
+    lines:
+      flag: "154"
+      plotshape: "163-164"
+      alertcondition: "175-176"
+    depends_on_composites: [ladder_depth, escalated]
+    visual:
+      shape: labelup
+      location: belowbar
+      color_hex: "#E91E63"
+      size: large
+      text: "LDR5\\n+B"
+    alert_message: "VOB Ladder reached depth 5 (zF..zB ascending). Strong trend."
+
+  - id: vob-ladder-watch::FULL
+    tier: 3
+    kind: escalation_signal
+    depth_trigger: 6
+    fire_flag: fire_full
+    lines:
+      flag: "155"
+      plotshape: "165-166"
+      alertcondition: "177-178"
+    depends_on_composites: [ladder_depth, escalated]
+    visual:
+      shape: flag
+      location: bottom
+      color_hex: "#FFD700"
+      size: huge
+      text: "FULL\\nLDR"
+    alert_message: "VOB Ladder FULL — all 6 tiers ascending zF->zA. Drop everything."
+    description: "Maximum escalation — full F->A monotonic ascending stack."
+
+  - id: vob-ladder-watch::escalation_alert_message
+    tier: 4
+    kind: alert_payload
+    lines: "180-191"
+    depends_on_composites: [escalated, ladder_depth]
+    depends_on_roots: [zA, zB, zC, zD, zE, zF]
+    description: >-
+      Pipe-delimited alert() payload fired once-per-bar-close on any escalation, encoding
+      TICKER, TF, NY-tz TIME, DEPTH, all six tier prices (na safe), and CLOSE. Gated by
+      show_alerts input. Companion to the per-tier alertcondition lines.
+
+  - id: vob-ladder-watch::depth_gauge_table
+    tier: 4
+    kind: dashboard
+    lines: "203-215"
+    depends_on_composites: [ladder_depth]
+    depends_on_roots: [zA, zB, zC, zD, zE, zF]
+    description: >-
+      Top-right 2x8 table rendered on barstate.islast. Header row shows 'Depth N/6'
+      (color-coded by depth threshold). Six body rows show zF..zA labels with current
+      top-active mid prices (em-dash when na). Each body row uses f_zone_cell helper.
+
+cross_indicator_dependencies:
+  - target: vob-asym-t3
+    relationship: shared_engine_lineage
+    notes: >-
+      f_bull_vob (lines 59-85) is documented in the file header and CHANGELOG as
+      mirroring VOB Asym T3's bull half (no T3-smoothing, no MutEx pruning, bull-only).
+      No code import — duplicated logic. zF..zA roots here are conceptual cousins of
+      VOB Asym T3's six bull tiers but evaluated independently with their own arrays.
+  - target: external (TradingView alert engine)
+    relationship: alert_consumer
+    notes: >-
+      Five alertcondition() entries (lines 169-178) plus one alert() call (line 191)
+      expect TradingView 'Any alert() function call' wiring per CHANGELOG instructions.
+
+uncertain_or_questions:
+  - q: "f_top_active selects the HIGHEST mid-price among active zones, but the comment on line 95 says 'most recent floor'. Are these always the same? In a strictly ascending market the newest zone is also the highest, but if a higher older zone has not been invalidated (close has not breached its lower) the helper would return that older zone, not the newest. May affect ladder semantics in choppy markets."
+    severity: low
+  - q: "f_bull_vob deduplicates by writing level.new(na, na, na, na, na) into slots (lines 81, 83) rather than removing them; f_top_active correctly skips na mids. But the size cap arr.shift() at line 85 may evict an active zone if the array grows past 15 with mostly-na slots — a known characteristic shared with VOB Asym T3's engine."
+    severity: low
+  - q: "Stage 6 disambiguation: this file's zA..zF roots share NAMES with VOB Asym T3's bull tiers but are independent computations (different arrays, no T3 smoothing, no cross-tier MutEx). The vob-ladder-watch:: namespace prefix is the disambiguator."
+    severity: info

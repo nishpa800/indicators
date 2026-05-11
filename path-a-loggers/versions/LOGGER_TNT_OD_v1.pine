@@ -1,0 +1,146 @@
+//@version=5
+// =============================================================================
+// LOGGER — TNT Opening Drive (OD) v3
+// =============================================================================
+// PURPOSE: emit one label.new() per fire of TNT-OD's 48 composite plots so
+// data_get_pine_labels can pull full history in one MCP call.
+//
+// SETUP: load AFTER "TNT Opening Drive OD v3" on the chart. Point each
+// "Source: ..." input at the corresponding plot.
+// =============================================================================
+
+indicator("LOGGER TNT-OD", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+grp = "★ Source Plots — point at TNT Opening Drive OD v3 ★"
+
+// Tier-1 / RELAY / STACK
+s_t1_relay_bull = input.source(close, "T1 RELAY Bull", group=grp)
+s_t1_relay_bear = input.source(close, "T1 RELAY Bear", group=grp)
+s_t1_stack_bull = input.source(close, "T1 STACK Bull", group=grp)
+s_t1_stack_bear = input.source(close, "T1 STACK Bear", group=grp)
+
+// B2B Napalm
+s_b2bnpm_bull = input.source(close, "B2B Napalm Bull", group=grp)
+s_b2bnpm_bear = input.source(close, "B2B Napalm Bear", group=grp)
+
+// RC variants
+s_rcnpm_bull = input.source(close, "RC NPM+TNT Bull", group=grp)
+s_rcnpm_bear = input.source(close, "RC NPM+TNT Bear", group=grp)
+s_rcret_tnt_bull = input.source(close, "RC TNT+RET Enriched Bull", group=grp)
+s_rcret_tnt_bear = input.source(close, "RC TNT+RET Enriched Bear", group=grp)
+s_rcret_npm_bull = input.source(close, "RC RET+NPM Enriched Bull", group=grp)
+s_rcret_npm_bear = input.source(close, "RC RET+NPM Enriched Bear", group=grp)
+
+// FUSE / CATALYST / DYNAMITE
+s_fuse_bull = input.source(close, "FUSE Bull", group=grp)
+s_fuse_bear = input.source(close, "FUSE Bear", group=grp)
+s_cat_bull  = input.source(close, "CATALYST Bull", group=grp)
+s_cat_bear  = input.source(close, "CATALYST Bear", group=grp)
+s_dyn_bull  = input.source(close, "DYNAMITE Bull", group=grp)
+s_dyn_bear  = input.source(close, "DYNAMITE Bear", group=grp)
+
+// PBJ-paired
+s_pbj_npm_bull = input.source(close, "PBJ+NPM Bull", group=grp)
+s_pbj_npm_bear = input.source(close, "PBJ+NPM Bear", group=grp)
+s_pbj_tnt_bull = input.source(close, "PBJ+TNT Bull", group=grp)
+s_pbj_tnt_bear = input.source(close, "PBJ+TNT Bear", group=grp)
+s_pbj_ret_bull = input.source(close, "PBJ+RET Enriched Bull", group=grp)
+s_pbj_ret_bear = input.source(close, "PBJ+RET Enriched Bear", group=grp)
+
+// IGNITE
+s_ign_tnt_bull = input.source(close, "IGNITE TNT+CONT Bull", group=grp)
+s_ign_tnt_bear = input.source(close, "IGNITE TNT+CONT Bear", group=grp)
+s_ign_npm_bull = input.source(close, "IGNITE NPM+CONT Bull", group=grp)
+s_ign_npm_bear = input.source(close, "IGNITE NPM+CONT Bear", group=grp)
+
+// Enriched
+s_tnt_enr_bull = input.source(close, "TNT Enriched Bull", group=grp)
+s_tnt_enr_bear = input.source(close, "TNT Enriched Bear", group=grp)
+s_npm_enr_bull = input.source(close, "NPM Enriched Bull", group=grp)
+s_npm_enr_bear = input.source(close, "NPM Enriched Bear", group=grp)
+s_cont_enr_bull = input.source(close, "CONT Enriched Bull", group=grp)
+s_cont_enr_bear = input.source(close, "CONT Enriched Bear", group=grp)
+
+// Density
+s_d1_bull = input.source(close, "Density 1 Bull", group=grp)
+s_d1_bear = input.source(close, "Density 1 Bear", group=grp)
+s_d2_bull = input.source(close, "Density 2 Bull", group=grp)
+s_d2_bear = input.source(close, "Density 2 Bear", group=grp)
+s_d3_bull = input.source(close, "Density 3 Bull", group=grp)
+s_d3_bear = input.source(close, "Density 3 Bear", group=grp)
+
+// UU+TNT
+s_uu_tnt_bull   = input.source(close, "UU+TNT ANY Bull", group=grp)
+s_uu_tnt_bear   = input.source(close, "UU+TNT ANY Bear", group=grp)
+s_uuu_tnt_bull  = input.source(close, "UUU+TNT ANY Bull", group=grp)
+s_uuu_tnt_bear  = input.source(close, "UUU+TNT ANY Bear", group=grp)
+s_uuuu_tnt_bull = input.source(close, "UUUU+TNT ANY Bull", group=grp)
+s_uuuu_tnt_bear = input.source(close, "UUUU+TNT ANY Bear", group=grp)
+
+// WBUSH
+s_wbush_bull = input.source(close, "WBUSH+TNTOD ANY Bull", group=grp)
+s_wbush_bear = input.source(close, "WBUSH+TNTOD ANY Bear", group=grp)
+s_wbush_neut = input.source(close, "WBUSH Neutral", group=grp)
+
+f_fire(s) => not na(s) and s != 0 and barstate.isconfirmed
+f_log(cond, tag, isBull) =>
+    if cond
+        if isBull
+            label.new(bar_index, low,  tag, color=color.new(color.lime, 90),    style=label.style_label_up,   textcolor=color.lime,    size=size.tiny, yloc=yloc.belowbar)
+        else
+            label.new(bar_index, high, tag, color=color.new(color.fuchsia, 90), style=label.style_label_down, textcolor=color.fuchsia, size=size.tiny, yloc=yloc.abovebar)
+f_log_n(cond, tag) =>
+    if cond
+        label.new(bar_index, high, tag, color=color.new(color.white, 90), style=label.style_label_down, textcolor=color.white, size=size.tiny, yloc=yloc.abovebar)
+
+f_log(f_fire(s_t1_relay_bull),  "T1RLY+", true)
+f_log(f_fire(s_t1_relay_bear),  "T1RLY-", false)
+f_log(f_fire(s_t1_stack_bull),  "T1STK+", true)
+f_log(f_fire(s_t1_stack_bear),  "T1STK-", false)
+f_log(f_fire(s_b2bnpm_bull),    "B2BNPM+", true)
+f_log(f_fire(s_b2bnpm_bear),    "B2BNPM-", false)
+f_log(f_fire(s_rcnpm_bull),     "RCNPM+", true)
+f_log(f_fire(s_rcnpm_bear),     "RCNPM-", false)
+f_log(f_fire(s_rcret_tnt_bull), "RCTNT+", true)
+f_log(f_fire(s_rcret_tnt_bear), "RCTNT-", false)
+f_log(f_fire(s_rcret_npm_bull), "RCRTN+", true)
+f_log(f_fire(s_rcret_npm_bear), "RCRTN-", false)
+f_log(f_fire(s_fuse_bull),      "FUSE+", true)
+f_log(f_fire(s_fuse_bear),      "FUSE-", false)
+f_log(f_fire(s_cat_bull),       "CAT+", true)
+f_log(f_fire(s_cat_bear),       "CAT-", false)
+f_log(f_fire(s_dyn_bull),       "DYN+", true)
+f_log(f_fire(s_dyn_bear),       "DYN-", false)
+f_log(f_fire(s_pbj_npm_bull),   "PBJN+", true)
+f_log(f_fire(s_pbj_npm_bear),   "PBJN-", false)
+f_log(f_fire(s_pbj_tnt_bull),   "PBJT+", true)
+f_log(f_fire(s_pbj_tnt_bear),   "PBJT-", false)
+f_log(f_fire(s_pbj_ret_bull),   "PBJR+", true)
+f_log(f_fire(s_pbj_ret_bear),   "PBJR-", false)
+f_log(f_fire(s_ign_tnt_bull),   "IGNT+", true)
+f_log(f_fire(s_ign_tnt_bear),   "IGNT-", false)
+f_log(f_fire(s_ign_npm_bull),   "IGNN+", true)
+f_log(f_fire(s_ign_npm_bear),   "IGNN-", false)
+f_log(f_fire(s_tnt_enr_bull),   "TNTE+", true)
+f_log(f_fire(s_tnt_enr_bear),   "TNTE-", false)
+f_log(f_fire(s_npm_enr_bull),   "NPME+", true)
+f_log(f_fire(s_npm_enr_bear),   "NPME-", false)
+f_log(f_fire(s_cont_enr_bull),  "CONE+", true)
+f_log(f_fire(s_cont_enr_bear),  "CONE-", false)
+f_log(f_fire(s_d1_bull),        "D1+", true)
+f_log(f_fire(s_d1_bear),        "D1-", false)
+f_log(f_fire(s_d2_bull),        "D2+", true)
+f_log(f_fire(s_d2_bear),        "D2-", false)
+f_log(f_fire(s_d3_bull),        "D3+", true)
+f_log(f_fire(s_d3_bear),        "D3-", false)
+f_log(f_fire(s_uu_tnt_bull),    "UUT+", true)
+f_log(f_fire(s_uu_tnt_bear),    "UUT-", false)
+f_log(f_fire(s_uuu_tnt_bull),   "UUUT+", true)
+f_log(f_fire(s_uuu_tnt_bear),   "UUUT-", false)
+f_log(f_fire(s_uuuu_tnt_bull),  "UUUUT+", true)
+f_log(f_fire(s_uuuu_tnt_bear),  "UUUUT-", false)
+f_log(f_fire(s_wbush_bull),     "WB+", true)
+f_log(f_fire(s_wbush_bear),     "WB-", false)
+f_log_n(f_fire(s_wbush_neut),   "WBn")
+
+plot(0, display=display.data_window)

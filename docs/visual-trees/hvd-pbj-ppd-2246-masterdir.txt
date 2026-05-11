@@ -1,0 +1,112 @@
+VISUAL TREE — hvd-pbj-ppd-2246-masterdir
+=========================================
+File: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+Pine v5  ·  2246 lines  ·  overlay=True
+Purpose: HV+D ↔ PBJ ↔ USE ALARM — TRIPLE CO-OCCURRENCE (Master Directory variant, 2246 lines, largest — 479 extra vs THE_ONLY_ONE)
+
+ROOTS
+-----
+  ◆ hvd-pbj-ppd-2246::HVD_BULL    [hv · offset=-1]
+      
+  ◆ hvd-pbj-ppd-2246::HVD_BEAR    [hv · offset=-1]
+      
+  ◆ hvd-pbj-ppd-2246::PBJ_BULL    [candle · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::PBJ_BEAR    [candle · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::PB_BULL    [candle · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::PB_BEAR    [candle · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::PUP    [push · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::PPD    [push · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Bull UUUU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Bear UUUU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Bull UUU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Bear UUU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Bull UU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Bear UU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Omega-A    [omega-advanced · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Alpha Strike Bull    [session-composite · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Alpha Strike Bear    [session-composite · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Foxtrot Bull    [fauna-based · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Foxtrot Bear    [fauna-based · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Omega Long    [omega-based · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::OD Bull    [opening-drive · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::OD Bear    [opening-drive · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Disp Bull 2+    [displacement · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Disp Bear 2+    [displacement · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Disp Bull 3+    [displacement · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Disp Bear 3+    [displacement · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Golf Bull    [confluence · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::Golf Bear    [confluence · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::PAF PUP B2B    [back-to-back · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::PAF PPD B2B    [back-to-back · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::CS1 FVG Bull    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::CS1 FVG Bear    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::CS2 MAT Bull    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::CS2 MAT Bear    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::CS3 Unified Bull    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::CS3 Unified Bear    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::CC Bull    [chain · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::CC Bear    [chain · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::LSC Bull    [chain · offset=0]
+      
+  ◆ hvd-pbj-ppd-2246::LSC Bear    [chain · offset=0]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 0:
+    ● hvd-pbj-ppd-2246::SUPER Bull    [offset=? · ?]
+    ● hvd-pbj-ppd-2246::SUPER Bear    [offset=? · ?]
+    ● hvd-pbj-ppd-2246::SD Bull    [offset=? · ?]
+    ● hvd-pbj-ppd-2246::SD Bear    [offset=? · ?]
+
+  Tier 2:
+    ● hvd-pbj-ppd-2246::Floor    [offset=? · ?]
+    ● hvd-pbj-ppd-2246::2nd Floor    [offset=? · ?]
+    ● hvd-pbj-ppd-2246::Rooftop    [offset=? · ?]
+    ● hvd-pbj-ppd-2246::Penthouse    [offset=? · ?]
+
+  Tier 3:
+    ● hvd-pbj-ppd-2246::HW Bull    [offset=? · ?]
+    ● hvd-pbj-ppd-2246::HW Bear    [offset=? · ?]
+
+  Tier 4:
+    ● hvd-pbj-ppd-2246::Triple AND (Pipeline D)    [offset=? · ?]
+    ● hvd-pbj-ppd-2246::Aggregated Alert    [offset=? · ?]
+
+

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Agentic OS — Full Systematic Build Spec (2026-05-11)</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 1120px; margin: 2em auto; padding: 0 1.5em; color: #1a1a1a; line-height: 1.55; }
+  h1 { border-bottom: 3px solid #1a1a1a; padding-bottom: 0.3em; font-size: 1.95em; }
+  h2 { color: #003366; border-left: 5px solid #003366; padding-left: 0.6em; margin-top: 2.2em; font-size: 1.4em; }
+  h3 { color: #4a4a4a; margin-top: 1.5em; font-size: 1.13em; }
+  h4 { color: #5a5a5a; margin-top: 1em; font-size: 1em; }
+  .critical { background: #ffe7e7; border-left: 5px solid #cc0000; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .callout  { background: #fff8e7; border-left: 5px solid #d18800; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .ok       { background: #e7f8ee; border-left: 5px solid #1f7a3f; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .info     { background: #eef4fb; border-left: 5px solid #003366; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .principle { background: #fff5e6; border-left: 5px solid #b85c00; padding: 1em 1.2em; margin: 1.2em 0; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ccc; padding: 0.45em 0.7em; vertical-align: top; }
+  th { background: #f0f0f0; text-align: left; }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-family: "SF Mono", Menlo, monospace; font-size: 0.91em; }
+  pre  { background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; padding: 0.8em 1em; overflow-x: auto; font-family: "SF Mono", Menlo, monospace; font-size: 0.86em; line-height: 1.42; }
+  svg { margin: 1em auto; display: block; }
+  .footer { color: #888; font-size: 0.85em; margin-top: 3em; border-top: 1px solid #ccc; padding-top: 1em; }
+  .toc { background: #f8f9fa; border: 1px solid #ddd; padding: 1em 1.5em; margin: 1.5em 0; border-radius: 4px; }
+  .toc ol { margin: 0.5em 0; padding-left: 1.6em; }
+  .toc li { padding: 2px 0; }
+  .yes { color: #1f7a3f; font-weight: 600; }
+  .no  { color: #cc0000; font-weight: 600; }
+  .tbd { color: #d18800; font-weight: 600; }
+  a { color: #003366; }
+  .pillar { display: inline-block; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 0.85em; margin-right: 6px; }
+  .p-axis { background: #cde7ff; color: #003366; }
+  .p-krishna { background: #d8eed4; color: #1f5e1f; }
+  .p-shiva { background: #ffd6d6; color: #7a1a1a; }
+  .p-premortem { background: #ffe7c2; color: #6b3300; }
+  .p-inversion { background: #d9c2ff; color: #330066; }
+  .p-pareto { background: #fff3a8; color: #5a4500; }
+</style>
+</head>
+<body>
+
+<h1>Agentic OS — Full Systematic Build Spec</h1>
+
+<p><em>Authored 2026-05-11. Master integration view tying together <code>THESIS.md</code>, <code>ARCHITECTURE.md</code>, <code>WORKER_TIERS.md</code>, <code>DATA_SOURCE_PAIRS.md</code>, <code>VOB_GPS_FOUR_SATELLITE.md</code>, <code>STANDING_DECISIONS.md</code> (SD-001…SD-010 + pending SD-011), and <code>strategy/2026-05-11-claw-code-foundation-plan.html</code>. This document adds the five load-bearing strategic principles, promotes the GPS satellite system from deferred to scheduled, expands the data source catalog with WhaleWisdom + the canonical indicator studies, scaffolds the six new strategic-principle skills, and gives the operational day-in-the-life that ties it all into a single repeatable system.</em></p>
+
+<div class="critical">
+<strong>Anish 2026-05-11 directive (verbatim):</strong> "Given the axis, the steelman, the red team (Krishna vs Shiva), premortem, inversion strategy, Pareto leverage strategic principles — build our GPS based agentic OS with the grunt workers, knowledge workers and ensure data sources are clear (options, stock, ETF, Benzinga news, Benzinga earnings, WhaleWisdom 13-F/filings, indicator studies (B2B PUP, B2B Napalm / TNT OD v3, Squarify, HVD PBJ PPD, HCG heavy toggles Nagasaki+), GPS satellites VOB × 3 and HV FVG GZ1). Create the skills, the tools and the entire systematic, repeatable system."
+</div>
+
+<h2>Table of contents</h2>
+<div class="toc">
+<ol>
+<li><a href="#mission">Mission — restated in one paragraph</a></li>
+<li><a href="#pillars">The five strategic pillars (load-bearing structural elements)</a></li>
+<li><a href="#tiers">Worker tiers — three classes, restated and bound to the pillars</a></li>
+<li><a href="#data">Data source catalog — 9 sources, every one paired</a></li>
+<li><a href="#gps">GPS satellite system — promoted from deferred to scheduled</a></li>
+<li><a href="#skills">Skill inventory — existing 8 + 10 new = 18 total</a></li>
+<li><a href="#tools">Tool inventory — MCP servers + ports + loggers + harness</a></li>
+<li><a href="#flow">Operational flow — day in the life</a></li>
+<li><a href="#strategy-chain">Strategy review chain — how the pillars compose</a></li>
+<li><a href="#fire-chain">Per-fire chain — how the pillars compose at fire time</a></li>
+<li><a href="#roadmap">Implementation roadmap — concrete build sequence</a></li>
+<li><a href="#pareto-rank">Pareto-leverage ranking of next work</a></li>
+<li><a href="#open">Open questions for Anish</a></li>
+<li><a href="#glossary">Glossary</a></li>
+<li><a href="#refs">References</a></li>
+<li><a href="#starter">Starter prompt for the next session</a></li>
+</ol>
+</div>
+
+<h2 id="mission">1. Mission — restated in one paragraph</h2>
+
+<p>The agentic OS is the externalization of Anish's trading cognition: a system where every important detection plot has a persistent owner agent, every important external data feed has a paired bull-case / bear-case interpreter, every fire of every plot is diagnosed by a grunt worker, debated by knowledge workers, collapsed to a four-square confidence matrix, stamped with an outcome, and forever-logged for calibration. It runs on the Claw Code stack (see <code>strategy/2026-05-11-claw-code-foundation-plan.html</code>) with multi-engine routing (cheap grunt engines + Opus knowledge engines + council mode for parity). It produces the highest-conviction trading signals for an alpha-max hyper-aggressive desk — and it does so as a repeatable system whose every step is named, scaffolded, calibrated, and version-controlled.</p>
+
+<h2 id="pillars">2. The five strategic pillars</h2>
+
+<p>The pillars are load-bearing structural elements, not bullets in a deck. Each pillar maps to a concrete skill that lives in <code>.claude/skills/&lt;name&gt;/</code> and is invoked by a specific worker tier at a specific point in the system flow. Below each pillar I state the principle, its operational artifact, and its tier.</p>
+
+<svg width="980" height="280" viewBox="0 0 980 280" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <text x="490" y="22" text-anchor="middle" font-size="14" font-weight="700">The five strategic pillars — each is a skill, a verb, a checkpoint</text>
+  <rect x="20"  y="40" width="180" height="140" rx="8" fill="#cde7ff" stroke="#003366" stroke-width="2"/>
+  <text x="110" y="68" text-anchor="middle" font-size="14" font-weight="700">AXIS</text>
+  <text x="110" y="90" text-anchor="middle" font-size="11">Decompose along</text>
+  <text x="110" y="106" text-anchor="middle" font-size="11">canonical axes:</text>
+  <text x="110" y="122" text-anchor="middle" font-size="11">time, direction,</text>
+  <text x="110" y="138" text-anchor="middle" font-size="11">structure, regime,</text>
+  <text x="110" y="154" text-anchor="middle" font-size="11">catalyst, satellites</text>
+  <text x="110" y="172" text-anchor="middle" font-size="10" font-style="italic">grunt-tier skill</text>
+
+  <rect x="208" y="40" width="180" height="140" rx="8" fill="#d8eed4" stroke="#1f5e1f" stroke-width="2"/>
+  <text x="298" y="68" text-anchor="middle" font-size="14" font-weight="700">KRISHNA</text>
+  <text x="298" y="86" text-anchor="middle" font-size="11">(steelman — preserver)</text>
+  <text x="298" y="108" text-anchor="middle" font-size="11">Build the strongest</text>
+  <text x="298" y="124" text-anchor="middle" font-size="11">case FOR the setup.</text>
+  <text x="298" y="140" text-anchor="middle" font-size="11">Long-game dharma.</text>
+  <text x="298" y="156" text-anchor="middle" font-size="11">What is right action?</text>
+  <text x="298" y="172" text-anchor="middle" font-size="10" font-style="italic">knowledge-tier skill</text>
+
+  <rect x="396" y="40" width="180" height="140" rx="8" fill="#ffd6d6" stroke="#7a1a1a" stroke-width="2"/>
+  <text x="486" y="68" text-anchor="middle" font-size="14" font-weight="700">SHIVA</text>
+  <text x="486" y="86" text-anchor="middle" font-size="11">(red team — destroyer)</text>
+  <text x="486" y="108" text-anchor="middle" font-size="11">Build the strongest</text>
+  <text x="486" y="124" text-anchor="middle" font-size="11">case AGAINST.</text>
+  <text x="486" y="140" text-anchor="middle" font-size="11">What must die for</text>
+  <text x="486" y="156" text-anchor="middle" font-size="11">this to live?</text>
+  <text x="486" y="172" text-anchor="middle" font-size="10" font-style="italic">knowledge-tier skill</text>
+
+  <rect x="584" y="40" width="180" height="140" rx="8" fill="#ffe7c2" stroke="#6b3300" stroke-width="2"/>
+  <text x="674" y="68" text-anchor="middle" font-size="14" font-weight="700">PREMORTEM</text>
+  <text x="674" y="86" text-anchor="middle" font-size="11">(failure-mode prep)</text>
+  <text x="674" y="108" text-anchor="middle" font-size="11">Assume failure.</text>
+  <text x="674" y="124" text-anchor="middle" font-size="11">Enumerate causes.</text>
+  <text x="674" y="140" text-anchor="middle" font-size="11">Pre-author</text>
+  <text x="674" y="156" text-anchor="middle" font-size="11">mitigations.</text>
+  <text x="674" y="172" text-anchor="middle" font-size="10" font-style="italic">owner-tier skill</text>
+
+  <rect x="772" y="40" width="190" height="140" rx="8" fill="#d9c2ff" stroke="#330066" stroke-width="2"/>
+  <text x="867" y="68" text-anchor="middle" font-size="14" font-weight="700">INVERSION</text>
+  <text x="867" y="86" text-anchor="middle" font-size="11">(Munger: invert)</text>
+  <text x="867" y="108" text-anchor="middle" font-size="11">What guarantees</text>
+  <text x="867" y="124" text-anchor="middle" font-size="11">failure? Codify as</text>
+  <text x="867" y="140" text-anchor="middle" font-size="11">"never do" rules</text>
+  <text x="867" y="156" text-anchor="middle" font-size="11">at owner tier.</text>
+  <text x="867" y="172" text-anchor="middle" font-size="10" font-style="italic">owner-tier skill</text>
+
+  <rect x="290" y="210" width="400" height="60" rx="8" fill="#fff3a8" stroke="#5a4500" stroke-width="2"/>
+  <text x="490" y="232" text-anchor="middle" font-size="14" font-weight="700">PARETO LEVERAGE</text>
+  <text x="490" y="252" text-anchor="middle" font-size="11">Score every plot / setup / data source: which 20% drives 80% of alpha?</text>
+  <text x="490" y="266" text-anchor="middle" font-size="10" font-style="italic">owner-tier skill — runs over the whole portfolio nightly</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 1 — The five pillars. Axis is grunt; Krishna + Shiva are knowledge; Premortem + Inversion + Pareto are owner-tier.</p>
+
+<div class="principle">
+<span class="pillar p-axis">1. AXIS</span>
+<strong>Principle.</strong> No fire, no setup, no strategy exists in one dimension. Decompose along the canonical axes before any judgment is made. Axes are independent — they should not co-vary in our analysis.
+
+<strong>Canonical axes</strong> (the 12 the OS uses today):
+<ul>
+<li><strong>Timeframe</strong> — 1m / 5m / 15m / 1h / 1d</li>
+<li><strong>Direction</strong> — bull / bear</li>
+<li><strong>Structure</strong> — floor / 2nd floor / rooftop / penthouse / unconstrained</li>
+<li><strong>Momentum</strong> — displacement on / off; displacement direction</li>
+<li><strong>Volume tier</strong> — HV / HV1000 / HV150 / off</li>
+<li><strong>Regime</strong> — trend / range / gap-up / gap-down / inside-day</li>
+<li><strong>Session position</strong> — pre-market / open-30 / mid / power-hour / after-hours</li>
+<li><strong>Catalyst</strong> — earnings-window / news-window / none</li>
+<li><strong>Institutional positioning</strong> — top-quartile 13-F / bottom-quartile / no data</li>
+<li><strong>Options skew</strong> — heavy-call / heavy-put / balanced / unavailable</li>
+<li><strong>ETF rotation</strong> — sector flowing-in / flowing-out / neutral</li>
+<li><strong>GPS satellite agreement</strong> — 4/4 / 3/4 / 2/4 / 1/4 / 0/4 (per VOB-GPS-Four-Satellite)</li>
+</ul>
+
+<strong>Skill.</strong> <code>.claude/skills/axis-decomposition/SKILL.md</code> (grunt tier). Input: a fire event or a strategy proposal. Output: a structured axis-card with one value per axis.<br>
+<strong>Used by.</strong> Every Plot Owner before invoking the dialectic; every weekly strategy review by Owners. The axis-card is the structured prefix to every diagnosis card.
+</div>
+
+<div class="principle">
+<span class="pillar p-krishna">2. KRISHNA (steelman — preserver)</span>
+<strong>Principle.</strong> Krishna is the eighth avatar of Vishnu, the Preserver. Strategist, statesman, philosopher (he delivered the Bhagavad Gita). Krishna sees through illusion to the long game. In our OS, Krishna is the meta-bull-case for a setup TYPE — not for a single fire (that's the per-fire bull-case agent), but for whether the strategy itself should exist, scale, or stay in the book.
+
+<strong>Skill.</strong> <code>.claude/skills/krishna-steelman/SKILL.md</code> (knowledge tier). Input: a strategy proposal or a setup type (e.g. "PBJ Bull on equities at open"). Output: the strongest, most generous, most dharmically-coherent case for adoption. Cite supporting structural facts, calibration history, and long-run analogues. <em>Confidence: a number in [0, 1].</em><br>
+<strong>Used by.</strong> Owner-tier strategy reviews; new-plot canonicalization; quarterly book trim. Pairs with Shiva.
+</div>
+
+<div class="principle">
+<span class="pillar p-shiva">3. SHIVA (red team — destroyer)</span>
+<strong>Principle.</strong> Shiva is the Destroyer (and the Transformer). The Tandava dance destroys to make way for new creation. Shiva confronts what must be unmade. In our OS, Shiva is the meta-bear-case for a setup TYPE — the systematic red-teaming of whether a strategy deserves to keep its slot in the book.
+
+<strong>Skill.</strong> <code>.claude/skills/shiva-redteam/SKILL.md</code> (knowledge tier). Input: same as Krishna. Output: the strongest case against the strategy. Cite contradicting calibration history, edge-case failure modes, regimes where the strategy systematically loses, and structural reasons it might be illusion-of-edge.<br>
+<strong>Used by.</strong> Same triggers as Krishna; the two ALWAYS run as a pair. The owner adjudicates by reading both outputs and applying premortem + inversion + Pareto downstream. Per SD-008, both sides use neutral framing in formal artifacts (no "good / evil") — the Krishna / Shiva nomenclature is reserved for skill names and conversation, not for formal labels in payloads.
+</div>
+
+<div class="principle">
+<span class="pillar p-premortem">4. PREMORTEM (failure-mode prep)</span>
+<strong>Principle.</strong> Imagine the strategy / trade / setup HAS FAILED. Why? Enumerate the failure modes in plain text BEFORE we adopt. Pre-author the mitigation for each. The premortem is not "what might go wrong" — that's hand-waving. It's "this DID go wrong; what was the cause?" The discipline of writing in past-tense-of-failure surfaces causes that future-tense risk talk misses.
+
+<strong>Skill.</strong> <code>.claude/skills/premortem/SKILL.md</code> (owner tier). Input: a strategy proposal or a trade plan. Output: an ordered list of failure modes with severity, probability, mitigation, and an early-warning indicator for each.<br>
+<strong>Used by.</strong> Plot Owner before formally adopting a new detection plot into the live leaderboard. Daily before market open, the owner runs a "today-could-fail-because" premortem against the day's calendar (earnings, FOMC, jobs, CPI).
+</div>
+
+<div class="principle">
+<span class="pillar p-inversion">5. INVERSION (Munger: invert always invert)</span>
+<strong>Principle.</strong> Munger's discipline: instead of asking "how do I succeed?", ask "what guarantees failure?" — then systematically avoid those things. The inversion produces a list of "never do" rules that are unconditional. They override every other consideration. Anish's existing inversions (codified): <em>never modify .pine source (SD-002), never delete files (SD-004), never include phantom-toggle plots (SD-001 inversion), never tabulate concurrent fires on the alert bar (SD-011 inversion).</em>
+
+<strong>Skill.</strong> <code>.claude/skills/inversion/SKILL.md</code> (owner tier). Input: a strategy or a domain. Output: a list of "never do" rules. Each rule has a clear scope, a violation detector, and an escalation path.<br>
+<strong>Used by.</strong> Owner-tier strategy reviews; appended to the STANDING_DECISIONS.md ledger when a new inversion is canonicalized.
+</div>
+
+<div class="principle">
+<span class="pillar p-pareto">6. PARETO LEVERAGE</span>
+<strong>Principle.</strong> 80/20. Most alpha comes from a small subset of plots, fired in a small subset of conditions, against a small subset of symbols. The Pareto pillar scores every plot × symbol × TF × context cell on its contribution to realized alpha and ranks them. The system spends its compute, capital, and attention on the top 20% and treats the bottom 80% as automation candidates or retirement candidates.
+
+<strong>Skill.</strong> <code>.claude/skills/pareto-leverage/SKILL.md</code> (owner tier). Input: a slice of the calibration log (the per-fire payloads with outcome stamps, accumulated over time). Output: a Pareto ranking with leverage scores, and a Pareto frontier visual that names the 20% earning 80% of alpha.<br>
+<strong>Used by.</strong> Nightly across the portfolio. Weekly for each Plot Owner. Monthly for the strategy book overall. Promotion / demotion / retirement decisions for plots flow from the Pareto score.
+</div>
+
+<h2 id="tiers">3. Worker tiers — three classes, bound to the pillars</h2>
+
+<p>The OS has three worker classes (see <code>WORKER_TIERS.md</code> for the canonical contract). This section maps each pillar to its tier and shows where compute happens.</p>
+
+<table>
+<tr><th>Tier</th><th>Class</th><th>What they do</th><th>Pillars they own</th><th>Default engine (per Claw multi-engine plan)</th></tr>
+<tr><td>0</td><td>Grunt workers</td><td>Calculation + tabulation. Mechanical. Verifiable.</td><td>AXIS — they decompose. No opining.</td><td>Codex / gpt-5.1-mini or Haiku</td></tr>
+<tr><td>1</td><td>Knowledge workers</td><td>Strategic reasoning. Free-form text in dialectic only.</td><td>KRISHNA, SHIVA — the meta-dialectic. Plus per-fire bull-bear-dialectic.</td><td>Claude Opus 4.7</td></tr>
+<tr><td>2</td><td>Owners</td><td>Orchestration. Persistent chat threads. Memory.</td><td>PREMORTEM, INVERSION, PARETO — strategic stewardship.</td><td>Claude Opus 4.7 (interactive)</td></tr>
+</table>
+
+<h2 id="data">4. Data source catalog — 9 sources, every one paired</h2>
+
+<p>Per SD-009, every external data feed gets a bull-case AND a bear-case interpreter agent. The grunt-worker ingest layer normalizes the raw feed into per-event records; the bull and bear agents interpret each event in their direction. The full first-wave roster:</p>
+
+<svg width="980" height="380" viewBox="0 0 980 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <!-- Plot Owner center -->
+  <rect x="380" y="170" width="220" height="60" rx="10" fill="#fff3a8" stroke="#996600" stroke-width="3"/>
+  <text x="490" y="195" text-anchor="middle" font-size="14" font-weight="700">Plot Owner</text>
+  <text x="490" y="215" text-anchor="middle" font-size="11">consumes situational-context packet</text>
+  <!-- 9 data sources fan in around -->
+  <rect x="20"  y="30" width="160" height="56" rx="6" fill="#e7f8ee" stroke="#1f7a3f"/>
+  <text x="100" y="52" text-anchor="middle" font-size="12" font-weight="700">Stock OHLCV</text>
+  <text x="100" y="68" text-anchor="middle" font-size="10">TV-MCP + Massive (Polygon)</text>
+  <text x="100" y="82" text-anchor="middle" font-size="10">paired bull/bear interpreters</text>
+
+  <rect x="200" y="30" width="160" height="56" rx="6" fill="#e7f8ee" stroke="#1f7a3f"/>
+  <text x="280" y="52" text-anchor="middle" font-size="12" font-weight="700">Options</text>
+  <text x="280" y="68" text-anchor="middle" font-size="10">CBOE / Polygon options</text>
+  <text x="280" y="82" text-anchor="middle" font-size="10">IV / flow / gamma bull-bear</text>
+
+  <rect x="380" y="30" width="160" height="56" rx="6" fill="#e7f8ee" stroke="#1f7a3f"/>
+  <text x="460" y="52" text-anchor="middle" font-size="12" font-weight="700">ETF Rotation</text>
+  <text x="460" y="68" text-anchor="middle" font-size="10">sector flow bull / bear</text>
+  <text x="460" y="82" text-anchor="middle" font-size="10">relative strength</text>
+
+  <rect x="560" y="30" width="160" height="56" rx="6" fill="#e7f8ee" stroke="#1f7a3f"/>
+  <text x="640" y="52" text-anchor="middle" font-size="12" font-weight="700">Benzinga News</text>
+  <text x="640" y="68" text-anchor="middle" font-size="10">real-time catalyst stream</text>
+  <text x="640" y="82" text-anchor="middle" font-size="10">FDA / M+A / guidance pairs</text>
+
+  <rect x="740" y="30" width="160" height="56" rx="6" fill="#e7f8ee" stroke="#1f7a3f"/>
+  <text x="820" y="52" text-anchor="middle" font-size="12" font-weight="700">Benzinga Earnings</text>
+  <text x="820" y="68" text-anchor="middle" font-size="10">calendar + beat/miss/guide</text>
+  <text x="820" y="82" text-anchor="middle" font-size="10">window-aware bull/bear</text>
+
+  <rect x="20"  y="290" width="160" height="56" rx="6" fill="#d9c2ff" stroke="#330066"/>
+  <text x="100" y="312" text-anchor="middle" font-size="12" font-weight="700">WhaleWisdom 13-F</text>
+  <text x="100" y="328" text-anchor="middle" font-size="10">quarterly institutional positions</text>
+  <text x="100" y="342" text-anchor="middle" font-size="10">top-buyers / sellers per symbol</text>
+
+  <rect x="200" y="290" width="160" height="56" rx="6" fill="#ffd9b3" stroke="#663300"/>
+  <text x="280" y="312" text-anchor="middle" font-size="12" font-weight="700">Indicator Studies</text>
+  <text x="280" y="328" text-anchor="middle" font-size="10">B2B PUP, B2B Napalm/TNT v3,</text>
+  <text x="280" y="342" text-anchor="middle" font-size="10">Squarify, HVD PBJ PPD, HCG/Nag+</text>
+
+  <rect x="380" y="290" width="160" height="56" rx="6" fill="#ffb38a" stroke="#7a3300" stroke-width="2"/>
+  <text x="460" y="312" text-anchor="middle" font-size="12" font-weight="700">GPS Satellites</text>
+  <text x="460" y="328" text-anchor="middle" font-size="10">HV+FVG+GZ1 (Sat 1) + VOB×3</text>
+  <text x="460" y="342" text-anchor="middle" font-size="10">(Sat 2 single, Sat 3+4 asym)</text>
+
+  <rect x="560" y="290" width="160" height="56" rx="6" fill="#cde7ff" stroke="#003366"/>
+  <text x="640" y="312" text-anchor="middle" font-size="12" font-weight="700">Volume / Session / TPO</text>
+  <text x="640" y="328" text-anchor="middle" font-size="10">footprint, session collision,</text>
+  <text x="640" y="342" text-anchor="middle" font-size="10">TPO point-of-control</text>
+
+  <rect x="740" y="290" width="160" height="56" rx="6" fill="#cde7ff" stroke="#003366"/>
+  <text x="820" y="312" text-anchor="middle" font-size="12" font-weight="700">(reserved / 10th slot)</text>
+  <text x="820" y="328" text-anchor="middle" font-size="10">Crypto liquidations, Fed</text>
+  <text x="820" y="342" text-anchor="middle" font-size="10">calendar, BLS — future</text>
+
+  <line x1="100" y1="86"  x2="430" y2="170" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+  <line x1="280" y1="86"  x2="455" y2="170" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+  <line x1="460" y1="86"  x2="490" y2="170" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+  <line x1="640" y1="86"  x2="525" y2="170" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+  <line x1="820" y1="86"  x2="550" y2="170" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+  <line x1="100" y1="290" x2="430" y2="230" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+  <line x1="280" y1="290" x2="455" y2="230" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+  <line x1="460" y1="290" x2="490" y2="230" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+  <line x1="640" y1="290" x2="525" y2="230" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+  <line x1="820" y1="290" x2="550" y2="230" stroke="#888" stroke-width="1" marker-end="url(#ar2)"/>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 2 — Data source fan-in. Nine sources, each with a bull/bear interpreter pair, all feed the Plot Owner via the <code>situational-context-share</code> skill.</p>
+
+<table>
+<tr><th>#</th><th>Source</th><th>Bull agent</th><th>Bear agent</th><th>Ingest grunt</th><th>Cadence</th><th>Provider</th></tr>
+<tr><td>1</td><td>Stock OHLCV (live + history)</td><td><code>DS::stock::bull</code></td><td><code>DS::stock::bear</code></td><td><code>gw-stock-ingest</code></td><td>real-time, &lt;100ms</td><td>TradingView MCP (live) + Massive.com (Polygon, history)</td></tr>
+<tr><td>2</td><td>Options chain (IV, OI, flow, gamma)</td><td><code>DS::options::bull</code></td><td><code>DS::options::bear</code></td><td><code>gw-options-ingest</code></td><td>real-time, &lt;1s</td><td>Polygon (via Massive.com MCP), CBOE direct (future)</td></tr>
+<tr><td>3</td><td>ETF rotation / sector flow</td><td><code>DS::etf-rotation::bull</code></td><td><code>DS::etf-rotation::bear</code></td><td><code>gw-etf-rotation-ingest</code></td><td>5m bars; daily relative-strength rollup</td><td>TradingView MCP (XLK, XLF, XLE… proxies)</td></tr>
+<tr><td>4</td><td>Benzinga news</td><td><code>DS::benzinga-news::bull</code></td><td><code>DS::benzinga-news::bear</code></td><td><code>gw-benzinga-news-ingest</code></td><td>real-time push</td><td>Benzinga API / MCP server (to be wired)</td></tr>
+<tr><td>5</td><td>Benzinga earnings calendar + beat/miss/guide</td><td><code>DS::benzinga-earnings::bull</code></td><td><code>DS::benzinga-earnings::bear</code></td><td><code>gw-benzinga-earnings-ingest</code></td><td>daily refresh + intraday for window symbols</td><td>Benzinga API / MCP server</td></tr>
+<tr><td>6</td><td>WhaleWisdom 13-F / institutional filings</td><td><code>DS::whalewisdom::bull</code></td><td><code>DS::whalewisdom::bear</code></td><td><code>gw-whalewisdom-ingest</code></td><td>quarterly (45-day post-quarter-end SEC deadline)</td><td>WhaleWisdom API (paid tier) — to be subscribed</td></tr>
+<tr><td>7</td><td>Indicator studies — the five canonical families Anish named: B2B PUP, B2B Napalm / TNT-OD v3, Squarify, HVD PBJ PPD, HCG Heavy Toggles + Nagasaki+</td><td>Each Plot Owner consumes directly (their own bull/bear logic IS the interpretation)</td><td>—</td><td>Python ports already built (<code>python_ports/&lt;family&gt;/</code>)</td><td>real-time, &lt;1s per bar</td><td>In-repo; TV-MCP for parity verification</td></tr>
+<tr><td>8</td><td>GPS satellites — Sat 1 HV+FVG+GZ1, Sat 2 vob-single-sens, Sat 3 vob-asym A, Sat 4 vob-asym B</td><td><code>DS::gps-sat::bull</code></td><td><code>DS::gps-sat::bear</code></td><td><code>four-satellite-triangulator</code> grunt skill</td><td>real-time, &lt;1s</td><td>In-repo Pine + Python ports; see <code>VOB_GPS_FOUR_SATELLITE.md</code></td></tr>
+<tr><td>9</td><td>Volume footprint / session collision / TPO (existing roster from <code>DATA_SOURCE_PAIRS.md</code>)</td><td><code>DS::vol-footprint::bull</code> + <code>DS::vol-session::bull</code> + <code>DS::tpo::bull</code></td><td>(bear mirrors)</td><td><code>gw-vol-footprint-ingest</code>, <code>gw-vol-session-ingest</code>, <code>gw-tpo-ingest</code></td><td>real-time and session-aware</td><td>Bookmap / Sierra Chart / FootprintCharts MCP — to be wired</td></tr>
+</table>
+
+<p>Total bull/bear pairs at full deployment: 8 sources × 2 = 16 data-source agents, plus the Plot Owners (4 wave-1 + future) and the Indicator Owners (24 across 12 families). Plus the 16 grunt workers (ingest + the six new strategic-principle skills). Per <code>WORKER_TIERS.md</code> cost model: ~6M tokens/day at full deployment, fits in Anthropic Max plan with headroom (and will be lower under the multi-engine routing of the Claw foundation plan).</p>
+
+<h2 id="gps">5. GPS satellite system — promoted from deferred to scheduled</h2>
+
+<p>The four-satellite triangulation architecture is documented in <code>docs/agentic-os/VOB_GPS_FOUR_SATELLITE.md</code>. That doc previously had status: <em>"deferred future work — flagged by Anish but not yet built."</em> Today's directive promotes it to <strong>SCHEDULED — Stage 7 begins after parity sweep completes and the first Plot Owner ships</strong>. The architecture is restated visually below; the full text and the empirical-search plan remain in the source markdown.</p>
+
+<svg width="980" height="360" viewBox="0 0 980 360" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <!-- 4 satellites at corners -->
+  <circle cx="200" cy="80" r="40" fill="#ffd6d6" stroke="#7a1a1a" stroke-width="2"/>
+  <text x="200" y="76" text-anchor="middle" font-size="13" font-weight="700">Sat 1</text>
+  <text x="200" y="92" text-anchor="middle" font-size="10">HV+FVG+GZ1</text>
+
+  <circle cx="780" cy="80" r="40" fill="#cde7ff" stroke="#003366" stroke-width="2"/>
+  <text x="780" y="76" text-anchor="middle" font-size="13" font-weight="700">Sat 2</text>
+  <text x="780" y="92" text-anchor="middle" font-size="10">vob-single-sens</text>
+
+  <circle cx="200" cy="280" r="40" fill="#d8eed4" stroke="#1f5e1f" stroke-width="2"/>
+  <text x="200" y="276" text-anchor="middle" font-size="13" font-weight="700">Sat 3</text>
+  <text x="200" y="292" text-anchor="middle" font-size="10">vob-asym thr A</text>
+
+  <circle cx="780" cy="280" r="40" fill="#ffe7c2" stroke="#6b3300" stroke-width="2"/>
+  <text x="780" y="276" text-anchor="middle" font-size="13" font-weight="700">Sat 4</text>
+  <text x="780" y="292" text-anchor="middle" font-size="10">vob-asym thr B</text>
+
+  <!-- center -->
+  <rect x="370" y="140" width="240" height="80" rx="10" fill="#fff3a8" stroke="#996600" stroke-width="3"/>
+  <text x="490" y="168" text-anchor="middle" font-size="14" font-weight="700">Triangulation</text>
+  <text x="490" y="188" text-anchor="middle" font-size="11">N-of-4 agreement at fire bar</text>
+  <text x="490" y="206" text-anchor="middle" font-size="11">→ convergence-to-conviction score</text>
+
+  <line x1="232" y1="105" x2="380" y2="158" stroke="#888" stroke-width="1.5" marker-end="url(#ar3)"/>
+  <line x1="748" y1="105" x2="600" y2="158" stroke="#888" stroke-width="1.5" marker-end="url(#ar3)"/>
+  <line x1="232" y1="255" x2="380" y2="200" stroke="#888" stroke-width="1.5" marker-end="url(#ar3)"/>
+  <line x1="748" y1="255" x2="600" y2="200" stroke="#888" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+  <text x="490" y="40" text-anchor="middle" font-size="14" font-weight="700">GPS — 4 satellites, 1 position fix</text>
+  <text x="490" y="345" text-anchor="middle" font-size="11" font-style="italic">When all 4 agree at the same bar in the same direction, conviction is exceptional.</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 3 — GPS four-satellite triangulation. Each satellite reads the same bar through a different lens; agreement is informative because the lenses are decorrelated.</p>
+
+<h3>5.1 What the GPS layer adds — concretely</h3>
+
+<ul>
+<li><strong>A new axis on the axis-card</strong>: <code>satellite_agreement_count</code> ∈ {0, 1, 2, 3, 4} and <code>satellite_direction</code> ∈ {bull, bear, mixed}.</li>
+<li><strong>A new grunt-tier skill</strong>: <code>four-satellite-triangulator</code> — given a bar, query Sat 1–4 and emit the agreement count + direction.</li>
+<li><strong>A new score in every per-fire payload</strong>: <code>gps_conviction</code> — derived from N-of-4 agreement, weighted by historical predictive value at that N.</li>
+<li><strong>A new long-run study</strong> (Stage 7 first-quarter): empirically tune the <em>magic ratio</em> — the (sat-3-sensitivity, sat-4-sensitivity) pair that maximizes decorrelation between Sat 3 and Sat 4 while keeping both reading the same market bar.</li>
+</ul>
+
+<h3>5.2 Build sequence for the GPS layer</h3>
+
+<table>
+<tr><th>Step</th><th>Artifact</th><th>Owner</th><th>Status</th></tr>
+<tr><td>G1</td><td>Reformulate <code>hv-fvg-gz1-og</code> zone emission as bar-tagged boolean stream (currently visual-only)</td><td>Indicator Owner: hv-fvg-gz1-og bull/bear</td><td>TODO (Stage 7 prep)</td></tr>
+<tr><td>G2</td><td>Empirical search for optimal (thr_A, thr_B) sensitivity pair on <code>vob-asym</code></td><td>parity-verifier worker (council mode)</td><td>TODO — needs 90 days of backtest data</td></tr>
+<tr><td>G3</td><td>Author <code>.claude/skills/four-satellite-triangulator/SKILL.md</code></td><td>cloud session</td><td>TODO — scaffold this turn</td></tr>
+<tr><td>G4</td><td>Wire triangulator output into <code>situational-context-share</code> skill</td><td>cloud session</td><td>TODO — depends on G3</td></tr>
+<tr><td>G5</td><td>Add <code>gps_conviction</code> field to per-fire payload schema (successor to SD-007)</td><td>cloud session — append SD-014</td><td>TODO</td></tr>
+<tr><td>G6</td><td>Backtest N-of-4 predictive value curve; verify scaling</td><td>parity-verifier worker</td><td>TODO — Stage 7 first quarter</td></tr>
+<tr><td>G7</td><td>Hire <code>DS::gps-sat::bull</code> + <code>DS::gps-sat::bear</code> data-source pair</td><td>Anish authorization</td><td>TODO</td></tr>
+</table>
+
+<h2 id="skills">6. Skill inventory — existing 8 + 10 new = 18 total</h2>
+
+<table>
+<tr><th>#</th><th>Skill</th><th>Tier</th><th>Status</th><th>Pillar mapping</th></tr>
+<tr><td>1</td><td><code>detection-plot-diagnosis</code></td><td>grunt</td><td>EXISTS</td><td>(input to dialectic)</td></tr>
+<tr><td>2</td><td><code>detection-plot-tv-firing</code></td><td>grunt</td><td>EXISTS</td><td>(parity verification helper)</td></tr>
+<tr><td>3</td><td><code>detection-plot-validation</code></td><td>knowledge</td><td>EXISTS</td><td>(per-plot QA)</td></tr>
+<tr><td>4</td><td><code>bull-bear-dialectic</code></td><td>knowledge</td><td>EXISTS</td><td>(per-fire — uses Krishna+Shiva framing at fire scale)</td></tr>
+<tr><td>5</td><td><code>four-square-matrix</code></td><td>knowledge</td><td>EXISTS</td><td>(per-fire collapse)</td></tr>
+<tr><td>6</td><td><code>bull-vs-bear-debate</code> (SUPERSEDED)</td><td>—</td><td>EXISTS</td><td>kept for SD-002 traceability; do not invoke</td></tr>
+<tr><td>7</td><td><code>simplify</code></td><td>grunt</td><td>EXISTS</td><td>(code review)</td></tr>
+<tr><td>8</td><td><code>init</code></td><td>—</td><td>EXISTS</td><td>(scaffolding)</td></tr>
+<tr><td>9</td><td><strong><code>axis-decomposition</code></strong></td><td>grunt</td><td>NEW THIS TURN</td><td>AXIS</td></tr>
+<tr><td>10</td><td><strong><code>krishna-steelman</code></strong></td><td>knowledge</td><td>NEW THIS TURN</td><td>KRISHNA</td></tr>
+<tr><td>11</td><td><strong><code>shiva-redteam</code></strong></td><td>knowledge</td><td>NEW THIS TURN</td><td>SHIVA</td></tr>
+<tr><td>12</td><td><strong><code>premortem</code></strong></td><td>owner</td><td>NEW THIS TURN</td><td>PREMORTEM</td></tr>
+<tr><td>13</td><td><strong><code>inversion</code></strong></td><td>owner</td><td>NEW THIS TURN</td><td>INVERSION</td></tr>
+<tr><td>14</td><td><strong><code>pareto-leverage</code></strong></td><td>owner</td><td>NEW THIS TURN</td><td>PARETO</td></tr>
+<tr><td>15</td><td><code>offset-application</code></td><td>grunt</td><td>TODO (per parity hand-off Phase 6)</td><td>(SD-011 enforcement)</td></tr>
+<tr><td>16</td><td><code>situational-context-share</code></td><td>knowledge</td><td>TODO</td><td>(data-source aggregation into dialectic)</td></tr>
+<tr><td>17</td><td><code>four-satellite-triangulator</code></td><td>grunt</td><td>TODO (GPS step G3)</td><td>AXIS + GPS</td></tr>
+<tr><td>18</td><td><code>outcome-stamping</code></td><td>grunt</td><td>TODO</td><td>(closes the loop for calibration)</td></tr>
+<tr><td>19</td><td><code>dialectic-self-review</code></td><td>knowledge</td><td>TODO (weekly per-plot)</td><td>(systematic-bias detector)</td></tr>
+<tr><td>20</td><td><code>long-run-calibration</code></td><td>knowledge</td><td>TODO (nightly per-plot)</td><td>(aggregates per-fire payloads into 4-square long-run table)</td></tr>
+</table>
+
+<h2 id="tools">7. Tool inventory — MCP servers + ports + loggers + harness</h2>
+
+<table>
+<tr><th>Tool</th><th>Type</th><th>Wired today?</th><th>Used by</th></tr>
+<tr><td>TradingView MCP</td><td>MCP server (label scraping, chart actions)</td><td>YES (local Claude Code)</td><td>Plot Owners, parity verifier, detection-plot-tv-firing skill</td></tr>
+<tr><td>Massive.com MCP</td><td>MCP server (Polygon historical + options)</td><td>YES (local Claude Code)</td><td>OHLCV history fetch, options grunt</td></tr>
+<tr><td>Benzinga MCP</td><td>MCP server</td><td>NO — to be wired</td><td>news + earnings DS pairs</td></tr>
+<tr><td>WhaleWisdom MCP</td><td>MCP server</td><td>NO — needs API subscription + server</td><td>13-F DS pair</td></tr>
+<tr><td>Python ports (8 families)</td><td>In-repo library, callable from any harness</td><td>YES</td><td>Plot Owners, parity verifier, live leaderboard</td></tr>
+<tr><td>Path-A loggers (9 Pine indicators)</td><td>Pine source, runs on TV chart</td><td>YES (1 needs v2 — Nagasaki Plus bear, per parity hand-off Phase 6)</td><td>parity verifier (label-scrape source)</td></tr>
+<tr><td>Live leaderboard (<code>live/</code>)</td><td>Python web service</td><td>YES (shipped as commit <code>bb904f4</code>)</td><td>Plot Owners (subscribe to fire stream)</td></tr>
+<tr><td>Claw harness (planned)</td><td>Rust CLI runtime (clean-room Claude Code rewrite)</td><td>NO — see <code>strategy/2026-05-11-claw-code-foundation-plan.html</code>, Phase A pending</td><td>L0 of the four-layer Claw stack</td></tr>
+<tr><td>OpenClaw workspace (planned)</td><td>npm package, multi-agent surface</td><td>NO — Claw plan Phase B</td><td>L1 of the four-layer Claw stack</td></tr>
+<tr><td>clawhub (planned)</td><td>npm-style skill registry</td><td>NO — Claw plan Phase G</td><td>L2 — pull community, publish ours</td></tr>
+<tr><td>claw-orchestrator (planned)</td><td>multi-engine runtime (Claude + Codex + Gemini + Cursor)</td><td>NO — Claw plan Phase F</td><td>L3 — cost optimization + council mode</td></tr>
+</table>
+
+<h2 id="flow">8. Operational flow — day in the life</h2>
+
+<svg width="980" height="220" viewBox="0 0 980 220" xmlns="http://www.w3.org/2000/svg">
+  <line x1="40" y1="130" x2="940" y2="130" stroke="#333" stroke-width="2"/>
+  <text x="40"  y="155" font-size="11" text-anchor="middle">04:00</text>
+  <text x="200" y="155" font-size="11" text-anchor="middle">09:00</text>
+  <text x="280" y="155" font-size="11" text-anchor="middle">09:30 open</text>
+  <text x="460" y="155" font-size="11" text-anchor="middle">12:00</text>
+  <text x="640" y="155" font-size="11" text-anchor="middle">15:00</text>
+  <text x="760" y="155" font-size="11" text-anchor="middle">16:00 close</text>
+  <text x="900" y="155" font-size="11" text-anchor="middle">22:00 cal</text>
+
+  <rect x="40"  y="40" width="160" height="36" fill="#e7f8ee" stroke="#1f7a3f"/>
+  <text x="120" y="62" text-anchor="middle" font-size="11" font-weight="700">PRE-MARKET</text>
+  <rect x="40"  y="80" width="160" height="36" fill="#fff8e7" stroke="#996600"/>
+  <text x="120" y="102" text-anchor="middle" font-size="10">premortem of the day</text>
+
+  <rect x="200" y="40" width="80" height="76" fill="#ffe7e7" stroke="#cc0000"/>
+  <text x="240" y="62" text-anchor="middle" font-size="11" font-weight="700">OPEN-30</text>
+  <text x="240" y="82" text-anchor="middle" font-size="10">attention max</text>
+  <text x="240" y="100" text-anchor="middle" font-size="10">Plot Owners live</text>
+
+  <rect x="280" y="40" width="180" height="76" fill="#fff3a8" stroke="#996600"/>
+  <text x="370" y="62" text-anchor="middle" font-size="11" font-weight="700">MORNING SESSION</text>
+  <text x="370" y="82" text-anchor="middle" font-size="10">per-fire dialectic chain</text>
+  <text x="370" y="100" text-anchor="middle" font-size="10">leaderboard streams</text>
+
+  <rect x="460" y="40" width="180" height="76" fill="#eef4fb" stroke="#003366"/>
+  <text x="550" y="62" text-anchor="middle" font-size="11" font-weight="700">MIDDAY</text>
+  <text x="550" y="82" text-anchor="middle" font-size="10">lower fire density</text>
+  <text x="550" y="100" text-anchor="middle" font-size="10">backfill calibration</text>
+
+  <rect x="640" y="40" width="120" height="76" fill="#ffe7e7" stroke="#cc0000"/>
+  <text x="700" y="62" text-anchor="middle" font-size="11" font-weight="700">POWER HOUR</text>
+  <text x="700" y="82" text-anchor="middle" font-size="10">attention max</text>
+  <text x="700" y="100" text-anchor="middle" font-size="10">Plot Owners live</text>
+
+  <rect x="760" y="40" width="180" height="76" fill="#d9c2ff" stroke="#330066"/>
+  <text x="850" y="62" text-anchor="middle" font-size="11" font-weight="700">POST-CLOSE</text>
+  <text x="850" y="82" text-anchor="middle" font-size="10">outcome stamping</text>
+  <text x="850" y="100" text-anchor="middle" font-size="10">long-run calibration</text>
+
+  <text x="40" y="195" font-size="11" font-weight="700">Pre-market hook (04:00–09:00):</text>
+  <text x="200" y="195" font-size="11">premortem skill runs against today's calendar (earnings, news, FOMC) → mitigation list posted to Slack</text>
+  <text x="40" y="210" font-size="11" font-weight="700">Nightly hook (22:00):</text>
+  <text x="160" y="210" font-size="11">long-run-calibration rollup → pareto-leverage scoring per plot → daily Pareto frontier emailed to Anish</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 4 — Operational day in the life. Pre-market premortem, attention concentrated at open + power hour, post-close calibration, nightly Pareto rollup.</p>
+
+<h3>8.1 Detailed schedule</h3>
+
+<table>
+<tr><th>Time</th><th>Tier</th><th>What runs</th><th>Output</th></tr>
+<tr><td>04:00 UTC daily</td><td>owner</td><td><code>premortem</code> against today's calendar (Benzinga earnings, FOMC, jobs, CPI)</td><td>Mitigation list posted to <code>docs/agentic-os/premortems/&lt;date&gt;.md</code> + Slack #premortem</td></tr>
+<tr><td>04:00 UTC daily</td><td>data-source</td><td>All 8 DS pairs do daily context refresh (overnight news, 13-F changes if quarter-end window, earnings calendar update)</td><td>Per-DS memory file appended</td></tr>
+<tr><td>09:30 ET (open)</td><td>owners</td><td>All Plot Owners go live; subscribe to TV-MCP fire stream + WebSocket feed</td><td>Per-fire dialectic chain (Diagnosis → axis-card → bull-bear-dialectic → four-square-matrix → outcome-stamping deferred)</td></tr>
+<tr><td>09:30–10:00 ET</td><td>knowledge</td><td>Plot Owners spawn parallel bull-case + bear-case workers per fire</td><td>Per-fire 4-square payload appended to <code>docs/agentic-os/debates/&lt;plot&gt;/&lt;date&gt;-&lt;fire_id&gt;.md</code></td></tr>
+<tr><td>12:00–14:00 ET</td><td>knowledge + grunt</td><td>Outcome stamping for morning fires (window-end has arrived); calibration writes</td><td><code>outcome</code> field added to morning payloads</td></tr>
+<tr><td>15:00–16:00 ET (power hour)</td><td>owners</td><td>Plot Owners high-alert; council mode for high-conviction fires (parity verifier runs Claude + Codex + Gemini in parallel on the same fire)</td><td>Council disagreement triggers Anish escalation</td></tr>
+<tr><td>16:00 ET (close)</td><td>knowledge</td><td>Final outcome stamping for closing fires; session-summary writes</td><td>Daily session summary posted</td></tr>
+<tr><td>22:00 UTC nightly</td><td>owner</td><td><code>long-run-calibration</code> + <code>pareto-leverage</code> across all plots</td><td>Daily Pareto frontier emailed to Anish + updated <code>docs/agentic-os/calibration/&lt;plot&gt;.md</code></td></tr>
+<tr><td>Weekly (Sundays)</td><td>owner</td><td><code>krishna-steelman</code> + <code>shiva-redteam</code> per plot at the strategy level; <code>dialectic-self-review</code> per Plot Owner</td><td>Strategy review notes → potential canonicalization changes; Plot Owner self-bias notes</td></tr>
+<tr><td>Monthly</td><td>owner + Anish</td><td>Book-level review: which plots earned their slot? Pareto rank determines promotion / demotion / retirement</td><td>SD ledger entry for any retirements; new-plot hiring decisions</td></tr>
+</table>
+
+<h2 id="strategy-chain">9. Strategy review chain — how the pillars compose at strategy time</h2>
+
+<p>This is the chain invoked for any strategy-level decision: new plot canonicalization, plot retirement, change in plot definition, addition of a new data source, modification of a standing decision. It does NOT run per-fire — it runs at strategy review cadence (weekly or on-demand).</p>
+
+<svg width="980" height="220" viewBox="0 0 980 220" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar4" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <rect x="20"  y="80" width="140" height="60" rx="8" fill="#cde7ff" stroke="#003366" stroke-width="2"/>
+  <text x="90" y="105" text-anchor="middle" font-size="13" font-weight="700">AXIS</text>
+  <text x="90" y="125" text-anchor="middle" font-size="10">decompose the strategy</text>
+
+  <rect x="180" y="20" width="140" height="60" rx="8" fill="#d8eed4" stroke="#1f5e1f" stroke-width="2"/>
+  <text x="250" y="45" text-anchor="middle" font-size="13" font-weight="700">KRISHNA</text>
+  <text x="250" y="65" text-anchor="middle" font-size="10">steelman FOR adoption</text>
+
+  <rect x="180" y="140" width="140" height="60" rx="8" fill="#ffd6d6" stroke="#7a1a1a" stroke-width="2"/>
+  <text x="250" y="165" text-anchor="middle" font-size="13" font-weight="700">SHIVA</text>
+  <text x="250" y="185" text-anchor="middle" font-size="10">red-team AGAINST</text>
+
+  <rect x="340" y="80" width="140" height="60" rx="8" fill="#ffe7c2" stroke="#6b3300" stroke-width="2"/>
+  <text x="410" y="105" text-anchor="middle" font-size="13" font-weight="700">PREMORTEM</text>
+  <text x="410" y="125" text-anchor="middle" font-size="10">imagine failure; mitigations</text>
+
+  <rect x="500" y="80" width="140" height="60" rx="8" fill="#d9c2ff" stroke="#330066" stroke-width="2"/>
+  <text x="570" y="105" text-anchor="middle" font-size="13" font-weight="700">INVERSION</text>
+  <text x="570" y="125" text-anchor="middle" font-size="10">"never do" rules</text>
+
+  <rect x="660" y="80" width="140" height="60" rx="8" fill="#fff3a8" stroke="#5a4500" stroke-width="2"/>
+  <text x="730" y="105" text-anchor="middle" font-size="13" font-weight="700">PARETO</text>
+  <text x="730" y="125" text-anchor="middle" font-size="10">leverage score</text>
+
+  <rect x="820" y="80" width="140" height="60" rx="8" fill="#fff8e7" stroke="#996600" stroke-width="2"/>
+  <text x="890" y="105" text-anchor="middle" font-size="13" font-weight="700">DECISION</text>
+  <text x="890" y="125" text-anchor="middle" font-size="10">adopt / refine / reject</text>
+
+  <line x1="160" y1="100" x2="180" y2="50"  stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <line x1="160" y1="120" x2="180" y2="170" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <line x1="320" y1="50"  x2="340" y2="100" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <line x1="320" y1="170" x2="340" y2="120" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <line x1="480" y1="110" x2="500" y2="110" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <line x1="640" y1="110" x2="660" y2="110" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <line x1="800" y1="110" x2="820" y2="110" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 5 — Strategy review chain. Axis → (Krishna || Shiva) → Premortem → Inversion → Pareto → Decision.</p>
+
+<h2 id="fire-chain">10. Per-fire chain — how the pillars compose at fire time</h2>
+
+<p>At fire time the chain is shorter (cost discipline; runs hundreds of times per day). The strategic principles are PRE-COMPUTED at strategy review time; per-fire we use their outputs (the never-do rules, the Pareto score) as guard-rails.</p>
+
+<svg width="980" height="220" viewBox="0 0 980 220" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar5" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <rect x="20"  y="80" width="150" height="60" rx="8" fill="#e7f8ee" stroke="#1f7a3f" stroke-width="2"/>
+  <text x="95" y="105" text-anchor="middle" font-size="13" font-weight="700">FIRE</text>
+  <text x="95" y="125" text-anchor="middle" font-size="10">plot trigger from TV / WS</text>
+
+  <rect x="190" y="80" width="150" height="60" rx="8" fill="#cde7ff" stroke="#003366" stroke-width="2"/>
+  <text x="265" y="100" text-anchor="middle" font-size="13" font-weight="700">DIAGNOSIS</text>
+  <text x="265" y="116" text-anchor="middle" font-size="10">grunt: axis-card +</text>
+  <text x="265" y="130" text-anchor="middle" font-size="10">operand truth +</text>
+  <text x="265" y="142" text-anchor="middle" font-size="10">concurrent fires + GPS</text>
+
+  <rect x="360" y="80" width="150" height="60" rx="8" fill="#fff8e7" stroke="#996600" stroke-width="2"/>
+  <text x="435" y="100" text-anchor="middle" font-size="13" font-weight="700">CONTEXT</text>
+  <text x="435" y="116" text-anchor="middle" font-size="10">situational-context-share:</text>
+  <text x="435" y="130" text-anchor="middle" font-size="10">data-source pairs inject</text>
+  <text x="435" y="142" text-anchor="middle" font-size="10">recent events</text>
+
+  <rect x="530" y="80" width="170" height="60" rx="8" fill="#fff3a8" stroke="#5a4500" stroke-width="2"/>
+  <text x="615" y="100" text-anchor="middle" font-size="13" font-weight="700">DIALECTIC</text>
+  <text x="615" y="116" text-anchor="middle" font-size="10">knowledge: bull-case vs</text>
+  <text x="615" y="130" text-anchor="middle" font-size="10">bear-case (Krishna+Shiva</text>
+  <text x="615" y="142" text-anchor="middle" font-size="10">framing at fire scale)</text>
+
+  <rect x="720" y="80" width="120" height="60" rx="8" fill="#d9c2ff" stroke="#330066" stroke-width="2"/>
+  <text x="780" y="100" text-anchor="middle" font-size="13" font-weight="700">MATRIX</text>
+  <text x="780" y="116" text-anchor="middle" font-size="10">four-square-matrix:</text>
+  <text x="780" y="130" text-anchor="middle" font-size="10">collapse to 2x2</text>
+  <text x="780" y="142" text-anchor="middle" font-size="10">confidences</text>
+
+  <rect x="860" y="80" width="100" height="60" rx="8" fill="#d8eed4" stroke="#1f5e1f" stroke-width="2"/>
+  <text x="910" y="105" text-anchor="middle" font-size="13" font-weight="700">OUTCOME</text>
+  <text x="910" y="125" text-anchor="middle" font-size="10">stamp at fire+M bars</text>
+
+  <line x1="170" y1="110" x2="190" y2="110" stroke="#444" stroke-width="1.5" marker-end="url(#ar5)"/>
+  <line x1="340" y1="110" x2="360" y2="110" stroke="#444" stroke-width="1.5" marker-end="url(#ar5)"/>
+  <line x1="510" y1="110" x2="530" y2="110" stroke="#444" stroke-width="1.5" marker-end="url(#ar5)"/>
+  <line x1="700" y1="110" x2="720" y2="110" stroke="#444" stroke-width="1.5" marker-end="url(#ar5)"/>
+  <line x1="840" y1="110" x2="860" y2="110" stroke="#444" stroke-width="1.5" marker-end="url(#ar5)"/>
+
+  <text x="490" y="180" text-anchor="middle" font-size="11" font-style="italic">Pre-fire guard-rail: INVERSION's never-do rules run as boolean gates BEFORE this chain starts.</text>
+  <text x="490" y="200" text-anchor="middle" font-size="11" font-style="italic">If a never-do gate is tripped, the fire is logged-but-not-acted-upon. No dialectic spent.</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 6 — Per-fire chain. Diagnosis → Context → Dialectic → Matrix → Outcome. Inversion rules gate the chain entrance.</p>
+
+<h2 id="roadmap">11. Implementation roadmap — concrete build sequence</h2>
+
+<p>Sequenced for fastest path to first usable Plot Owner producing a calibrated matrix. Items in <strong>bold</strong> are shipped this turn; the rest sequence forward.</p>
+
+<table>
+<tr><th>Stage</th><th>Step</th><th>Artifact</th><th>Status</th></tr>
+<tr><td>1</td><td>Scaffold the six strategic-principle skills</td><td><code>.claude/skills/{axis-decomposition,krishna-steelman,shiva-redteam,premortem,inversion,pareto-leverage}/SKILL.md</code></td><td><strong>THIS TURN</strong></td></tr>
+<tr><td>1</td><td>Append SD-013, SD-014, SD-015 (pillars canonicalized, GPS scheduled, WhaleWisdom added)</td><td><code>docs/agentic-os/STANDING_DECISIONS.md</code></td><td><strong>THIS TURN</strong></td></tr>
+<tr><td>1</td><td>Update <code>VOB_GPS_FOUR_SATELLITE.md</code> status header (deferred → scheduled)</td><td>file edit</td><td><strong>THIS TURN</strong></td></tr>
+<tr><td>2</td><td>Parity sweep across 13 plots × 7 symbols × 2 TFs (per parity hand-off doc)</td><td><code>verification/parity/2026-05-11/*.json</code></td><td>active — local Claude Code MCP session</td></tr>
+<tr><td>2</td><td>Author <code>offset-application</code> skill (SD-011 enforcement)</td><td><code>.claude/skills/offset-application/SKILL.md</code></td><td>queued (Phase 6 of parity hand-off)</td></tr>
+<tr><td>3</td><td>Hire <code>PO::unified-combo</code> as first Plot Owner; persistent thread</td><td><code>docs/agentic-os/memory/PO__unified-combo.md</code></td><td>queued</td></tr>
+<tr><td>3</td><td>Author <code>situational-context-share</code> skill</td><td><code>.claude/skills/situational-context-share/SKILL.md</code></td><td>queued</td></tr>
+<tr><td>3</td><td>Author <code>outcome-stamping</code> skill</td><td><code>.claude/skills/outcome-stamping/SKILL.md</code></td><td>queued</td></tr>
+<tr><td>4</td><td>Wire Benzinga MCP server</td><td>local config + DS::benzinga-earnings pair hire</td><td>queued (needs Benzinga API key)</td></tr>
+<tr><td>4</td><td>Wire WhaleWisdom MCP server</td><td>local config + DS::whalewisdom pair hire</td><td>queued (needs WhaleWisdom subscription)</td></tr>
+<tr><td>5</td><td>Begin Claw migration (per <code>strategy/2026-05-11-claw-code-foundation-plan.html</code>) — Phase A license diligence</td><td>SD-016 (Claw adopted)</td><td>queued — pending Anish go</td></tr>
+<tr><td>6</td><td>Promote GPS satellite system to live (steps G1–G7 from §5.2)</td><td>multiple</td><td>queued — after first Plot Owner ships and 90-day backtest data is in</td></tr>
+<tr><td>7</td><td>Author <code>dialectic-self-review</code> + <code>long-run-calibration</code></td><td>two new SKILL.mds</td><td>queued — after ~30 days of per-fire payloads accumulated</td></tr>
+</table>
+
+<h2 id="pareto-rank">12. Pareto-leverage ranking of next work</h2>
+
+<p>Applying the Pareto pillar to itself — the highest-leverage 20% of the build queue. These are the items where one unit of work produces the largest delta in system value.</p>
+
+<table>
+<tr><th>Rank</th><th>Item</th><th>Why high leverage</th></tr>
+<tr><td>1</td><td>Complete parity sweep (local CC MCP session)</td><td>Unblocks every downstream user of the leaderboard. Without parity confidence, no Plot Owner can act on a fire.</td></tr>
+<tr><td>2</td><td>Hire <code>PO::unified-combo</code> as the first live Plot Owner end-to-end</td><td>Proves the per-fire chain works in production. Calibration data starts accumulating. Template for the next 12+ owners.</td></tr>
+<tr><td>3</td><td>Author <code>situational-context-share</code> + the Benzinga earnings DS pair</td><td>Adds the highest-predictive-value context to every dialectic. Earnings windows are documented in <code>DATA_SOURCE_PAIRS.md</code> as #1 priority for context.</td></tr>
+<tr><td>4</td><td>Run the strategy review chain (Krishna + Shiva + Premortem + Inversion + Pareto) over the 13-row priority plot list ONCE</td><td>Produces the first systematic Pareto ranking of the book. Identifies which plots to invest in vs deprioritize.</td></tr>
+<tr><td>5</td><td>Author <code>outcome-stamping</code> and start logging outcomes</td><td>Closes the loop. Without outcome stamps, the four-square matrix can't calibrate.</td></tr>
+<tr><td>6</td><td>Begin Claw migration Phase A (license diligence)</td><td>Cost optimization potential (~63% per Claw plan); risk-free read-only audit step.</td></tr>
+<tr><td>7</td><td>GPS satellite system step G1 (reformulate <code>hv-fvg-gz1-og</code> as bar-tagged stream)</td><td>Unblocks Sat 1 entry into the axis-card. Highest-leverage GPS step.</td></tr>
+</table>
+
+<p>Items 8+ are deliberately deprioritized: they have value, but they are downstream of the first 7, or their alpha contribution per build-hour is lower.</p>
+
+<h2 id="open">13. Open questions for Anish</h2>
+
+<ol>
+<li><strong>Hiring authorization for <code>PO::unified-combo</code>.</strong> The first Plot Owner can ship the moment parity sweep passes for the unified-combo plot. Authorize?</li>
+<li><strong>Benzinga + WhaleWisdom subscriptions.</strong> The DS pairs are scaffolded; the data feeds need API keys / subscriptions. Confirm the spend and we wire them.</li>
+<li><strong>GPS satellite empirical search budget.</strong> Step G2 — empirical (thr_A, thr_B) sensitivity-pair search — needs 90 days of backtest data. We can either (a) start the data collection now and search in 90 days, or (b) use a synthetic-data approximation in the meantime. Preference?</li>
+<li><strong>Krishna vs Shiva nomenclature scope.</strong> SD-008 retired moralistic framing (heaven / hell, good / evil) in formal artifacts. Krishna and Shiva are not moralistic (Hindu cosmology treats them as functional roles — Preserver and Destroyer). Confirm: Krishna / Shiva names OK in skill names and informal logs, but stay neutral (bull-case / bear-case) in per-fire payload schemas?</li>
+<li><strong>Outcome window per plot.</strong> Today the per-fire payload doesn't have <code>outcome_window</code> populated; SD-010 says Plot Owner sets per-plot. For the first wave plots (PBJ Bull/Bear, Pentagon, MOAB, Nagasaki Plus, FVG Combo, Unified Combo, B2B PUP, Displacement, TNT-OD v3, structural plots), what's the canonical outcome window — 5 bars? 10 bars? Session close?</li>
+<li><strong>Pareto retirement authority.</strong> When pareto-leverage scores a plot in the bottom 80% over a sustained window, does the Plot Owner have authority to retire (file SD-N entry), or does retirement require explicit Anish sign-off every time?</li>
+<li><strong>Voice channel.</strong> OpenClaw L1 supports voice. Want high-conviction fires (matrix corner = compliance high AND 4/4 GPS agreement) delivered as a voice call to your phone?</li>
+<li><strong>Claw migration vs current path priority.</strong> The Claw foundation plan is queued behind the parity sweep + first Plot Owner. Confirm that ordering, or pull Claw forward (parallelize Phase A with parity sweep)?</li>
+</ol>
+
+<h2 id="glossary">14. Glossary</h2>
+
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>Axis</td><td>One of the 12 canonical dimensions on which a fire / setup / strategy is decomposed. See §2 Pillar 1.</td></tr>
+<tr><td>Axis-card</td><td>Structured artifact produced by <code>axis-decomposition</code>: a key-value map with one entry per canonical axis.</td></tr>
+<tr><td>Krishna</td><td>The Preserver. Skill name for meta-bull-case at strategy scale. Hindu cosmology — eighth avatar of Vishnu. In our OS, the strategist who steelmans a setup type.</td></tr>
+<tr><td>Shiva</td><td>The Destroyer. Skill name for meta-bear-case at strategy scale. Hindu cosmology — third of the Trimurti. In our OS, the red-teamer who argues against a setup type.</td></tr>
+<tr><td>Premortem</td><td>Failure-mode prep skill. Run before adopting a strategy. Imagine failure has occurred; enumerate causes; pre-author mitigations.</td></tr>
+<tr><td>Inversion</td><td>Munger's "invert always invert." Produces "never do" rules. Owner-tier skill.</td></tr>
+<tr><td>Pareto leverage</td><td>80/20 scoring across plots, setups, conditions. Drives promotion / demotion / retirement.</td></tr>
+<tr><td>GPS / 4-satellite</td><td>The triangulation architecture for high-conviction fires. 4 independently-derived reads (Sat 1 HV+FVG+GZ1, Sat 2 vob-single-sens, Sat 3 vob-asym A, Sat 4 vob-asym B). When all 4 agree at the same bar in the same direction, conviction is exceptional. See <code>VOB_GPS_FOUR_SATELLITE.md</code>.</td></tr>
+<tr><td>GPS conviction</td><td>Score in [0,1] derived from N-of-4 satellite agreement, weighted by historical predictive value at that N. Field in per-fire payload (added by SD-014).</td></tr>
+<tr><td>WhaleWisdom</td><td>Specific vendor of 13-F institutional position data. The canonical 13-F data source per SD-015.</td></tr>
+<tr><td>Plot Owner</td><td>Persistent agent dedicated to one detection plot end-to-end. See <code>ARCHITECTURE.md</code> Tier-B.</td></tr>
+<tr><td>Indicator Owner</td><td>Persistent agent (bull or bear) dedicated to one indicator family. See <code>ARCHITECTURE.md</code> Tier-A.</td></tr>
+<tr><td>DS pair</td><td>The bull/bear interpreter pair for one external data source. SD-009.</td></tr>
+<tr><td>Per-fire payload</td><td>The structured artifact produced for every fire: diagnosis + dialectic + matrix + outcome. Append-only. Forever-logged.</td></tr>
+<tr><td>Council mode</td><td>L3 orchestrator feature (Claw plan): runs Claude + Codex + Gemini in parallel on the same task; surfaces disagreement.</td></tr>
+<tr><td>SD-N</td><td>Standing Decision N. Append-only entry in <code>docs/agentic-os/STANDING_DECISIONS.md</code>. Today: SD-001…SD-010 live; SD-011 pending; SD-012/013/014/015 added this turn.</td></tr>
+</table>
+
+<h2 id="refs">15. References</h2>
+
+<ul>
+<li><code>docs/agentic-os/THESIS.md</code> — the founding "why"</li>
+<li><code>docs/agentic-os/ARCHITECTURE.md</code> — the three-role primitives + Heaven-vs-Hell debate protocol</li>
+<li><code>docs/agentic-os/WORKER_TIERS.md</code> — the three-tier contract</li>
+<li><code>docs/agentic-os/DATA_SOURCE_PAIRS.md</code> — bull/bear pairs per data source</li>
+<li><code>docs/agentic-os/VOB_GPS_FOUR_SATELLITE.md</code> — GPS satellite architecture (status promoted to scheduled this turn)</li>
+<li><code>docs/agentic-os/STANDING_DECISIONS.md</code> — SD ledger (SD-013/014/015 appended this turn)</li>
+<li><code>docs/agentic-os/strategy/2026-05-11-claw-code-foundation-plan.html</code> — Claw migration plan (companion strategy doc)</li>
+<li><code>docs/handoffs/2026-05-11-parity-handoff-local-mcp.html</code> — parity verification hand-off to local Claude Code MCP</li>
+<li><code>.claude/skills/&lt;name&gt;/SKILL.md</code> — the 14 active skills (8 existing + 6 new this turn) + the 6 TODO skills</li>
+<li><a href="https://github.com/anthropics/skills">github.com/anthropics/skills</a> — canonical SKILL.md format</li>
+</ul>
+
+<h2 id="starter">16. Starter prompt for the next session</h2>
+
+<div class="callout">
+<strong>For the next Claude Code session (whichever runs first — cloud session continuing on Plot Owner build, or local session on parity sweep). Paste this block as the opening message.</strong>
+</div>
+
+<pre><code>Read end-to-end:
+
+  docs/agentic-os/strategy/2026-05-11-agentic-os-full-build-spec.html
+
+That document is the integrated build spec for the agentic OS. The system has six
+strategic pillars (Axis, Krishna, Shiva, Premortem, Inversion, Pareto), three
+worker tiers (Grunt, Knowledge, Owner), nine data sources (paired bull/bear),
+and 18 skills (8 existing + 6 scaffolded this turn + 4 still TODO).
+
+Your starting state:
+
+  - The 6 new strategic-principle skill scaffolds were committed this turn:
+      .claude/skills/axis-decomposition/SKILL.md
+      .claude/skills/krishna-steelman/SKILL.md
+      .claude/skills/shiva-redteam/SKILL.md
+      .claude/skills/premortem/SKILL.md
+      .claude/skills/inversion/SKILL.md
+      .claude/skills/pareto-leverage/SKILL.md
+
+  - SD-013, SD-014, SD-015 appended to docs/agentic-os/STANDING_DECISIONS.md.
+
+  - VOB_GPS_FOUR_SATELLITE.md status promoted from "deferred" to "scheduled
+    Stage 7".
+
+Your next actions, in Pareto-leverage order (from §12 of the spec):
+
+  1. (Parallel — local MCP session) Complete the parity sweep per
+     docs/handoffs/2026-05-11-parity-handoff-local-mcp.html. Until parity
+     passes, no Plot Owner can ship.
+
+  2. (When parity passes) Hire PO::unified-combo. Author its memory file at
+     docs/agentic-os/memory/PO__unified-combo.md. Spawn its persistent thread.
+
+  3. Author the situational-context-share skill (knowledge tier) at
+     .claude/skills/situational-context-share/SKILL.md, hooking the
+     Benzinga-earnings DS pair as the first context source (most predictive
+     per DATA_SOURCE_PAIRS.md).
+
+  4. Run the strategy review chain (Krishna → Shiva → Premortem → Inversion
+     → Pareto) over the 13-row priority plot list ONCE. Output: the first
+     systematic Pareto ranking. Commit to
+     docs/agentic-os/pareto-ranking/2026-05-12-initial-book.md.
+
+  5. Author the outcome-stamping skill at .claude/skills/outcome-stamping/SKILL.md.
+     Wire it to the per-fire payload schema. Start logging outcomes on the
+     unified-combo Plot Owner's first day live.
+
+DO NOT:
+
+  - Modify .pine source other than authoring new files (SD-002).
+  - Delete files (SD-004).
+  - Tabulate concurrent fires on the alert bar (SD-011).
+  - Skip the dialectic on any fire of an owned plot — it is the unit of
+    cognition (THESIS.md).
+
+After each item, commit + push to claude/organize-indicators-hierarchy-8JDw1
+(or its successor branch). Open a draft PR if one doesn't exist.
+
+Begin with item 1 or item 2 depending on whether the local MCP session has
+returned parity results.
+</code></pre>
+
+<div class="footer">
+Authored by the cloud Claude Code session 2026-05-11. This is the master integration document. Companion docs (referenced but not duplicated): THESIS.md, ARCHITECTURE.md, WORKER_TIERS.md, DATA_SOURCE_PAIRS.md, VOB_GPS_FOUR_SATELLITE.md, STANDING_DECISIONS.md, strategy/2026-05-11-claw-code-foundation-plan.html, handoffs/2026-05-11-parity-handoff-local-mcp.html. All in this repo.
+</div>
+
+</body>
+</html>

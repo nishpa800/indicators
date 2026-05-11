@@ -1,0 +1,638 @@
+indicator:
+  id: fauna-shifu
+  file: fauna-shifu/versions/FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine
+  branch: production
+  pine_version: 5
+  line_count: 2338
+  overlay: true
+  one_line_purpose: "Session-first PUP gating + FAUNA core + SHIFU KC/pivot/Q3 filters + 20+ named roots + 16 composites (Jumbo CIA with Master Filter)"
+  non_repainting: false
+  title: "Jumbo CIA ★ 1st PUP FAUNA + SHIFU ★"
+  shorttitle: "FAUNA+SH"
+
+synopsis:
+  one_sentence: "Extends FAUNA with SHIFU KC/pivot logic, applies first-bar-only PUP/Anish gating per 'Jumbo CIA' theme, masters all signals through Q3+KC+Candle Master Filter."
+  shifu_role: "KC basis + slope signals, Ping Pong (body) and Swingin (pivot) S/R levels, Dante's Peak/Avalanche (Q3 oscillator), Quotient3 for overbought/oversold state."
+  jumbo_cia_role: "First-bar-only master gate (line 10): when ON, single-bar signals (RVOL, PBJ, FAUNA, DISP) must fire on is_new_sess AND require directional confirmation (anyDirectional). Multi-bar signals (SAAB²/KRATOS²/Katana/Double Disp/Foxtrot) EXEMPT from first-bar gate."
+  master_filter: "KC + Candle Master Filter (lines 1449–1461): all final signals gated by (High >= KC_MA AND Close > Open) for bulls, (Low <= KC_MA AND Close < Open) for bears. Optional Q3 oscillator layer: (Q3 < 0) for bulls, (Q3 > 0) for bears."
+
+internal_helpers:
+  - id: conf
+    description: "barstate.isconfirmed gate applied to all signal generation"
+    lines: "251"
+  
+  - id: fauna_suite
+    description: "FAUNA core with MB (Momentum Bar), RE (Range Expansion), TA (Trend Acceleration) families, plus exclusions GG (Gap-and-Go), TR (Trend Reversal), ES (End-of-Swing), GDR (Gap-Down Reversal)"
+    lines: "417–462"
+  
+  - id: shifu_kc_engine
+    description: "Keltner Channel basis + slope + volatility detection, 3-tier reentry/slope/breakout signals"
+    lines: "793–861"
+  
+  - id: shifu_bhp_q3
+    description: "BHP Q3 Quotient3 oscillator (Dante's Peak oversold, Avalanche overbought) with entry/exit state machine"
+    lines: "865–905"
+  
+  - id: shifu_ping_pong
+    description: "Ping Pong body-flat detection with bounce confirmation (body tolerance ticks, ATR multiplier)"
+    lines: "909–1017"
+  
+  - id: shifu_qualifiers
+    description: "sh_bullQualifier / sh_bearQualifier: Dante's Peak OR C7 OR C9 OR Swing Low OR Pivot Bull OR Bull Regime (expands PBJ scope)"
+    lines: "1033–1045"
+  
+  - id: gz1_fvg_hv
+    description: "FVG detection with HV milestone interlock (5000-bar all-time high OR 252-bar yearly high); builds gz_fvgs array of zones"
+    lines: "254–322"
+  
+  - id: puj_engine
+    description: "PB&J level-approach engine: Supertrend + buy/sell crosses + lander/reaccel level bookkeeping"
+    lines: "631–789"
+  
+  - id: whale_pivot_hv
+    description: "Whale: HV-rank bar + Pivot (low/high + SMA touch) + volume > opposing-color max, requires PBJ"
+    lines: "593–1051"
+  
+  - id: session_boundary
+    description: "is_new_sess gate, sessionBarCount for Opening Drive, first-bar-only master gate (fbm, fb0, fbs)"
+    lines: "1056–1118"
+  
+  - id: fauna_plus_displacement_density
+    description: "Alpha–Echo–Foxtrot–Golf–Opening Drive: multi-bar displacement count engines with configurable Fauna/PUP/FVG gates"
+    lines: "1215–1370"
+  
+  - id: anish_ema_stack
+    description: "EMA 50/150/200 + Stage 2 uptrend / Stage 4 downtrend logic (used for enrichment in alerts, not gating)"
+    lines: "589–590"
+  
+  - id: offset_alignment_layer
+    description: "f_align(sig) macro: when i_req_fvg=true (moff=1), all signals offset by [1] bar for FVG completion"
+    lines: "1079–1138"
+
+roots:
+  - id: fauna-shifu::FAUNA_BULL
+    family: bar-strength-composite
+    plain_english: "Bullish FAUNA: up-bar satisfying MB (body≥1.6×ATR, body/range≥0.70, vol≥1.8×AvgVol) OR RE (range≥2.2×ATR, close near high, vol≥1.8×AvgVol) OR TA (trend up, Δclose≥1.6×AvgΔ, vol≥1.8×AvgVol); excluded by TR/ES/GDR."
+    lines: "430–446"
+    parameters:
+      - { name: fauna_atr,           default: 14,   units: ATR }
+      - { name: fauna_avgVol,        default: 20,   units: SMA bars }
+      - { name: fauna_avgBody,       default: 20,   units: SMA bars }
+      - { name: fauna_avgDelta,      default: 10,   units: SMA bars }
+      - { name: fauna_trendMA,       default: 50,   units: SMA bars }
+    notes: "Same as b2b-pup FAUNA_BULL. Defined locally in all three indicators (cross-indicator duplication)."
+
+  - id: fauna-shifu::FAUNA_BEAR
+    family: bar-strength-composite
+    plain_english: "Mirror FAUNA_BULL on bear side."
+    lines: "448–462"
+
+  - id: fauna-shifu::DISPLACEMENT_BULL
+    family: displacement
+    plain_english: "Bullish 3-bar FVG: prior bar range > std_dev*mult (default 5.0), low > high[2], close[1] > open[1]."
+    lines: "467–476"
+    parameters:
+      - { name: i_range_type,  default: "Open to Close", units: enum }
+      - { name: i_std_len,     default: 100,             units: bars }
+      - { name: i_std_mult,    default: 5,               units: σ }
+
+  - id: fauna-shifu::DISPLACEMENT_BEAR
+    family: displacement
+    plain_english: "Mirror DISPLACEMENT_BULL on bear side."
+    lines: "467–477"
+
+  - id: fauna-shifu::RVOL1x_BULL
+    family: rvol-tier
+    plain_english: "RVOL band 1×: normalized price in [th_1x, th_gs_moab)."
+    lines: "379"
+
+  - id: fauna-shifu::RVOL1x_BEAR
+    family: rvol-tier
+    plain_english: "Mirror RVOL1x_BULL on bear side."
+    lines: "380"
+
+  - id: fauna-shifu::GrandSlam
+    family: rvol-tier
+    plain_english: "RVOL Grand Slam: normalized price >= th_gs_moab (default 35–114 depending on timeframe)."
+    lines: "381"
+
+  - id: fauna-shifu::MOAB
+    family: rvol-tier
+    plain_english: "Mirror Grand Slam on bear side."
+    lines: "382"
+
+  - id: fauna-shifu::SAAB
+    family: rvol-tier
+    plain_english: "RVOL SAAB (internal only): normalized price in [th_saab_kratos, th_1x) where th_saab = 0.56 * th_1x."
+    lines: "387"
+
+  - id: fauna-shifu::Kratos
+    family: rvol-tier
+    plain_english: "Mirror SAAB on bear side."
+    lines: "388"
+
+  - id: fauna-shifu::PUP
+    family: pocket-pivot
+    plain_english: "Bullish Pocket Pivot: (close-open)/open*100 > pp_barSize (default 3.0%) AND volume > N-day max red-bar volume."
+    lines: "576"
+    parameters:
+      - { name: pp_barSize,  default: 3.0,  units: "%" }
+      - { name: pp_lookback, default: 10,   units: bars }
+
+  - id: fauna-shifu::PPD
+    family: pocket-pivot
+    plain_english: "Mirror PUP on bear side (PPD)."
+    lines: "577"
+
+  - id: fauna-shifu::AnishBull
+    family: stage-trend
+    plain_english: "Anish Stage 2 Uptrend: close>EMA50 AND EMA50>EMA150 AND close>52w_low*1.30 AND close>=52w_high*0.75."
+    lines: "589"
+    notes: "EMA-stack composite but named as primitive for enrichment; not used for gating."
+
+  - id: fauna-shifu::AnishBear
+    family: stage-trend
+    plain_english: "Mirror AnishBull Stage 4 Downtrend."
+    lines: "590"
+
+  - id: fauna-shifu::PB_BULL
+    family: pbj
+    plain_english: "PB bull: Supertrend cross-up at armed PB level (gated by enable_PB input)."
+    lines: "785"
+    notes: "Separate from PBJ; enabled via enable_PB toggle at line 11."
+
+  - id: fauna-shifu::PB_BEAR
+    family: pbj
+    plain_english: "Mirror PB_BULL on bear side."
+    lines: "787"
+
+  - id: fauna-shifu::PBJ_BULL
+    family: pbj
+    plain_english: "PBJ bull: Supertrend cross-up at armed PBJ level (high quality, low < pbj_ma*(1-thresh), high == hh_ll highest)."
+    lines: "786"
+
+  - id: fauna-shifu::PBJ_BEAR
+    family: pbj
+    plain_english: "Mirror PBJ_BULL on bear side."
+    lines: "788"
+
+  - id: fauna-shifu::HV_MILESTONE
+    family: hv-rank
+    plain_english: "HV Milestone: volume == 5000-bar all-time high OR == 252-bar annual high."
+    lines: "551"
+
+  - id: fauna-shifu::NAGASAKI
+    family: hv-rank
+    plain_english: "Nagasaki: volume sets new all-time running maximum (ever-HV)."
+    lines: "557–563"
+
+  - id: fauna-shifu::GZ1_BULL_FVG
+    family: fvg-hv
+    plain_english: "GZ1 bull FVG: low > high[2], close[1] > high[2], FVG gap > threshold; triggers gz_bullGZI and optionally gz_bullHV if HV milestone."
+    lines: "270–293"
+
+  - id: fauna-shifu::GZ1_BEAR_FVG
+    family: fvg-hv
+    plain_english: "Mirror GZ1_BULL_FVG on bear side."
+    lines: "295–309"
+
+  - id: fauna-shifu::DANTES_PEAK
+    family: shifu-oscillator
+    plain_english: "Dante's Peak (SHIFU): Q3 < sh_threshold (oversold) exit with close > open, high >= KC_MA, low > entry_high."
+    lines: "891–896"
+    notes: "State machine: enters on sh_enter_oversold, fires on sh_exit_oversold with directional + level checks."
+
+  - id: fauna-shifu::AVALANCHE
+    family: shifu-oscillator
+    plain_english: "Avalanche (SHIFU): mirror Dante's Peak on bear side (Q3 > sh_ob_threshold overbought exit)."
+    lines: "899–904"
+
+  - id: fauna-shifu::C7_PIVOT_BULL
+    family: shifu-pivot
+    plain_english: "C7 (SHIFU): Swingin pivot bull detected (sh_raw_sig_piv_bull fires) AND bull regime active."
+    lines: "1022–1027"
+
+  - id: fauna-shifu::C8_PIVOT_BEAR
+    family: shifu-pivot
+    plain_english: "Mirror C7 on bear side."
+    lines: "1022–1027"
+
+  - id: fauna-shifu::C9_KC_PIVOT_BULL
+    family: shifu-combo
+    plain_english: "C9: C7 pivot bull AND any KC signal (basis reentry / breakout vol / slope reentry)."
+    lines: "1026"
+
+  - id: fauna-shifu::C10_KC_PIVOT_BEAR
+    family: shifu-combo
+    plain_english: "Mirror C9 on bear side."
+    lines: "1027"
+
+  - id: fauna-shifu::KC_CROSS_ABOVE_BASIS
+    family: shifu-kc
+    plain_english: "KC Basis Reentry (bull variant): price crosses above KC basis after prior reentry-from-above."
+    lines: "806–832"
+    notes: "State machine: sh_waiting_for_bullish_cross gate."
+
+  - id: fauna-shifu::KC_CROSS_BELOW_BASIS
+    family: shifu-kc
+    plain_english: "Mirror KC basis reentry on bear side."
+    lines: "806–832"
+
+  - id: fauna-shifu::KC_BREAKOUT_UPPER
+    family: shifu-kc
+    plain_english: "KC breakout above upper band with volatility expansion."
+    lines: "808–857"
+
+  - id: fauna-shifu::KC_BREAKDOWN_LOWER
+    family: shifu-kc
+    plain_english: "Mirror KC breakdown on bear side."
+    lines: "809–858"
+
+  - id: fauna-shifu::YY_VALIDLOW_SWING
+    family: pivot
+    plain_english: "Yin Yang swing low: pivot low with ATR distance threshold from prior valid swing."
+    lines: "499–517"
+    parameters:
+      - { name: yy_leftBars,   default: 75,  units: bars }
+      - { name: yy_rightBars,  default: 1,   units: bars }
+      - { name: yy_atrLength,  default: 50,  units: bars }
+      - { name: yy_atrMult,    default: 3.5, units: × }
+
+  - id: fauna-shifu::YY_VALIDHIGH_SWING
+    family: pivot
+    plain_english: "Mirror YY_VALIDLOW on bear side."
+    lines: "499–517"
+
+  - id: fauna-shifu::YY_BREAKOUT
+    family: pivot
+    plain_english: "Yin Yang breakout: close crosses above recorded resistance level."
+    lines: "519–541"
+
+  - id: fauna-shifu::YY_BREAKDOWN
+    family: pivot
+    plain_english: "Mirror YY_BREAKOUT on bear side."
+    lines: "519–541"
+
+  - id: fauna-shifu::WHALE_BULL
+    family: whale
+    plain_english: "Whale bull: HV milestone + Pivot bull (green bar, low <= SMA, volume > prior-down max) + PUP + PBJ."
+    lines: "1050"
+    notes: "Composite but listed as root due to named prominence. Combines HV + PUP + PBJ + pivot pattern."
+
+  - id: fauna-shifu::WHALE_BEAR
+    family: whale
+    plain_english: "Mirror WHALE_BULL on bear side."
+    lines: "1051"
+
+  - id: fauna-shifu::MOMENTUM1_LONG
+    family: rvol-momentum
+    plain_english: "Momentum 1 (Long 1) / LONG 1: close>open AND body/range >= 0.65 AND regular RVOL ratio > 5.0 AND cumulative RVOL ratio > 3.0."
+    lines: "410–411"
+    parameters:
+      - { name: hyb_addReg1,   default: 5.0, units: threshold }
+      - { name: hyb_addCum1,   default: 3.0, units: threshold }
+      - { name: hyb_bodyRat1,  default: 0.65, units: ratio }
+
+  - id: fauna-shifu::MOMENTUM1_SHORT
+    family: rvol-momentum
+    plain_english: "Mirror MOMENTUM1_LONG on bear side (SHORT 1)."
+    lines: "412"
+
+composites:
+  - id: fauna-shifu::DOUBLE_DISP_BULL
+    tier: 2
+    plain_english: "Double Disp bull: DISP fires on bar[0] AND bar[1], FAUNA fires on bar[0] AND bar[1], AND (PUP OR anyBullPBJ) on current/prior bar."
+    composition:
+      type: AND_LAGGED
+      operands: ["DISPLACEMENT_BULL", "DISPLACEMENT_BULL[-1]", "FAUNA_BULL", "FAUNA_BULL[-1]"]
+      extra_gate: "PUP OR anyBullPBJ"
+    lines: "1151"
+
+  - id: fauna-shifu::DOUBLE_DISP_BEAR
+    tier: 2
+    plain_english: "Mirror DOUBLE_DISP_BULL on bear side."
+    composition:
+      type: AND_LAGGED
+      operands: ["DISPLACEMENT_BEAR", "DISPLACEMENT_BEAR[-1]", "FAUNA_BEAR", "FAUNA_BEAR[-1]"]
+      extra_gate: "PPD OR anyBearPBJ"
+    lines: "1152"
+
+  - id: fauna-shifu::PUP_COMBO_BULL
+    tier: 2
+    plain_english: "PUP Combo bull: (DISP_pup OR FAUNA OR YY_Breakout) fires on bar[0] AND bar[1], PUP fires on bar[0] AND bar[1]."
+    composition:
+      type: AND_LAGGED
+      operands: ["(DISP_pup OR FAUNA_BULL OR YY_Breakout)", "(DISP_pup OR FAUNA_BULL OR YY_Breakout)[-1]", "PUP", "PUP[-1]"]
+    lines: "1155–1157"
+
+  - id: fauna-shifu::PPD_COMBO_BEAR
+    tier: 2
+    plain_english: "Mirror PUP_COMBO_BULL on bear side."
+    composition:
+      type: AND_LAGGED
+      operands: ["(DISP_pup OR FAUNA_BEAR OR YY_Breakdown)", "(DISP_pup OR FAUNA_BEAR OR YY_Breakdown)[-1]", "PPD", "PPD[-1]"]
+    lines: "1156–1158"
+
+  - id: fauna-shifu::FULL_STACK_BULL
+    tier: 2
+    plain_english: "Full Stack bull: (RVOL1x OR GrandSlam) AND (FAUNA OR DISP) AND (PBJ OR SHIFU-qualified)."
+    composition:
+      type: AND
+      operands: ["anyBullRVOL", "dirConfBull", "anyBullPBJ"]
+    lines: "1161"
+
+  - id: fauna-shifu::FULL_STACK_BEAR
+    tier: 2
+    plain_english: "Mirror FULL_STACK_BULL on bear side."
+    lines: "1162"
+
+  - id: fauna-shifu::FVG_STACK_BULL
+    tier: 2
+    plain_english: "FVG Stack bull: (RVOL1x OR GrandSlam) AND (FAUNA OR DISP) AND (HV_FVG AND GZ1_FVG)."
+    composition:
+      type: AND
+      operands: ["anyBullRVOL", "dirConfBull", "gz_bullHV", "gz_bullGZI"]
+    lines: "1165"
+
+  - id: fauna-shifu::FVG_STACK_BEAR
+    tier: 2
+    plain_english: "Mirror FVG_STACK_BULL on bear side."
+    lines: "1166"
+
+  - id: fauna-shifu::SUPER_COMBO_BULL
+    tier: 2
+    plain_english: "Super Combo bull: (FAUNA OR DISP) AND (PBJ OR SHIFU-qualified) AND (RVOL1x OR GrandSlam)."
+    composition:
+      type: AND
+      operands: ["dirConfBull", "anyBullPBJ", "anyBullRVOL"]
+    lines: "1169–1173"
+    notes: "Splits into Super+PBJ vs Super+PB variant labels for alerts."
+
+  - id: fauna-shifu::SUPER_COMBO_BEAR
+    tier: 2
+    plain_english: "Mirror SUPER_COMBO_BULL on bear side."
+    lines: "1171–1173"
+
+  - id: fauna-shifu::GRIPEN_BULL
+    tier: 3
+    plain_english: "Gripen bull: YY swing low + new session + (SAAB OR 1x OR GrandSlam) + (FAUNA OR DISP) + (PB OR PBJ)."
+    composition:
+      type: AND
+      operands: ["yy_validLow", "is_new_sess[offset]", "RVOL-tier[offset]", "(FAUNA_BULL OR DISP_BULL)[offset]", "(anyBullPB OR anyBullPBJ)[offset]"]
+    lines: "1181"
+    notes: "Session-level composite with Yin-Yang pivot as anchor."
+
+  - id: fauna-shifu::GRIPEN_BEAR
+    tier: 3
+    plain_english: "Mirror GRIPEN_BULL on bear side."
+    lines: "1182"
+
+  - id: fauna-shifu::SAAB_SQUARED_BULL
+    tier: 3
+    plain_english: "SAAB² bull: (SAAB OR 1x OR GrandSlam) fires on bar[0] AND bar[1], quality check (FAUNA OR DISP OR PUP OR HV/GZI), (PUP OR PBJ) on bar[0] or [1]."
+    composition:
+      type: AND_LAGGED
+      operands: ["(SAAB OR RVOL1x OR GrandSlam)", "(SAAB OR RVOL1x OR GrandSlam)[-1]"]
+      quality_gate: "FAUNA OR DISP OR PUP OR gz_bullHV OR gz_bullGZI"
+      pp_pbj_gate: "PUP OR PUP[-1] OR anyBullPBJ OR anyBullPBJ[-1]"
+    lines: "1185–1190"
+    notes: "Multi-bar density signal, EXEMPT from first-bar-only gate per Jumbo CIA logic."
+
+  - id: fauna-shifu::KRATOS_SQUARED_BEAR
+    tier: 3
+    plain_english: "Mirror SAAB_SQUARED_BULL on bear side (KRATOS²)."
+    lines: "1192–1197"
+
+  - id: fauna-shifu::TYPHOON_BULL
+    tier: 3
+    plain_english: "Typhoon bull: YY swing low + new session + (FAUNA OR DISP) + (PUP OR (Whale+PBJ))."
+    composition:
+      type: AND
+      operands: ["yy_validLow[offset]", "is_new_sess[offset]", "(FAUNA_BULL OR DISP_BULL)[offset]", "(PUP[offset] OR (sigWhaleBull[offset] AND anyBullPBJ[offset]))"]
+    lines: "1202"
+
+  - id: fauna-shifu::TYPHOON_BEAR
+    tier: 3
+    plain_english: "Mirror TYPHOON_BULL on bear side."
+    lines: "1203"
+
+  - id: fauna-shifu::TOMCAT_BULL
+    tier: 3
+    plain_english: "Tomcat bull: 1st bar of session + (FAUNA OR DISP) + at least 2 of {PUP, Whale, anyPBJ}."
+    composition:
+      type: AND_THRESHOLD
+      operands: ["is_new_sess", "dirConfBullRaw", "count(PUP, Whale, anyPBJ)"]
+      threshold: ">= 2"
+    lines: "1208"
+
+  - id: fauna-shifu::TOMCAT_BEAR
+    tier: 3
+    plain_english: "Mirror TOMCAT_BULL on bear side."
+    lines: "1209"
+
+  - id: fauna-shifu::PAF_BULL
+    tier: 2
+    plain_english: "PAF (PUP+Fauna B2B) bull: PUP fires on bar[0] AND bar[1], FAUNA fires on bar[0] AND bar[1]."
+    composition:
+      type: AND_LAGGED
+      operands: ["PUP", "PUP[-1]", "FAUNA_BULL", "FAUNA_BULL[-1]"]
+    lines: "1212"
+    notes: "Density signal, EXEMPT from first-bar gate."
+
+  - id: fauna-shifu::PAF_BEAR
+    tier: 2
+    plain_english: "Mirror PAF_BULL on bear side."
+    lines: "1213"
+
+  - id: fauna-shifu::ALPHA_BULL
+    tier: 2
+    plain_english: "Alpha (FAUNA+ Density Set 1): N displacement hits within M bars, optional FAUNA/PUP/FVG gates."
+    composition:
+      type: COUNT_GE
+      operands: ["DISP_BULL or Momentum1"]
+      gate_inputs: ["fp_a_req (default 2)", "fp_a_win (default 2)"]
+      optional_gates: ["FAUNA hits count", "PUP hits count", "HV/GZI hits count"]
+    lines: "1269"
+    notes: "Uses chain state + grace counter for session continuity."
+
+  - id: fauna-shifu::ALPHA_BEAR
+    tier: 2
+    plain_english: "Mirror ALPHA_BULL on bear side."
+    lines: "1270"
+
+  - id: fauna-shifu::BRAVO_BULL
+    tier: 2
+    plain_english: "Bravo (FAUNA+ Density Set 2): 3 hits in 3 bars, optional gates."
+    composition:
+      type: COUNT_GE
+      operands: ["DISP_BULL or Momentum1"]
+      gate_inputs: ["fp_b_req (default 3)", "fp_b_win (default 3)"]
+    lines: "1288"
+
+  - id: fauna-shifu::BRAVO_BEAR
+    tier: 2
+    plain_english: "Mirror BRAVO_BULL on bear side."
+    lines: "1289"
+
+  - id: fauna-shifu::CHARLIE_BULL
+    tier: 2
+    plain_english: "Charlie (FAUNA+ Density Set 3): 3 hits in 4 bars, optional gates."
+    composition:
+      type: COUNT_GE
+      operands: ["DISP_BULL or Momentum1"]
+      gate_inputs: ["fp_c_req (default 3)", "fp_c_win (default 4)"]
+    lines: "1307"
+
+  - id: fauna-shifu::CHARLIE_BEAR
+    tier: 2
+    plain_english: "Mirror CHARLIE_BULL on bear side."
+    lines: "1308"
+
+  - id: fauna-shifu::DELTA_BULL
+    tier: 2
+    plain_english: "Delta (FAUNA+ Density Set 4): 2 hits in 3 bars, optional gates."
+    composition:
+      type: COUNT_GE
+      operands: ["DISP_BULL or Momentum1"]
+      gate_inputs: ["fp_d_req (default 2)", "fp_d_win (default 3)"]
+    lines: "1326"
+
+  - id: fauna-shifu::DELTA_BEAR
+    tier: 2
+    plain_english: "Mirror DELTA_BULL on bear side."
+    lines: "1327"
+
+  - id: fauna-shifu::ECHO_BULL
+    tier: 2
+    plain_english: "Echo (FAUNA+ Density Set 5): 2 hits in 4 bars, optional gates."
+    composition:
+      type: COUNT_GE
+      operands: ["DISP_BULL or Momentum1"]
+      gate_inputs: ["fp_e_req (default 2)", "fp_e_win (default 4)"]
+    lines: "1345"
+
+  - id: fauna-shifu::ECHO_BEAR
+    tier: 2
+    plain_english: "Mirror ECHO_BULL on bear side."
+    lines: "1346"
+
+  - id: fauna-shifu::FOXTROT_BULL
+    tier: 2
+    plain_english: "Foxtrot (Fauna 4-in-4): FAUNA fires on 4 consecutive bars (bar[0], [1], [2], [3])."
+    composition:
+      type: AND_LAGGED
+      operands: ["FAUNA_BULL", "FAUNA_BULL[-1]", "FAUNA_BULL[-2]", "FAUNA_BULL[-3]"]
+    lines: "1349"
+
+  - id: fauna-shifu::FOXTROT_BEAR
+    tier: 2
+    plain_english: "Mirror FOXTROT_BULL on bear side."
+    lines: "1350"
+
+  - id: fauna-shifu::GOLF_BULL
+    tier: 3
+    plain_english: "Golf (PUP2/PPD2): any Alpha–Echo raw DISP fires on bar[0] AND [1], FAUNA on bar[0] AND [1], PUP on bar[0] AND [1]."
+    composition:
+      type: AND_LAGGED
+      operands: ["(Alpha OR Bravo OR Charlie OR Delta OR Echo) raw DISP", "(...)[−1]", "FAUNA_BULL", "FAUNA_BULL[-1]", "PUP", "PUP[-1]"]
+    lines: "1356"
+
+  - id: fauna-shifu::GOLF_BEAR
+    tier: 3
+    plain_english: "Mirror GOLF_BULL on bear side."
+    lines: "1357"
+
+  - id: fauna-shifu::OPENING_DRIVE_BULL
+    tier: 2
+    plain_english: "Opening Drive (OD) bull: within first N bars of session, DISP+FVG on bar[0], PUP on current."
+    composition:
+      type: AND
+      operands: ["sessionBarCount <= od_max", "DISP_bull_FVG", "(DISP OR Momentum1)[−1]", "PUP", "pp_volBull"]
+    lines: "1368"
+    parameters:
+      - { name: od_max,  default: 2, units: bars }
+
+  - id: fauna-shifu::OPENING_DRIVE_BEAR
+    tier: 2
+    plain_english: "Mirror OPENING_DRIVE_BULL on bear side."
+    lines: "1369"
+
+  - id: fauna-shifu::KATANA_BULL
+    tier: 3
+    plain_english: "Katana bull (session-level): fires on new session bar[1], requires yesterday's HV+FAUNA/DISP + today's HV+FVG + directional pattern + (anyBullPBJ[1] OR PUP[1])."
+    composition:
+      type: AND_SESSION
+      operands: ["is_new_sess[1]", "kat_yest_bull_hv OR (kat_yest_bull_gzi AND (kat_yest_bull_hv OR kat_yest_bull_bo))", "gz_bullHV AND gz_bullGZI", "sigFAUNABull[yy_rightBars] OR sigDISPBull[yy_rightBars]", "kat_dir_bull"]
+      extra_gate: "anyBullPBJ[1] OR PUP[1]"
+    lines: "1412–1426"
+    notes: "Multi-path variants (A, B, E) OR'd; EXEMPT from first-bar gate."
+
+  - id: fauna-shifu::KATANA_BEAR
+    tier: 3
+    plain_english: "Mirror KATANA_BULL on bear side."
+    lines: "1413–1426"
+
+  - id: fauna-shifu::MUSASHI_BULL
+    tier: 3
+    plain_english: "Musashi bull: (GZ1_FVG OR HV_FVG) AND PUP AND Whale_bull AND anyBullPBJ."
+    composition:
+      type: AND
+      operands: ["(gz_bullGZI OR gz_bullHV)", "PUP", "WHALE_BULL", "anyBullPBJ"]
+    lines: "1177"
+
+  - id: fauna-shifu::MUSASHI_BEAR
+    tier: 3
+    plain_english: "Mirror MUSASHI_BULL on bear side."
+    lines: "1178"
+
+  - id: fauna-shifu::NAGASAKI_BULL
+    tier: 2
+    plain_english: "Nagasaki bull: HEV (all-time volume max) + any directional signal (RVOL/FAUNA/DISP/PBJ/PUP/Whale/HV/GZI)."
+    composition:
+      type: AND_OR
+      operands: ["NAGASAKI", "any_bull_directional"]
+    lines: "1436"
+    notes: "Fires standalone or as enrichment tag on other signals. Has 'always alert' exception (line 1439–1444)."
+
+  - id: fauna-shifu::NAGASAKI_BEAR
+    tier: 2
+    plain_english: "Mirror NAGASAKI_BULL on bear side."
+    lines: "1437"
+
+cross_indicator_dependencies:
+  - target: b2b-pup
+    relationship: "root-level duplication"
+    notes: "FAUNA_BULL/BEAR, PUP/PPD, RVOL tiers (SAAB/Kratos/1x/GrandSlam/MOAB), GZ1_FVG/HV, PBJ engine all defined identically in both files. fauna-shifu extends b2b-pup with SHIFU layer."
+
+  - target: anish-50-1st-combo
+    relationship: "methodology alignment"
+    notes: "Both use 'first bar only' gating concept. fauna-shifu generalizes to 'Jumbo CIA' master gate; anish-50-1st uses explicit 1st-combo. AnishBull/AnishBear EMA stacks defined in both."
+
+  - target: hvd-pbj-ppd
+    relationship: "probable overlap"
+    notes: "PUP/PPD, Whale, PBJ engine likely overlap; not yet confirmed. PB vs PBJ distinction controlled via enable_PB toggle."
+
+  - target: heavy-pentagon
+    relationship: "RVOL ladder potential overlap"
+    notes: "SAAB/Kratos/1x/GrandSlam/MOAB/Pentagon/WTC/Hiroshima naming convention similar; heavy-pentagon may be the canonical RVOL source."
+
+uncertain_or_questions:
+  - "SHIFU integration: What is SHIFU's canonical source? This file ports KC/pivot/Q3 but no SHIFU indicator file exists in fauna-shifu folder — likely ported from shifu-standalone or Anish's private library."
+  - "KC Master Filter: Is Q3+KC+Candle the correct filter, or is it an experiment? Per line 174–176, both 'Q3+KC+Candle' and 'KC+Candle' modes are selectable."
+  - "Jumbo CIA first-bar gating: Why are SAAB²/KRATOS²/Katana/Double Disp/Foxtrot exempt from first-bar gate? Is this intentional (density signals should fire multi-bar) or a bug?"
+  - "Offset alignment (moff): When i_req_fvg=true, all signals align to bar[−1] for FVG completion. Does this cause visible lag on multi-bar composites?"
+  - "Shifu vs FAUNA precedence: If both Dante's Peak and FAUNA_BULL fire same bar, which takes priority in alerts? Master Filter gates all equally."
+  - "Yin-Yang pivots vs Swingin S/R: Are yy_srs and sh_srLevels (Ping Pong) intended to work together, or independently?"
+  - "LONG 1 / Momentum 1 scope: Used only in FAUNA+ displacement density calcs (line 1223, 1232, 1364). Not a standalone plot. Is it a root or helper?"
+  - "Whale redefinition (line 1048–1051): Now requires PBJ (anyBullPBJ). Prior version may have allowed PB. Is this change documented?"
+  - "Gripen Pent vs Gripen: The file mentions 'Gripen PB' toggle (line 11) but no explicit sigGripenPB signal found. Is Gripen strictly the swing-low variant?"
+  - "Combo density philosophy: Alpha–Echo use N-hits-in-M-bars with chain state. Foxtrot uses 4-consecutive. Golf uses 2-consecutive×2. Why different window patterns?"
+  - "Session memory: Katana stores yesterday's FAUNA/DISP/HV/GZI/Breakout flags on is_new_sess. If bar[1] aligns to prior session, are flags from 2+ days ago stale?"
+
+notes:
+  - "File size: 2338 lines — largest in fauna indicator family."
+  - "Gating philosophy: 1st PUP + Jumbo CIA exemptions for multi-bar signals + KC+Candle master filter suggests a 'quality uber-gate' approach."
+  - "SHIFU scope: KC basis + slopes, Dante's Peak/Avalanche (Q3 osc), Ping Pong (body), Swingin (pivot). No Hayashi (traditional SHIFU) elements found."
+  - "Offset complexity: moff (offset=0 or 1) + f_align() + fbm (first-bar-master) + al_mf_bull/al_mf_bear — 3 layers of offset logic."
+  - "Plot economy: Combined 'anyAFBull' (Alpha–Foxtrot all 6 variants) onto single plotshape + label (line 1509–1520) to save 10 plot slots."
+  - "Nagasaki 'always alert' exception: fires alerts even without show_Nagasaki if co-occurring with Typhoon/Whale/Super/Golf/Tomcat/FullStack/FVGStack (line 1439–1444)."

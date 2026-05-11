@@ -1,0 +1,48 @@
+//@version=5
+// =============================================================================
+// LOGGER — Nagasaki Plus (sigNagPlusBull / sigNagPlusBear)
+// =============================================================================
+// PURPOSE: emit one label.new() per fire of the Nagasaki Plus composites so
+// data_get_pine_labels can pull full history. Per VALIDATE 10
+// (docs/validation/2026-05-10-floor-heavy-nagasaki-cross.md) the canonical
+// definition lives at hvd-pbj-ppd/.../HVDPBJPPD_4.26.1244am.pine L1083, but:
+//   - HVDPBJPPD only emits "NAG+ Bull" (L1522), NOT "NAG+ Bear"
+//   - Squarify S35 plots only `nag_any_bull` ("35 NAG+")
+// So sigNagPlusBear is NOT directly plotted anywhere in the indicator stack.
+//
+// COVERAGE STRATEGY (Path A):
+//   Subscribe to the "NAG+ Bull" plot from HVDPBJPPD as the bull-side fire
+//   source. For the bear side, subscribe to ANY plot wired to sigNagPlusBear
+//   (Squarify uses sigNagPlusBear inside oneOfThese composites — these are
+//   indirect; we add a manual override source so user can wire it once Anish
+//   exposes a direct plot, or fallback to Squarify S35 mirror).
+//
+// SETUP: load AFTER "HV+D ↔ PBJ ↔ USE THIS IS THE ONLY FUCKING ONE". Point
+//   - NAG+ Bull Source → HVDPBJPPD plot "NAG+ Bull"
+//   - NAG+ Bear Source → (leave at close until HVDPBJPPD exposes a
+//                         "NAG+ Bear" plot; current workaround = use Squarify
+//                         "35 NAG+" if it bidirectionalises in a future rev)
+//
+// Each fire emits label "NAG+B" (bull) or "NAG+R" (bear) on the bar.
+// =============================================================================
+
+indicator("LOGGER Nagasaki Plus", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+grp = "★ Source Plots — point at HVDPBJPPD (and any future NAG+ Bear plot) ★"
+s_nag_plus_bull = input.source(close, "NAG+ Bull Source", group=grp)
+s_nag_plus_bear = input.source(close, "NAG+ Bear Source (placeholder until plotted)", group=grp)
+
+// Helper — non-zero, non-na, on confirmed bar
+f_fire(s) => not na(s) and s != 0 and barstate.isconfirmed
+
+f_log(cond, tag, isBull) =>
+    if cond
+        if isBull
+            label.new(bar_index, low,  tag, color=color.new(color.fuchsia, 90), style=label.style_label_up,   textcolor=color.fuchsia, size=size.tiny, yloc=yloc.belowbar)
+        else
+            label.new(bar_index, high, tag, color=color.new(color.purple, 90),  style=label.style_label_down, textcolor=color.purple,  size=size.tiny, yloc=yloc.abovebar)
+
+f_log(f_fire(s_nag_plus_bull), "NAG+B", true)
+f_log(f_fire(s_nag_plus_bear), "NAG+R", false)
+
+plot(0, display=display.data_window)

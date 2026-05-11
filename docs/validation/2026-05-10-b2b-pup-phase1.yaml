@@ -1,0 +1,38 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: B2B_PUP_BULL
+aliases_searched:
+- B2B_PUP_BULL
+- B2B_PUP_BEAR
+- B2B_PUP
+- b2b_pup
+- sigB2BPup
+- sigB2BPupBull
+- sigB2BPupBear
+- b2b_pup_bull
+- b2b_pup_bear
+- det_b2b_pup
+- b2bPupBull
+- b2bPupBear
+pine_files_scanned: 54
+definitions: []
+occurrences_per_indicator: {}
+yaml_cross_check:
+  yaml_matching_records:
+  - id: squarify::B2B_PUP
+    indicator: squarify
+    pine_source_line_range: L2006
+  - id: b2b-pup::B2B_PUP
+    indicator: b2b-pup
+    pine_source_line_range: L978
+  orphans:
+  - id: squarify::B2B_PUP
+    indicator: squarify
+    pine_source_line_range: L2006
+    reason: no Pine DEFINITION in squarify
+  - id: b2b-pup::B2B_PUP
+    indicator: b2b-pup
+    pine_source_line_range: L978
+    reason: no Pine DEFINITION in b2b-pup
+  missings: []
+status: COMPLETE

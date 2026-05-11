@@ -1,0 +1,154 @@
+VISUAL TREE — heavy-pentagon
+=============================
+File: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+Pine v5  ·  444 lines  ·  overlay=True
+Purpose: Canonical RVOL engine; owns 10 RVOL roots and 15 Heavy Combo composites
+
+ROOTS
+-----
+  ◆ heavy-pentagon::SAAB    [rvol · offset=0]
+      Bullish bar with normalized price spike in the SAAB/Kratos band (betw…
+  ◆ heavy-pentagon::KRATOS    [rvol · offset=0]
+      Bearish bar with normalized price spike in the SAAB/Kratos band (Krat…
+  ◆ heavy-pentagon::RVOL_1X_BULL    [rvol · offset=0]
+      Bullish bar with normalized price spike in the RVOL-1x band (between …
+  ◆ heavy-pentagon::RVOL_1X_BEAR    [rvol · offset=0]
+      Bearish bar with normalized price spike in the RVOL-1x band.
+  ◆ heavy-pentagon::GRAND_SLAM    [rvol · offset=0]
+      Bullish bar with normalized price spike at or above the Grand Slam / …
+  ◆ heavy-pentagon::MOAB    [rvol · offset=0]
+      Bearish bar with normalized price spike at or above the Grand Slam / …
+  ◆ heavy-pentagon::PENTAGON    [rvol · offset=0]
+      Time-regularized relative volume ratio sits in the Pentagon band (bet…
+  ◆ heavy-pentagon::WTC    [rvol · offset=0]
+      Time-regularized relative volume ratio sits in the WTC band (above WT…
+  ◆ heavy-pentagon::HIROSHIMA    [rvol · offset=0]
+      Time-regularized relative volume ratio exceeds the Hiroshima threshol…
+  ◆ heavy-pentagon::NAGASAKI    [rvol · offset=0]
+      All-time high volume bar — current bar volume exceeds the running max…
+
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● heavy-pentagon::HEAVY_YIN_YANG_BULL    [offset=0 · AND]
+        Heavy Yin-Yang fires bullish: any P1 directional spike (groupA: Bull …
+        ├── heavy-pentagon::RVOL_1X_BULL
+        ├── heavy-pentagon::GRAND_SLAM
+        ├── heavy-pentagon::RVOL_1X_BEAR
+        ├── heavy-pentagon::MOAB
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::HEAVY_YIN_YANG_BEAR    [offset=0 · AND]
+        Heavy Yin-Yang fires bearish: same (groupA OR groupB) AND structure a…
+        ├── heavy-pentagon::RVOL_1X_BULL
+        ├── heavy-pentagon::GRAND_SLAM
+        ├── heavy-pentagon::RVOL_1X_BEAR
+        ├── heavy-pentagon::MOAB
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL    [offset=0 · AND]
+        Heavy Yin-Yang fires neutral: same (groupA OR groupB) AND structure, …
+        ├── heavy-pentagon::RVOL_1X_BULL
+        ├── heavy-pentagon::GRAND_SLAM
+        ├── heavy-pentagon::RVOL_1X_BEAR
+        ├── heavy-pentagon::MOAB
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::HEAVY_NAGASAKI_BULL    [offset=0 · AND]
+        Heavy Nagasaki fires bullish: an all-time high volume bar (Nagasaki) …
+        ├── heavy-pentagon::NAGASAKI
+        ├── heavy-pentagon::RVOL_1X_BULL
+        ├── heavy-pentagon::GRAND_SLAM
+        ├── heavy-pentagon::RVOL_1X_BEAR
+        └── heavy-pentagon::MOAB
+    ● heavy-pentagon::HEAVY_NAGASAKI_BEAR    [offset=0 · AND]
+        Heavy Nagasaki fires bearish: Nagasaki co-occurs with any directional…
+        ├── heavy-pentagon::NAGASAKI
+        ├── heavy-pentagon::RVOL_1X_BULL
+        ├── heavy-pentagon::GRAND_SLAM
+        ├── heavy-pentagon::RVOL_1X_BEAR
+        └── heavy-pentagon::MOAB
+    ● heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL    [offset=0 · AND]
+        Heavy Nagasaki fires neutral: Nagasaki co-occurs with any directional…
+        ├── heavy-pentagon::NAGASAKI
+        ├── heavy-pentagon::RVOL_1X_BULL
+        ├── heavy-pentagon::GRAND_SLAM
+        ├── heavy-pentagon::RVOL_1X_BEAR
+        └── heavy-pentagon::MOAB
+    ● heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL    [offset=0 · AND]
+        Heavy Nagasaki Vol fires bullish: an all-time high volume bar (Nagasa…
+        ├── heavy-pentagon::NAGASAKI
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::HEAVY_NAGASAKI_VOL_BEAR    [offset=0 · AND]
+        Heavy Nagasaki Vol fires bearish: Nagasaki + any P2 tier, gated beari…
+        ├── heavy-pentagon::NAGASAKI
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::HEAVY_NAGASAKI_VOL_NEUTRAL    [offset=0 · AND]
+        Heavy Nagasaki Vol fires neutral: Nagasaki + any P2 tier, no displace…
+        ├── heavy-pentagon::NAGASAKI
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::HEAVY_TRIDENT_BULL    [offset=0 · AND]
+        Heavy Trident fires bullish: all three RVOL axes co-occur — Nagasaki …
+        ├── heavy-pentagon::NAGASAKI
+        ├── heavy-pentagon::RVOL_1X_BULL
+        ├── heavy-pentagon::GRAND_SLAM
+        ├── heavy-pentagon::RVOL_1X_BEAR
+        ├── heavy-pentagon::MOAB
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::HEAVY_TRIDENT_BEAR    [offset=0 · AND]
+        Heavy Trident fires bearish: all three RVOL axes co-occur, gated bear…
+        ├── heavy-pentagon::NAGASAKI
+        ├── heavy-pentagon::RVOL_1X_BULL
+        ├── heavy-pentagon::GRAND_SLAM
+        ├── heavy-pentagon::RVOL_1X_BEAR
+        ├── heavy-pentagon::MOAB
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::HEAVY_TRIDENT_NEUTRAL    [offset=0 · AND]
+        Heavy Trident fires neutral: all three RVOL axes co-occur, no displac…
+        ├── heavy-pentagon::NAGASAKI
+        ├── heavy-pentagon::RVOL_1X_BULL
+        ├── heavy-pentagon::GRAND_SLAM
+        ├── heavy-pentagon::RVOL_1X_BEAR
+        ├── heavy-pentagon::MOAB
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::NEUTRAL_HEAVY_X2_BULL    [offset=0 · OR]
+        Neutral Heavy x2 fires bullish: at least 2-of-3 Reg@Time tiers (Penta…
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        ├── heavy-pentagon::PENTAGON
+        └── heavy-pentagon::HIROSHIMA
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR    [offset=0 · OR]
+        Neutral Heavy x2 fires bearish: 2-of-3 P2 tier co-occurrence, gated b…
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        ├── heavy-pentagon::PENTAGON
+        └── heavy-pentagon::HIROSHIMA
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL    [offset=0 · OR]
+        Neutral Heavy x2 fires neutral: 2-of-3 P2 tier co-occurrence, no disp…
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        ├── heavy-pentagon::PENTAGON
+        └── heavy-pentagon::HIROSHIMA
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+
+

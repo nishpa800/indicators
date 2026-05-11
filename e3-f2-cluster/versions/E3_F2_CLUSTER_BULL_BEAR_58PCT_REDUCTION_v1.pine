@@ -1,0 +1,386 @@
+//@version=5
+// =============================================================================
+// SIGNAL INDICATOR STUDY - EXTRACTED SIGNALS (CONSOLIDATED)
+// =============================================================================
+// S1. Bullish FC Cluster | S2. Bullish E3 | S3. Bullish First Two MB
+// S4. Bearish FC Cluster | S5. Bearish E3 | S6. Bearish First Two MB
+// =============================================================================
+
+indicator("e3 f2 cluster THIS bull bear 58% reduction THIS", shorttitle="f2 e3 58%", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+// =============================================================================
+// === GLOBAL UI SETTINGS ===
+// =============================================================================
+grp_plots = "★ GLOBAL PLOT SETTINGS ★"
+show_bull_fc = input.bool(true, "Bull FC Cluster", group=grp_plots, inline="p1")
+show_bull_e3 = input.bool(true, "Bull E3", group=grp_plots, inline="p1")
+show_bull_f2 = input.bool(true, "Bull First Two", group=grp_plots, inline="p1")
+show_bear_fc = input.bool(true, "Bear FC Cluster", group=grp_plots, inline="p2")
+show_bear_e3 = input.bool(true, "Bear E3", group=grp_plots, inline="p2")
+show_bear_f2 = input.bool(true, "Bear First Two", group=grp_plots, inline="p2")
+show_any_bull = input.bool(true, "Any Bull", group=grp_plots, inline="p3")
+show_any_bear = input.bool(true, "Any Bear", group=grp_plots, inline="p3")
+
+grp_alerts = "★ GLOBAL ALERT SETTINGS ★"
+ga_one_per = input.bool(false, "One alert per signal (off=aggregate)", group=grp_alerts)
+alert_bull_fc = input.bool(true, "Bull FC Cluster", group=grp_alerts, inline="a1")
+alert_bull_e3 = input.bool(true, "Bull E3", group=grp_alerts, inline="a1")
+alert_bull_f2 = input.bool(true, "Bull First Two", group=grp_alerts, inline="a1")
+alert_bear_fc = input.bool(true, "Bear FC Cluster", group=grp_alerts, inline="a2")
+alert_bear_e3 = input.bool(true, "Bear E3", group=grp_alerts, inline="a2")
+alert_bear_f2 = input.bool(true, "Bear First Two", group=grp_alerts, inline="a2")
+alert_any_bull = input.bool(true, "Any Bull", group=grp_alerts, inline="a3")
+alert_any_bear = input.bool(true, "Any Bear", group=grp_alerts, inline="a3")
+
+grp_mux = "★ MULTIPLEXER ★"
+mux_sel = input.string("Any", "Signal Select", options=["Any", "Bull FC Cluster", "Bull E3", "Bull First Two", "Bear FC Cluster", "Bear E3", "Bear First Two", "Any Bull", "Any Bear"], group=grp_mux)
+
+grp_style = "★ PLOT COLORS ★"
+col_bull_fc = input.color(color.new(color.yellow, 60), "Bull FC", group=grp_style, inline="c1")
+col_bull_e3 = input.color(color.new(color.white, 60), "Bull E3", group=grp_style, inline="c1")
+col_bull_f2 = input.color(color.new(color.aqua, 0), "Bull F2", group=grp_style, inline="c1")
+col_bear_fc = input.color(color.new(color.red, 60), "Bear FC", group=grp_style, inline="c2")
+col_bear_e3 = input.color(color.new(color.red, 60), "Bear E3", group=grp_style, inline="c2")
+col_bear_f2 = input.color(color.new(color.red, 0), "Bear F2", group=grp_style, inline="c2")
+col_any_bull = input.color(color.new(color.lime, 0), "Any Bull", group=grp_style, inline="c3")
+col_any_bear = input.color(color.new(color.fuchsia, 0), "Any Bear", group=grp_style, inline="c3")
+
+// =============================================================================
+// === SHARED CORE CALCULATIONS ===
+// =============================================================================
+float atr14 = ta.atr(14)
+float avgVol20 = ta.sma(volume, 20)
+float avgDelta = ta.sma(math.abs(close - close[1]), 10)
+float trendMA = ta.sma(close, 50)
+float body = close - open
+float rng = high - low
+float bodySize = math.abs(body)
+float bodyRatio = rng == 0 ? 0 : bodySize / rng
+bool bodyUp = body > 0
+bool bodyDn = body < 0
+bool wide = rng > 2.2 * atr14
+bool upTrend = trendMA > trendMA[1]
+bool dnTrend = trendMA < trendMA[1]
+bool inSession = not na(time(timeframe.period, "0930-1600", "America/New_York"))
+
+// === BULL EVENTS (defined once) ===
+bool bull_MB = bodyUp and bodySize > 1.6 * atr14 and bodyRatio > 0.7 and volume > 1.8 * avgVol20
+bool bull_RE = bodyUp and wide and (high - close) < 0.15 * rng and volume > 1.8 * avgVol20
+bool bull_TA = upTrend and (close - close[1]) > 1.6 * avgDelta and bodyUp and volume > 1.8 * avgVol20
+
+// === BEAR EVENTS (defined once) ===
+bool bear_MB = bodyDn and bodySize > 1.6 * atr14 and bodyRatio > 0.7 and volume > 1.8 * avgVol20
+bool bear_RE = bodyDn and wide and (close - low) < 0.15 * rng and volume > 1.8 * avgVol20
+bool bear_TA = dnTrend and (close[1] - close) > 1.6 * avgDelta and bodyDn and volume > 1.8 * avgVol20
+
+// === SESSION BAR COUNTER (shared) ===
+var bool isNewDay = false
+if ta.change(dayofmonth) != 0
+    isNewDay := true
+var int sessBar = 0
+if isNewDay and inSession
+    sessBar := 1
+    isNewDay := false
+else if inSession and sessBar > 0
+    sessBar += 1
+else if not inSession
+    sessBar := 0
+
+// =============================================================================
+// === S1: BULLISH FC CLUSTER ===
+// =============================================================================
+// 1.1 MB Sequence
+var int b1_s1 = 0
+b1_s1 := bull_MB ? b1_s1 + 1 : 0
+bool b1_ind1 = bull_MB and b1_s1 >= 2
+
+// 1.2 MBRETA Sequence
+bool b1_ev2 = bull_MB or bull_RE or bull_TA
+var int b1_s2 = 0
+if ta.change(dayofmonth) != 0
+    b1_s2 := 0
+else if not b1_ev2
+    b1_s2 := 0
+if b1_ev2
+    b1_s2 += 1
+bool b1_ind2 = b1_ev2 and b1_s2 >= 2
+
+// 1.3 MB+RE Session
+bool b1_ev3 = (bull_MB or bull_RE) and inSession
+var int b1_s3 = 0
+b1_s3 := b1_ev3 ? b1_s3 + 1 : 0
+bool b1_ind3 = b1_ev3 and b1_s3 >= 2
+
+bool b1_2of3 = (b1_ind1 ? 1 : 0) + (b1_ind2 ? 1 : 0) + (b1_ind3 ? 1 : 0) >= 2
+
+// Overlap Detection
+float b1_spk = math.abs(body)
+float b1_avgSpk = ta.sma(b1_spk, 30)[1]
+float b1_rvolP = b1_spk / nz(b1_avgSpk, 1)
+float b1_avgVolD = ta.sma(volume, 30)[1]
+float b1_rvolV = volume / nz(b1_avgVolD, 1)
+float b1_diff = b1_rvolP - b1_rvolV
+float b1_pos = b1_diff > 0 ? b1_diff : na
+float b1_smaP = ta.sma(b1_pos, 20)
+bool b1_base = bodyUp and nz(b1_pos) > nz(b1_smaP)
+b1_inRng(v) => v > 2.9 and v < 1000000.0
+bool b1_thEv = b1_base and b1_inRng(b1_rvolP) and barstate.isconfirmed
+bool b1_uBar = b1_base and b1_inRng(b1_rvolP)
+
+var float b1_sum = 0.0
+var int b1_len = 0
+if b1_uBar
+    b1_len += 1
+    b1_sum += b1_rvolP
+else
+    b1_len := 0
+    b1_sum := 0.0
+bool b1_seqEv = (b1_len >= 2 and b1_sum >= 0.1) and barstate.isconfirmed
+
+var int[] b1_thIdx = array.new_int()
+var float[] b1_thHi = array.new_float()
+var float[] b1_thLo = array.new_float()
+var int[] b1_sqIdx = array.new_int()
+var float[] b1_sqHi = array.new_float()
+var float[] b1_sqLo = array.new_float()
+
+bool b1_ovlp = false
+if array.size(b1_thIdx) > 0
+    while bar_index - array.get(b1_thIdx, 0) > 20
+        array.shift(b1_thIdx), array.shift(b1_thHi), array.shift(b1_thLo)
+        if array.size(b1_thIdx) == 0
+            break
+if array.size(b1_sqIdx) > 0
+    while bar_index - array.get(b1_sqIdx, 0) > 20
+        array.shift(b1_sqIdx), array.shift(b1_sqHi), array.shift(b1_sqLo)
+        if array.size(b1_sqIdx) == 0
+            break
+
+b1_chk(loA, hiA, loB, hiB) => loA <= hiB and loB <= hiA
+
+if b1_thEv
+    array.push(b1_thIdx, bar_index), array.push(b1_thHi, high), array.push(b1_thLo, low)
+    if array.size(b1_sqIdx) > 0
+        for i = 0 to array.size(b1_sqIdx) - 1
+            if b1_chk(low, high, array.get(b1_sqLo, i), array.get(b1_sqHi, i))
+                b1_ovlp := true
+                break
+
+if b1_seqEv and not b1_ovlp
+    array.push(b1_sqIdx, bar_index), array.push(b1_sqHi, high), array.push(b1_sqLo, low)
+    if array.size(b1_thIdx) > 0
+        for i = 0 to array.size(b1_thIdx) - 1
+            if b1_chk(low, high, array.get(b1_thLo, i), array.get(b1_thHi, i))
+                b1_ovlp := true
+                break
+
+bool sBullFC = b1_2of3 and b1_ovlp
+
+// =============================================================================
+// === S2: BULLISH E3 ===
+// =============================================================================
+bool b2_ev = bull_MB or bull_RE or bull_TA
+bool sBullE3 = sessBar == 3 and b2_ev and b2_ev[1] and b2_ev[2]
+
+// =============================================================================
+// === S3: BULLISH FIRST TWO ===
+// =============================================================================
+bool sBullF2 = sessBar == 2 and bull_MB and bull_MB[1]
+
+// =============================================================================
+// === S4: BEARISH FC CLUSTER ===
+// =============================================================================
+// 1.1 MB Sequence
+var int b4_s1 = 0
+b4_s1 := bear_MB ? b4_s1 + 1 : 0
+bool b4_ind1 = bear_MB and b4_s1 >= 2
+
+// 1.2 MBRETA Sequence
+bool b4_ev2 = bear_MB or bear_RE or bear_TA
+var int b4_s2 = 0
+if ta.change(dayofmonth) != 0
+    b4_s2 := 0
+else if not b4_ev2
+    b4_s2 := 0
+if b4_ev2
+    b4_s2 += 1
+bool b4_ind2 = b4_ev2 and b4_s2 >= 2
+
+// 1.3 MB+RE Session
+bool b4_ev3 = (bear_MB or bear_RE) and inSession
+var int b4_s3 = 0
+b4_s3 := b4_ev3 ? b4_s3 + 1 : 0
+bool b4_ind3 = b4_ev3 and b4_s3 >= 2
+
+bool b4_2of3 = (b4_ind1 ? 1 : 0) + (b4_ind2 ? 1 : 0) + (b4_ind3 ? 1 : 0) >= 2
+
+// Overlap Detection
+float b4_spk = math.abs(body)
+float b4_avgSpk = ta.sma(b4_spk, 30)[1]
+float b4_rvolP = b4_spk / nz(b4_avgSpk, 1)
+float b4_avgVolD = ta.sma(volume, 30)[1]
+float b4_rvolV = volume / nz(b4_avgVolD, 1)
+float b4_diff = b4_rvolP - b4_rvolV
+float b4_neg = (b4_diff > 0 and bodyDn) ? b4_diff : na
+float b4_smaN = ta.sma(b4_neg, 20)
+bool b4_base = bodyDn and nz(b4_neg) > nz(b4_smaN)
+b4_inRng(v) => v > 2.9 and v < 1000000.0
+bool b4_thEv = b4_base and b4_inRng(b4_rvolP) and barstate.isconfirmed
+bool b4_dBar = b4_base and b4_inRng(b4_rvolP)
+
+var float b4_sum = 0.0
+var int b4_len = 0
+if b4_dBar
+    b4_len += 1
+    b4_sum += b4_rvolP
+else
+    b4_len := 0
+    b4_sum := 0.0
+bool b4_seqEv = (b4_len >= 2 and b4_sum >= 0.5) and barstate.isconfirmed
+
+var int[] b4_thIdx = array.new_int()
+var float[] b4_thHi = array.new_float()
+var float[] b4_thLo = array.new_float()
+var int[] b4_sqIdx = array.new_int()
+var float[] b4_sqHi = array.new_float()
+var float[] b4_sqLo = array.new_float()
+
+bool b4_ovlp = false
+if array.size(b4_thIdx) > 0
+    while bar_index - array.get(b4_thIdx, 0) > 20
+        array.shift(b4_thIdx), array.shift(b4_thHi), array.shift(b4_thLo)
+        if array.size(b4_thIdx) == 0
+            break
+if array.size(b4_sqIdx) > 0
+    while bar_index - array.get(b4_sqIdx, 0) > 20
+        array.shift(b4_sqIdx), array.shift(b4_sqHi), array.shift(b4_sqLo)
+        if array.size(b4_sqIdx) == 0
+            break
+
+b4_chk(loA, hiA, loB, hiB) => loA <= hiB and loB <= hiA
+
+if b4_thEv
+    array.push(b4_thIdx, bar_index), array.push(b4_thHi, high), array.push(b4_thLo, low)
+    if array.size(b4_sqIdx) > 0
+        for i = 0 to array.size(b4_sqIdx) - 1
+            if b4_chk(low, high, array.get(b4_sqLo, i), array.get(b4_sqHi, i))
+                b4_ovlp := true
+                break
+
+if b4_seqEv and not b4_ovlp
+    array.push(b4_sqIdx, bar_index), array.push(b4_sqHi, high), array.push(b4_sqLo, low)
+    if array.size(b4_thIdx) > 0
+        for i = 0 to array.size(b4_thIdx) - 1
+            if b4_chk(low, high, array.get(b4_thLo, i), array.get(b4_thHi, i))
+                b4_ovlp := true
+                break
+
+bool sBearFC = b4_2of3 and b4_ovlp
+
+// =============================================================================
+// === S5: BEARISH E3 ===
+// =============================================================================
+bool b5_ev = bear_MB or bear_RE or bear_TA
+bool sBearE3 = sessBar == 3 and b5_ev and b5_ev[1] and b5_ev[2]
+
+// =============================================================================
+// === S6: BEARISH FIRST TWO ===
+// =============================================================================
+bool sBearF2 = sessBar == 2 and bear_MB and bear_MB[1]
+
+// =============================================================================
+// === S7/S8: ANY BULL / ANY BEAR ===
+// =============================================================================
+bool sAnyBull = sBullFC or sBullE3 or sBullF2
+bool sAnyBear = sBearFC or sBearE3 or sBearF2
+
+// =============================================================================
+// === PLOTS ===
+// =============================================================================
+plotshape(sBullFC and show_bull_fc, title="Bull FC Cluster", location=location.belowbar, style=shape.labeldown, size=size.huge, color=col_bull_fc, text="CLUSTER")
+plotshape(sBullE3 and show_bull_e3, title="Bull E3", location=location.top, style=shape.circle, size=size.huge, color=col_bull_e3, text="E3")
+plotshape(sBullF2 and show_bull_f2, title="Bull First Two", location=location.top, style=shape.triangleup, size=size.huge, color=col_bull_f2, text="F2")
+plotshape(sBearFC and show_bear_fc, title="Bear FC Cluster", location=location.abovebar, style=shape.labelup, size=size.huge, color=col_bear_fc, text="BEAR\nCLUSTER")
+plotshape(sBearE3 and show_bear_e3, title="Bear E3", location=location.top, style=shape.circle, size=size.huge, color=col_bear_e3, text="Bear E3")
+plotshape(sBearF2 and show_bear_f2, title="Bear First Two", location=location.top, style=shape.triangledown, size=size.huge, color=col_bear_f2, text="Bear F2")
+plotshape(sAnyBull and show_any_bull, title="Any Bull", location=location.belowbar, style=shape.diamond, size=size.huge, color=col_any_bull, text="ANY\nBULL")
+plotshape(sAnyBear and show_any_bear, title="Any Bear", location=location.abovebar, style=shape.diamond, size=size.huge, color=col_any_bear, text="ANY\nBEAR")
+
+// =============================================================================
+// === LEGACY ANY CALL ===
+// =============================================================================
+bool sigAny = sBullFC or sBullE3 or sBullF2 or sBearFC or sBearE3 or sBearF2
+bool sigMux = switch mux_sel
+    "Bull FC Cluster" => sBullFC
+    "Bull E3" => sBullE3
+    "Bull First Two" => sBullF2
+    "Bear FC Cluster" => sBearFC
+    "Bear E3" => sBearE3
+    "Bear First Two" => sBearF2
+    "Any Bull" => sAnyBull
+    "Any Bear" => sAnyBear
+    => sigAny
+
+f_getAny() =>
+    string n = ""
+    bool f = false
+    if sBullFC
+        n := "Bullish FC Cluster", f := true
+    else if sBullE3
+        n := "Bullish E3", f := true
+    else if sBullF2
+        n := "Bullish First Two MB", f := true
+    else if sBearFC
+        n := "Bearish FC Cluster", f := true
+    else if sBearE3
+        n := "Bearish E3", f := true
+    else if sBearF2
+        n := "Bearish First Two MB", f := true
+    [f, n]
+
+[anyFired, anyName] = f_getAny()
+
+// =============================================================================
+// === ALERTS ===
+// =============================================================================
+string pfx = syminfo.ticker + ": "
+string agg = ""
+
+if alert_bull_fc and sBullFC
+    agg += "BullFC, "
+    if ga_one_per
+        alert(pfx + "Bullish FC Cluster", alert.freq_once_per_bar_close)
+if alert_bull_e3 and sBullE3
+    agg += "BullE3, "
+    if ga_one_per
+        alert(pfx + "Bullish E3", alert.freq_once_per_bar_close)
+if alert_bull_f2 and sBullF2
+    agg += "BullF2, "
+    if ga_one_per
+        alert(pfx + "Bullish First Two MB", alert.freq_once_per_bar_close)
+if alert_bear_fc and sBearFC
+    agg += "BearFC, "
+    if ga_one_per
+        alert(pfx + "Bearish FC Cluster", alert.freq_once_per_bar_close)
+if alert_bear_e3 and sBearE3
+    agg += "BearE3, "
+    if ga_one_per
+        alert(pfx + "Bearish E3", alert.freq_once_per_bar_close)
+if alert_bear_f2 and sBearF2
+    agg += "BearF2, "
+    if ga_one_per
+        alert(pfx + "Bearish First Two MB", alert.freq_once_per_bar_close)
+if alert_any_bull and sAnyBull
+    agg += "AnyBull, "
+    if ga_one_per
+        alert(pfx + "Any Bull Signal", alert.freq_once_per_bar_close)
+if alert_any_bear and sAnyBear
+    agg += "AnyBear, "
+    if ga_one_per
+        alert(pfx + "Any Bear Signal", alert.freq_once_per_bar_close)
+
+if not ga_one_per and str.length(agg) > 0
+    alert(pfx + "Aggregate: " + str.substring(agg, 0, str.length(agg) - 2), alert.freq_once_per_bar_close)
+
+if anyFired
+    alert(pfx + "ANY: " + anyName, alert.freq_once_per_bar_close)

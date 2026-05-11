@@ -1,0 +1,4 @@
+# vob-single-sens — WITH_TABLES and NO_TABLES files are BYTE-IDENTICAL
+# per static audit 2026-05-10. Filename naming is aspirational; neither
+# file contains table.new() calls. Canonical = WITH_TABLES (alphabetic).
+VOB_SINGLE_SENS_WITH_TABLES_v1.pine

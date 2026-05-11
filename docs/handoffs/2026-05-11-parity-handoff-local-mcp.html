@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parity Hand-off — Local Claude Code MCP Takes Over (2026-05-11)</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 1080px; margin: 2em auto; padding: 0 1.5em; color: #1a1a1a; line-height: 1.55; }
+  h1 { border-bottom: 3px solid #1a1a1a; padding-bottom: 0.3em; font-size: 1.85em; }
+  h2 { color: #003366; border-left: 5px solid #003366; padding-left: 0.6em; margin-top: 2.2em; font-size: 1.35em; }
+  h3 { color: #4a4a4a; margin-top: 1.5em; font-size: 1.1em; }
+  h4 { color: #5a5a5a; margin-top: 1em; font-size: 0.98em; }
+  .critical { background: #ffe7e7; border-left: 5px solid #cc0000; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .callout  { background: #fff8e7; border-left: 5px solid #d18800; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .ok       { background: #e7f8ee; border-left: 5px solid #1f7a3f; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .info     { background: #eef4fb; border-left: 5px solid #003366; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ccc; padding: 0.45em 0.7em; vertical-align: top; }
+  th { background: #f0f0f0; text-align: left; }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-family: "SF Mono", Menlo, monospace; font-size: 0.91em; }
+  pre  { background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; padding: 0.8em 1em; overflow-x: auto; font-family: "SF Mono", Menlo, monospace; font-size: 0.86em; line-height: 1.42; }
+  pre.ascii { background: #fff; border: 1px dashed #999; font-size: 0.82em; }
+  svg { margin: 1em auto; display: block; }
+  .footer { color: #888; font-size: 0.85em; margin-top: 3em; border-top: 1px solid #ccc; padding-top: 1em; }
+  .pill { display:inline-block; padding: 2px 8px; border-radius: 11px; font-size: 0.78em; margin-right: 0.4em; }
+  .pill-grunt     { background:#d0e8ff; color:#003366; }
+  .pill-knowledge { background:#ffd9b3; color:#663300; }
+  .pill-owner     { background:#d9c2ff; color:#330066; }
+  .pill-must      { background:#ffd6d6; color:#990000; font-weight:600; }
+  .toc { background: #f8f9fa; border: 1px solid #ddd; padding: 1em 1.5em; margin: 1.5em 0; border-radius: 4px; }
+  .toc ol { margin: 0.5em 0; padding-left: 1.6em; }
+  .toc li { padding: 2px 0; }
+  .yes { color: #1f7a3f; font-weight: 600; }
+  .no  { color: #cc0000; font-weight: 600; }
+  .tbd { color: #d18800; font-weight: 600; }
+  a { color: #003366; }
+</style>
+</head>
+<body>
+
+<h1>Parity Hand-off — Local Claude Code MCP Takes Over</h1>
+
+<p><em>Authored 2026-05-11 04:30 UTC by the cloud Claude Code session. Hand-off target: the local Claude Code session running on Anish's Mac with the TradingView MCP and the Massive.com MCP wired. Deadline: parity sweep complete by 9:30 AM ET (13:30 UTC) equity open today.</em></p>
+
+<div class="critical">
+<strong>What this document does.</strong> Anish 2026-05-11: "<em>Parity testing is not your job. Give me a document. Tell Claude code it has an MCP training you. It's taking over now; you're done. Give me a hand off here to give the Claude code.</em>" The cloud session has shipped the live leaderboard (<code>live/</code>, commit <code>bb904f4</code>) and the 8 Python ports already in <code>python_ports/</code>. <strong>You</strong> (local Claude Code with TV-MCP + Massive.com MCP) take over Python-port-vs-TV parity verification and any port bug fixing that arises. Read this end-to-end before doing anything. Then start at Phase 0.
+</div>
+
+<h2 id="port-build">Port build status — verified 2026-05-11 04:30 UTC</h2>
+
+<p>Anish 2026-05-11 4 AM: "<em>We need to have B2B PUP, TNT OD v3, HVD PBJ PPD, Squarify Python ports built right the fuck now. If those are not built, drop everything.</em>"</p>
+
+<div class="ok">
+<strong>They are built.</strong> Verified at branch tip <code>bb904f4</code> via <code>python3 -c "import &lt;mod&gt;; print(len(m.DETECTIONS))"</code> for each module.
+</div>
+
+<table>
+<tr><th>Indicator family</th><th>Module path (the canonical Python port)</th><th>DETECTIONS</th><th>STUBBED</th><th>STATE_MACHINES</th><th>First-port commit</th></tr>
+<tr><td>HVD+PBJ+PPD</td><td><code>python_ports.hvd_pbj_ppd.the_only_one</code></td><td>59</td><td>6</td><td>3</td><td><code>5389c5c</code></td></tr>
+<tr><td>B2B PUP</td><td><code>python_ports.b2b_pup.canonical</code></td><td>93</td><td>7</td><td>7</td><td><code>b66bb2b</code></td></tr>
+<tr><td>Squarify</td><td><code>python_ports.squarify.canonical_46_v2</code></td><td>199</td><td>8</td><td>8</td><td><code>b66bb2b</code></td></tr>
+<tr><td>TNT-OD v3</td><td><code>python_ports.tnt_od.v3</code></td><td>49</td><td>26</td><td>5</td><td><code>5a92c0d</code></td></tr>
+<tr><td>TNT-OD v2 (per <code>LATEST.txt</code>)</td><td><code>python_ports.tnt_od.canonical_v2_per_latest</code></td><td>45</td><td>26</td><td>3</td><td><code>5a92c0d</code></td></tr>
+<tr><td>Heavy Pentagon (RVOL 1x, MOAB, Pentagon, Hiroshima, Heavy Nagasaki composites)</td><td><code>python_ports.heavy_pentagon.canonical</code></td><td>25</td><td>1</td><td>0</td><td><code>0163d96</code></td></tr>
+<tr><td>Ultra Combo</td><td><code>python_ports.ultra_combo.canonical_v57_pine6</code></td><td>—</td><td>—</td><td>—</td><td><code>0163d96</code></td></tr>
+<tr><td>Fauna-Shifu</td><td><code>python_ports.fauna_shifu.canonical</code></td><td>48</td><td>6</td><td>—</td><td><code>b66bb2b</code></td></tr>
+</table>
+
+<p>The "drop everything" conditional <strong>does not fire</strong>. What is missing is <strong>parity verification</strong> of these ports against TradingView chart labels — which is exactly what this hand-off gives you. STUBBED engines are documented upstream Pine intrinsics (TV <code>tv_ta.relativeVolume</code>, FVG zone scanner, B2B walker, TNT zone scanner, Napalm/Charge, CONT, PBJ Supertrend, WBUSH heavy-combo, CS1) that the parity harness must inject via <code>df.attrs[...]</code> per each port's module docstring.</p>
+
+<h2>Table of contents</h2>
+
+<div class="toc">
+<ol>
+<li><a href="#mission">Mission</a></li>
+<li><a href="#time">Time budget</a></li>
+<li><a href="#phase0">Phase 0 — Definitions to lock with Anish</a></li>
+<li><a href="#phase1">Phase 1 — Offset metadata in ports</a></li>
+<li><a href="#phase2">Phase 2 — Parity harness</a></li>
+<li><a href="#phase3">Phase 3 — Per-plot parity sweep</a></li>
+<li><a href="#phase4">Phase 4 — Composition checks</a></li>
+<li><a href="#phase5">Phase 5 — Structural plots</a></li>
+<li><a href="#phase6">Phase 6 — Gap fixes</a></li>
+<li><a href="#drift">Drift policy decision tree</a></li>
+<li><a href="#verify">Verification (end-to-end)</a></li>
+<li><a href="#oos">Out of scope</a></li>
+<li><a href="#reuse">Reusable patterns + reference paths</a></li>
+<li><a href="#cadence">Reporting cadence</a></li>
+<li><a href="#glossary">Glossary</a></li>
+<li><a href="#starter">Starter prompt — paste this into the local Claude Code</a></li>
+</ol>
+</div>
+
+<h2 id="mission">1. Mission</h2>
+
+<p>Anish runs a hyper-aggressive, alpha-maximizing trading desk. Zero risk-management ceremony, zero hedge-fund organizational overhead, zero SEO / marketing / social-media / sales-funnel nonsense. <em>"We are the absolute most aggressive, hyper alpha, maximize return at all costs investment firm in the world, and everybody knows it."</em> Every component this stack contains must earn its place against that purpose, or it gets cut.</p>
+
+<p>Today's narrow mission, deadline 9:30 AM ET: prove that the 8 Python ports listed above produce <strong>byte-identical fire events</strong> to what TradingView paints on Anish's chart, on the symbols he trades from, on the timeframes he scalps. If they do, the live leaderboard streams trustworthy signals at the open. If they don't, every leaderboard column is suspect.</p>
+
+<h3>1.1 Three-chat division of labor</h3>
+
+<svg width="980" height="320" viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <!-- Anish diamond -->
+  <polygon points="490,15 560,55 490,95 420,55" fill="#fff3a8" stroke="#996600" stroke-width="2"/>
+  <text x="490" y="60" text-anchor="middle" font-size="14" font-weight="700">Anish (owner)</text>
+  <!-- Three chat boxes -->
+  <rect x="40"  y="135" width="270" height="160" rx="8" fill="#d0e8ff" stroke="#003366" stroke-width="2"/>
+  <rect x="355" y="135" width="270" height="160" rx="8" fill="#ffd9b3" stroke="#663300" stroke-width="2"/>
+  <rect x="670" y="135" width="270" height="160" rx="8" fill="#d9c2ff" stroke="#330066" stroke-width="2"/>
+  <text x="175" y="160" text-anchor="middle" font-size="14" font-weight="700">Cloud Claude Code</text>
+  <text x="175" y="178" text-anchor="middle" font-size="11" fill="#333">(this session, done)</text>
+  <text x="175" y="205" text-anchor="middle" font-size="11">• live/ leaderboard stack</text>
+  <text x="175" y="222" text-anchor="middle" font-size="11">• 8 Python ports built</text>
+  <text x="175" y="239" text-anchor="middle" font-size="11">• HTML hand-offs authored</text>
+  <text x="175" y="256" text-anchor="middle" font-size="11">• Path-A loggers wired</text>
+  <text x="175" y="283" text-anchor="middle" font-size="11" font-style="italic">No TV MCP. No Massive MCP.</text>
+
+  <text x="490" y="160" text-anchor="middle" font-size="14" font-weight="700">Local Claude Code MCP</text>
+  <text x="490" y="178" text-anchor="middle" font-size="11" fill="#333">(YOU — active now)</text>
+  <text x="490" y="205" text-anchor="middle" font-size="11">• Parity verification (this doc)</text>
+  <text x="490" y="222" text-anchor="middle" font-size="11">• Python port bug fixes</text>
+  <text x="490" y="239" text-anchor="middle" font-size="11">• GPS sat work (next priority)</text>
+  <text x="490" y="256" text-anchor="middle" font-size="11">• TV chart label scraping</text>
+  <text x="490" y="283" text-anchor="middle" font-size="11" font-style="italic">Has TV MCP + Massive MCP.</text>
+
+  <text x="805" y="160" text-anchor="middle" font-size="14" font-weight="700">Agentic-OS Chat</text>
+  <text x="805" y="178" text-anchor="middle" font-size="11" fill="#333">(separate chat, parallel)</text>
+  <text x="805" y="205" text-anchor="middle" font-size="11">• Skill framework (SKILL.md)</text>
+  <text x="805" y="222" text-anchor="middle" font-size="11">• Owner threads</text>
+  <text x="805" y="239" text-anchor="middle" font-size="11">• Dialectic / 4-square matrix</text>
+  <text x="805" y="256" text-anchor="middle" font-size="11">• Memory + message bus</text>
+  <text x="805" y="283" text-anchor="middle" font-size="11" font-style="italic">Builds the OS scaffolding.</text>
+
+  <!-- Arrows from Anish -->
+  <line x1="450" y1="80" x2="200" y2="135" stroke="#444" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="490" y1="95" x2="490" y2="135" stroke="#444" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="530" y1="80" x2="780" y2="135" stroke="#444" stroke-width="1.5" marker-end="url(#ar)"/>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 1 — Three-chat division of labor. Cloud session is done; local MCP session is active; agentic-OS chat runs in parallel.</p>
+
+<h3>1.2 What you own</h3>
+
+<ul>
+<li><strong>Parity verification:</strong> for every detection plot in Phase 3, prove the Python port emits the same fire bars as the TV chart's logger label.</li>
+<li><strong>Python port bug fixing:</strong> when parity fails, root-cause and fix (auto for obvious bugs, escalate ambiguous Pine intent to Anish).</li>
+<li><strong>Offset metadata:</strong> add <code>OFFSETS</code> dict to each port (Phase 1).</li>
+<li><strong>Gap fixes:</strong> <code>LOGGER_NAGASAKI_PLUS_v2.pine</code> bear side, promote <code>sigDISPBull/Bear</code> to DETECTIONS, append SD-011, skeleton the <code>offset-application</code> skill.</li>
+<li><strong>GPS satellite work (priority 2 after parity passes):</strong> the separate hand-off at <code>docs/agentic-os/prompts/gps-satellite-handoff-prompt.html</code>.</li>
+</ul>
+
+<h3>1.3 What you do NOT own</h3>
+
+<ul>
+<li><code>live/</code> (the leaderboard) — cloud session retains ownership. Do not touch.</li>
+<li>The agentic-OS skill framework — separate chat builds it.</li>
+<li>Any <code>.pine</code> source modification other than authoring <code>LOGGER_NAGASAKI_PLUS_v2.pine</code> as a new file (per SD-002 / SD-004 — never modify, never delete).</li>
+<li>Plot Owner hiring or dialectic chain wiring — out of scope today.</li>
+</ul>
+
+<h2 id="time">2. Time budget</h2>
+
+<svg width="960" height="220" viewBox="0 0 960 220" xmlns="http://www.w3.org/2000/svg">
+  <!-- Time axis 04:30 -> 13:30 UTC, total 9 hours, 90px / hr -->
+  <line x1="40" y1="170" x2="850" y2="170" stroke="#333" stroke-width="2"/>
+  <text x="40"  y="190" font-size="11" text-anchor="middle">04:30</text>
+  <text x="130" y="190" font-size="11" text-anchor="middle">05:30</text>
+  <text x="220" y="190" font-size="11" text-anchor="middle">06:30</text>
+  <text x="310" y="190" font-size="11" text-anchor="middle">07:30</text>
+  <text x="400" y="190" font-size="11" text-anchor="middle">08:30</text>
+  <text x="490" y="190" font-size="11" text-anchor="middle">09:30</text>
+  <text x="580" y="190" font-size="11" text-anchor="middle">10:30</text>
+  <text x="670" y="190" font-size="11" text-anchor="middle">11:30</text>
+  <text x="760" y="190" font-size="11" text-anchor="middle">12:30</text>
+  <text x="850" y="190" font-size="11" text-anchor="middle">13:30 UTC</text>
+  <text x="460" y="207" font-size="10" font-style="italic" fill="#666">(13:30 UTC = 09:30 ET market open)</text>
+  <!-- Deadline marker -->
+  <line x1="850" y1="20" x2="850" y2="170" stroke="#cc0000" stroke-width="2" stroke-dasharray="4,3"/>
+  <text x="850" y="14" text-anchor="middle" font-size="11" fill="#cc0000" font-weight="700">DEADLINE</text>
+  <!-- Phase bars; each phase has start_offset & length in hours -->
+  <!-- Phase 0: 0.5h -->
+  <rect x="40"  y="30" width="45"  height="20" fill="#7eddc1" stroke="#1f7a3f"/>
+  <text x="62" y="44" text-anchor="middle" font-size="10" font-weight="700">P0 def</text>
+  <!-- Phase 1: 0.75h -->
+  <rect x="85"  y="30" width="67"  height="20" fill="#a8d0ff" stroke="#003366"/>
+  <text x="118" y="44" text-anchor="middle" font-size="10" font-weight="700">P1 offset metadata</text>
+  <!-- Phase 2: 1.0h -->
+  <rect x="152" y="30" width="90"  height="20" fill="#ffd9b3" stroke="#663300"/>
+  <text x="197" y="44" text-anchor="middle" font-size="10" font-weight="700">P2 harness</text>
+  <!-- Phase 3: 1.5h -->
+  <rect x="242" y="30" width="135" height="20" fill="#ffb38a" stroke="#7a3300"/>
+  <text x="309" y="44" text-anchor="middle" font-size="10" font-weight="700">P3 per-plot sweep (the bulk)</text>
+  <!-- Phase 4: 0.75h -->
+  <rect x="377" y="30" width="67"  height="20" fill="#d9c2ff" stroke="#330066"/>
+  <text x="411" y="44" text-anchor="middle" font-size="10" font-weight="700">P4 comp</text>
+  <!-- Phase 5: 0.5h -->
+  <rect x="444" y="30" width="45"  height="20" fill="#a8d0ff" stroke="#003366"/>
+  <text x="466" y="44" text-anchor="middle" font-size="10" font-weight="700">P5 struct</text>
+  <!-- Phase 6: 0.5h -->
+  <rect x="489" y="30" width="45"  height="20" fill="#ffd6d6" stroke="#990000"/>
+  <text x="511" y="44" text-anchor="middle" font-size="10" font-weight="700">P6 gaps</text>
+  <!-- Slack -->
+  <rect x="534" y="30" width="316" height="20" fill="#eee" stroke="#999" stroke-dasharray="3,2"/>
+  <text x="692" y="44" text-anchor="middle" font-size="11" font-style="italic" fill="#666">slack — re-verify, file drift reports, post-mortem before open</text>
+  <!-- Phase legend -->
+  <text x="40" y="80" font-size="11" font-weight="700">Phases (sequential — Phase N requires Phase N-1 sign-off):</text>
+  <text x="40" y="100" font-size="11">P0 (30m) — Lock rolling-window + offset semantics with Anish</text>
+  <text x="40" y="115" font-size="11">P1 (45m) — Add OFFSETS dict to 4 port modules; create _common/offset.py helpers</text>
+  <text x="40" y="130" font-size="11">P2 (60m) — Build verification/parity/run_parity_test.py; smoke-test on PBJ Bull / LUNR 1m</text>
+  <text x="40" y="145" font-size="11">P3 (90m) — 13-row priority sweep across the 4 named ports + heavy_pentagon</text>
+  <text x="40" y="160" font-size="11">P4-P6 (105m) — Compositions, structural plots, gap fixes</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 2 — Phase Gantt. Five hours of budgeted work, four hours of slack between Phase 6 and the open. If a phase runs long, the slack absorbs it; if you're tracking ahead, do GPS satellite work in the slack.</p>
+
+<h2 id="phase0">3. Phase 0 — Definitions to lock with Anish</h2>
+
+<p>Anish flagged these two definitions as the first things we must agree on before any port-level work happens. Bring both to him for explicit sign-off; do not assume.</p>
+
+<h3>3.1 Rolling window — canonical definition (proposed)</h3>
+
+<div class="info">
+A rolling N-bar window emits NaN until N <strong>closed</strong> bars exist in the input series, then computes its aggregation over the N most recent closed bars <strong>inclusive of the current bar</strong>. Pandas equivalent for SMA / standard deviation: <code>s.rolling(N, min_periods=N).agg(...)</code>. For <code>highest()</code> / <code>lowest()</code> we use <code>min_periods=1</code> because max/min are well-defined on partial windows (matches Pine <code>ta.highest</code> / <code>ta.lowest</code> behavior on bars before bar N).
+</div>
+
+<p>Confirm or amend with Anish, then write <code>docs/agentic-os/canonical/ROLLING_WINDOW.md</code> and add a one-line cross-link to it from each port's module docstring.</p>
+
+<p>Worked examples:</p>
+
+<table>
+<tr><th>Operation</th><th>Pandas idiom</th><th>Behavior at bar i</th></tr>
+<tr><td>SMA-20 on series <code>s</code></td><td><code>s.rolling(20, min_periods=20).mean()</code></td><td>NaN for i &lt; 19; mean of <code>s[i-19..i]</code> for i ≥ 19</td></tr>
+<tr><td>stdev-30 on series <code>s</code></td><td><code>s.rolling(30, min_periods=30).std()</code></td><td>NaN for i &lt; 29; sample stdev of <code>s[i-29..i]</code> for i ≥ 29</td></tr>
+<tr><td>highest-50 on series <code>s</code></td><td><code>s.rolling(50, min_periods=1).max()</code></td><td>For i &lt; 49: max of <code>s[0..i]</code>. For i ≥ 49: max of <code>s[i-49..i]</code></td></tr>
+<tr><td>lookback prior-bar SMA-20 (e.g. <code>bb_avgSpikeDenom</code> in heavy_pentagon)</td><td><code>s.rolling(20, min_periods=20).mean().shift(1)</code></td><td>SMA over bars <code>[i-20..i-1]</code> — the prior 20 bars, NOT including bar i</td></tr>
+</table>
+
+<h3>3.2 Offset semantics — canonical definition (proposed = SD-011)</h3>
+
+<div class="info">
+A plot's declared <code>offset</code> is the bar-index delta from the <strong>alert bar</strong> (where the boolean condition evaluates true) to the <strong>visual bar</strong> (where the plot's icon lands on the chart). <code>offset = 0</code> means visual lives on the alert bar. <code>offset = -1</code> means visual lives one bar earlier. <strong>Composite offset is <code>min(operand_offsets)</code></strong> — any <code>-1</code> operand forces the composite to <code>-1</code>. <strong>Concurrent-fires tabulation MUST use the visual bar, NOT the alert bar.</strong> For an offset=-1 plot firing alert at bar N, the diagnostic "what else fired here" must query bar N-1.
+</div>
+
+<svg width="960" height="240" viewBox="0 0 960 240" xmlns="http://www.w3.org/2000/svg">
+  <!-- bar timeline -->
+  <line x1="60" y1="110" x2="900" y2="110" stroke="#333" stroke-width="2"/>
+  <!-- bars -->
+  <rect x="100" y="80"  width="60" height="60" fill="#fafafa" stroke="#999"/>
+  <text x="130" y="155" text-anchor="middle" font-size="12">bar N-2</text>
+  <rect x="280" y="80"  width="60" height="60" fill="#fff3a8" stroke="#996600" stroke-width="2"/>
+  <text x="310" y="155" text-anchor="middle" font-size="12" font-weight="700">bar N-1 (VISUAL)</text>
+  <rect x="460" y="80"  width="60" height="60" fill="#d6e9ff" stroke="#003366" stroke-width="2"/>
+  <text x="490" y="155" text-anchor="middle" font-size="12" font-weight="700">bar N (ALERT)</text>
+  <rect x="640" y="80"  width="60" height="60" fill="#fafafa" stroke="#999"/>
+  <text x="670" y="155" text-anchor="middle" font-size="12">bar N+1</text>
+  <!-- Alert arrow -->
+  <line x1="490" y1="80" x2="490" y2="40" stroke="#003366" stroke-width="2"/>
+  <polygon points="490,32 484,44 496,44" fill="#003366"/>
+  <text x="490" y="22" text-anchor="middle" font-size="11" fill="#003366" font-weight="700">alert fires here (bar N close)</text>
+  <!-- Visual arrow -->
+  <line x1="310" y1="80" x2="310" y2="40" stroke="#996600" stroke-width="2"/>
+  <polygon points="310,32 304,44 316,44" fill="#996600"/>
+  <text x="310" y="22" text-anchor="middle" font-size="11" fill="#996600" font-weight="700">visual lands here (offset = -1)</text>
+  <!-- Offset arrow between -->
+  <path d="M 480,170 Q 400,200 320,170" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#ar2)"/>
+  <text x="400" y="217" text-anchor="middle" font-size="11" font-style="italic" fill="#444">apply offset = -1 → visual shifts one bar left</text>
+  <!-- Tabulate badge -->
+  <rect x="265" y="180" width="90" height="22" rx="11" fill="#1f7a3f"/>
+  <text x="310" y="195" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">TABULATE HERE</text>
+  <!-- Wrong path -->
+  <rect x="445" y="180" width="90" height="22" rx="11" fill="#fff" stroke="#cc0000" stroke-width="1.5"/>
+  <text x="490" y="195" text-anchor="middle" font-size="11" fill="#cc0000" text-decoration="line-through">tabulate here</text>
+  <text x="490" y="215" text-anchor="middle" font-size="10" fill="#cc0000" font-style="italic">WRONG — common bug</text>
+  <defs>
+    <marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 3 — Offset semantics. The alert fires at bar N close but the visual lands at bar N-1. The "concurrent fires" question — "what else fired here?" — must be answered using bar N-1, not bar N.</p>
+
+<h4>The composite-inherits-min-offset rule</h4>
+
+<svg width="900" height="200" viewBox="0 0 900 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 3 operand rows -->
+  <rect x="60"  y="20"  width="280" height="34" fill="#d6e9ff" stroke="#003366"/>
+  <text x="200" y="42" text-anchor="middle" font-size="13" font-weight="700">Operand A: offset = 0 (visual on alert bar)</text>
+  <rect x="60"  y="64"  width="280" height="34" fill="#fff3a8" stroke="#996600" stroke-width="2"/>
+  <text x="200" y="86" text-anchor="middle" font-size="13" font-weight="700">Operand B: offset = -1 (visual one bar left)</text>
+  <rect x="60"  y="108" width="280" height="34" fill="#d6e9ff" stroke="#003366"/>
+  <text x="200" y="130" text-anchor="middle" font-size="13" font-weight="700">Operand C: offset = 0</text>
+  <!-- ANDed arrow -->
+  <text x="380" y="85" font-size="14" font-weight="700">&amp;</text>
+  <line x1="400" y1="80" x2="450" y2="80" stroke="#444" stroke-width="2" marker-end="url(#ar3)"/>
+  <text x="425" y="70" text-anchor="middle" font-size="11" fill="#444">compose</text>
+  <!-- Composite row -->
+  <rect x="470" y="64" width="380" height="34" fill="#ffb38a" stroke="#7a3300" stroke-width="2"/>
+  <text x="660" y="86" text-anchor="middle" font-size="13" font-weight="700">Composite: offset = min(0, -1, 0) = -1</text>
+  <!-- Annotation -->
+  <text x="450" y="170" text-anchor="middle" font-size="12" font-style="italic" fill="#7a3300">The leftmost shift wins. A single offset=-1 operand drags the entire composite to offset=-1.</text>
+  <defs>
+    <marker id="ar3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 4 — Composite-inherits-min-offset. Any single operand at offset=-1 forces the composite to -1.</p>
+
+<h3>3.3 Deliverables for Phase 0</h3>
+
+<ol>
+<li>Read both proposed definitions to Anish. Get explicit yes / amend / no.</li>
+<li>Write <code>docs/agentic-os/canonical/ROLLING_WINDOW.md</code>.</li>
+<li>Write <code>docs/agentic-os/canonical/OFFSET_SEMANTICS.md</code>.</li>
+<li>Append SD-011 to <code>docs/agentic-os/STANDING_DECISIONS.md</code> (next entry after SD-010 around line 280).</li>
+<li>Skeleton <code>.claude/skills/offset-application/SKILL.md</code> (Anthropic Skill format — SKILL.md + YAML frontmatter + progressive disclosure per <code>github.com/anthropics/skills</code>).</li>
+</ol>
+
+<h2 id="phase1">4. Phase 1 — Offset metadata in ports</h2>
+
+<p>Mechanical work, no engine changes. Add a single <code>OFFSETS: Dict[str, int]</code> registry next to each port's <code>DETECTIONS</code> registry. Then create two shared helpers.</p>
+
+<h3>4.1 The offset map (verify each row against Pine source)</h3>
+
+<table>
+<tr><th>Family / port</th><th>Plot names</th><th>Declared offset</th><th>Pine source to grep</th></tr>
+<tr><td>hvd_pbj_ppd</td><td>PBJ Bull/Bear, PB Bull/Bear, B2B HV+D variants, CO HV+D+PBJ/PB+USE Bull/Bear</td><td><strong>-1</strong></td><td><code>hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine</code> L1659-1792</td></tr>
+<tr><td>hvd_pbj_ppd</td><td>Floor, 2nd Floor, Rooftop, Penthouse, Bull/Bear UU/UUU/UUUU, AlphaStrike, Foxtrot, Combo Bull/Bear (CS3), CC, LSC</td><td><strong>-1 (verify)</strong></td><td>same Pine, plot() block</td></tr>
+<tr><td>heavy_pentagon</td><td>Bull RVOL 1x, Bear RVOL 1x, Pentagon, Hiroshima, MOAB, Grand Slam, SAAB, Kratos, Nagasaki (HEV), Heavy Yin-Yang, Heavy Nagasaki, Heavy Trident, NHx2 — all variants</td><td><strong>0</strong></td><td><code>heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine</code> — confirm no plot() has offset arg</td></tr>
+<tr><td>squarify</td><td>S1-S46 atomics, csNew1 (FVG Combo) Bull/Bear, csNew2 Bull/Bear, csNew3 (Unified Combo) Bull/Bear, T1/T2 Opening Confluence, HV75/150/250/500/1000 atomics, A_HEV, A_DISPB/A_DISPR</td><td><strong>-1</strong></td><td><code>squarify/versions/SQUARIFY_ATOMS_v1.pine</code> L2333-2364</td></tr>
+<tr><td>b2b_pup</td><td>S1-S18 series, all B2B+FAU, B2B+DISP, B2B+PBJ, UC+B2B, UU+B2B, DD+B2B variants</td><td><strong>-1</strong></td><td><code>b2b-pup/versions/B2B_PUP_Combined_v4.32_2026-05-04.pine</code></td></tr>
+<tr><td>tnt_od (v3)</td><td>T1 RELAY Bull/Bear, T1 STACK Bull/Bear, B2B Napalm, RC NPM+TNT, CATALYST, IGNITE, FUSE, NPM Enriched, RC RET+NPM Enriched, PBJ+NPM, Density 1/2/3, UU/UUU/UUUU+TNT, WBUSH</td><td><strong>-1</strong></td><td><code>tnt-od/versions/TNT_OD_v3.pine</code></td></tr>
+<tr><td>ultra_combo</td><td>GZ/HV Bull, HV+GZI± variants, GZ/HV MEGA, GZ1+HV MEGA, GZ/HV+HVY</td><td><strong>-1</strong></td><td><code>ultra-combo/versions/ULTRA_COMBO_v57_pine6.pine</code></td></tr>
+<tr><td>fauna_shifu</td><td>JUMBO_CIA_1ST_PUP variants</td><td><strong>(verify; likely -1)</strong></td><td><code>fauna-shifu/versions/FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine</code></td></tr>
+</table>
+
+<h3>4.2 Module-level invariant</h3>
+
+<p>Add at the bottom of each port module:</p>
+
+<pre><code>assert set(OFFSETS) == set(DETECTIONS), \
+    f"OFFSETS must cover every DETECTIONS key — missing: {set(DETECTIONS) - set(OFFSETS)}; extra: {set(OFFSETS) - set(DETECTIONS)}"</code></pre>
+
+<h3>4.3 Shared helpers</h3>
+
+<p>Create <code>python_ports/_common/offset.py</code>:</p>
+
+<pre><code>"""Offset composition + application helpers per SD-011."""
+from __future__ import annotations
+from typing import Iterable
+import pandas as pd
+
+
+def compose_offset(operand_offsets: Iterable[int]) -> int:
+    """Composite offset = min(operand offsets). Any -1 wins per SD-011."""
+    return min(operand_offsets)
+
+
+def apply_offset(series: pd.Series, offset: int) -> pd.Series:
+    """Shift a boolean fire series so its index reflects the VISUAL bar.
+
+    offset=0 -> series unchanged.
+    offset=-1 -> series.shift(-1) so the True at alert-bar N appears at index N-1.
+    """
+    if offset == 0:
+        return series
+    return series.shift(offset).fillna(False).astype(bool)
+</code></pre>
+
+<p>Create <code>python_ports/_common/__init__.py</code> (empty file — package marker).</p>
+
+<p>Acceptance:</p>
+
+<pre><code>python3 -c "from python_ports._common.offset import compose_offset, apply_offset; \
+            assert compose_offset([0, -1, 0]) == -1; \
+            print('compose_offset OK')"
+
+for mod in python_ports.hvd_pbj_ppd.the_only_one \
+           python_ports.heavy_pentagon.canonical \
+           python_ports.squarify.canonical_46_v2 \
+           python_ports.b2b_pup.canonical \
+           python_ports.tnt_od.v3; do
+    python3 -c "import $mod as m; assert set(m.OFFSETS) == set(m.DETECTIONS)" \
+        || echo "FAIL: $mod"
+done</code></pre>
+
+<h2 id="phase2">5. Phase 2 — Parity harness</h2>
+
+<p>One reusable Python module that compares the Python port output against the TV-MCP labels for a (logger, symbol, timeframe, plot list) tuple.</p>
+
+<h3>5.1 Files to create</h3>
+
+<ul>
+<li><code>verification/__init__.py</code></li>
+<li><code>verification/parity/__init__.py</code></li>
+<li><code>verification/parity/run_parity_test.py</code></li>
+</ul>
+
+<h3>5.2 Function signature</h3>
+
+<pre><code>def run_parity(
+    logger_name: str,          # e.g. "LOGGER Heavy Pentagon"
+    symbol: str,               # e.g. "LUNR"
+    tf: str,                   # e.g. "1m"
+    plot_names: list[str],     # e.g. ["Bull RVOL 1x", "Bear RVOL 1x", "MOAB"]
+    port_module,               # imported python_ports.heavy_pentagon.canonical
+    lookback_bars: int = 5000,
+) -> dict:
+    """Run a parity check. Returns the per-plot summary dict that
+    gets serialized to verification/parity/&lt;date&gt;/&lt;symbol&gt;_&lt;tf&gt;_&lt;plot-slug&gt;.json."""
+</code></pre>
+
+<h3>5.3 Algorithm</h3>
+
+<ol>
+<li>Query TV labels: <code>mcp__tradingview__data_get_pine_labels(study_filter=logger_name, max_labels=500, verbose=True)</code>. Schema per <code>path-a-loggers/README.md</code> L30-39: <code>{text, price, time, color, bar_index, symbol, timeframe}</code>. Filter to the requested <code>symbol</code> + <code>tf</code>. Parse <code>text</code> per the logger's labeling convention. Build <code>tv_fires: dict[plot_name, set[bar_ts]]</code>.</li>
+<li>Pull OHLCV for <code>(symbol, tf, lookback_bars)</code>:
+  <ul>
+  <li>Crypto symbols (BTCUSD, ETHUSD, etc.): hit <code>https://api.binance.com/api/v3/klines?symbol=...&amp;interval=1m&amp;limit=1000</code> (reuse the request pattern from <code>live/adapters/binance_ws.py</code>; for history, page back with <code>endTime</code>).</li>
+  <li>Equities (LUNR, AEHR, PL, WOLF, CRWV, IONQ, IREN): use the Massive.com MCP if you have a history endpoint exposed; otherwise call the TradingView MCP's chart-data export (TV has the bars cached because you just loaded the logger on that chart).</li>
+  </ul>
+</li>
+<li>Build the rolling DataFrame with columns <code>open, high, low, close, volume</code> indexed by <code>bar_ts</code>.</li>
+<li>For each plot in <code>plot_names</code>:
+  <pre><code>detect = port_module.DETECTIONS[plot]
+offset = port_module.OFFSETS[plot]
+series = detect(df, _FORCE_SHOW_PARAMS)              # IPSF override per live/port_runner.py:36-40
+series = apply_offset(series, offset)                # SD-011 — visual bar
+py_fires = set(df.index[series.fillna(False).astype(bool)])</code></pre>
+</li>
+<li>Diff:
+  <pre><code>matched     = py_fires &amp; tv_fires
+py_only     = py_fires - tv_fires    # we said fire, TV didn't
+tv_only     = tv_fires - py_fires    # TV said fire, we didn't</code></pre>
+</li>
+<li>Write one JSON per plot to <code>verification/parity/2026-05-11/&lt;symbol&gt;_&lt;tf&gt;_&lt;plot-slug&gt;.json</code>:
+  <pre><code>{
+  "symbol": "LUNR",
+  "tf": "1m",
+  "plot": "PBJ Bull",
+  "module": "python_ports.hvd_pbj_ppd.the_only_one",
+  "offset_applied": -1,
+  "sample_size_target": 50,
+  "sample_size_actual": 47,
+  "total_tv": 47,
+  "total_py": 47,
+  "matched_count": 46,
+  "match_rate": 0.9787,
+  "drift_bars_py_only": ["2026-05-09T14:32:00Z"],
+  "drift_bars_tv_only": ["2026-05-09T14:33:00Z"],
+  "checked_at": "2026-05-11T05:14:08Z"
+}</code></pre>
+</li>
+</ol>
+
+<h3>5.4 CLI entrypoint</h3>
+
+<pre><code>python -m verification.parity.run_parity_test \
+    --logger "LOGGER HVDPBJPPD" \
+    --module python_ports.hvd_pbj_ppd.the_only_one \
+    --symbol LUNR \
+    --tf 1m \
+    --plots "PBJ Bull" "PBJ Bear"</code></pre>
+
+<h3>5.5 Smoke-test acceptance</h3>
+
+<p>Run against <code>PBJ Bull</code> on <code>LUNR 1m</code>. JSON written with sane counts. No crash. <code>matched_count &gt;= total_tv * 0.95</code> on a 50-fire sample.</p>
+
+<h2 id="phase3">6. Phase 3 — Per-plot parity sweep</h2>
+
+<p>The heart of this hand-off. 13 rows, priority order, each running through <code>run_parity</code>. Anish's symbols: LUNR, AEHR, PL (Planet Labs), WOLF, CRWV, IONQ, IREN. Low TFs: 1m and 5m. Target: 50 fires per plot per (symbol, TF) pair where achievable; relax if a symbol doesn't fire 50 times in the lookback. Accept lookback up to one week.</p>
+
+<table>
+<tr><th>#</th><th>Plot</th><th>Module / DETECTIONS key</th><th>Logger</th><th>Symbols (any 3+)</th><th>TFs</th><th>Special notes</th></tr>
+<tr><td>1</td><td><strong>PBJ Bull / Bear</strong></td><td><code>hvd_pbj_ppd.the_only_one</code> / "PBJ Bull", "PBJ Bear"</td><td>LOGGER_HVDPBJPPD_v1</td><td>LUNR, AEHR, IREN</td><td>1m, 5m</td><td>offset=-1; canonical Pipeline-B terminal. Start here per Anish.</td></tr>
+<tr><td>2</td><td>PB Bull / Bear</td><td><code>hvd_pbj_ppd.the_only_one</code> / "PB Bull", "PB Bear"</td><td>LOGGER_HVDPBJPPD_v1</td><td>LUNR, AEHR, IREN</td><td>1m, 5m</td><td>offset=-1; PBJ's no-J sibling</td></tr>
+<tr><td>3</td><td>RVOL 1x Bull / Bear</td><td><code>heavy_pentagon.canonical</code> / "Bull RVOL 1x", "Bear RVOL 1x"</td><td>LOGGER_HEAVY_PENTAGON_v1</td><td>LUNR, AEHR, CRWV, IREN</td><td>1m, 5m</td><td>offset=0; force <code>show_BullRVOL1x=True, show_BearRVOL1x=True</code> via params per <code>live/port_runner.py:36-40</code></td></tr>
+<tr><td>4</td><td>Pentagon</td><td><code>heavy_pentagon.canonical</code> / "Pentagon"</td><td>LOGGER_HEAVY_PENTAGON_v1</td><td>same</td><td>1m, 5m</td><td>offset=0; <strong>requires <code>df.attrs["relVolRatio"]</code> injection</strong>. Author a stub-logger Pine that emits <code>tv_ta.relativeVolume(...)</code> as label text; pull via TV-MCP; feed back as numeric series.</td></tr>
+<tr><td>5</td><td>Hiroshima</td><td><code>heavy_pentagon.canonical</code> / "Hiroshima"</td><td>LOGGER_HEAVY_PENTAGON_v1</td><td>same</td><td>1m, 5m</td><td>offset=0; same <code>relVolRatio</code> requirement as Pentagon</td></tr>
+<tr><td>6</td><td>MOAB</td><td><code>heavy_pentagon.canonical</code> / "MOAB"</td><td>LOGGER_HEAVY_PENTAGON_v1</td><td>same</td><td>1m, 5m</td><td>offset=0; force <code>show_MOAB=True</code> (already default-True per heavy_pentagon DEFAULTS)</td></tr>
+<tr><td>7</td><td>Nagasaki Plus Bull</td><td><code>heavy_pentagon.canonical</code> / "Heavy Nagasaki Bull"</td><td>LOGGER_NAGASAKI_PLUS_v1</td><td>LUNR, IONQ, CRWV</td><td>1m, 5m</td><td>offset=0; composite of <code>sigNagasaki AND (sigBullRVOL1x OR sigGrandSlam) AND dispBull</code></td></tr>
+<tr><td>8</td><td>Nagasaki Plus Bear</td><td><code>heavy_pentagon.canonical</code> / "Heavy Nagasaki Bear"</td><td><strong>requires LOGGER_NAGASAKI_PLUS_v2 — author first</strong></td><td>LUNR, IONQ, CRWV</td><td>1m, 5m</td><td>v1 has bear-side placeholder at L33; ship v2 in Phase 6 then run this row</td></tr>
+<tr><td>9</td><td>FVG Combo (csNew1) Bull / Bear</td><td><code>squarify.canonical_46_v2</code> / "csNew1 Bull (FVG Combo)" + bear</td><td>LOGGER_SQUARIFY_v1</td><td>WOLF, PL, CRWV</td><td>1m, 5m</td><td>offset=-1; comboSet1 OR comboSet2</td></tr>
+<tr><td>10</td><td>Unified Combo (csNew3) Bull / Bear</td><td><code>squarify.canonical_46_v2</code> / "csNew3 Bull (Unified Combo)" + bear</td><td>LOGGER_HVDPBJPPD_v1 (UC plot lives there) <em>and</em> LOGGER_SQUARIFY_v1</td><td>WOLF, PL, CRWV, IREN</td><td>1m, 5m</td><td>offset=-1; LAGGED Group-A: <code>csNew1 AND nz(csNew2[1])</code>. Cross-logger verify — both should emit at the same bars.</td></tr>
+<tr><td>11</td><td>B2B PUP Bull / Bear (S1-S18)</td><td><code>b2b_pup.canonical</code> / family</td><td>LOGGER_B2B_PUP_v1</td><td>IREN, CRWV, IONQ</td><td>1m, 5m</td><td>offset=-1; 18 variants per side; per Anish: IREN / CRWV / IONQ "all have back-to-back napalms, back-to-back PUP" — won't struggle to find samples</td></tr>
+<tr><td>12</td><td>Displacement Bull / Bear</td><td><code>hvd_pbj_ppd.the_only_one</code> / <strong>promote <code>sigDISPBull</code>/<code>sigDISPBear</code> to DETECTIONS first (Phase 6)</strong></td><td>LOGGER_HVDPBJPPD_v1</td><td>LUNR, AEHR</td><td>1m, 5m</td><td>offset=-1 (verify); currently INTERNAL helpers in <code>_ensure_engines</code> output dict — promote with two 1-line additions to DETECTIONS</td></tr>
+<tr><td>13</td><td><strong>TNT-OD v3</strong> — T1 RELAY Bull/Bear, T1 STACK Bull/Bear, Catalyst, Density 1/2/3</td><td><code>tnt_od.v3</code> / DETECTIONS</td><td>LOGGER_TNT_OD_v1</td><td>LUNR, AEHR, IREN, CRWV</td><td>1m, 5m</td><td>offset=-1; v3-specific detections (gate_disp engine, conditional gate, T1Walker state machine). v2 doesn't have these — confirm v3 is loaded.</td></tr>
+</table>
+
+<h3>6.1 Acceptance per plot</h3>
+
+<p><strong>Pass:</strong> <code>matched_count / max(total_tv, total_py) ≥ 0.95</code> on the achievable sample. Ideally 50/50.</p>
+
+<p><strong>Fail (drift detected):</strong> File <code>docs/validation/2026-05-11-parity-drift-&lt;plot-slug&gt;.md</code> with a brief root-cause hypothesis. Apply the drift policy decision tree in Section 10.</p>
+
+<h3>6.2 Anish's recommendation on which symbols fire which plots</h3>
+
+<div class="callout">
+Anish 2026-05-11: "<em>If you look at LUNR, if you look at AEHR, if you look at Planet Labs (PL), if you look at WOLF, if you look at CRWV, if you look at IONQ or IREN, these will all have back-to-back napalms, back-to-back PUP. We're not going to have to struggle to find them.</em>"
+</div>
+
+<p>If a (symbol, TF, plot) combination yields fewer than 5 fires over a 1-week lookback, try another symbol. Don't burn the time budget chasing a sparse pair.</p>
+
+<h2 id="phase4">7. Phase 4 — Composition checks</h2>
+
+<p>For each pair below, run <code>run_parity</code> for each operand individually, apply <code>apply_offset</code> per operand, then intersect bar-ts sets. Compare cardinality and bar-set equality to the matching TV-side concurrence label.</p>
+
+<table>
+<tr><th>Composition</th><th>Why we care</th><th>Operands</th><th>TV-side label to compare against</th></tr>
+<tr><td>Pentagon ∩ RVOL 1x same bar</td><td>"That's like a no brainer. That's a must have." — Anish</td><td>Pentagon (offset=0), Bull/Bear RVOL 1x (offset=0)</td><td>LOGGER_HEAVY_PENTAGON_v1 emits both as separate labels — bar-set intersection should match</td></tr>
+<tr><td>HV ∩ Displacement (HVD root)</td><td>The "HV+D Bull/Bear" detection — foundation of everything downstream</td><td>HV (high-volume tier), Displacement (sigDISPBull)</td><td>LOGGER_HVDPBJPPD_v1 "HV+D Bull"</td></tr>
+<tr><td>HV ∩ Displacement ∩ PB(J)</td><td>The PB / PBJ Bull / Bear terminals</td><td>HVD root + PB[1] or PBJ[1]</td><td>LOGGER_HVDPBJPPD_v1 "PB Bull" / "PBJ Bull"</td></tr>
+<tr><td>HV ∩ Displacement ∩ Unified Combo ∩ PB(J)</td><td>The "CO" combo — high-conviction multi-pipeline confluence</td><td>HVD + UC + PB(J)</td><td>LOGGER_HVDPBJPPD_v1 "CO HV+D+PBJ+USE Bull"</td></tr>
+<tr><td>Hiroshima alone</td><td>"You got to prove that you can get Hiroshima when Hiroshima hits."</td><td>Hiroshima</td><td>LOGGER_HEAVY_PENTAGON_v1 — already part of Phase 3, no new TV-side label</td></tr>
+<tr><td>HV1000 alone</td><td>"You need to prove that you can get high volume one k when there's a high volume one k."</td><td>HV1000 atomic (squarify.canonical_46_v2)</td><td>LOGGER_SQUARIFY_v1 (HV1000 lives there as an atomic per the Phase 0 inventory; heavy_pentagon has it as a phantom-toggle reference only)</td></tr>
+</table>
+
+<h3>7.1 Acceptance</h3>
+
+<p>Same ≥ 0.95 threshold per pair against the matching TV-side label. Drift findings filed at <code>docs/validation/2026-05-11-composition-&lt;pair-slug&gt;.md</code>.</p>
+
+<h2 id="phase5">8. Phase 5 — Structural plots</h2>
+
+<svg width="920" height="280" viewBox="0 0 920 280" xmlns="http://www.w3.org/2000/svg">
+  <!-- Penthouse top -->
+  <rect x="80"  y="20" width="320" height="60" fill="#ffe7e7" stroke="#cc0000" stroke-width="2"/>
+  <text x="240" y="48" text-anchor="middle" font-size="14" font-weight="700">Penthouse (bear)</text>
+  <text x="240" y="66" text-anchor="middle" font-size="11">bear_pp AND sigBearPB AND bear_hw_slot</text>
+  <!-- Rooftop -->
+  <rect x="80"  y="80" width="320" height="60" fill="#fff3a8" stroke="#996600" stroke-width="2"/>
+  <text x="240" y="108" text-anchor="middle" font-size="14" font-weight="700">Rooftop (bear)</text>
+  <text x="240" y="126" text-anchor="middle" font-size="11">bear_pp AND sigBearPBJ AND bear_hw_slot</text>
+  <!-- 2nd Floor -->
+  <rect x="80"  y="140" width="320" height="60" fill="#fff3a8" stroke="#996600" stroke-width="2"/>
+  <text x="240" y="168" text-anchor="middle" font-size="14" font-weight="700">2nd Floor (bull)</text>
+  <text x="240" y="186" text-anchor="middle" font-size="11">bull_pp AND sigBullPB AND bull_hw_slot</text>
+  <!-- Floor -->
+  <rect x="80"  y="200" width="320" height="60" fill="#e7f8ee" stroke="#1f7a3f" stroke-width="2"/>
+  <text x="240" y="228" text-anchor="middle" font-size="14" font-weight="700">Floor (bull)</text>
+  <text x="240" y="246" text-anchor="middle" font-size="11">bull_pp AND sigBullPBJ AND bull_hw_slot</text>
+
+  <!-- Annotation panel -->
+  <rect x="440" y="20" width="450" height="240" rx="6" fill="#fafafa" stroke="#aaa"/>
+  <text x="455" y="40" font-size="13" font-weight="700">Structural plots in hvd_pbj_ppd.the_only_one</text>
+  <text x="455" y="60" font-size="11">All four share the anchor pattern:</text>
+  <text x="455" y="80" font-size="12" font-family="monospace">pocket_pivot AND (PB or PBJ) AND hw_slot</text>
+  <text x="455" y="105" font-size="11">Direction switches via _pp / _hw_slot variant.</text>
+  <text x="455" y="120" font-size="11">PBJ variant (with J = high-volume confirmation) lives on</text>
+  <text x="455" y="135" font-size="11">"Floor" and "Rooftop"; PB variant (no J) on "2nd Floor"</text>
+  <text x="455" y="150" font-size="11">and "Penthouse".</text>
+  <text x="455" y="180" font-size="11" font-weight="700">All four expected offset = -1.</text>
+  <text x="455" y="200" font-size="11">Confirm by grepping the Pine plot() calls for offset=-1.</text>
+  <text x="455" y="230" font-size="11" font-style="italic" fill="#666">"super duper get the definitions of floor and roof and</text>
+  <text x="455" y="245" font-size="11" font-style="italic" fill="#666">just be clear on what we are defining penthouse and</text>
+  <text x="455" y="260" font-size="11" font-style="italic" fill="#666">second floor" — Anish 2026-05-11</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 5 — Roof-floor architecture. Four structural plots, one pattern. Direction (bull/bear) and J-confirmation (PB vs PBJ) determine which of the four fires.</p>
+
+<h3>8.1 Plots to verify</h3>
+
+<table>
+<tr><th>Plot</th><th>Module / DETECTIONS key</th><th>Logger</th><th>Symbols</th></tr>
+<tr><td>Floor</td><td><code>hvd_pbj_ppd.the_only_one</code> / "Floor"</td><td>LOGGER_HVDPBJPPD_v1</td><td>LUNR, AEHR, IREN</td></tr>
+<tr><td>2nd Floor</td><td>same / "2nd Floor"</td><td>same</td><td>same</td></tr>
+<tr><td>Rooftop</td><td>same / "Rooftop"</td><td>same</td><td>same</td></tr>
+<tr><td>Penthouse</td><td>same / "Penthouse"</td><td>same</td><td>same</td></tr>
+<tr><td>Bull UU</td><td>same / "Bull UU"</td><td>same</td><td>LUNR, IREN, CRWV</td></tr>
+<tr><td>Bull UUU</td><td>same / "Bull UUU"</td><td>same</td><td>same</td></tr>
+<tr><td>Bull UUUU</td><td>same / "Bull UUUU"</td><td>same</td><td>same</td></tr>
+<tr><td>Bear UU</td><td>same / "Bear UU"</td><td>same</td><td>same</td></tr>
+<tr><td>Bear UUU</td><td>same / "Bear UUU"</td><td>same</td><td>same</td></tr>
+<tr><td>Bear UUUU</td><td>same / "Bear UUUU"</td><td>same</td><td>same</td></tr>
+<tr><td>Bull U-Sub (Anish's "D-Sub" pattern minimum 3-bar)</td><td>same / "Bull U-Sub"</td><td>same</td><td>same</td></tr>
+<tr><td>Bear D-Sub</td><td>same / "Bear D-Sub"</td><td>same</td><td>same</td></tr>
+</table>
+
+<h2 id="phase6">9. Phase 6 — Gap fixes</h2>
+
+<p>Three small fixes that unlock Phase-3 rows 8 and 12 and finish the offset-semantics doc trail.</p>
+
+<h3>9.1 Author <code>LOGGER_NAGASAKI_PLUS_v2.pine</code></h3>
+
+<p>v1 at <code>path-a-loggers/versions/LOGGER_NAGASAKI_PLUS_v1.pine</code> L33 has the bear-side as a placeholder (<code>s_nag_plus_bear = input.source(close, ...)</code>). Author v2:</p>
+
+<ul>
+<li>Copy v1 verbatim. Bump filename to v2. Per SD-002, v1 stays untouched on disk.</li>
+<li>Wire <code>s_nag_plus_bear</code> to the actual Heavy Nagasaki Bear plot in HEAVY_PENTAGON. Confirm the plot title via the Pine source.</li>
+<li>Emit a <code>label.new()</code> when <code>s_nag_plus_bear</code> transitions True with text like <code>"NAG+R"</code> (or whatever convention you settle on; document in the logger's comment header).</li>
+<li>Update <code>path-a-loggers/versions/LATEST.txt</code> to <code>LOGGER_NAGASAKI_PLUS_v2.pine</code>.</li>
+</ul>
+
+<h3>9.2 Promote Displacement to DETECTIONS</h3>
+
+<p>In <code>python_ports/hvd_pbj_ppd/the_only_one.py</code>:</p>
+
+<ul>
+<li>Currently <code>sigDISPBull</code> / <code>sigDISPBear</code> are computed inside <code>_ensure_engines</code> (around L433-437) and returned via <code>cache["sigDISPBull"]</code> / <code>cache["sigDISPBear"]</code> but NOT in the DETECTIONS registry.</li>
+<li>Add two <code>_wrap</code>-style detection functions (mirror the pattern in <code>heavy_pentagon/canonical.py:483-491</code>) named <code>detect_DispBull</code> / <code>detect_DispBear</code>.</li>
+<li>Add to DETECTIONS at the bottom of the module: <code>"DISP Bull": detect_DispBull, "DISP Bear": detect_DispBear</code>.</li>
+<li>Add to OFFSETS: <code>"DISP Bull": -1, "DISP Bear": -1</code> (verify against Pine).</li>
+</ul>
+
+<h3>9.3 Append SD-011 to STANDING_DECISIONS.md</h3>
+
+<p>Next entry after SD-010 (around line 280 of <code>docs/agentic-os/STANDING_DECISIONS.md</code>). Body:</p>
+
+<pre><code>## SD-011 — Offset is metadata; concurrent-fire tabulation uses the visual bar
+
+Date: 2026-05-11
+
+Decision:
+- Every detection plot declares an integer `offset` in the port module's
+  `OFFSETS` registry. `offset=0` means visual lives on alert bar; `offset=-1`
+  means visual lives one bar earlier. Composite offset = min(operand offsets).
+- The concurrent-fires tabulation step of the diagnosis-card pipeline MUST
+  query the VISUAL bar, not the alert bar. For an offset=-1 plot firing at
+  bar N, concurrent fires are tabulated on bar N-1.
+
+Rationale: Anish's "missing step" — the offset is applied to where the
+visual lands; the diagnosis must follow the visual or the cross-axis
+context will be wrong.
+
+Effect:
+- Python ports add `OFFSETS: Dict[str, int]` next to `DETECTIONS`.
+- `python_ports/_common/offset.py` provides `compose_offset` and
+  `apply_offset` helpers.
+- The `offset-application` skill (skeleton in this commit) is invoked
+  by `detection-plot-diagnosis` when filling the `concurrent_fires` field.
+</code></pre>
+
+<h3>9.4 Skeleton <code>.claude/skills/offset-application/SKILL.md</code></h3>
+
+<p>Per the Anthropic Agent Skills standard at <code>github.com/anthropics/skills</code>. YAML frontmatter declares <code>name</code>, <code>description</code>, <code>when_to_use</code>. Body under 500 words; deep content lives in <code>references/</code>. Cross-link to SD-011.</p>
+
+<h2 id="drift">10. Drift policy decision tree</h2>
+
+<svg width="980" height="460" viewBox="0 0 980 460" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar4" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <!-- Start -->
+  <rect x="380" y="10"  width="220" height="40" rx="6" fill="#ffe7e7" stroke="#cc0000" stroke-width="2"/>
+  <text x="490" y="34" text-anchor="middle" font-size="13" font-weight="700">DRIFT: Python ≠ TV on a bar?</text>
+  <!-- 1: offset -->
+  <rect x="380" y="80"  width="220" height="42" rx="6" fill="#fff3a8" stroke="#996600"/>
+  <text x="490" y="100" text-anchor="middle" font-size="12" font-weight="600">1. Off-by-one in OFFSETS?</text>
+  <text x="490" y="115" text-anchor="middle" font-size="10">Did you forget apply_offset?</text>
+  <line x1="490" y1="50" x2="490" y2="80" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <text x="620" y="105" font-size="11" fill="#1f7a3f">YES → fix OFFSETS, re-run</text>
+  <!-- 2: IPSF -->
+  <rect x="380" y="148" width="220" height="42" rx="6" fill="#fff3a8" stroke="#996600"/>
+  <text x="490" y="168" text-anchor="middle" font-size="12" font-weight="600">2. IPSF default mismatch?</text>
+  <text x="490" y="183" text-anchor="middle" font-size="10">Forgot show_* override?</text>
+  <line x1="490" y1="122" x2="490" y2="148" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <text x="620" y="173" font-size="11" fill="#1f7a3f">YES → pass _FORCE_SHOW_PARAMS, re-run</text>
+  <!-- 3: STUBBED -->
+  <rect x="380" y="216" width="220" height="42" rx="6" fill="#fff3a8" stroke="#996600"/>
+  <text x="490" y="236" text-anchor="middle" font-size="12" font-weight="600">3. STUBBED engine returning False?</text>
+  <text x="490" y="251" text-anchor="middle" font-size="10">Missing df.attrs["relVolRatio"] etc.?</text>
+  <line x1="490" y1="190" x2="490" y2="216" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <text x="620" y="241" font-size="11" fill="#1f7a3f">YES → inject from stub-logger, re-run</text>
+  <!-- 4: rolling -->
+  <rect x="380" y="284" width="220" height="42" rx="6" fill="#fff3a8" stroke="#996600"/>
+  <text x="490" y="304" text-anchor="middle" font-size="12" font-weight="600">4. Rolling window off?</text>
+  <text x="490" y="319" text-anchor="middle" font-size="10">Wrong min_periods? Wrong shift?</text>
+  <line x1="490" y1="258" x2="490" y2="284" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <text x="620" y="309" font-size="11" fill="#1f7a3f">YES → fix port, re-run</text>
+  <!-- 5: bug obvious? -->
+  <polygon points="490,360 380,396 490,432 600,396" fill="#d6e9ff" stroke="#003366" stroke-width="2"/>
+  <text x="490" y="395" text-anchor="middle" font-size="12" font-weight="600">5. Obvious Python port bug?</text>
+  <line x1="490" y1="326" x2="490" y2="360" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <!-- Yes: auto-fix -->
+  <rect x="20"  y="376" width="200" height="40" rx="6" fill="#e7f8ee" stroke="#1f7a3f"/>
+  <text x="120" y="400" text-anchor="middle" font-size="12" font-weight="700">AUTO-FIX, file drift report</text>
+  <line x1="380" y1="396" x2="220" y2="396" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <text x="300" y="386" text-anchor="middle" font-size="11" fill="#1f7a3f" font-weight="700">YES</text>
+  <!-- No: escalate -->
+  <rect x="760" y="376" width="200" height="40" rx="6" fill="#ffe7e7" stroke="#cc0000"/>
+  <text x="860" y="400" text-anchor="middle" font-size="12" font-weight="700">ESCALATE to Anish</text>
+  <line x1="600" y1="396" x2="760" y2="396" stroke="#444" stroke-width="1.5" marker-end="url(#ar4)"/>
+  <text x="680" y="386" text-anchor="middle" font-size="11" fill="#cc0000" font-weight="700">NO — Pine intent ambiguous</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 6 — Drift policy decision tree. Walk top to bottom for any plot that fails parity. Auto-fix obvious port bugs; escalate when Pine intent is ambiguous.</p>
+
+<p>Per SD-006, the Pine source named in <code>&lt;family&gt;/versions/LATEST.txt</code> is canonical. When Python and Pine diverge, Python is wrong by default — fix the Python port to match Pine. <strong>Never modify .pine source</strong> except authoring new files (e.g. LOGGER_NAGASAKI_PLUS_v2).</p>
+
+<h2 id="verify">11. Verification — end-to-end</h2>
+
+<p>Run these six checks after Phase 6 lands. All must pass before declaring the parity sweep complete.</p>
+
+<table>
+<tr><th>#</th><th>Check</th><th>Expected output</th></tr>
+<tr><td>1</td><td><code>python3 -c "from python_ports._common.offset import compose_offset; assert compose_offset([0,-1,0]) == -1; print('OK')"</code></td><td><code>OK</code></td></tr>
+<tr><td>2</td><td><code>for m in python_ports.hvd_pbj_ppd.the_only_one python_ports.heavy_pentagon.canonical python_ports.squarify.canonical_46_v2 python_ports.b2b_pup.canonical python_ports.tnt_od.v3; do python3 -c "import $m as mm; assert set(mm.OFFSETS) == set(mm.DETECTIONS)"; done</code></td><td>No FAIL output</td></tr>
+<tr><td>3</td><td><code>ls verification/parity/2026-05-11/*.json | wc -l</code></td><td>≥ 30 (sum of plot × symbol × tf for Phases 3-5)</td></tr>
+<tr><td>4</td><td><code>grep -c '"match_rate"' verification/parity/2026-05-11/SUMMARY.md</code></td><td>≥ 25 plot summaries</td></tr>
+<tr><td>5</td><td><code>grep -c "SD-011" docs/agentic-os/STANDING_DECISIONS.md</code></td><td>≥ 1</td></tr>
+<tr><td>6</td><td><code>python -m live.server &amp; sleep 5; curl -s http://localhost:8080/ | grep -c "Indicator Leaderboard"</code></td><td><code>1</code> — live leaderboard still boots after your OFFSETS additions</td></tr>
+</table>
+
+<p>Also write a SUMMARY.md at <code>verification/parity/2026-05-11/SUMMARY.md</code> that lists every plot × symbol × tf row with pass/fail badge and links to any drift report.</p>
+
+<h2 id="oos">12. Out of scope</h2>
+
+<ul>
+<li>Touching <code>live/</code> — cloud session retains ownership. If you spot a leaderboard bug, file an issue; don't fix it here.</li>
+<li>Refactoring inline <code>_sma</code> / <code>_stdev</code> / <code>_highest</code> / <code>_lowest</code> helpers into <code>python_ports/_common/rolling.py</code> — DOCUMENT only in <code>ROLLING_WINDOW.md</code>; per SD-002 leave inline copies in each port for stability.</li>
+<li>Modifying any <code>.pine</code> source other than authoring <code>LOGGER_NAGASAKI_PLUS_v2.pine</code> as a new file. Per SD-002 / SD-004, never modify, never delete.</li>
+<li>Implementing the TradingView <code>tv_ta.relativeVolume</code> upstream engine yourself — Pentagon / Hiroshima parity uses the injected <code>relVolRatio</code> series captured via a Pine stub-logger.</li>
+<li>Hiring Plot Owners, wiring the dialectic chain end-to-end, building <code>situational-context-share</code> — separate hand-off.</li>
+<li>File deletions (SD-004).</li>
+<li>The GPS satellite work — second priority after parity passes; the separate hand-off lives at <code>docs/agentic-os/prompts/gps-satellite-handoff-prompt.html</code> sections 6, 7, 8.</li>
+</ul>
+
+<h2 id="reuse">13. Reusable patterns + reference paths</h2>
+
+<table>
+<tr><th>Pattern</th><th>Location</th><th>Use it for</th></tr>
+<tr><td>TV-MCP label query template</td><td><code>.claude/skills/detection-plot-tv-firing/SKILL.md</code> L62-71</td><td>Phase 2 step 1</td></tr>
+<tr><td>IPSF <code>show_*</code> override pattern</td><td><code>live/port_runner.py</code> L36-40 (<code>_FORCE_SHOW_PARAMS</code>)</td><td>Phase 3 — always pass to <code>detect(df, params)</code></td></tr>
+<tr><td>Rolling-window helpers (inline)</td><td><code>python_ports/heavy_pentagon/canonical.py</code> L118-124</td><td>Reference; do not refactor</td></tr>
+<tr><td>Port import + DETECTIONS access</td><td><code>live/port_runner.py</code> L14-52</td><td>Phase 2 — Python port invocation</td></tr>
+<tr><td>Logger label schema</td><td><code>path-a-loggers/README.md</code> L30-39</td><td>Phase 2 step 2 — parse <code>text</code> field</td></tr>
+<tr><td>Existing port module structure</td><td><code>python_ports/hvd_pbj_ppd/the_only_one.py</code> (reference implementation)</td><td>Phase 1 — mirror the DEFAULTS / DETECTIONS / STUBBED / STATE_MACHINES layout</td></tr>
+<tr><td>Pine source canonical pointer</td><td><code>&lt;family&gt;/versions/LATEST.txt</code></td><td>Drift policy — Pine in LATEST.txt is authoritative per SD-006</td></tr>
+<tr><td>SD ledger</td><td><code>docs/agentic-os/STANDING_DECISIONS.md</code></td><td>Phase 0 — append SD-011 here</td></tr>
+</table>
+
+<h2 id="cadence">14. Reporting cadence</h2>
+
+<p>After each phase passes acceptance, commit + push to <code>claude/organize-indicators-hierarchy-8JDw1</code> (the active branch). The cloud session may rebase its own commits — always <code>git pull --rebase</code> before each push.</p>
+
+<pre><code>git add -A
+git commit -m "Parity Phase N — &lt;summary&gt;
+
+  ...details...
+
+  https://claude.ai/code/session_..."
+git pull --rebase origin claude/organize-indicators-hierarchy-8JDw1
+git push -u origin claude/organize-indicators-hierarchy-8JDw1
+</code></pre>
+
+<p>Open a draft PR if one doesn't already exist for this branch. Cloud session may have one open at #2 or later.</p>
+
+<h2 id="glossary">15. Glossary</h2>
+
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>Alert bar</td><td>The bar at whose close the boolean detection condition first evaluates True.</td></tr>
+<tr><td>Visual bar</td><td>The bar where the plot's icon is drawn. Equals <code>alert_bar + offset</code>. For offset=-1, the visual bar is the bar before the alert bar.</td></tr>
+<tr><td>Offset</td><td>Pine <code>plot(..., offset=...)</code> argument. Integer (default 0; commonly -1). Encodes where the visual lives relative to the alert.</td></tr>
+<tr><td>OFFSETS</td><td>Per-port Python dict <code>Dict[str, int]</code> mapping each DETECTIONS key to its declared offset. Added in Phase 1.</td></tr>
+<tr><td>Composite offset</td><td><code>min(operand_offsets)</code> per SD-011. Any -1 operand drags the composite to -1.</td></tr>
+<tr><td>Concurrent fires</td><td>Other plots that fired on the same VISUAL bar as the plot under diagnosis. Diagnosis-card field; must use visual bar, not alert bar.</td></tr>
+<tr><td>Rolling window</td><td>N-bar lookback emitting NaN until N closed bars exist. Pandas: <code>rolling(N, min_periods=N)</code> for SMA/stdev; <code>min_periods=1</code> for max/min.</td></tr>
+<tr><td>IPSF</td><td>Input Parameter Structured Field. Pine <code>input.int/float/bool/string</code>. User-tunable. Not drift per SD-003.</td></tr>
+<tr><td>STUBBED</td><td>Per-port dict listing upstream Pine intrinsics the port cannot compute from OHLCV alone (e.g. <code>tv_ta.relativeVolume</code>). Caller must inject via <code>df.attrs[...]</code>.</td></tr>
+<tr><td>DETECTIONS</td><td>Per-port dict mapping a canonical plot name (matches the Pine plot title) to its <code>detect_*(df, params)</code> function. The authoritative list of what the port produces.</td></tr>
+<tr><td>STATE_MACHINES</td><td>Per-port dict of stateful wrappers around DETECTIONS where the engine needs prior-bar state.</td></tr>
+<tr><td>Path-A logger</td><td>A minimal Pine indicator that reads other indicators' plot values via <code>input.source()</code> and emits one <code>label.new()</code> per fire. Labels scraped via TV-MCP.</td></tr>
+<tr><td>SD-N (Standing Decision N)</td><td>Append-only ledger entry in <code>docs/agentic-os/STANDING_DECISIONS.md</code>. SD-001 through SD-010 are live; SD-011 is the offset-semantics decision added in Phase 0.</td></tr>
+<tr><td>LATEST.txt</td><td>Per-family pointer file naming the current canonical Pine version. Canonical source of truth per SD-006.</td></tr>
+<tr><td>TV-MCP</td><td>TradingView Model Context Protocol server. Exposes <code>data_get_pine_labels</code>, <code>chart_set_timeframe</code>, etc. Configured in your local Claude Code; not in cloud.</td></tr>
+<tr><td>Massive.com MCP</td><td>Massive.com (Polygon-equivalent) market data MCP server. Configured in your local Claude Code. Anish's subscription tier ~$2k/month.</td></tr>
+</table>
+
+<h2 id="starter">16. Starter prompt — paste this into the local Claude Code</h2>
+
+<div class="callout">
+<strong>Anish: copy the block below into your local Claude Code (the one with TV-MCP and Massive.com MCP). It's self-contained; it tells the local session exactly where to begin.</strong>
+</div>
+
+<pre><code>Open the indicators repo on this Mac. Run:
+
+  git fetch origin claude/organize-indicators-hierarchy-8JDw1
+  git checkout claude/organize-indicators-hierarchy-8JDw1
+  git pull --rebase
+
+Read this file end-to-end before doing anything:
+
+  docs/handoffs/2026-05-11-parity-handoff-local-mcp.html
+
+That document is your build assignment. The summary:
+
+  - You take over Python-port-vs-TV parity verification from the cloud session.
+  - The 8 Python ports (HVD+PBJ+PPD, B2B PUP, Squarify, TNT-OD v2 + v3,
+    Heavy Pentagon, Ultra Combo, Fauna-Shifu) are already built — verify the
+    port build status table at the top of the HTML.
+  - Deadline: parity sweep complete by 9:30 AM ET (13:30 UTC) today.
+  - Six phases (P0 through P6). Sequential. Phase 0 requires Anish sign-off
+    on the rolling-window + offset-semantics definitions — bring both
+    proposals to him before writing any code.
+
+Priorities:
+
+  1. Phase 0 — get Anish to sign off on the two definitions.
+  2. Phase 1 — add OFFSETS dict to 4 port modules + create
+     python_ports/_common/offset.py.
+  3. Phase 2 — build verification/parity/run_parity_test.py.
+  4. Phase 3 — run the 13-row parity sweep. Start with PBJ Bull on LUNR 1m.
+  5. Phase 4 — composition checks (Pentagon ∩ RVOL 1x, HV ∩ Disp ∩ PB(J),
+     HV ∩ Disp ∩ UC ∩ PB(J), Hiroshima, HV1000).
+  6. Phase 5 — structural plots (Floor / 2F / Rooftop / Penthouse + UU /
+     UUU / UUUU + bear-side equivalents).
+  7. Phase 6 — gap fixes: LOGGER_NAGASAKI_PLUS_v2.pine, promote
+     sigDISPBull/Bear to DETECTIONS, append SD-011, skeleton
+     offset-application skill.
+
+Do NOT touch live/ — the cloud session owns the leaderboard.
+
+When parity passes, pivot to the GPS satellite work at
+docs/agentic-os/prompts/gps-satellite-handoff-prompt.html sections 6-8.
+
+After each phase: git pull --rebase &amp;&amp; git push.
+
+Begin.</code></pre>
+
+<div class="footer">
+Source documents referenced throughout: <code>docs/agentic-os/STANDING_DECISIONS.md</code> (SD-001–010), <code>docs/agentic-os/prompts/gps-satellite-handoff-prompt.html</code> (sections 1–20), <code>python_ports/&lt;family&gt;/canonical*.py</code> (eight ported indicators), <code>path-a-loggers/versions/</code> (nine loggers), <code>live/port_runner.py</code> (IPSF override pattern), <code>.claude/skills/detection-plot-tv-firing/SKILL.md</code> (TV-MCP query template).
+</div>
+
+</body>
+</html>

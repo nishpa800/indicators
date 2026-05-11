@@ -1,0 +1,154 @@
+indicator:
+  id: disp-4x
+  file: disp-4x/versions/DISP_4X_v1.pine
+  branch: claude/organize-indicators-hierarchy-8JDw1
+  pine_version: 5
+  line_count: 121
+  overlay: true
+  one_line_purpose: "Four independent displacement engines (D1/D2/D3/D4) in one indicator; default σ-multipliers 6.5/6.0/5.5/5.0; stack 4 instances on a chart for 16 simultaneous displacement-strength views"
+  is_canonical_for: ["D1_BULL", "D1_BEAR", "D2_BULL", "D2_BEAR", "D3_BULL", "D3_BEAR", "D4_BULL", "D4_BEAR"]
+  notes: |
+    All 8 plots use offset=-1 because FVG confirmation occurs on bar[0] but
+    the displaced candle is bar[1]; plotting on bar[1] aligns the marker
+    with the actual displacement bar. Each engine has its own boolean
+    namespace (d1_*, d2_*, d3_*, d4_*) — they share NO state. The only
+    differences across the 4 engines are the IPSF defaults (multiplier,
+    plot shape, plot location, plot color).
+    Future: may expand to 15-20 engines per `docs/glossary.md` σ-multiplier
+    notes; same D<n>_BULL/D<n>_BEAR naming pattern.
+
+internal_helpers:
+  - name: d_rng / d_std / d_thresh / d_prevDisp / d_bullFVG / d_bearFVG
+    purpose: Per-engine displacement-detection scaffolding (range vs σ-stdev gate; FVG geometry on bar[0])
+    notes: "Internal — not roots. Same pattern repeated 4 times under the d1_/d2_/d3_/d4_ prefix."
+
+roots:
+  - id: disp-4x::D1_BULL
+    family: displacement
+    plain_english: "Displacement 1 Bull — bar[1] range exceeds σ-multiplier (default 6.5) × stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG (low > high[2] AND close[1] > open[1])"
+    boolean_summary: "barstate.isconfirmed AND d1_rng[1] > d1_thresh[1] AND low > high[2] AND close[1] > open[1]"
+    parameters:
+      - { name: d1_type, default: "Open to Close", units: enum, ipsf: true }
+      - { name: d1_len, default: 100, units: bars, ipsf: true }
+      - { name: d1_mult, default: 6.5, units: σ-multiplier, ipsf: true }
+    offset: -1
+    plot_offset: -1
+    plot_call: 'plotshape(d1_show_b and d1_bull, "D1 Bull", shape.square, location.top, color.new(#00FF00, 0), text="D1", textcolor=color.white, size=size.small, offset=-1)'
+    alertcondition_id: "D1 Bull"
+    pine_source_line_range: "L41"
+    lifecycle_stage: 2
+    notes: "Strictest of the four bull engines (highest default multiplier). offset=-1 aligns plot with bar[1] (the actual displaced candle)."
+
+  - id: disp-4x::D1_BEAR
+    family: displacement
+    plain_english: "Displacement 1 Bear — bar[1] range exceeds σ-multiplier (default 6.5) × stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG (high < low[2] AND close[1] < open[1])"
+    boolean_summary: "barstate.isconfirmed AND d1_rng[1] > d1_thresh[1] AND high < low[2] AND close[1] < open[1]"
+    parameters:
+      - { name: d1_type, default: "Open to Close", units: enum, ipsf: true }
+      - { name: d1_len, default: 100, units: bars, ipsf: true }
+      - { name: d1_mult, default: 6.5, units: σ-multiplier, ipsf: true }
+    offset: -1
+    plot_offset: -1
+    plot_call: 'plotshape(d1_show_r and d1_bear, "D1 Bear", shape.square, location.top, color.new(#FF0000, 0), text="D1", textcolor=color.white, size=size.small, offset=-1)'
+    alertcondition_id: "D1 Bear"
+    pine_source_line_range: "L42"
+    lifecycle_stage: 2
+
+  - id: disp-4x::D2_BULL
+    family: displacement
+    plain_english: "Displacement 2 Bull — bar[1] range exceeds σ-multiplier (default 6.0) × stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG"
+    boolean_summary: "barstate.isconfirmed AND d2_rng[1] > d2_thresh[1] AND bullFVG"
+    parameters:
+      - { name: d2_type, default: "Open to Close", units: enum, ipsf: true }
+      - { name: d2_len, default: 100, units: bars, ipsf: true }
+      - { name: d2_mult, default: 6.0, units: σ-multiplier, ipsf: true }
+    offset: -1
+    plot_offset: -1
+    plot_call: 'plotshape(d2_show_b and d2_bull, "D2 Bull", shape.square, location.bottom, color.new(#2962FF, 0), text="D2", textcolor=color.white, size=size.small, offset=-1)'
+    alertcondition_id: "D2 Bull"
+    pine_source_line_range: "L65"
+    lifecycle_stage: 2
+
+  - id: disp-4x::D2_BEAR
+    family: displacement
+    plain_english: "Displacement 2 Bear — bar[1] range exceeds σ-multiplier (default 6.0) × stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG"
+    boolean_summary: "barstate.isconfirmed AND d2_rng[1] > d2_thresh[1] AND bearFVG"
+    parameters:
+      - { name: d2_type, default: "Open to Close", units: enum, ipsf: true }
+      - { name: d2_len, default: 100, units: bars, ipsf: true }
+      - { name: d2_mult, default: 6.0, units: σ-multiplier, ipsf: true }
+    offset: -1
+    plot_offset: -1
+    plot_call: 'plotshape(d2_show_r and d2_bear, "D2 Bear", shape.square, location.bottom, color.new(#FF00FF, 0), text="D2", textcolor=color.white, size=size.small, offset=-1)'
+    alertcondition_id: "D2 Bear"
+    pine_source_line_range: "L66"
+    lifecycle_stage: 2
+
+  - id: disp-4x::D3_BULL
+    family: displacement
+    plain_english: "Displacement 3 Bull — bar[1] range exceeds σ-multiplier (default 5.5) × stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG"
+    boolean_summary: "barstate.isconfirmed AND d3_rng[1] > d3_thresh[1] AND bullFVG"
+    parameters:
+      - { name: d3_type, default: "Open to Close", units: enum, ipsf: true }
+      - { name: d3_len, default: 100, units: bars, ipsf: true }
+      - { name: d3_mult, default: 5.5, units: σ-multiplier, ipsf: true }
+    offset: -1
+    plot_offset: -1
+    plot_call: 'plotshape(d3_show_b and d3_bull, "D3 Bull", shape.xcross, location.top, color.new(#00FF00, 0), text="D3", textcolor=color.white, size=size.small, offset=-1)'
+    alertcondition_id: "D3 Bull"
+    pine_source_line_range: "L89"
+    lifecycle_stage: 2
+
+  - id: disp-4x::D3_BEAR
+    family: displacement
+    plain_english: "Displacement 3 Bear — bar[1] range exceeds σ-multiplier (default 5.5) × stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG"
+    boolean_summary: "barstate.isconfirmed AND d3_rng[1] > d3_thresh[1] AND bearFVG"
+    parameters:
+      - { name: d3_type, default: "Open to Close", units: enum, ipsf: true }
+      - { name: d3_len, default: 100, units: bars, ipsf: true }
+      - { name: d3_mult, default: 5.5, units: σ-multiplier, ipsf: true }
+    offset: -1
+    plot_offset: -1
+    plot_call: 'plotshape(d3_show_r and d3_bear, "D3 Bear", shape.xcross, location.top, color.new(#FF0000, 0), text="D3", textcolor=color.white, size=size.small, offset=-1)'
+    alertcondition_id: "D3 Bear"
+    pine_source_line_range: "L90"
+    lifecycle_stage: 2
+
+  - id: disp-4x::D4_BULL
+    family: displacement
+    plain_english: "Displacement 4 Bull — bar[1] range exceeds σ-multiplier (default 5.0) × stdev(range, 100), AND bar[0] confirms a bullish 3-bar FVG"
+    boolean_summary: "barstate.isconfirmed AND d4_rng[1] > d4_thresh[1] AND bullFVG"
+    parameters:
+      - { name: d4_type, default: "Open to Close", units: enum, ipsf: true }
+      - { name: d4_len, default: 100, units: bars, ipsf: true }
+      - { name: d4_mult, default: 5.0, units: σ-multiplier, ipsf: true }
+    offset: -1
+    plot_offset: -1
+    plot_call: 'plotshape(d4_show_b and d4_bull, "D4 Bull", shape.cross, location.bottom, color.new(#2962FF, 0), text="D4", textcolor=color.white, size=size.small, offset=-1)'
+    alertcondition_id: "D4 Bull"
+    pine_source_line_range: "L113"
+    lifecycle_stage: 2
+    notes: "Loosest of the four bull engines (lowest default multiplier). Most permissive, fires more frequently."
+
+  - id: disp-4x::D4_BEAR
+    family: displacement
+    plain_english: "Displacement 4 Bear — bar[1] range exceeds σ-multiplier (default 5.0) × stdev(range, 100), AND bar[0] confirms a bearish 3-bar FVG"
+    boolean_summary: "barstate.isconfirmed AND d4_rng[1] > d4_thresh[1] AND bearFVG"
+    parameters:
+      - { name: d4_type, default: "Open to Close", units: enum, ipsf: true }
+      - { name: d4_len, default: 100, units: bars, ipsf: true }
+      - { name: d4_mult, default: 5.0, units: σ-multiplier, ipsf: true }
+    offset: -1
+    plot_offset: -1
+    plot_call: 'plotshape(d4_show_r and d4_bear, "D4 Bear", shape.cross, location.bottom, color.new(#FF00FF, 0), text="D4", textcolor=color.white, size=size.small, offset=-1)'
+    alertcondition_id: "D4 Bear"
+    pine_source_line_range: "L114"
+    lifecycle_stage: 2
+
+composites: []
+
+cross_indicator_dependencies: []
+
+uncertain_or_questions:
+  - "Relationship to hvd-pbj-ppd::DISPLACEMENT_BULL/BEAR: same boolean structure (bar[1] range > stdev × mult, plus FVG confirmation on bar[0]). Disp-4x gives 4 parameterised instances of the same primitive, intended for stacked-pane diagnostics. Stage 7 byte-diff: confirm boolean equivalence with hvd-pbj-ppd::DISPLACEMENT at the same multiplier."
+  - "Future expansion to 15-20 engines per indicator (Anish's stated direction). Naming pattern preserved: disp-Nx::D<n>_BULL / D<n>_BEAR."

@@ -1,0 +1,29 @@
+VISUAL TREE — hv-ladder-50-to-1k
+=================================
+File: hv-ladder/versions/HV_LADDER_50_TO_1K_v1.pine
+Pine v5  ·  196 lines  ·  overlay=True
+Purpose: Volume ladder: 50/150/250/500/1000-bar high volume + all-time high volume (HEV) + calendar-based hot spots (OpEx, Q-end, Russell, tax-loss, Jan effect, HF redemption)
+
+ROOTS
+-----
+  ◆ hv-ladder-50-to-1k::HV50    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-50-to-1k::HV150    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-50-to-1k::HV250    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-50-to-1k::HV500    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-50-to-1k::HV1000    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-50-to-1k::HEV    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-50-to-1k::HotSpot    [calendar · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 2:
+    ● hv-ladder-50-to-1k::VolumeHierarchy    [offset=? · ?]
+
+

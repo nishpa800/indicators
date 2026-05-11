@@ -1,0 +1,25 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: NAGASAKI_PLUS
+aliases_searched:
+- NAGASAKI_PLUS
+- NAGASAKI_PLUS_BULL
+- NAGASAKI_PLUS_BEAR
+- sigNagasakiPlus
+- sigNagasakiPlusBull
+- sigNagasakiPlusBear
+- nagasakiPlus
+- nagasaki_plus
+- nagPlus
+- NAG_PLUS
+- sigNAGPlus
+- Nagasaki_Plus
+- NagPlus
+pine_files_scanned: 54
+definitions: []
+occurrences_per_indicator: {}
+yaml_cross_check:
+  yaml_matching_records: []
+  orphans: []
+  missings: []
+status: COMPLETE

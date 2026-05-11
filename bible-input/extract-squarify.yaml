@@ -1,0 +1,923 @@
+indicator:
+  id: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  branch: both
+  pine_version: 5
+  line_count: 2622
+  overlay: true
+  one_line_purpose: "Top-level fund signal: 60 atoms feed 46 numbered Tier-3 composites (foundational -> U-streak -> Ultra57 -> NPM -> HV+D -> fusion -> WBUSH) plus 2 opening-confluence tier plots"
+  total_named_plots: 48   # 46 numbered S1..S46 + T1 OPENING CONFLU + T2 OPENING CONFLU
+  numbered_composites: "S1..S46"
+
+internal_helpers:
+  - name: "f_add(base,part)"
+    purpose: "Concat helper used to build the Bloomberg-style aggregated alert string."
+  - name: "hvd_tf2sec(t)"
+    purpose: "Convert HV+D HTF profile dropdown labels to seconds for tfSec gating."
+  - name: "f_ma(src,len,t)"
+    purpose: "Generic moving average dispatcher (EMA/SMA/WMA/HMA/VWMA) used by PBJ engine."
+  - name: "f_add_lvl / f_add_lander / f_add_reaccel / f_check_approach"
+    purpose: "PBJ engine helpers for tracking long/short cross levels and approach detection."
+  - name: "has_level(price,type)"
+    purpose: "Ping-Pong SR engine: dedup level array."
+  - name: "f_hadYesterday(sig)"
+    purpose: "Boolean lookback over previous trading day for B2B-Days combos (F2, E3, Cluster)."
+  - name: "f_cb / f_cb_npm"
+    purpose: "Checkbox qualifier evaluators (Set 1/2/3) for non-displacement and napalm-aligned combos."
+  - name: "f_tok / f_zov / f_sb / f_ss / f_bl_t / f_sl_t / f_bo_t / f_so_t"
+    purpose: "TNT engine internals: token/zone-overlap/strength helpers."
+  - name: "bh_tci/bh_mf/bh_tradition"
+    purpose: "Boom Hunter inner WaveTrend/MFI/RSI tradition compositor."
+  - name: "f_rvol_1x_threshold / f_gs_moab_threshold / f_saab_kratos_threshold / f_wtc_threshold / f_hiroshima_threshold"
+    purpose: "Per-timeframe RVOL bucket threshold tables."
+  - name: "f_b / f_n / f_fwd_ret"
+    purpose: "Stats engine string/number formatters and forward-return lookback."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ROOTS
+# Squarify is overwhelmingly an aggregator. The roots actually defined here
+# (vs. imported by name from sibling indicators) are: HV+D pipeline (HVD_BULL/
+# HVD_BEAR), Ultra57 Foster/Exhaustion/Cluster atomics (F2, E3, FC), B2B-Days
+# tracker, B2B PUP scaffolding, the TIER-1 / TIER-2 OPENING CONFLU
+# detectors, the WBUSH 5-family classifier, the matrix Neo/Trinity primitives,
+# the NPM consolidated classifier (NapalmCons = napalm OR charge), and a
+# private "stats" engine. All RVOL / FAUNA / PBJ / GZI / PUP / Boom Hunter /
+# TNT / Long-Short / Combo Set engines are duplicated from the sibling
+# indicators (heavy-pentagon, fauna, hvd-pbj-ppd, b2b-pup, hv-fvg-gz1-og,
+# tnt-od) and emit the canonical foreign signal names. Per the instructions,
+# only roots FIRST DEFINED here (or where Squarify is the canonical source)
+# are listed below.
+# ─────────────────────────────────────────────────────────────────────────────
+roots:
+  - id: squarify::HVD_BULL
+    family: hv-displacement
+    plain_english: "HV+D bullish: any of base/HTF1/HTF2 volume-rank ladder confirmed AND prior-bar displacement with bullish FVG."
+    boolean_summary: "hvd_fire_bull = base_combo_bull or htf1_combo_bull or htf2_combo_bull"
+    parameters: ["d1_len","d1_mult","d2_len","d2_mult","d3_len","d3_mult","ub50..ub1000","useHEV","h1On","h1From/h1To","uh1_*","h2On","h2From/h2To","uh2_*"]
+    offset: -1
+    plot_call: "(no direct plot — terminal output consumed by S27..S31, UU paths, etc.)"
+    pine_source_line_range: "L60-L304"
+    notes: "Three-layer pipeline: base HV (50..1000-bar + HEV) × Disp1, HTF1 × Disp2, HTF2 × Disp3. Pipeline is air-gapped from PBJ/Zoo/Combo logic."
+
+  - id: squarify::HVD_BEAR
+    family: hv-displacement
+    plain_english: "HV+D bearish mirror of HVD_BULL."
+    boolean_summary: "hvd_fire_bear = base_combo_bear or htf1_combo_bear or htf2_combo_bear"
+    parameters: ["d1..d3 (shared)","ub*","useHEV","h1*/h2* (shared)"]
+    offset: -1
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L60-L304"
+    notes: "Mirror of HVD_BULL."
+
+  - id: squarify::F2_BULL
+    family: ultra57-foster
+    plain_english: "Foster Pair (bull): two consecutive bullish FAUNA-MB bars on session bars 1-2."
+    boolean_summary: "sBullF2 = u57_sessBar==2 and u57_bMB and u57_bMB[1]"
+    parameters: ["u57_sessBar (RTH session)"]
+    offset: 0
+    plot_call: "(no direct plot — fed into S14, S18, S20, etc.)"
+    pine_source_line_range: "L1858-L1865"
+
+  - id: squarify::F2_BEAR
+    family: ultra57-foster
+    plain_english: "Foster Pair (bear) mirror."
+    boolean_summary: "sBearF2"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L1861"
+
+  - id: squarify::E3_BULL
+    family: ultra57-exhaustion
+    plain_english: "Exhaustion Triple (bull): 3 consecutive bullish FAUNA-event bars on session bars 1-3."
+    boolean_summary: "sBullE3 = u57_sessBar==3 and u57_bEv and u57_bEv[1] and u57_bEv[2]"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot — fed into S14, S17, S19, S20)"
+    pine_source_line_range: "L1862-L1864"
+
+  - id: squarify::E3_BEAR
+    family: ultra57-exhaustion
+    plain_english: "Exhaustion Triple (bear) mirror."
+    boolean_summary: "sBearE3"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L1864"
+
+  - id: squarify::FC_BULL
+    family: ultra57-cluster
+    plain_english: "FAUNA Cluster (bull): 2-of-3 streak indicators (MB-streak, any-FAUNA streak, MB/RE streak) with overlapping price ranges between threshold and sequence bars."
+    boolean_summary: "sBullFC = b1_2of3 and b1_ovlp"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot — fed into S15, S16, S21)"
+    pine_source_line_range: "L1867-L1924"
+
+  - id: squarify::FC_BEAR
+    family: ultra57-cluster
+    plain_english: "FAUNA Cluster (bear) mirror."
+    boolean_summary: "sBearFC"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L1927-L1984"
+
+  - id: squarify::B2B_DAYS_TRACKER
+    family: session-history
+    plain_english: "f_hadYesterday(sig): scans 1..500 bars back for the same boolean during the prior trading day. Used to construct B2B-Days composites."
+    boolean_summary: "f_hadYesterday(sBullF2)/(sBullE3)/(sBullFC) helper"
+    parameters: []
+    offset: 0
+    plot_call: "(helper; consumed by S18..S21)"
+    pine_source_line_range: "L1986-L2004"
+
+  - id: squarify::FOSTER_PBJ_WINDOW
+    family: ultra57-foster
+    plain_english: "Foster window: opens on first bullish-MB; if next bar fires PBJ, fosterPBJSignal latches true (used by S39 FOS+PUP+1x)."
+    boolean_summary: "fosterPBJSignal"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L2013-L2024"
+
+  - id: squarify::WBUSH_BULL
+    family: heavy-pentagon-aggregator
+    plain_english: "WBUSH bull: any of 5 Heavy Pentagon Combo families (HYY, HN, HNV, HT, NHx2) co-occurring with a bull FVG-confirmed displacement."
+    boolean_summary: "sig_WBUSH_Bull = hp_HYYBull or hp_HNBull or hp_HNVBull or hp_HTBull or hp_NHx2Bull"
+    parameters: []
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_wbushBull and sig_WBUSH_Bull, \"41 WBUSH+ANY Bull\",shape.diamond,location.belowbar,#00BFA5,text=\"WBUSH\",textcolor=color.white,size=size.huge)"
+    pine_source_line_range: "L2026-L2069"
+    notes: "Replaces v1 WMD. sigWMD aliased to sig_WBUSH_Bull for backward compat. Treated as a root because it newly classifies the 5x3 sub-signals here, not in heavy-pentagon."
+
+  - id: squarify::WBUSH_BEAR
+    family: heavy-pentagon-aggregator
+    plain_english: "WBUSH bear: 5 Heavy Pentagon families × bear-displacement OR'd."
+    boolean_summary: "sig_WBUSH_Bear"
+    parameters: []
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_wbushBear and sig_WBUSH_Bear, \"42 WBUSH+ANY Bear\",shape.diamond,location.abovebar,#C2185B,text=\"WBUSH\",textcolor=color.white,size=size.huge)"
+    pine_source_line_range: "L2068"
+
+  - id: squarify::WBUSH_NEUTRAL
+    family: heavy-pentagon-aggregator
+    plain_english: "WBUSH neutral: 5 Heavy Pentagon families fired but no FVG-confirmed displacement either direction."
+    boolean_summary: "sig_WBUSH_Neutral"
+    parameters: []
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_wbushNeutral and sig_WBUSH_Neutral, \"43 WBUSH Neutral\",shape.diamond,location.top,#9E9E9E,text=\"WBUSH N\",textcolor=color.white,size=size.normal)"
+    pine_source_line_range: "L2069"
+
+  - id: squarify::NPM_CONS_BULL
+    family: tnt-napalm-consolidated
+    plain_english: "Consolidated NPM bull: raw napalm OR raw charge (Anish framework: napalm and charge are equivalent). v2 fixes v1's silent under-firing."
+    boolean_summary: "det_bullNapalmCons = raw_napalmBull or raw_bullCharge"
+    parameters: []
+    offset: -1
+    plot_call: "(no direct plot — feeds S22..S26, fusions)"
+    pine_source_line_range: "L1661"
+    notes: "Per CHANGELOG #1 — napalm bug fix."
+
+  - id: squarify::NPM_CONS_BEAR
+    family: tnt-napalm-consolidated
+    plain_english: "Consolidated NPM bear mirror."
+    boolean_summary: "det_bearNapalmCons = raw_napalmBear or raw_bearCharge"
+    parameters: []
+    offset: -1
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L1662"
+
+  - id: squarify::B2B_PUP
+    family: pup-back-to-back
+    plain_english: "Two consecutive PUP bars (bull). Used as scaffolding for B2B-PUP composites and TIER-2 opening confluence."
+    boolean_summary: "det_b2bPUP = sigPUP and nz(sigPUP[1])"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L2006"
+    provenance_uncertain: true
+    notes: "Same definition as in b2b-pup indicator. Squarify defines it inline; recorded as a local root because the file does not import b2b-pup."
+
+  - id: squarify::B2B_PPD
+    family: pup-back-to-back
+    plain_english: "Two consecutive PPD bars (bear) mirror."
+    boolean_summary: "det_b2bPPD = sigPPD and nz(sigPPD[1])"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L2006"
+
+  - id: squarify::NEO_BULL
+    family: matrix-number
+    plain_english: "Neo bull: matrix-number bar (volume == highest of last 67) AND FAUNA bull on same bar."
+    boolean_summary: "sigNeoBull = is_matrix_number and sigFAUNABull"
+    parameters: ["neo_len=67"]
+    offset: 0
+    plot_call: "(no direct plot — feeds combo sets 3/4)"
+    pine_source_line_range: "L1214-L1215"
+
+  - id: squarify::NEO_BEAR
+    family: matrix-number
+    plain_english: "Neo bear mirror."
+    boolean_summary: "sigNeoBear"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L1215"
+
+  - id: squarify::TRINITY_BULL
+    family: matrix-number
+    plain_english: "Trinity bull: matrix-number bar AND NOT FAUNA bull AND green close. Resolves explicitly: Trinity is the matrix-number candidate that lacks a FAUNA confirmation but is still directional (up close)."
+    boolean_summary: "sigTrinityBull = is_matrix_number and not sigFAUNABull and close>open"
+    parameters: ["neo_len=67"]
+    offset: 0
+    plot_call: "(no direct plot — feeds combo sets 3/4 via matrix_any_bull)"
+    pine_source_line_range: "L1216"
+
+  - id: squarify::TRINITY_BEAR
+    family: matrix-number
+    plain_english: "Trinity bear mirror."
+    boolean_summary: "sigTrinityBear = is_matrix_number and not sigFAUNABear and close<open"
+    parameters: []
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L1216"
+
+  - id: squarify::UNIFIED_COMBO_BULL
+    family: combo-set-fvg
+    plain_english: "Unified Combo (UC) bull = csNew3_Bull = csNew1_Bull on bar[0] AND csNew2_Bull on bar[1] (FVG combo + matrix combo on consecutive bars)."
+    boolean_summary: "csNew3_Bull = csNew1_Bull and nz(csNew2_Bull[1])"
+    parameters: ["cs_bodyPct_FVG","cs_bodyPct_MAT","cs_inc_pentagon_FVG","cs_inc_pentagon_MAT"]
+    offset: -1
+    plot_call: "(no direct plot at root — used by SUPER, SDUPER, NPM+UC, GRAIL, UC NAGASAKI, etc.)"
+    pine_source_line_range: "L1240-L1257"
+    notes: "Resolves Unified Combo: csNew1 = comboSet1 OR comboSet2 (FVG sets); csNew2 = comboSet3 OR comboSet4 (matrix sets); csNew3 (UC) = csNew1 AND prior-bar csNew2."
+
+  - id: squarify::UNIFIED_COMBO_BEAR
+    family: combo-set-fvg
+    plain_english: "UC bear mirror."
+    boolean_summary: "csNew3_Bear = csNew1_Bear and nz(csNew2_Bear[1])"
+    parameters: []
+    offset: -1
+    plot_call: "(no direct plot at root)"
+    pine_source_line_range: "L1257"
+
+  - id: squarify::TIER1_OPENING_CONFLU_BULL
+    family: opening-confluence
+    plain_english: "Tier-1 opening confluence (Anish CRWV recipe): first session bar AND displacement std multiple >= threshold (default 8) AND UC combo (csNew3) AND HV+D AND RVOL 1x. 'Drop everything' setup."
+    boolean_summary: "tier1_opening_conflu_bull"
+    parameters: ["t1_disp_thresh (default 8.0)"]
+    offset: 0
+    plot_call: "plotshape(tier1_opening_conflu_bull, \"T1 OPENING CONFLU\", shape.flag, location.top, color.new(#FFD700, 0), size=size.huge, text=\"T1\\nFIRE\", textcolor=color.new(color.black, 0))"
+    alertcondition_id: "T1 OPENING CONFLUENCE BULL"
+    pine_source_line_range: "L2472-L2502"
+
+  - id: squarify::TIER2_OPENING_CONFLU_BULL
+    family: opening-confluence
+    plain_english: "Tier-2 opening confluence (Anish CRWV 2m recipe): first 2 session bars AND B2B PUP active AND any UU family fired."
+    boolean_summary: "tier2_opening_conflu_bull = stats_sessBar<=2 and stats_sessBar>=1 and det_b2bPUP and uu_any"
+    parameters: []
+    offset: 0
+    plot_call: "plotshape(tier2_opening_conflu_bull, \"T2 OPENING CONFLU\", shape.flag, location.top, color.new(#00E5FF, 0), size=size.huge, text=\"T2\\nFIRE\", textcolor=color.new(color.black, 0))"
+    alertcondition_id: "T2 OPENING CONFLUENCE BULL"
+    pine_source_line_range: "L2504-L2531"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COMPOSITES — every numbered Squarify Tier-3 production plot (S1..S46) +
+# the two TIER opening confluence plots (counted as roots above, plotted as
+# composites in the alert/log stream).
+# ─────────────────────────────────────────────────────────────────────────────
+composites:
+  # ── FOUNDATIONAL / STANDALONE (S1-S13) ────────────────────────────────────
+  - id: squarify::S1_SD_BANG
+    tier: 3
+    plain_english: "SD! (Super Duper) — REDEFINED v2: Unified Combo + consolidated NPM + PUP. All on visual bar [1]."
+    composition:
+      type: AND
+      operands: ["squarify::UNIFIED_COMBO_BULL", "squarify::NPM_CONS_BULL", "sigPUP[1]"]
+    composition_note: "PUP operand is raw sigPUP[1] (the atomic PUP boolean, prior bar), NOT det_b2bPUP. Pine L1689 uses nz(sigPUP[1]) where sigPUP is defined locally in squarify — it is the single-bar PUP atom, not the B2B composite."
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_1 and sduperBull, \"1 SD!\",shape.flag,location.bottom,#FFD700,text=\"SD!\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "SD!"
+    pine_source_line_range: "L1689-L1690 (def); L2227 (plot)"
+
+  - id: squarify::S2_SUPER
+    tier: 3
+    plain_english: "SUPER — REDEFINED v2: Unified Combo + consolidated NPM. Suppressed when SD! also fires."
+    composition:
+      type: AND_NOT
+      operands: ["squarify::UNIFIED_COMBO_BULL", "squarify::NPM_CONS_BULL", "NOT squarify::S1_SD_BANG"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_2 and superBull and not sduperBull, \"2 SUPER\",shape.flag,location.top,#00FF00,text=\"SUPER\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "SUPER"
+    pine_source_line_range: "L1687-L1688 (def); L2228 (plot)"
+
+  - id: squarify::S3_HW
+    tier: 3
+    plain_english: "Heavy Weapon: green bar + 5x-std displacement (no FVG) + PBJ + (GS or WTC or Hiroshima or directional Nagasaki) + (Floor or 2F)."
+    composition:
+      type: AND
+      operands: ["close>open","disp5_bull","hvd-pbj-ppd::PBJ_BULL","(heavy-pentagon::GRAND_SLAM OR heavy-pentagon::WTC OR heavy-pentagon::HIROSHIMA OR (heavy-pentagon::NAGASAKI AND nag_dir_bull))","(squarify::S4_FLOOR OR squarify::S5_2F)"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_3 and hwBull, \"3 HW\",shape.xcross,location.abovebar,#FF6D00,text=\"HW\",textcolor=color.white,size=size.large)"
+    alertcondition_id: "HW"
+    pine_source_line_range: "L1357 (def); L2229 (plot)"
+
+  - id: squarify::S4_FLOOR
+    tier: 3
+    plain_english: "Floor: Ping-Pong bull + PBJ + directional RVOL slot (1x/GS/WTC/Hiro/dirNag) + one-of-these-bull + checkbox Set 1 (PBJ excluded from the checkbox since Floor already requires it)."
+    composition:
+      type: AND
+      operands: ["heavy-pentagon::PING_PONG_BULL","hvd-pbj-ppd::PBJ_BULL","bull_hw_slot","oneOfThese","cb1_pass_floor"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_4 and floor_sq, \"4 FLOOR\",shape.circle,location.belowbar,#00E5FF,text=\"FLOOR\",textcolor=color.white,size=size.large)"
+    alertcondition_id: "FLOOR"
+    pine_source_line_range: "L1351, L2156 (def); L2230 (plot)"
+
+  - id: squarify::S5_2F
+    tier: 3
+    plain_english: "2nd Floor: Ping-Pong bull + PB (not PBJ) + directional RVOL + one-of-these + checkbox Set 1. Suppressed when Floor also fires."
+    composition:
+      type: AND_NOT
+      operands: ["heavy-pentagon::PING_PONG_BULL","hvd-pbj-ppd::PB_BULL","bull_hw_slot","oneOfThese","cb1_pass","NOT squarify::S4_FLOOR"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_5 and floor2_sq and not floor_sq, \"5 2F\",shape.cross,location.belowbar,#80DEEA,text=\"2F\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: "2F"
+    pine_source_line_range: "L1352, L2157 (def); L2231 (plot)"
+
+  - id: squarify::S6_UUUU
+    tier: 3
+    plain_english: "UUUU: 4+ consecutive qualified U bars. Path-OR (pA/pB/pC/pD/pE/pF + new pG = >=4 distinct qualifiers in {PBJ,DISP,FAUNA,SAAB,RVOL1x,GS}) gated by sub-2min rule."
+    composition:
+      type: OR_PATHS
+      operands: ["pA","pB","pC","pD","pE","pF","pG"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_6 and sigP21BullUUUU, \"6 UUUU\",shape.labelup,location.belowbar,#00FF00,text=\"UUUU\",textcolor=color.white,size=size.large)"
+    alertcondition_id: "UUUU"
+    pine_source_line_range: "L912-L968; L2232 (plot)"
+
+  - id: squarify::S7_UUU
+    tier: 3
+    plain_english: "UUU: exactly 3 consecutive qualified U bars. Same path-OR (pA-pE + pG = >=3 distinct qualifiers). Suppressed when UUUU also fires."
+    composition:
+      type: OR_PATHS_AND_NOT
+      operands: ["pA","pB","pC","pD","pE","pG","NOT squarify::S6_UUUU"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_7 and sigP21BullUUU and not sigP21BullUUUU, \"7 UUU\",shape.labelup,location.belowbar,#76FF03,text=\"UUU\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: "UUU"
+    pine_source_line_range: "L970-L1023; L2233 (plot)"
+
+  - id: squarify::S8_UU
+    tier: 3
+    plain_english: "UU: exactly 2 consecutive qualified U bars + one-of-these-for-UU gate. Suppressed when UUU/UUUU also fires."
+    composition:
+      type: OR_PATHS_AND_GATE_AND_NOT
+      operands: ["pA","pB","pC","pD","pE","pG","oneOfThese_forUU","NOT squarify::S6_UUUU","NOT squarify::S7_UUU"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_8 and uu_gated and not sigP21BullUUU and not sigP21BullUUUU, \"8 UU\",shape.labelup,location.belowbar,#A5D6A7,text=\"UU\",textcolor=color.white,size=size.small)"
+    alertcondition_id: "UU"
+    pine_source_line_range: "L1025-L1078, L2158 (gate); L2234 (plot)"
+
+  - id: squarify::S9_ALPHA_STRIKE
+    tier: 3
+    plain_english: "A* (Alpha Strike): first signal of session + Ping-Pong bull + (GS or RVOL1x) + PBJ + expanded FAUNA slot (FAUNA/Long1/disp+hvd/PUP/NPM/WTC/Hiro/Nagasaki)."
+    composition:
+      type: AND
+      operands: ["firstOfDay","heavy-pentagon::PING_PONG_BULL","(heavy-pentagon::GRAND_SLAM OR heavy-pentagon::RVOL1x_BULL)","hvd-pbj-ppd::PBJ_BULL","as_fauna_expanded"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_9 and sigAlphaStrikeBull_sq, \"9 A★\",shape.flag,location.belowbar,#00E676,text=\"A★\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: "A*"
+    pine_source_line_range: "L2148-L2150 (def); L2235 (plot)"
+
+  - id: squarify::S10_OMEGA_A
+    tier: 3
+    plain_english: "Omega-A: Boom Hunter omega event + high-confidence cosignal subset. Excludes MOAB and bear displacement."
+    composition:
+      type: AND_NOT
+      operands: ["bh_anyOmega","omega_cosignal_A","NOT heavy-pentagon::MOAB","NOT sigDISPBear"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_10 and sigOmegaLongA, \"10 ΩA\",shape.circle,location.abovebar,#FFD700,text=\"ΩA\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: "OmegaA"
+    pine_source_line_range: "L1773-L1774 (def); L2236 (plot)"
+
+  - id: squarify::S11_FOX
+    tier: 3
+    plain_english: "Foxtrot: 4 consecutive FAUNA-confirmed bullish bars, gated by (HV+D + PBJ) OR one-of-these."
+    composition:
+      type: AND
+      operands: ["sigFoxtrotBull","(hvd_pbj_bull OR oneOfThese)"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_11 and foxtrot_sq, \"11 FOX\",shape.triangleup,location.top,#1B5E20,text=\"FOX\",textcolor=color.white,size=size.large)"
+    alertcondition_id: "FOX"
+    pine_source_line_range: "L1224, L2159 (gate); L2237 (plot)"
+
+  - id: squarify::S12_OD
+    tier: 3
+    plain_english: "Opening Drive: session bar <= max+1 + FVG/UC + prior-bar displacement + PUP[1] + PBJ[1]."
+    composition:
+      type: AND
+      operands: ["sessionBarCount<=od_max+1","od_fvg_bull","disp_prevDisp","b2b-pup::PUP[1]","hvd-pbj-ppd::PBJ_BULL[1]"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_12 and sigODBull, \"12 OD\",shape.flag,location.bottom,#00FFFF,text=\"OD\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "OD"
+    pine_source_line_range: "L1266-L1268 (def); L2238 (plot)"
+
+  - id: squarify::S13_GOLF
+    tier: 3
+    plain_english: "Golf: 3-bar sequence: bar[2] FAUNA+PUP, bar[1] FAUNA+PUP+DISP, bar[0] DISP confirmation."
+    composition:
+      type: SEQUENCE
+      operands: ["sigDISPBull","sigFAUNABull[1]","sigPUP[1]","sigDISPBull[1]","sigFAUNABull[2]","sigPUP[2]"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_13 and sigGolfBull, \"13 GOLF\",shape.labelup,location.bottom,color.new(#00FF00,25),text=\"GOLF\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "GOLF"
+    pine_source_line_range: "L1276 (def); L2239 (plot)"
+
+  # ── ULTRA 57 BLOCK (S14-S21) ──────────────────────────────────────────────
+  - id: squarify::S14_PBJ_F2_OR_E3
+    tier: 3
+    plain_english: "PBJ + Foster Pair OR PBJ + Exhaustion Triple."
+    composition:
+      type: OR
+      operands: ["(hvd-pbj-ppd::PBJ_BULL AND squarify::F2_BULL)","(hvd-pbj-ppd::PBJ_BULL AND squarify::E3_BULL)"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_28 and (comboPBJ_F2_Bull or comboPBJ_E3_Bull), \"14 PBJ+F2/E3\",shape.labelup,location.belowbar,color.lime,text=\"PBJ\\nF2E3\",textcolor=color.white,size=size.large)"
+    alertcondition_id: "PBJ+F2E3"
+    pine_source_line_range: "L2002-L2003 (def); L2242 (plot)"
+
+  - id: squarify::S15_PBJ_CL
+    tier: 3
+    plain_english: "PBJ + full FAUNA Cluster bull."
+    composition:
+      type: AND
+      operands: ["hvd-pbj-ppd::PBJ_BULL","squarify::FC_BULL"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_29 and comboPBJ_Cluster_Bull, \"15 PBJ+CL\",shape.labelup,location.top,color.lime,text=\"PBJ\\nCL\",textcolor=color.white,size=size.large)"
+    alertcondition_id: "PBJ+CL"
+    pine_source_line_range: "L2003 (def); L2243 (plot)"
+
+  - id: squarify::S16_F2CL_TO_E3
+    tier: 3
+    plain_english: "Sequential: prior-bar Foster Pair + prior-bar Cluster -> current-bar Exhaustion Triple."
+    composition:
+      type: SEQUENCE
+      operands: ["squarify::F2_BULL[1]","squarify::FC_BULL[1]","squarify::E3_BULL"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_30 and comboF2Cluster_E3_Bull, \"16 F2CL→E3\",shape.diamond,location.top,color.aqua,text=\"F2CL\\n→E3\",textcolor=color.white,size=size.large)"
+    alertcondition_id: "F2CL->E3"
+    pine_source_line_range: "L2004 (def); L2244 (plot)"
+
+  - id: squarify::S17_E3_TWOTHIRDS_PUP
+    tier: 3
+    plain_english: "Exhaustion Triple where 2 of 3 bars are PUP."
+    composition:
+      type: AND
+      operands: ["squarify::E3_BULL","pupCntE3>=2"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_33 and comboE3_2of3PUP_Bull, \"17 E3⅔PP\",shape.diamond,location.abovebar,color.teal,text=\"E3\\n⅔PP\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: "E3-2/3PP"
+    pine_source_line_range: "L2009-L2010 (def); L2245 (plot)"
+
+  - id: squarify::S18_F2_TIMES_2D
+    tier: 3
+    plain_english: "Foster Pair on consecutive trading sessions."
+    composition:
+      type: AND
+      operands: ["squarify::F2_BULL","squarify::B2B_DAYS_TRACKER(F2_BULL)"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_34 and comboF2_B2BDays_Bull, \"18 F2×2D\",shape.flag,location.top,color.lime,text=\"F2×2D\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: "F2x2D"
+    pine_source_line_range: "L1998 (def); L2246 (plot)"
+
+  - id: squarify::S19_E3_TIMES_2D
+    tier: 3
+    plain_english: "Exhaustion Triple on consecutive trading sessions."
+    composition:
+      type: AND
+      operands: ["squarify::E3_BULL","squarify::B2B_DAYS_TRACKER(E3_BULL)"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_35 and comboE3_B2BDays_Bull, \"19 E3×2D\",shape.flag,location.top,#76FF03,text=\"E3×2D\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: "E3x2D"
+    pine_source_line_range: "L1999 (def); L2247 (plot)"
+
+  - id: squarify::S20_F2E3_SEQ
+    tier: 3
+    plain_english: "Foster Pair one session then Exhaustion Triple next session."
+    composition:
+      type: SEQUENCE
+      operands: ["squarify::F2_BULL[yesterday]","squarify::E3_BULL[today]"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_36 and comboF2E3_Consec_Bull, \"20 F2E3seq\",shape.flag,location.top,#FFFF00,text=\"F2E3\\nseq\",textcolor=color.black,size=size.huge)"
+    alertcondition_id: "F2E3seq"
+    pine_source_line_range: "L2000 (def); L2248 (plot)"
+
+  - id: squarify::S21_CL_TIMES_2D
+    tier: 3
+    plain_english: "FAUNA Cluster on consecutive trading sessions."
+    composition:
+      type: AND
+      operands: ["squarify::FC_BULL","squarify::B2B_DAYS_TRACKER(FC_BULL)"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_37 and comboCluster_B2BDays_Bull, \"21 CL×2D\",shape.flag,location.bottom,#FFFF00,text=\"CL×2D\",textcolor=color.black,size=size.huge)"
+    alertcondition_id: "CLx2D"
+    pine_source_line_range: "L2001 (def); L2249 (plot)"
+
+  # ── NPM (S22-S26) ─────────────────────────────────────────────────────────
+  - id: squarify::S22_NPM_PLUS
+    tier: 3
+    plain_english: "NPM+: consolidated NPM AND ((PBJ[1] AND (UC OR HW[1] OR WMD[1])) OR WMD[1])."
+    composition:
+      type: AND
+      operands: ["squarify::NPM_CONS_BULL","((hvd-pbj-ppd::PBJ_BULL[1] AND (squarify::UNIFIED_COMBO_BULL OR squarify::S3_HW[1] OR squarify::WBUSH_BULL[1])) OR squarify::WBUSH_BULL[1])"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_38 and sig38, \"22 NPM+\",shape.labelup,location.bottom,#00FFAA,text=\"NPM+\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "NPM+"
+    pine_source_line_range: "L2173 (def); L2252 (plot)"
+
+  - id: squarify::S23_NPM12
+    tier: 3
+    plain_english: "NPM12: consolidated NPM + checkbox qualifier Set 1 OR Set 2 (napalm-aligned [1])."
+    composition:
+      type: AND
+      operands: ["squarify::NPM_CONS_BULL","(cb1_pass_npm OR cb2_pass_npm)"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_39 and npm12, \"23 NPM12\",shape.triangleup,location.belowbar,#00BCD4,text=\"NPM12\",textcolor=color.white,size=size.normal,offset=-1)"
+    alertcondition_id: "NPM12"
+    pine_source_line_range: "L2162 (def); L2253 (plot)"
+
+  - id: squarify::S24_NPM3
+    tier: 3
+    plain_english: "NPM3: consolidated NPM + checkbox Set 3 only. Suppressed when NPM12 fires."
+    composition:
+      type: AND_NOT
+      operands: ["squarify::NPM_CONS_BULL","cb3_pass_npm","NOT squarify::S23_NPM12"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_41 and npm3 and not npm12, \"24 NPM3\",shape.triangleup,location.top,#0097A7,text=\"NPM3\",textcolor=color.white,size=size.small,offset=-1)"
+    alertcondition_id: "NPM3"
+    pine_source_line_range: "L2163 (def); L2254 (plot)"
+
+  - id: squarify::S25_B2BNPM
+    tier: 3
+    plain_english: "Back-to-back consolidated NPM (this bar AND prior bar)."
+    composition:
+      type: AND
+      operands: ["squarify::NPM_CONS_BULL","squarify::NPM_CONS_BULL[1]"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_42 and det_b2bBullNapalm, \"25 B2BNPM\",shape.labelup,location.bottom,#1DE9B6,text=\"B2B\\nNPM\",textcolor=color.white,size=size.large,offset=-1)"
+    alertcondition_id: "B2BNPM"
+    pine_source_line_range: "L1663 (def); L2255 (plot)"
+
+  - id: squarify::S26_NPM_PLUS_TNT
+    tier: 3
+    plain_english: "Napalm + prior-bar TNT on same visual candle."
+    composition:
+      type: AND
+      operands: ["raw_napalmBull","raw_bullTNT[1]"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_43 and det_npmTntBull, \"26 NPM+TNT\",shape.labelup,location.belowbar,#089981,text=\"NPM\\nTNT\",textcolor=color.white,size=size.large,offset=-1)"
+    alertcondition_id: "NPM+TNT"
+    pine_source_line_range: "L1665 (def); L2256 (plot)"
+
+  # ── HV+D (S27-S31) ────────────────────────────────────────────────────────
+  - id: squarify::S27_CO
+    tier: 3
+    plain_english: "CO — RESTRUCTURED v2: HV+D + PBJ[1] + (UC OR FVG Combo Set). No longer fires on any bullish signal."
+    composition:
+      type: AND
+      operands: ["squarify::HVD_BULL","hvd-pbj-ppd::PBJ_BULL[1]","(squarify::UNIFIED_COMBO_BULL OR csNew1_Bull)"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_44 and co_bull_pbj, \"27 CO\",shape.diamond,location.belowbar,#FFD700,text=\"CO\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "CO"
+    pine_source_line_range: "L1825-L1827 (def); L2259 (plot)"
+
+  - id: squarify::S28_HVD_PBJ
+    tier: 3
+    plain_english: "HV+D + PBJ on same candle. Sub-3min requires checkbox Set 1 (napalm-aligned). Excludes CO."
+    composition:
+      type: AND_NOT
+      operands: ["squarify::HVD_BULL","hvd-pbj-ppd::PBJ_BULL[1]","(tfSec>=180 OR cb1_pass_npm)","NOT squarify::S27_CO"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_45 and hvd_pbj_bull and not co_bull_pbj and (tfSec>=180 or cb1_pass_npm), \"28 HVD+PBJ\",shape.diamond,location.bottom,color.new(color.yellow,25),text=\"HVD\\nPBJ\",textcolor=color.white,size=size.normal,offset=-1)"
+    alertcondition_id: "HVD+PBJ"
+    pine_source_line_range: "L1810 (def); L2260 (plot)"
+
+  - id: squarify::S29_B2BHVD_PBJ
+    tier: 3
+    plain_english: "Consecutive HV+D bars + PBJ on either bar."
+    composition:
+      type: AND
+      operands: ["squarify::HVD_BULL","squarify::HVD_BULL[1]","(hvd-pbj-ppd::PBJ_BULL[1] OR hvd-pbj-ppd::PBJ_BULL[2])"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_46 and b2b_bull_pbj, \"29 B2BHVD+PBJ\",shape.flag,location.bottom,#E040FB,text=\"B2B\\nHVD\\nPBJ\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "B2BHVD+PBJ"
+    pine_source_line_range: "L1834-L1836 (def); L2261 (plot)"
+
+  - id: squarify::S30_B2BHVD
+    tier: 3
+    plain_english: "Consecutive HV+D bars without PBJ or PB."
+    composition:
+      type: AND_NOT
+      operands: ["squarify::HVD_BULL","squarify::HVD_BULL[1]","NOT squarify::S29_B2BHVD_PBJ","NOT b2b_bull_pb"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_47 and b2b_bull_nopb and not b2b_bull_pbj, \"30 B2BHVD\",shape.flag,location.belowbar,#4CAF50,text=\"B2B\\nHVD\",textcolor=color.white,size=size.large,offset=-1)"
+    alertcondition_id: "B2BHVD"
+    pine_source_line_range: "L1834-L1840 (def); L2262 (plot)"
+
+  - id: squarify::S31_UU_PLUS_UC
+    tier: 3
+    plain_english: "Any UU family + Unified Combo on same candle."
+    composition:
+      type: AND
+      operands: ["uu_any","squarify::UNIFIED_COMBO_BULL"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_48 and sig_uu_combo, \"31 UU+UC\",shape.labelup,location.bottom,#7C4DFF,text=\"UU\\nUC\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "UU+UC"
+    pine_source_line_range: "L2209 (def); L2263 (plot)"
+
+  # ── FUSIONS (S32-S39) ─────────────────────────────────────────────────────
+  - id: squarify::S32_GRAIL
+    tier: 3
+    plain_english: "Holy Grail: consolidated NPM + PBJ[1] + PUP[1] + Unified Combo on same visual candle."
+    composition:
+      type: AND
+      operands: ["squarify::NPM_CONS_BULL","hvd-pbj-ppd::PBJ_BULL[1]","b2b-pup::PUP[1]","squarify::UNIFIED_COMBO_BULL"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_49 and holy_grail, \"32 GRAIL\",shape.labelup,location.bottom,#FFD700,text=\"GRAIL\",textcolor=color.black,size=size.huge,offset=-1)"
+    alertcondition_id: "GRAIL"
+    pine_source_line_range: "L2176 (def); L2266 (plot)"
+
+  - id: squarify::S33_FLR_NPM
+    tier: 3
+    plain_english: "Floor[1] + consolidated NPM same window."
+    composition:
+      type: AND
+      operands: ["squarify::S4_FLOOR[1]","squarify::NPM_CONS_BULL"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_50 and floor_npm, \"33 FLR+NPM\",shape.circle,location.bottom,#00FFFF,text=\"FLR\\nNPM\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "FLR+NPM"
+    pine_source_line_range: "L2179 (def); L2267 (plot)"
+
+  - id: squarify::S34_NPM_PBJ_PUP
+    tier: 3
+    plain_english: "Consolidated NPM + PBJ[1] + PUP[1] WITHOUT Unified Combo. Suppressed when GRAIL fires."
+    composition:
+      type: AND_NOT
+      operands: ["squarify::NPM_CONS_BULL","hvd-pbj-ppd::PBJ_BULL[1]","b2b-pup::PUP[1]","NOT squarify::S32_GRAIL"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_51 and npm_pbj_pup and not holy_grail, \"34 NPM+PBJ+PUP\",shape.labelup,location.belowbar,#00E676,text=\"NPM\\nPBJ\\nPUP\",textcolor=color.white,size=size.large,offset=-1)"
+    alertcondition_id: "NPM+PBJ+PUP"
+    pine_source_line_range: "L2182 (def); L2268 (plot)"
+
+  - id: squarify::S35_NAG_PLUS
+    tier: 3
+    plain_english: "Nagasaki + any directional bullish signal (RVOL1x/GS/FAUNA/DISP/PBJ/PUP/HV-FVG-bull/GZI-bull)."
+    composition:
+      type: AND
+      operands: ["heavy-pentagon::NAGASAKI","(heavy-pentagon::RVOL1x_BULL OR heavy-pentagon::GRAND_SLAM OR fauna::BULL OR sigDISPBull OR hvd-pbj-ppd::PBJ_BULL OR b2b-pup::PUP OR hv-fvg-gz1-og::HV_BULL OR hv-fvg-gz1-og::GZI_BULL)"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_52 and nag_any_bull, \"35 NAG+\",shape.labelup,location.abovebar,#FF00FF,text=\"NAG+\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: "NAG+"
+    pine_source_line_range: "L2185 (def); L2269 (plot)"
+
+  - id: squarify::S36_UU_HVD
+    tier: 3
+    plain_english: "Any UU family[1] + HV+D + PBJ on same candle (UU shifted to [1] because hvd_pbj_bull is offset -1)."
+    composition:
+      type: AND
+      operands: ["uu_any[1]","squarify::HVD_BULL","hvd-pbj-ppd::PBJ_BULL[1]"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_53 and uu_hvdpbj, \"36 UU+HVD\",shape.labelup,location.belowbar,#7C4DFF,text=\"UU\\nHVD\",textcolor=color.white,size=size.large,offset=-1)"
+    alertcondition_id: "UU+HVD"
+    pine_source_line_range: "L2188 (def); L2270 (plot)"
+
+  - id: squarify::S37_UU_NPM
+    tier: 3
+    plain_english: "Any UU family[1] + consolidated NPM same window."
+    composition:
+      type: AND
+      operands: ["uu_any[1]","squarify::NPM_CONS_BULL"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_54 and uu_npm, \"37 UU+NPM\",shape.labelup,location.abovebar,#00BCD4,text=\"UU\\nNPM\",textcolor=color.white,size=size.normal,offset=-1)"
+    alertcondition_id: "UU+NPM"
+    pine_source_line_range: "L2191 (def); L2271 (plot)"
+
+  - id: squarify::S38_FLR_UU
+    tier: 3
+    plain_english: "Floor or 2F + any UU family (both offset 0)."
+    composition:
+      type: AND
+      operands: ["(squarify::S4_FLOOR OR squarify::S5_2F)","uu_any"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_55 and floor_uu, \"38 FLR+UU\",shape.square,location.belowbar,#00E5FF,text=\"FLR\\nUU\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: "FLR+UU"
+    pine_source_line_range: "L2194 (def); L2272 (plot)"
+
+  - id: squarify::S39_FOS_PUP_1X
+    tier: 3
+    plain_english: "Foster (PBJ-resolved) + PUP + (RVOL1x OR consolidated NPM)."
+    composition:
+      type: AND
+      operands: ["squarify::FOSTER_PBJ_WINDOW","b2b-pup::PUP","(heavy-pentagon::RVOL1x_BULL OR squarify::NPM_CONS_BULL)"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_56 and foster_pup_rvol, \"39 FOS+PUP+1x\",shape.labelup,location.bottom,#88FF00,text=\"FOS\\nPUP\\n1x\",textcolor=color.black,size=size.huge)"
+    alertcondition_id: "FOS+PUP+1x"
+    pine_source_line_range: "L2197 (def); L2273 (plot)"
+
+  # ── NPM+UC (S40) ──────────────────────────────────────────────────────────
+  - id: squarify::S40_NPM_UC
+    tier: 3
+    plain_english: "Consolidated NPM + Unified Combo WITHOUT PBJ. Suppressed when NPM+UC+PBJ (S44) fires."
+    composition:
+      type: AND_NOT
+      operands: ["squarify::NPM_CONS_BULL","squarify::UNIFIED_COMBO_BULL","NOT squarify::S44_NPM_UC_PBJ"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_60 and sig_npm_combo and not sig_npm_combo_pbj, \"40 NPM+UC\",shape.labelup,location.belowbar,#00E5FF,text=\"NPM\\nUC\",textcolor=color.white,size=size.large,offset=-1)"
+    alertcondition_id: "NPM+UC"
+    pine_source_line_range: "L2203 (def); L2276 (plot)"
+
+  # ── WBUSH (S41-S43) ───────────────────────────────────────────────────────
+  - id: squarify::S41_WBUSH_BULL
+    tier: 3
+    plain_english: "WBUSH bull aggregate plot — any of 5 Heavy Pentagon families fired bullish."
+    composition:
+      type: ALIAS
+      operands: ["squarify::WBUSH_BULL"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_wbushBull and sig_WBUSH_Bull, \"41 WBUSH+ANY Bull\",shape.diamond,location.belowbar,#00BFA5,text=\"WBUSH\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: "WBUSH+ANY Bull"
+    pine_source_line_range: "L2067 (def); L2279 (plot)"
+
+  - id: squarify::S42_WBUSH_BEAR
+    tier: 3
+    plain_english: "WBUSH bear aggregate plot."
+    composition:
+      type: ALIAS
+      operands: ["squarify::WBUSH_BEAR"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_wbushBear and sig_WBUSH_Bear, \"42 WBUSH+ANY Bear\",shape.diamond,location.abovebar,#C2185B,text=\"WBUSH\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: "WBUSH+ANY Bear"
+    pine_source_line_range: "L2068 (def); L2280 (plot)"
+
+  - id: squarify::S43_WBUSH_NEUTRAL
+    tier: 3
+    plain_english: "WBUSH neutral aggregate plot."
+    composition:
+      type: ALIAS
+      operands: ["squarify::WBUSH_NEUTRAL"]
+    offset: 0
+    plot_call: "plotshape(_masterGate and en_wbushNeutral and sig_WBUSH_Neutral, \"43 WBUSH Neutral\",shape.diamond,location.top,#9E9E9E,text=\"WBUSH N\",textcolor=color.white,size=size.normal)"
+    alertcondition_id: "WBUSH Neutral"
+    pine_source_line_range: "L2069 (def); L2281 (plot)"
+
+  # ── NPM+UC+PBJ (S44) ──────────────────────────────────────────────────────
+  - id: squarify::S44_NPM_UC_PBJ
+    tier: 3
+    plain_english: "Consolidated NPM + Unified Combo + PBJ[1]."
+    composition:
+      type: AND
+      operands: ["squarify::NPM_CONS_BULL","squarify::UNIFIED_COMBO_BULL","hvd-pbj-ppd::PBJ_BULL[1]"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_63 and sig_npm_combo_pbj, \"44 NPM+UC+PBJ\",shape.labelup,location.bottom,#FFC107,text=\"NPM\\nUC\\nPBJ\",textcolor=color.black,size=size.huge,offset=-1)"
+    alertcondition_id: "NPM+UC+PBJ"
+    pine_source_line_range: "L2206 (def); L2284 (plot)"
+
+  # ── UC NAGASAKI (S45-S46) ─────────────────────────────────────────────────
+  - id: squarify::S45_UC_NAGASAKI_BULL
+    tier: 3
+    plain_english: "UC NAGASAKI Bull: Unified Combo (csNew3) + Nagasaki[1] on same visual bar."
+    composition:
+      type: AND
+      operands: ["squarify::UNIFIED_COMBO_BULL","heavy-pentagon::NAGASAKI[1]"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_ucNagBull and sig_UCNagasakiBull, \"45 UC NAGASAKI Bull\",shape.labelup,location.belowbar,#FF00FF,text=\"UC\\nNAG\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "UC NAGASAKI Bull"
+    pine_source_line_range: "L2076 (def); L2287 (plot)"
+
+  - id: squarify::S46_UC_NAGASAKI_BEAR
+    tier: 3
+    plain_english: "UC NAGASAKI Bear mirror: Unified Combo bear (csNew3_Bear) + Nagasaki[1]."
+    composition:
+      type: AND
+      operands: ["squarify::UNIFIED_COMBO_BEAR","heavy-pentagon::NAGASAKI[1]"]
+    offset: -1
+    plot_call: "plotshape(_masterGate and en_ucNagBear and sig_UCNagasakiBear, \"46 UC NAGASAKI Bear\",shape.labeldown,location.abovebar,#9C27B0,text=\"UC\\nNAG\",textcolor=color.white,size=size.huge,offset=-1)"
+    alertcondition_id: "UC NAGASAKI Bear"
+    pine_source_line_range: "L2077 (def); L2288 (plot)"
+
+  # ── CHAINS (CC / LSC) — NOT numbered S-plots; standalone named composites ─────
+  - id: squarify::CC_BULL
+    tier: 2
+    plain_english: "Combo Chain Bull: stateful latch that activates when ≥ cc_min_hits Combo window hits accumulate in cc_window bars AND a PBJ/PB occurred in that window. Resets when ALL combo streams (CS1+CS2+CS3+CS4) go false."
+    composition: { type: STATEFUL_LATCH, operands: ["cc_win_bull ≥ cc_min_hits", "cc_pbj_bull", "reset: not(csNew1_Bull or csNew2_Bull)"] }
+    offset: 0
+    plot_call: "plotshape(fire_CCBull,\"CC Bull\",shape.square,location.belowbar,color.new(#00BFA5,0),text=\"CC\",textcolor=color.white,size=size.huge)"
+    alertcondition_id: null
+    pine_source_line_range: "L1282-L1312, plot L1794 (46_v2)"
+    pine_variable: sigCCBull
+    drift_status: SEMANTIC-DRIFT-3-WAY
+    drift_finding: "docs/validation/2026-05-10-combo-chain-bull-drift-1.md"
+    variant_kind: "semantic-drift-widest-operands (CS1+CS2+CS3+CS4 reset — agrees with legacy hvd-pbj-ppd; differs from THE_ONLY_ONE)"
+    notes: "Squarify's 4 versions are internally consistent. Reset: if not(csNew1_Bull or csNew2_Bull) which expands to all 4 comboSets. THE_ONLY_ONE resets on CS3+CS4 only — semantic drift. show_CCBull is hardcoded true here (IPSF-asymmetry vs hvd-pbj-ppd input.bool). MISSING from squarify numbered S-plots — CC is an unlabeled non-numbered composite. PENDING user decision on canonical."
+
+  - id: squarify::CC_BEAR
+    tier: 2
+    plain_english: "Bear mirror of CC_BULL."
+    composition: { type: STATEFUL_LATCH, operands: ["cc_win_bear ≥ cc_min_hits", "cc_pbj_bear", "reset: not(csNew1_Bear or csNew2_Bear)"] }
+    offset: 0
+    plot_call: "plotshape(fire_CCBear,\"CC Bear\",shape.square,location.abovebar,color.new(#E91E63,0),text=\"CC\",textcolor=color.white,size=size.small)"
+    alertcondition_id: null
+    pine_source_line_range: "L1282-L1312, plot L1804 (46_v2)"
+    pine_variable: sigCCBear
+    drift_status: SEMANTIC-DRIFT-3-WAY
+    drift_finding: "docs/validation/2026-05-10-combo-chain-bull-drift-1.md"
+    variant_kind: "semantic-drift-widest-operands (CS1+CS2+CS3+CS4 reset)"
+    notes: "Bear mirror. Same drift applies symmetrically."
+
+  # ── EXTRA PLOTSHAPES (Tier opening confluence) ────────────────────────────
+  - id: squarify::T1_OPENING_CONFLU
+    tier: 3
+    plain_english: "Tier-1 opening confluence plot — see TIER1_OPENING_CONFLU_BULL root."
+    composition:
+      type: ALIAS
+      operands: ["squarify::TIER1_OPENING_CONFLU_BULL"]
+    offset: 0
+    plot_call: "plotshape(tier1_opening_conflu_bull, \"T1 OPENING CONFLU\", shape.flag, location.top, color.new(#FFD700, 0), size=size.huge, text=\"T1\\nFIRE\", textcolor=color.new(color.black, 0))"
+    alertcondition_id: "T1 OPENING CONFLUENCE BULL"
+    pine_source_line_range: "L2486-L2492"
+
+  - id: squarify::T2_OPENING_CONFLU
+    tier: 3
+    plain_english: "Tier-2 opening confluence plot — see TIER2_OPENING_CONFLU_BULL root."
+    composition:
+      type: ALIAS
+      operands: ["squarify::TIER2_OPENING_CONFLU_BULL"]
+    offset: 0
+    plot_call: "plotshape(tier2_opening_conflu_bull, \"T2 OPENING CONFLU\", shape.flag, location.top, color.new(#00E5FF, 0), size=size.huge, text=\"T2\\nFIRE\", textcolor=color.new(color.black, 0))"
+    alertcondition_id: "T2 OPENING CONFLUENCE BULL"
+    pine_source_line_range: "L2514-L2520"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CROSS-INDICATOR DEPENDENCIES
+# ─────────────────────────────────────────────────────────────────────────────
+cross_indicator_dependencies:
+  - "hvd-pbj-ppd::PBJ_BULL"
+  - "hvd-pbj-ppd::PBJ_BEAR"
+  - "hvd-pbj-ppd::PB_BULL"
+  - "hvd-pbj-ppd::PB_BEAR"
+  - "hvd-pbj-ppd::PPD"           # bear PUP analog (sigPPD)
+  - "b2b-pup::PUP"               # sigPUP — also defined locally; canonical source is b2b-pup
+  - "hv-fvg-gz1-og::GZI_BULL"
+  - "hv-fvg-gz1-og::GZI_BEAR"
+  - "hv-fvg-gz1-og::HV_BULL"     # gz_bullHV
+  - "hv-fvg-gz1-og::HV_BEAR"     # gz_bearHV
+  - "hv-fvg-gz1-og::DISP_BULL"   # sigDISPBull
+  - "hv-fvg-gz1-og::DISP_BEAR"
+  - "hv-fvg-gz1-og::HV75/HV150/HV500/HV1000"
+  - "fauna::BULL"                # sigFAUNABull
+  - "fauna::BEAR"                # sigFAUNABear
+  - "fauna::FOXTROT_BULL"        # sigFoxtrotBull (4 consecutive FAUNA)
+  - "fauna::FOXTROT_BEAR"
+  - "fauna::MB_BULL/RE_BULL/TA_BULL"  # u57_b* atomics
+  - "fauna::MB_BEAR/RE_BEAR/TA_BEAR"
+  - "heavy-pentagon::SAAB"
+  - "heavy-pentagon::KRATOS"
+  - "heavy-pentagon::RVOL1x_BULL"
+  - "heavy-pentagon::RVOL1x_BEAR"
+  - "heavy-pentagon::GRAND_SLAM"
+  - "heavy-pentagon::MOAB"
+  - "heavy-pentagon::WTC"
+  - "heavy-pentagon::HIROSHIMA"
+  - "heavy-pentagon::PENTAGON"
+  - "heavy-pentagon::NAGASAKI"
+  - "heavy-pentagon::PING_PONG_BULL"  # bull_pp
+  - "heavy-pentagon::PING_PONG_BEAR"  # bear_pp
+  - "heavy-pentagon::HEAVY_YIN_YANG / HEAVY_NAGASAKI / HEAVY_NAGASAKI_VOL / HEAVY_TRIDENT / NEUTRAL_HEAVY_x2"
+  - "tnt-od::TNT_BULL / TNT_BEAR"     # raw_bullTNT / raw_bearTNT
+  - "tnt-od::NAPALM_BULL / NAPALM_BEAR"
+  - "tnt-od::CHARGE_BULL / CHARGE_BEAR"
+  - "tnt-od::CONT_BULL / CONT_BEAR"
+  - "boom-hunter::OMEGA_ANY"          # bh_anyOmega
+  - "boom-hunter::SHORT_PLUS_PRESS"   # sigShortPlusPress
+  - "long-short::LONG1 / LONG2 / SHORT1 / SHORT2"  # sigLong1/2, sigShort1/2
+
+architecture_layers:
+  - { layer: foundational, composites: ["squarify::S1_SD_BANG","squarify::S2_SUPER","squarify::S3_HW","squarify::S4_FLOOR","squarify::S5_2F","squarify::S9_ALPHA_STRIKE","squarify::S10_OMEGA_A","squarify::S11_FOX","squarify::S12_OD","squarify::S13_GOLF"] }
+  - { layer: u_streak, composites: ["squarify::S6_UUUU","squarify::S7_UUU","squarify::S8_UU"] }
+  - { layer: ultra57, composites: ["squarify::S14_PBJ_F2_OR_E3","squarify::S15_PBJ_CL","squarify::S16_F2CL_TO_E3","squarify::S17_E3_TWOTHIRDS_PUP","squarify::S18_F2_TIMES_2D","squarify::S19_E3_TIMES_2D","squarify::S20_F2E3_SEQ","squarify::S21_CL_TIMES_2D"] }
+  - { layer: npm, composites: ["squarify::S22_NPM_PLUS","squarify::S23_NPM12","squarify::S24_NPM3","squarify::S25_B2BNPM","squarify::S26_NPM_PLUS_TNT"] }
+  - { layer: hv_d, composites: ["squarify::S27_CO","squarify::S28_HVD_PBJ","squarify::S29_B2BHVD_PBJ","squarify::S30_B2BHVD","squarify::S31_UU_PLUS_UC"] }
+  - { layer: fusion, composites: ["squarify::S32_GRAIL","squarify::S33_FLR_NPM","squarify::S34_NPM_PBJ_PUP","squarify::S35_NAG_PLUS","squarify::S36_UU_HVD","squarify::S37_UU_NPM","squarify::S38_FLR_UU","squarify::S39_FOS_PUP_1X","squarify::S40_NPM_UC","squarify::S44_NPM_UC_PBJ","squarify::S45_UC_NAGASAKI_BULL","squarify::S46_UC_NAGASAKI_BEAR"] }
+  - { layer: wbush, composites: ["squarify::S41_WBUSH_BULL","squarify::S42_WBUSH_BEAR","squarify::S43_WBUSH_NEUTRAL"] }
+  - { layer: opening_confluence, composites: ["squarify::T1_OPENING_CONFLU","squarify::T2_OPENING_CONFLU"] }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# UNCERTAIN OR QUESTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+uncertain_or_questions:
+  - "Trinity vs Neo (RESOLVED): The Squarify file defines BOTH inline at L1215-L1216. Neo bull = is_matrix_number AND sigFAUNABull. Trinity bull = is_matrix_number AND NOT sigFAUNABull AND close>open (i.e., a matrix-number bar that lacks FAUNA but is still directionally up). Neither is plotted directly as a numbered Squarify composite — they feed matrix_any_bull, which is consumed by Combo Sets 3/4 and indirectly by UC (csNew3). Their canonical home is squarify (not heavy-pentagon or fauna) since Squarify owns the Neo/Matrix-Number lookback parameter (neo_len=67)."
+  - "Unified Combo (UC) (RESOLVED): UC = csNew3 = csNew1 (FVG combo set on bar[0]) AND csNew2[1] (matrix combo set on bar[1]). Defined at L1240-L1257. Used as a building block in S1, S2, S22, S27, S31, S32, S40, S44, S45, S46. Tagged as a local root because the composition logic is original to Squarify."
+  - "Several engines (RVOL, FAUNA, PBJ, GZI/HV-FVG, PUP, TNT, Boom Hunter, Long/Short, Heavy Pentagon Combos, Ping-Pong) are duplicated inline rather than imported. Their roots are emitted under the same canonical names as the source-of-truth indicators (heavy-pentagon, fauna, hvd-pbj-ppd, hv-fvg-gz1-og, b2b-pup, tnt-od, boom-hunter, long-short). Tagged provenance_uncertain only on B2B_PUP (the cleanest case where Squarify's local definition exactly matches the b2b-pup canonical definition)."
+  - "Bear-side numbered plots: only S42 (WBUSH Bear) and S46 (UC NAGASAKI Bear) are wired to plotshapes. The aggregator computes most fire_*Bear booleans (DispConsBear2/3, GolfBear, PAFBear, FloorBear/Pent, HWBear, SuperBear, etc.) but they do NOT have plotshape calls in v2 — the bear pipeline is largely shows_*=false suppressed for plotting purposes, even though the engine logic exists. Confirmed by grepping plotshape calls."
+  - "S38 (FLR+UU) lives in the 'fusion' layer per architecture but uses zero offset rather than -1, since neither operand has displacement+FVG in the chain."
+  - "T1/T2 OPENING CONFLU plots are recorded as both roots and composites (the root is the boolean primitive defined uniquely here, the composite entry is the ALIAS plotshape)."

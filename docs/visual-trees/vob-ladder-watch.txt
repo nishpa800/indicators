@@ -1,0 +1,46 @@
+VISUAL TREE — vob-ladder-watch
+===============================
+File: vob-ladder-watch/versions/VOB_LADDER_WATCH_v1.pine
+Pine v5  ·  215 lines  ·  overlay=True
+Purpose: Staged zF -> zA ascending bull-zone ladder escalation detector (depth 0-6 watch gauge + alerts)
+
+ROOTS
+-----
+  ◆ vob-ladder-watch::zF    [structural · offset=?]
+      
+  ◆ vob-ladder-watch::zE    [structural · offset=?]
+      
+  ◆ vob-ladder-watch::zD    [structural · offset=?]
+      
+  ◆ vob-ladder-watch::zC    [structural · offset=?]
+      
+  ◆ vob-ladder-watch::zB    [structural · offset=?]
+      
+  ◆ vob-ladder-watch::zA    [structural · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● vob-ladder-watch::ladder_depth    [offset=? · ?]
+
+  Tier 2:
+    ● vob-ladder-watch::escalated    [offset=? · ?]
+
+  Tier 3:
+    ● vob-ladder-watch::WATCH    [offset=? · ?]
+    ● vob-ladder-watch::TIER3    [offset=? · ?]
+    ● vob-ladder-watch::TIER4    [offset=? · ?]
+    ● vob-ladder-watch::TIER5    [offset=? · ?]
+    ● vob-ladder-watch::FULL    [offset=? · ?]
+
+  Tier 4:
+    ● vob-ladder-watch::escalation_alert_message    [offset=? · ?]
+    ● vob-ladder-watch::depth_gauge_table    [offset=? · ?]
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → {'target': 'vob-asym-t3', 'relationship': 'shared_engine_lineage', 'notes': "f_bull_vob (lines 59-85) is documented in the file header and CHANGELOG as mirroring VOB Asym T3's bull half (no T3-smoothing, no MutEx pruning, bull-only). No code import — duplicated logic. zF..zA roots here are conceptual cousins of VOB Asym T3's six bull tiers but evaluated independently with their own arrays."}
+  → {'target': 'external (TradingView alert engine)', 'relationship': 'alert_consumer', 'notes': "Five alertcondition() entries (lines 169-178) plus one alert() call (line 191) expect TradingView 'Any alert() function call' wiring per CHANGELOG instructions."}
+

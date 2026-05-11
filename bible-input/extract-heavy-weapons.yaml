@@ -1,0 +1,848 @@
+indicator:
+  id: heavy-weapons-8fvg-matrix
+  file: heavy-weapons/versions/HEAVY_WEAPONS_8FVG_MATRIX_COMBOS_NO_PENTAGON_v1.pine
+  branch: main
+  pine_version: 5
+  line_count: 489
+  overlay: true
+  one_line_purpose: "Lifts RVOL engine (10 roots) from heavy-pentagon; adds GZI/HV FVG detection, Fauna/Matrix pattern recognition, and Hybrid Momentum; combines into 4 Matrix Combos + 2 FVG Combos (4 directional variants each)"
+  architecture: "NRA (Non-Repainting): GZI/HV mutations gated by barstate.isconfirmed; FVG combo signals explicitly conf-gated; all fire_* booleans 1:1 with plots/alerts"
+  parent_indicator: "heavy-pentagon (RVOL roots only)"
+  relationship_to_parent: "Parallel branch. Heavy-pentagon owns 10 RVOL roots + 15 Heavy Combos. This indicator lifts the 10 RVOL roots verbatim but drops all 15 Heavy Combos. Substitutes its own 4 Matrix Combos + 2 FVG Combos built from GZI/HV + Fauna + Hybrid Momentum."
+  fixes_applied:
+    - "GZI/HV FVG array mutations (unshift/remove) gated by barstate.isconfirmed to prevent intrabar state corruption"
+    - "bullGZI/bearGZI/bullHV/bearHV only set inside conf block; FVG combo signals no longer repaint"
+    - "FVG combo signals (comboSet1/2) explicitly conf-gated"
+    - "All plots and alerts use identical fire_* booleans for 1:1 parity"
+    - "Added missing alertconditions for SAAB, Kratos, Bull/Bear RVOL 1x, Long 1/2, Short 1/2"
+
+internal_helpers:
+  - name: f_rvol_1x_threshold
+    pine_source_line_range: "L118-L121"
+    notes: "TF-keyed σ-multiplier table for RVOL 1x threshold (lifted verbatim from heavy-pentagon)"
+  - name: "th_1x, th_saab_kratos, th_wtc"
+    pine_source_line_range: "L123-L125"
+    notes: "RVOL thresholds: th_1x = f_rvol_1x_threshold; th_saab_kratos = th_1x × 0.56; th_wtc = th_1x × 2.0 (verbatim from heavy-pentagon)"
+  - name: f_gs_moab_threshold
+    pine_source_line_range: "L127-L130"
+    notes: "TF-keyed table for Grand Slam / MOAB threshold (verbatim from heavy-pentagon)"
+  - name: "th_gs_moab, th_hiroshima"
+    pine_source_line_range: "L132-L133"
+    notes: "Grand Slam/MOAB and Hiroshima thresholds (verbatim from heavy-pentagon)"
+  - name: "P1 intermediates (bb_spike, bb_normalizedPrice, bb_normalizedVolume, bb_diff, bb_positiveDiff, bb_smaDiff, bb_baseBullish, bb_baseBearish)"
+    pine_source_line_range: "L135-L145"
+    notes: "Pipeline 1 derived series (verbatim from heavy-pentagon)"
+  - name: bb_inRange
+    pine_source_line_range: "L146"
+    notes: "v >= lowTh and v < highTh — half-open band check (verbatim from heavy-pentagon)"
+  - name: "P2 relVolRatio + Penn/WTC/Hiroshima booleans (sigPentagon, sigWTC, sigHiroshima)"
+    pine_source_line_range: "L155-L160"
+    notes: "Pipeline 2 reg@time RVOL ratio + tier classifications (verbatim from heavy-pentagon)"
+  - name: "P3 Nagasaki running-max engine (maxVol, isNagasaki, sigNagasaki)"
+    pine_source_line_range: "L162-L170"
+    notes: "Pipeline 3 ATH-volume detection (verbatim from heavy-pentagon)"
+  - name: "GZI/HV FVG detection (isHV_FVG, bFVG, sFVG, v1_fvg)"
+    pine_source_line_range: "L177-L183"
+    notes: "HV detection: 5000-bar / 252-bar / 63-bar highs. FVG detection: threshold via auto or user-set threshPct. NEW to this indicator."
+  - name: "FVG array + GZI overlap engine (fvgs, bullGZI, bearGZI, bullHV, bearHV, lastT)"
+    pine_source_line_range: "L184-L232"
+    notes: "GZI overlap detection (gziDist <= 7 bars by default); HV flag set when isHV_FVG. Conf-gated to prevent intrabar corruption. NEW to this indicator."
+  - name: "FAUNA BULLISH LOGIC (MB_bull, RE_bull, TA_bull, GG_bull, TR_bull, ES_bull, GDR_bull, is_fauna_bull)"
+    pine_source_line_range: "L259-L291"
+    notes: "Fauna pattern recognition: Movement Break (MB), Range Extension (RE), Trend Acceleration (TA), Gap Gorge (GG), plus exclusion filters. NEW to this indicator."
+  - name: "FAUNA BEARISH LOGIC (MB_bear, RE_bear, TA_bear, GG_bear, TR_bear, ES_bear, GDR_bear, is_fauna_bear)"
+    pine_source_line_range: "L293-L315"
+    notes: "Fauna pattern recognition (bearish mirrors). NEW to this indicator."
+  - name: "MATRIX BASE (neo_bull, neo_bear, trinity_bull, trinity_bear)"
+    pine_source_line_range: "L341-L344"
+    notes: "Matrix base: neo = matrix number + is_fauna; trinity = matrix number + not fauna + body direction. NEW to this indicator."
+  - name: "is_matrix_number"
+    pine_source_line_range: "L262"
+    notes: "volume == ta.highest(volume, matrix_len) — matrix lookback (default 67 bars)"
+  - name: "HYBRID MOMENTUM ALIGNMENT (hybRegRatio, hybCumRatio, hybBodyRat, sigAddLong1/2, sigAddShort1/2)"
+    pine_source_line_range: "L317-L338"
+    notes: "Momentum 1 & 2: Reg@Time ratio + Cum ratio thresholds + body ratio gate, conf-gated. NEW to this indicator."
+  - name: "ALIGNED SIGNALS (neo_bull_aligned, neo_bear_aligned, trinity_bull_aligned, trinity_bear_aligned)"
+    pine_source_line_range: "L346-L349"
+    notes: "Matrix base signals aligned with Hybrid Momentum (Long1/2 for bull, Short1/2 for bear). NEW to this indicator."
+  - name: "FVG BODY EVALUATION (validBody_FVG)"
+    pine_source_line_range: "L356-L359"
+    notes: "Bar[1] body size as % of candle range >= comboBodyPct_FVG (default 0.85)"
+  - name: "MATRIX BODY EVALUATION (validBody_MAT)"
+    pine_source_line_range: "L375"
+    notes: "Current bar body size as % of candle range >= comboBodyPct_MAT (default 0.85)"
+  - name: "volRegTimeActiveBull_FVG / volRegTimeActiveBear_FVG"
+    pine_source_line_range: "L368-L369"
+    notes: "P2 gate for FVG Combos: (Pentagon if enabled) OR WTC OR Hiroshima OR Nagasaki"
+  - name: "volRegTimeActiveBull_MAT / volRegTimeActiveBear_MAT"
+    pine_source_line_range: "L385-L386"
+    notes: "P2 gate for Matrix Combos: (Pentagon if enabled) OR WTC OR Hiroshima OR Nagasaki"
+  - name: "matrix_any_bull, matrix_any_bear"
+    pine_source_line_range: "L377-L378"
+    notes: "OR-gate: neo_bull OR trinity_bull OR neo_bull_aligned OR trinity_bull_aligned (and bearish mirror)"
+
+roots:
+  # --- RVOL ROOTS (lifted verbatim from heavy-pentagon) ---
+  - id: heavy-weapons-8fvg-matrix::SAAB
+    family: rvol
+    plain_english: "Bullish bar with normalized price spike in the SAAB/Kratos band (0.56× to 1× the RVOL-1x threshold). LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND bb_baseBullish AND bb_normalizedPrice in [th_saab_kratos, th_1x)"
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_SAAB, title="SAAB", style=shape.square, location=location.belowbar, size=size.tiny, color=color.lime, text="SAAB")'
+    alertcondition_id: "SAAB"
+    pine_source_line_range: "L148, L424, L458"
+    pipeline: "P1 Standard RVOL"
+    notes: "Lower-band bullish RVOL. Lifted verbatim from heavy-pentagon (same bb_baseBullish, same th_saab_kratos formula)."
+    cross_indicator_ref: "heavy-pentagon::SAAB"
+
+  - id: heavy-weapons-8fvg-matrix::KRATOS
+    family: rvol
+    plain_english: "Bearish bar with normalized price spike in the SAAB/Kratos band. LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND bb_baseBearish AND bb_normalizedPrice in [th_saab_kratos, th_1x)"
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_Kratos, title="Kratos", style=shape.square, location=location.abovebar, size=size.tiny, color=color.orange, text="Krat")'
+    alertcondition_id: "Kratos"
+    pine_source_line_range: "L149, L425, L459"
+    pipeline: "P1 Standard RVOL"
+    notes: "Lower-band bearish RVOL. Lifted verbatim from heavy-pentagon (mirror of SAAB)."
+    cross_indicator_ref: "heavy-pentagon::KRATOS"
+
+  - id: heavy-weapons-8fvg-matrix::RVOL_1X_BULL
+    family: rvol
+    plain_english: "Bullish bar with normalized price spike in the RVOL-1x band (1× to GrandSlam threshold). LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND bb_baseBullish AND bb_normalizedPrice in [th_1x, th_gs_moab)"
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_BullRVOL1x, title="Bull RVOL 1x", style=shape.xcross, location=location.belowbar, size=size.small, color=color.green, text="RV1x+")'
+    alertcondition_id: "Bull RVOL 1x"
+    pine_source_line_range: "L150, L426, L460"
+    pipeline: "P1 Standard RVOL"
+    notes: "Mid-band bullish RVOL. Lifted verbatim from heavy-pentagon."
+    cross_indicator_ref: "heavy-pentagon::RVOL_1X_BULL"
+
+  - id: heavy-weapons-8fvg-matrix::RVOL_1X_BEAR
+    family: rvol
+    plain_english: "Bearish bar with normalized price spike in the RVOL-1x band. LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND bb_baseBearish AND bb_normalizedPrice in [th_1x, th_gs_moab)"
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_BearRVOL1x, title="Bear RVOL 1x", style=shape.xcross, location=location.abovebar, size=size.small, color=color.red, text="RV1x-")'
+    alertcondition_id: "Bear RVOL 1x"
+    pine_source_line_range: "L151, L427, L461"
+    pipeline: "P1 Standard RVOL"
+    notes: "Mid-band bearish RVOL. Lifted verbatim from heavy-pentagon."
+    cross_indicator_ref: "heavy-pentagon::RVOL_1X_BEAR"
+
+  - id: heavy-weapons-8fvg-matrix::GRAND_SLAM
+    family: rvol
+    plain_english: "Bullish bar with normalized price spike at or above the Grand Slam threshold (top tier of P1). LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND bb_baseBullish AND bb_normalizedPrice >= th_gs_moab"
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_GrandSlam, title="Grand Slam", style=shape.triangleup, location=location.belowbar, size=size.normal, color=color.aqua, text="DINGER")'
+    alertcondition_id: "Grand Slam"
+    pine_source_line_range: "L152, L428, L462"
+    pipeline: "P1 Standard RVOL"
+    notes: "Top-tier bullish RVOL. Lifted verbatim from heavy-pentagon."
+    cross_indicator_ref: "heavy-pentagon::GRAND_SLAM"
+
+  - id: heavy-weapons-8fvg-matrix::MOAB
+    family: rvol
+    plain_english: "Bearish bar with normalized price spike at or above the MOAB threshold (top tier of P1). LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND bb_baseBearish AND bb_normalizedPrice >= th_gs_moab"
+    parameters:
+      - name: bb_avgLength
+        default: 30
+        units: bars
+      - name: bb_smaLength
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: 'plotshape(fire_MOAB, title="MOAB", style=shape.triangledown, location=location.abovebar, size=size.normal, color=color.fuchsia, text="MOAB")'
+    alertcondition_id: "MOAB"
+    pine_source_line_range: "L153, L429, L463"
+    pipeline: "P1 Standard RVOL"
+    notes: "Top-tier bearish RVOL. Lifted verbatim from heavy-pentagon."
+    cross_indicator_ref: "heavy-pentagon::MOAB"
+
+  - id: heavy-weapons-8fvg-matrix::PENTAGON
+    family: rvol
+    plain_english: "Time-regularized relative volume ratio in the Pentagon band (1× to 2× the RVOL-1x threshold). LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND relVolRatio in [th_1x, th_wtc]"
+    parameters:
+      - name: reg_anchorTimeframe
+        default: ""
+        units: timeframe
+      - name: reg_length
+        default: 30
+        units: bars
+      - name: reg_calculationMode
+        default: "Cumulative"
+        units: ratio
+      - name: reg_adjustRealtime
+        default: true
+        units: boolean
+    offset: 0
+    plot_call: 'plotshape(fire_Pentagon, title="Pentagon", style=shape.diamond, location=location.top, size=size.small, color=color.teal, text="PENT")'
+    alertcondition_id: "Pentagon"
+    pine_source_line_range: "L158, L431, L466"
+    pipeline: "P2 Reg@Time RVOL"
+    notes: "Lowest-tier time-regularized volume (neutral, no direction). Lifted verbatim from heavy-pentagon."
+    cross_indicator_ref: "heavy-pentagon::PENTAGON"
+
+  - id: heavy-weapons-8fvg-matrix::WTC
+    family: rvol
+    plain_english: "Time-regularized relative volume ratio in the WTC band (2× to Hiroshima threshold). LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND relVolRatio in (th_wtc, th_hiroshima]"
+    parameters:
+      - name: reg_anchorTimeframe
+        default: ""
+        units: timeframe
+      - name: reg_length
+        default: 30
+        units: bars
+      - name: reg_calculationMode
+        default: "Cumulative"
+        units: ratio
+      - name: reg_adjustRealtime
+        default: true
+        units: boolean
+    offset: 0
+    plot_call: 'plotshape(fire_WTC, title="WTC", style=shape.diamond, location=location.top, size=size.normal, color=color.yellow, text="WTC")'
+    alertcondition_id: "WTC"
+    pine_source_line_range: "L159, L432, L467"
+    pipeline: "P2 Reg@Time RVOL"
+    notes: "Mid-tier time-regularized volume. Lifted verbatim from heavy-pentagon."
+    cross_indicator_ref: "heavy-pentagon::WTC"
+
+  - id: heavy-weapons-8fvg-matrix::HIROSHIMA
+    family: rvol
+    plain_english: "Time-regularized relative volume ratio exceeds the Hiroshima threshold (top tier of P2). LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND relVolRatio > th_hiroshima"
+    parameters:
+      - name: reg_anchorTimeframe
+        default: ""
+        units: timeframe
+      - name: reg_length
+        default: 30
+        units: bars
+      - name: reg_calculationMode
+        default: "Cumulative"
+        units: ratio
+      - name: reg_adjustRealtime
+        default: true
+        units: boolean
+    offset: 0
+    plot_call: 'plotshape(fire_Hiroshima, title="Hiroshima", style=shape.diamond, location=location.top, size=size.normal, color=color.white, text="H")'
+    alertcondition_id: "Hiroshima"
+    pine_source_line_range: "L160, L433, L468"
+    pipeline: "P2 Reg@Time RVOL"
+    notes: "Top-tier time-regularized volume. Lifted verbatim from heavy-pentagon."
+    cross_indicator_ref: "heavy-pentagon::HIROSHIMA"
+
+  - id: heavy-weapons-8fvg-matrix::NAGASAKI
+    family: rvol
+    plain_english: "All-time high volume bar — current bar volume exceeds the running maximum since bar 0. LIFTED VERBATIM FROM heavy-pentagon."
+    boolean_summary: "conf AND volume > running max volume"
+    parameters: []
+    offset: 0
+    plot_call: 'plotshape(fire_Nagasaki, title="Nagasaki (HEV)", style=shape.flag, location=location.top, size=size.normal, color=color.purple, text="N")'
+    alertcondition_id: "Nagasaki"
+    pine_source_line_range: "L162-L170, L434, L469"
+    pipeline: "P3 All-Time High Volume"
+    notes: "HEV = Highest Ever Volume. Lifted verbatim from heavy-pentagon. Tracked via persistent var maxVol."
+    cross_indicator_ref: "heavy-pentagon::NAGASAKI"
+
+  # --- GZI/HV FVG ROOTS (NEW to this indicator) ---
+  - id: heavy-weapons-8fvg-matrix::BULL_GZI
+    family: fvg
+    aka: ["bullGZI"]
+    plain_english: "Bullish FVG (low > high[2], close[1] > high[2], vertical gap > threshold) overlaps with a prior bullish FVG stored in the fvgs array within gziDist bars (7 bars default). Also fires if both current and prior FVGs are HV (all-time high volume). NEW to this indicator."
+    boolean_summary: "conf AND bFVG AND overlap detected with prior bull FVG within 7 bars OR (both HV)"
+    parameters:
+      - name: gziDist
+        default: 7
+        units: bars
+      - name: threshPct
+        default: 2
+        units: "% of high[2]"
+      - name: auto
+        default: true
+        units: boolean
+    offset: 0
+    plot_call: "(used by comboSet1_Bull and comboSet2_Bull; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L177-L205"
+    pipeline: "GZI/HV Overlap Detection"
+    notes: "Bullish FVG entry: bFVG fires when low > high[2] and close[1] > high[2]. Overlap detection: stored FVGs checked for e.bull && bar_index - e.idx <= gziDist. HV flag set when v1_fvg is 5000/252/63-bar high. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::BEAR_GZI
+    family: fvg
+    aka: ["bearGZI"]
+    plain_english: "Bearish FVG (high < low[2], close[1] < low[2], vertical gap > threshold) overlaps with a prior bearish FVG stored in the fvgs array within gziDist bars. Also fires if both are HV. NEW to this indicator."
+    boolean_summary: "conf AND sFVG AND overlap detected with prior bear FVG within 7 bars OR (both HV)"
+    parameters:
+      - name: gziDist
+        default: 7
+        units: bars
+      - name: threshPct
+        default: 2
+        units: "% of high"
+      - name: auto
+        default: true
+        units: boolean
+    offset: 0
+    plot_call: "(used by comboSet1_Bear and comboSet2_Bear; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L207-L220"
+    pipeline: "GZI/HV Overlap Detection"
+    notes: "Bearish FVG entry. Mirror of BULL_GZI. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::BULL_HV
+    family: fvg
+    aka: ["bullHV"]
+    plain_english: "Bullish FVG where prior bar volume is an all-time high (5000-bar / 252-bar / 63-bar). NEW to this indicator."
+    boolean_summary: "conf AND bFVG AND isHV_FVG (v1_fvg is a 5000/252/63-bar high)"
+    parameters: []
+    offset: 0
+    plot_call: "(used by comboSet1_Bull and comboSet2_Bull; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L178, L194-L195"
+    pipeline: "GZI/HV Overlap Detection"
+    notes: "HV flag for bullish FVG. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::BEAR_HV
+    family: fvg
+    aka: ["bearHV"]
+    plain_english: "Bearish FVG where prior bar volume is an all-time high (5000-bar / 252-bar / 63-bar). NEW to this indicator."
+    boolean_summary: "conf AND sFVG AND isHV_FVG (v1_fvg is a 5000/252/63-bar high)"
+    parameters: []
+    offset: 0
+    plot_call: "(used by comboSet1_Bear and comboSet2_Bear; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L178, L209-L210"
+    pipeline: "GZI/HV Overlap Detection"
+    notes: "HV flag for bearish FVG. Mirror of BULL_HV. NEW to this indicator."
+
+  # --- FAUNA / MATRIX ROOTS (NEW to this indicator) ---
+  - id: heavy-weapons-8fvg-matrix::FAUNA_BULL
+    family: fauna
+    aka: ["is_fauna_bull"]
+    plain_english: "Bullish fauna pattern: (MB_bull OR RE_bull OR TA_bull) AND NOT excluded, where exclusions are TR_bull (weak prior bear after strong fauna), ES_bull (strong prior bear after strong fauna), or GDR_bull (gap-down recovery). NEW to this indicator."
+    boolean_summary: "(MB_bull OR RE_bull OR TA_bull) AND NOT (TR_bull OR ES_bull OR GDR_bull)"
+    parameters:
+      - name: b_alpha_MB
+        default: 1.6
+        units: ATR multiplier
+      - name: b_beta_MB
+        default: 0.70
+        units: body ratio
+      - name: b_delta_MB
+        default: 1.8
+        units: volume multiplier
+      - name: b_gamma_RE
+        default: 2.2
+        units: ATR multiplier
+      - name: b_epsilon_RE
+        default: 0.15
+        units: overhead ratio
+      - name: b_delta_RE
+        default: 1.8
+        units: volume multiplier
+      - name: b_theta_TA
+        default: 1.6
+        units: delta multiplier
+      - name: b_delta_TA
+        default: 1.8
+        units: volume multiplier
+      - name: b_trend_len
+        default: 50
+        units: bars
+      - name: b_delta_len
+        default: 10
+        units: bars
+      - name: b_zeta_GG
+        default: 0.9
+        units: ATR multiplier
+      - name: b_delta_GG
+        default: 1.8
+        units: volume multiplier
+      - name: b_alpha_SB
+        default: 1.5
+        units: body multiplier
+      - name: b_delta_SB
+        default: 1.5
+        units: volume multiplier
+      - name: b_weak_rat
+        default: 0.2
+        units: body ratio
+      - name: b_body_len
+        default: 20
+        units: bars
+      - name: b_range_len
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: "(used by neo_bull and trinity_bull; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L264-L291"
+    pipeline: "Fauna Pattern Recognition"
+    notes: "Fauna = fauna_bull is true; fauna_bear is false. MB (Movement Break) > 1.6 ATR + body ratio > 0.70 + volume > 1.8 AvgVol. RE (Range Extension) > 2.2 ATR + tight close. TA (Trend Accel) trend up + delta up + bullish body. Exclusions prevent false signals on weak bounces and gap fills. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::FAUNA_BEAR
+    family: fauna
+    aka: ["is_fauna_bear"]
+    plain_english: "Bearish fauna pattern (mirror of FAUNA_BULL). NEW to this indicator."
+    boolean_summary: "(MB_bear OR RE_bear OR TA_bear) AND NOT (TR_bear OR ES_bear OR GDR_bear)"
+    parameters:
+      - name: s_alpha_MB
+        default: 1.6
+        units: ATR multiplier
+      - name: s_beta_MB
+        default: 0.70
+        units: body ratio
+      - name: s_delta_MB
+        default: 1.8
+        units: volume multiplier
+      - name: s_gamma_RE
+        default: 2.2
+        units: ATR multiplier
+      - name: s_epsilon_RE
+        default: 0.15
+        units: overhead ratio
+      - name: s_delta_RE
+        default: 1.8
+        units: volume multiplier
+      - name: s_theta_TA
+        default: 1.6
+        units: delta multiplier
+      - name: s_delta_TA
+        default: 1.8
+        units: volume multiplier
+      - name: s_trend_len
+        default: 50
+        units: bars
+      - name: s_delta_len
+        default: 10
+        units: bars
+      - name: s_zeta_GG
+        default: 0.9
+        units: ATR multiplier
+      - name: s_delta_GG
+        default: 1.8
+        units: volume multiplier
+      - name: s_alpha_SB
+        default: 1.5
+        units: body multiplier
+      - name: s_delta_SB
+        default: 1.5
+        units: volume multiplier
+      - name: s_weak_rat
+        default: 0.2
+        units: body ratio
+      - name: s_body_len
+        default: 20
+        units: bars
+      - name: s_range_len
+        default: 20
+        units: bars
+    offset: 0
+    plot_call: "(used by neo_bear and trinity_bear; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L293-L315"
+    pipeline: "Fauna Pattern Recognition"
+    notes: "Bearish fauna (mirror). NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::NEO_BULL
+    family: matrix
+    aka: ["neo_bull"]
+    plain_english: "Matrix number (volume == ta.highest(volume, 67)) AND fauna bull (is_fauna_bull == true). Conf-gated. NEW to this indicator."
+    boolean_summary: "conf AND is_matrix_number AND is_fauna_bull"
+    parameters:
+      - name: matrix_len
+        default: 67
+        units: bars
+    offset: 0
+    plot_call: "(used by Matrix combos; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L341"
+    pipeline: "Matrix Base + Fauna"
+    notes: "neo = matrix number + fauna signal. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::NEO_BEAR
+    family: matrix
+    aka: ["neo_bear"]
+    plain_english: "Matrix number AND fauna bear (is_fauna_bear == true). Conf-gated. NEW to this indicator."
+    boolean_summary: "conf AND is_matrix_number AND is_fauna_bear"
+    parameters:
+      - name: matrix_len
+        default: 67
+        units: bars
+    offset: 0
+    plot_call: "(used by Matrix combos; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L342"
+    pipeline: "Matrix Base + Fauna"
+    notes: "neo = matrix number + fauna signal (bearish). NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::TRINITY_BULL
+    family: matrix
+    aka: ["trinity_bull"]
+    plain_english: "Matrix number AND NOT fauna bull AND bullish body (close > open). A non-fauna matrix number that is bullish. NEW to this indicator."
+    boolean_summary: "conf AND is_matrix_number AND NOT is_fauna_bull AND close > open"
+    parameters:
+      - name: matrix_len
+        default: 67
+        units: bars
+    offset: 0
+    plot_call: "(used by Matrix combos; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L343"
+    pipeline: "Matrix Base"
+    notes: "trinity = matrix number without fauna signal but bullish body. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::TRINITY_BEAR
+    family: matrix
+    aka: ["trinity_bear"]
+    plain_english: "Matrix number AND NOT fauna bear AND bearish body (close < open). A non-fauna matrix number that is bearish. NEW to this indicator."
+    boolean_summary: "conf AND is_matrix_number AND NOT is_fauna_bear AND close < open"
+    parameters:
+      - name: matrix_len
+        default: 67
+        units: bars
+    offset: 0
+    plot_call: "(used by Matrix combos; no standalone plot)"
+    alertcondition_id: null
+    pine_source_line_range: "L344"
+    pipeline: "Matrix Base"
+    notes: "trinity = matrix number without fauna signal but bearish body. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::LONG_1
+    family: hybrid-momentum
+    aka: ["sigAddLong1"]
+    plain_english: "Hybrid Momentum 1 for bullish confluence: body ratio >= hyb_bodyRat1 (default 0.65) AND relVolRatio > 5.0 AND cumRatio > 3.0, bullish body. Momentum floor for long alignment. NEW to this indicator."
+    boolean_summary: "conf AND (relVolRatio > hyb_addReg1) AND (hybCumRatio > hyb_addCum1) AND (close > open) AND (hybBodyRat >= hyb_bodyRat1)"
+    parameters:
+      - name: hyb_addReg1
+        default: 5.0
+        units: ratio
+      - name: hyb_addCum1
+        default: 3.0
+        units: ratio
+      - name: hyb_bodyRat1
+        default: 0.65
+        units: ratio
+    offset: 0
+    plot_call: 'plotshape(fire_Long1, title="LONG 1", style=shape.labelup, location=location.belowbar, size=size.small, color=color.green, text="L1", textcolor=color.white)'
+    alertcondition_id: "LONG 1"
+    pine_source_line_range: "L326-L330, L437, L472"
+    pipeline: "Hybrid Momentum Alignment"
+    notes: "Momentum 1: lower threshold floors (5 reg, 3 cum). NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::LONG_2
+    family: hybrid-momentum
+    aka: ["sigAddLong2"]
+    plain_english: "Hybrid Momentum 2 for bullish confluence: body ratio >= hyb_bodyRat2 (default 0.65) AND relVolRatio > 5.0 AND cumRatio > 3.0, bullish body. Momentum floor for long alignment (Momentum 2 variant). NEW to this indicator."
+    boolean_summary: "conf AND (relVolRatio > hyb_addReg2) AND (hybCumRatio > hyb_addCum2) AND (close > open) AND (hybBodyRat >= hyb_bodyRat2)"
+    parameters:
+      - name: hyb_addReg2
+        default: 5.0
+        units: ratio
+      - name: hyb_addCum2
+        default: 3.0
+        units: ratio
+      - name: hyb_bodyRat2
+        default: 0.65
+        units: ratio
+    offset: 0
+    plot_call: 'plotshape(fire_Long2, title="LONG 2", style=shape.labelup, location=location.belowbar, size=size.small, color=color.lime, text="L2", textcolor=color.black)'
+    alertcondition_id: "LONG 2"
+    pine_source_line_range: "L333-L337, L439, L474"
+    pipeline: "Hybrid Momentum Alignment"
+    notes: "Momentum 2: same thresholds as Momentum 1; both contribute to aligned signals. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::SHORT_1
+    family: hybrid-momentum
+    aka: ["sigAddShort1"]
+    plain_english: "Hybrid Momentum 1 for bearish confluence: body ratio >= hyb_bodyRat1 AND relVolRatio > 5.0 AND cumRatio > 3.0, bearish body. Momentum floor for short alignment. NEW to this indicator."
+    boolean_summary: "conf AND (relVolRatio > hyb_addReg1) AND (hybCumRatio > hyb_addCum1) AND (close < open) AND (hybBodyRat >= hyb_bodyRat1)"
+    parameters:
+      - name: hyb_addReg1
+        default: 5.0
+        units: ratio
+      - name: hyb_addCum1
+        default: 3.0
+        units: ratio
+      - name: hyb_bodyRat1
+        default: 0.65
+        units: ratio
+    offset: 0
+    plot_call: 'plotshape(fire_Short1, title="SHORT 1", style=shape.labeldown, location=location.abovebar, size=size.small, color=color.red, text="S1", textcolor=color.white)'
+    alertcondition_id: "SHORT 1"
+    pine_source_line_range: "L326-L331, L438, L473"
+    pipeline: "Hybrid Momentum Alignment"
+    notes: "Momentum 1 (bearish). NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::SHORT_2
+    family: hybrid-momentum
+    aka: ["sigAddShort2"]
+    plain_english: "Hybrid Momentum 2 for bearish confluence: body ratio >= hyb_bodyRat2 AND relVolRatio > 5.0 AND cumRatio > 3.0, bearish body. Momentum floor for short alignment (Momentum 2 variant). NEW to this indicator."
+    boolean_summary: "conf AND (relVolRatio > hyb_addReg2) AND (hybCumRatio > hyb_addCum2) AND (close < open) AND (hybBodyRat >= hyb_bodyRat2)"
+    parameters:
+      - name: hyb_addReg2
+        default: 5.0
+        units: ratio
+      - name: hyb_addCum2
+        default: 3.0
+        units: ratio
+      - name: hyb_bodyRat2
+        default: 0.65
+        units: ratio
+    offset: 0
+    plot_call: 'plotshape(fire_Short2, title="SHORT 2", style=shape.labeldown, location=location.abovebar, size=size.small, color=color.maroon, text="S2", textcolor=color.white)'
+    alertcondition_id: "SHORT 2"
+    pine_source_line_range: "L333-L338, L440, L475"
+    pipeline: "Hybrid Momentum Alignment"
+    notes: "Momentum 2 (bearish). NEW to this indicator."
+
+composites:
+  # --- FVG COMBO SET 1: FVG + Standard RVOL (P1) ---
+  - id: heavy-weapons-8fvg-matrix::COMBO_SET_1_BULL
+    tier: 2
+    aka: ["comboSet1_Bull", "F-S1 Bull", "FVG + Std RVOL Bull"]
+    plain_english: "Bullish GZI/HV FVG combo: bar[1] has valid body (>= 0.85 candle range) AND (bullGZI OR bullHV) AND (SAAB[1] OR Bull RVOL 1x[1] OR Grand Slam[1]). Fires on bar[0]. Offset=-1 since bar[1] is the FVG candle."
+    composition:
+      type: AND
+      operands:
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::BULL_GZI"
+            - "heavy-weapons-8fvg-matrix::BULL_HV"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::SAAB"
+            - "heavy-weapons-8fvg-matrix::RVOL_1X_BULL"
+            - "heavy-weapons-8fvg-matrix::GRAND_SLAM"
+      time_domain: "bar[1] body check; bar[1] RVOL checks; fires on bar[0]"
+    offset: -1
+    plot_call: 'plotshape(fire_CS1_Bull, title="Combo Set 1 Bull (FVG)", style=shape.labelup, location=location.belowbar, color=color.green, text="F-S1", textcolor=color.white, offset=-1)'
+    alertcondition_id: "Combo 1 Bull"
+    pine_source_line_range: "L365, L411, L443, L478"
+    notes: "FVG + Standard RVOL (P1). Combo fires on bar[0] but marks bar[1] (the FVG displacement candle) via offset=-1. Body eval on bar[1]: candleRange1 = high[1] - low[1]; candleBodyPct1 >= comboBodyPct_FVG (0.85 default). NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::COMBO_SET_1_BEAR
+    tier: 2
+    aka: ["comboSet1_Bear", "F-S1 Bear", "FVG + Std RVOL Bear"]
+    plain_english: "Bearish GZI/HV FVG combo: bar[1] has valid body AND (bearGZI OR bearHV) AND (Kratos[1] OR Bear RVOL 1x[1] OR MOAB[1]). Fires on bar[0], offset=-1."
+    composition:
+      type: AND
+      operands:
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::BEAR_GZI"
+            - "heavy-weapons-8fvg-matrix::BEAR_HV"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::KRATOS"
+            - "heavy-weapons-8fvg-matrix::RVOL_1X_BEAR"
+            - "heavy-weapons-8fvg-matrix::MOAB"
+      time_domain: "bar[1] body check; bar[1] RVOL checks; fires on bar[0]"
+    offset: -1
+    plot_call: 'plotshape(fire_CS1_Bear, title="Combo Set 1 Bear (FVG)", style=shape.labeldown, location=location.abovebar, color=color.red, text="F-S1", textcolor=color.white, offset=-1)'
+    alertcondition_id: "Combo 1 Bear"
+    pine_source_line_range: "L366, L412, L444, L479"
+    notes: "FVG + Standard RVOL (P1, bearish mirror). NEW to this indicator."
+
+  # --- FVG COMBO SET 2: FVG + Reg@Time (P2) ---
+  - id: heavy-weapons-8fvg-matrix::COMBO_SET_2_BULL
+    tier: 2
+    aka: ["comboSet2_Bull", "F-S2 Bull", "FVG + Reg@Time Bull"]
+    plain_english: "Bullish GZI/HV FVG combo with time-regularized volume gate: bar[1] valid body AND (bullGZI OR bullHV) AND (Pentagon[1] if enabled, else WTC[1] OR Hiroshima[1] OR Nagasaki[1]). Fires on bar[0], offset=-1."
+    composition:
+      type: AND
+      operands:
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::BULL_GZI"
+            - "heavy-weapons-8fvg-matrix::BULL_HV"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::PENTAGON"
+            - "heavy-weapons-8fvg-matrix::WTC"
+            - "heavy-weapons-8fvg-matrix::HIROSHIMA"
+            - "heavy-weapons-8fvg-matrix::NAGASAKI"
+      gate_inputs:
+        - inc_pentagon_FVG
+      time_domain: "bar[1] body check; bar[1] P2 checks; fires on bar[0]"
+    offset: -1
+    plot_call: 'plotshape(fire_CS2_Bull, title="Combo Set 2 Bull (FVG)", style=shape.labelup, location=location.belowbar, color=color.aqua, text="F-S2", textcolor=color.black, offset=-1)'
+    alertcondition_id: "Combo 2 Bull"
+    pine_source_line_range: "L368, L371, L413, L445, L480"
+    notes: "FVG + Reg@Time (P2). Pentagon optional via inc_pentagon_FVG checkbox. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::COMBO_SET_2_BEAR
+    tier: 2
+    aka: ["comboSet2_Bear", "F-S2 Bear", "FVG + Reg@Time Bear"]
+    plain_english: "Bearish GZI/HV FVG combo with time-regularized volume gate: bar[1] valid body AND (bearGZI OR bearHV) AND (Pentagon[1] if enabled, else WTC[1] OR Hiroshima[1] OR Nagasaki[1]). Fires on bar[0], offset=-1."
+    composition:
+      type: AND
+      operands:
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::BEAR_GZI"
+            - "heavy-weapons-8fvg-matrix::BEAR_HV"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::PENTAGON"
+            - "heavy-weapons-8fvg-matrix::WTC"
+            - "heavy-weapons-8fvg-matrix::HIROSHIMA"
+            - "heavy-weapons-8fvg-matrix::NAGASAKI"
+      gate_inputs:
+        - inc_pentagon_FVG
+      time_domain: "bar[1] body check; bar[1] P2 checks; fires on bar[0]"
+    offset: -1
+    plot_call: 'plotshape(fire_CS2_Bear, title="Combo Set 2 Bear (FVG)", style=shape.labeldown, location=location.abovebar, color=color.fuchsia, text="F-S2", textcolor=color.white, offset=-1)'
+    alertcondition_id: "Combo 2 Bear"
+    pine_source_line_range: "L369, L372, L414, L446, L481"
+    notes: "FVG + Reg@Time (P2, bearish mirror). NEW to this indicator."
+
+  # --- MATRIX COMBO SET 3: Matrix + Standard RVOL (P1) ---
+  - id: heavy-weapons-8fvg-matrix::COMBO_SET_3_BULL
+    tier: 2
+    aka: ["comboSet3_Bull", "M-S1 Bull", "Matrix + Std RVOL Bull"]
+    plain_english: "Bullish Matrix combo with Standard RVOL: current bar valid body (>= 0.85 candle range) AND (neo_bull OR trinity_bull OR neo_bull_aligned OR trinity_bull_aligned) AND (SAAB OR Bull RVOL 1x OR Grand Slam). Fires on bar[0], offset=0."
+    composition:
+      type: AND
+      operands:
+        - "heavy-weapons-8fvg-matrix::NEO_BULL"
+        - "heavy-weapons-8fvg-matrix::TRINITY_BULL"
+        - "heavy-weapons-8fvg-matrix::SAAB"
+        - "heavy-weapons-8fvg-matrix::RVOL_1X_BULL"
+        - "heavy-weapons-8fvg-matrix::GRAND_SLAM"
+      time_domain: "bar[0] (current)"
+    offset: 0
+    plot_call: 'plotshape(fire_CS3_Bull, title="Combo Set 3 Bull (Matrix)", style=shape.labelup, location=location.belowbar, color=color.lime, text="M-S1", textcolor=color.black)'
+    alertcondition_id: "Combo 3 Bull"
+    pine_source_line_range: "L382, L416, L449, L484"
+    notes: "Matrix + Standard RVOL (P1). matrix_any_bull = neo_bull OR trinity_bull OR neo_bull_aligned OR trinity_bull_aligned; all conf-gated. Body eval on current bar: ratio_b >= comboBodyPct_MAT (0.85 default). NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::COMBO_SET_3_BEAR
+    tier: 2
+    aka: ["comboSet3_Bear", "M-S1 Bear", "Matrix + Std RVOL Bear"]
+    plain_english: "Bearish Matrix combo with Standard RVOL: current bar valid body AND (neo_bear OR trinity_bear OR neo_bear_aligned OR trinity_bear_aligned) AND (Kratos OR Bear RVOL 1x OR MOAB). Fires on bar[0], offset=0."
+    composition:
+      type: AND
+      operands:
+        - "heavy-weapons-8fvg-matrix::NEO_BEAR"
+        - "heavy-weapons-8fvg-matrix::TRINITY_BEAR"
+        - "heavy-weapons-8fvg-matrix::KRATOS"
+        - "heavy-weapons-8fvg-matrix::RVOL_1X_BEAR"
+        - "heavy-weapons-8fvg-matrix::MOAB"
+      time_domain: "bar[0] (current)"
+    offset: 0
+    plot_call: 'plotshape(fire_CS3_Bear, title="Combo Set 3 Bear (Matrix)", style=shape.labeldown, location=location.abovebar, color=color.maroon, text="M-S1", textcolor=color.white)'
+    alertcondition_id: "Combo 3 Bear"
+    pine_source_line_range: "L383, L417, L450, L485"
+    notes: "Matrix + Standard RVOL (P1, bearish mirror). NEW to this indicator."
+
+  # --- MATRIX COMBO SET 4: Matrix + Reg@Time (P2) ---
+  - id: heavy-weapons-8fvg-matrix::COMBO_SET_4_BULL
+    tier: 2
+    aka: ["comboSet4_Bull", "M-S2 Bull", "Matrix + Reg@Time Bull"]
+    plain_english: "Bullish Matrix combo with time-regularized volume gate: current bar valid body AND (neo_bull OR trinity_bull OR neo_bull_aligned OR trinity_bull_aligned) AND (Pentagon if enabled, else WTC OR Hiroshima OR Nagasaki). Fires on bar[0], offset=0."
+    composition:
+      type: AND
+      operands:
+        - "heavy-weapons-8fvg-matrix::NEO_BULL"
+        - "heavy-weapons-8fvg-matrix::TRINITY_BULL"
+        - "heavy-weapons-8fvg-matrix::PENTAGON"
+        - "heavy-weapons-8fvg-matrix::WTC"
+        - "heavy-weapons-8fvg-matrix::HIROSHIMA"
+        - "heavy-weapons-8fvg-matrix::NAGASAKI"
+      gate_inputs:
+        - inc_pentagon_MAT
+      time_domain: "bar[0] (current)"
+    offset: 0
+    plot_call: 'plotshape(fire_CS4_Bull, title="Combo Set 4 Bull (Matrix)", style=shape.labelup, location=location.belowbar, color=color.blue, text="M-S2", textcolor=color.white)'
+    alertcondition_id: "Combo 4 Bull"
+    pine_source_line_range: "L385, L388, L418, L451, L486"
+    notes: "Matrix + Reg@Time (P2). Pentagon optional via inc_pentagon_MAT checkbox. NEW to this indicator."
+
+  - id: heavy-weapons-8fvg-matrix::COMBO_SET_4_BEAR
+    tier: 2
+    aka: ["comboSet4_Bear", "M-S2 Bear", "Matrix + Reg@Time Bear"]
+    plain_english: "Bearish Matrix combo with time-regularized volume gate: current bar valid body AND (neo_bear OR trinity_bear OR neo_bear_aligned OR trinity_bear_aligned) AND (Pentagon if enabled, else WTC OR Hiroshima OR Nagasaki). Fires on bar[0], offset=0."
+    composition:
+      type: AND
+      operands:
+        - "heavy-weapons-8fvg-matrix::NEO_BEAR"
+        - "heavy-weapons-8fvg-matrix::TRINITY_BEAR"
+        - "heavy-weapons-8fvg-matrix::PENTAGON"
+        - "heavy-weapons-8fvg-matrix::WTC"
+        - "heavy-weapons-8fvg-matrix::HIROSHIMA"
+        - "heavy-weapons-8fvg-matrix::NAGASAKI"
+      gate_inputs:
+        - inc_pentagon_MAT
+      time_domain: "bar[0] (current)"
+    offset: 0
+    plot_call: 'plotshape(fire_CS4_Bear, title="Combo Set 4 Bear (Matrix)", style=shape.labeldown, location=location.abovebar, color=color.purple, text="M-S2", textcolor=color.white)'
+    alertcondition_id: "Combo 4 Bear"
+    pine_source_line_range: "L386, L389, L419, L452, L487"
+    notes: "Matrix + Reg@Time (P2, bearish mirror). NEW to this indicator."
+
+cross_indicator_dependencies:
+  # 10 RVOL roots lifted verbatim from heavy-pentagon
+  - "heavy-pentagon::SAAB"
+  - "heavy-pentagon::KRATOS"
+  - "heavy-pentagon::RVOL_1X_BULL"
+  - "heavy-pentagon::RVOL_1X_BEAR"
+  - "heavy-pentagon::GRAND_SLAM"
+  - "heavy-pentagon::MOAB"
+  - "heavy-pentagon::PENTAGON"
+  - "heavy-pentagon::WTC"
+  - "heavy-pentagon::HIROSHIMA"
+  - "heavy-pentagon::NAGASAKI"
+
+uncertain_or_questions:
+  - "PARALLEL BRANCH status: This indicator lifts the 10 RVOL roots from heavy-pentagon verbatim (P1/P2/P3 pipelines, same thresholds, same functions, same P1/P2/P3 tier logic). However, it drops all 15 Heavy Combo composites (Heavy Yin-Yang, Heavy Nagasaki, etc.) that are the signature of heavy-pentagon. Instead, it introduces GZI/HV FVG detection, Fauna/Matrix pattern recognition, and Hybrid Momentum alignment, building 4 Matrix Combos + 2 FVG Combos. This is a PARALLEL BRANCH (different composite layer), not a successor to heavy-pentagon."
+  - "Title ambiguity: Indicator title is 'Heavy Weapons NRA + GZI/FVG + Matrix Combos 2 bodies not 1 NRAFR' (line 16). The '2 bodies not 1' clause is unclear. The code does not implement a '2-body' rule; it implements standard RVOL + GZI/HV + Fauna + Hybrid logic. Documented as-is."
+  - "FVG fires on bar[1] displacement: comboSet1/2 fire on bar[0] but have offset=-1, marking the bar[1] FVG candle per Verification Protocol v3.2 Part 5 Rule 2. Matrix combos (comboSet3/4) fire on bar[0] with offset=0 (no displacement candle). Timing documented."
+  - "Fauna + Matrix alignment: neo_bull_aligned / neo_bear_aligned / trinity_bull_aligned / trinity_bear_aligned are computed on every bar but only used by COMBO_SET_3/4. They are not standalone roots (no plotshape/alertcondition directly on them). Classified as roots since they are named, conf-gated intermediate booleans; caller may prefer internal_helper classification."
+  - "Pentagon optionality: Both FVG and Matrix combos have inc_pentagon_FVG / inc_pentagon_MAT checkboxes (lines 64, 77) that gate whether Pentagon is included in volRegTimeActiveBull/Bear gates (lines 368-369, 385-386). If disabled, only WTC/Hiroshima/Nagasaki count toward P2 requirement. Documented."
+  - "Conf-gating parity: All 10 RVOL roots lifted from heavy-pentagon are conf-gated (line 116: conf = barstate.isconfirmed). All GZI/HV/Fauna/Matrix/Momentum roots are conf-gated. FVG combo signals (comboSet1/2) have explicit conf gate (line 365-372). Matrix combo signals (comboSet3/4) are implicitly conf-gated via matrix_any_bull/bear (which require neo/trinity, which require conf). All fire_* booleans gate on show_* input booleans AND the signal boolean, ensuring 1:1 parity between plot and alert."
+  - "Array mutation safety: Lines 191-232 show the GZI overlap detection logic gated by conf block (line 191: if conf). Without this gate, array unshift/remove operations would execute on every intrabar tick, duplicating fvgs entries and causing permanent corruption. This is the core NRA fix documented in line 6."
+  - "Fauna exclusion filters: is_fauna_bull/bear have hard and soft exclusion filters (TR_bull/TR_bear for weak prior bear/bull bounces; ES_bull/ES_bear for strong prior bar engulfment; GDR_bull/GDR_bear for gap-down/gap-up recovery). These prevent false fauna signals in common market noise patterns. No parameters for exclusion tuning; baked in."
+  - "SAAB/Kratos/RVOL1x never used in composites: Unlike heavy-pentagon, where SAAB/Kratos are plotting roots, here they appear only in COMBO_SET_1/3 operands. There are no standalone plotshapes for SAAB or Kratos alone; only comboSet1_Bull and comboSet3_Bull plots. SAAB/Kratos are roots but never fire independently unless show_SAAB/show_Kratos are true (lines 36-37), in which case fire_SAAB / fire_Kratos (lines 394-395) emit. Documented as roots (they are named, conf-gated, plotted) but their primary role is as composite operands."
+  - "Hybrid Momentum floor interpretation: sigAddLong1/sigAddShort1 (lines 330-331) require hybRegRatio > 5.0 AND hybCumRatio > 3.0, both floats. These are 'floors' (minimums) for momentum-aligned signals, not ratio multipliers. Named sigAdd* to indicate 'additional' momentum condition. No operand merging with Fauna (neo_bull_aligned = neo_bull AND sigAddLong1, line 346; they are independent ANDs, not exclusive)."

@@ -1,0 +1,24 @@
+VISUAL TREE — hv-fvg-gz1-og
+============================
+File: hv-fvg-gz1-og/versions/HV_FVG_GZ1_OG_v1.pine
+Pine v5  ·  253 lines  ·  overlay=True
+Purpose: Canonical HV/GZI/FVG engine; defines bull/bear GZI, HV, FVG roots + mitigation tracking
+
+ROOTS
+-----
+  ◆ hv-fvg-gz1-og::GZI_BULL    [gzi · offset=-1]
+      Fires on a newly detected bullish FVG when a same-polarity (bullish) …
+  ◆ hv-fvg-gz1-og::GZI_BEAR    [gzi · offset=-1]
+      Fires on a newly detected bearish FVG when a same-polarity (bearish) …
+  ◆ hv-fvg-gz1-og::HV_BULL    [hv · offset=-1]
+      Fires on a newly detected bullish FVG when the prior bar's volume equ…
+  ◆ hv-fvg-gz1-og::HV_BEAR    [hv · offset=-1]
+      Fires on a newly detected bearish FVG when the prior bar's volume equ…
+  ◆ hv-fvg-gz1-og::FVG_BULL_RAW    [fvg · offset=-1]
+      Raw bullish 3-bar Fair Value Gap: current low above the high of two b…
+  ◆ hv-fvg-gz1-og::FVG_BEAR_RAW    [fvg · offset=-1]
+      Raw bearish 3-bar Fair Value Gap: current high below the low of two b…
+
+COMPOSITES (by tier)
+-----
+

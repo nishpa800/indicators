@@ -1,0 +1,617 @@
+//@version=5
+indicator("Yin Yang + Displacement + PBJ", shorttitle="YY+D+PBJ", overlay=true, max_labels_count=500, max_lines_count=500, max_bars_back=3000)
+
+// ============================================================================
+// SECTION 1: YIN YANG — Support/Resistance Swings, Breakouts, Rejections
+// ============================================================================
+
+// --- Yin Yang Inputs ---
+grp_lookback = "Lookback Settings"
+leftBars = input.int(75, "Left Bars", minval=1, group=grp_lookback, tooltip="Minimum bars to the left to confirm a pivot")
+rightBars = input.int(2, "Right Bars", minval=1, group=grp_lookback, tooltip="Minimum bars to the right to confirm a pivot")
+
+grp_atr = "ATR Filter Settings"
+useAtrFilter = input.bool(true, "Use ATR Distance Filter?", group=grp_atr)
+atrLength = input.int(50, "ATR Length", minval=1, group=grp_atr)
+atrMult = input.float(3, "ATR Multiplier", step=0.1, group=grp_atr, tooltip="The new swing must be at least this many ATRs away from the previous valid swing level.")
+
+// S/R Line colors (input.color required — lines have no Style tab entry)
+grp_yy_lines = "Yin Yang S/R Lines"
+colorHigh = input.color(color.red, "Resistance Line Color", group=grp_yy_lines)
+colorLow = input.color(color.green, "Support Line Color", group=grp_yy_lines)
+lineWidth = input.int(1, "Line Width", minval=1, group=grp_yy_lines)
+
+// --- Yin Yang Types ---
+type srLine
+    line id
+    float price
+    bool isResistance
+
+// --- Yin Yang Variables ---
+var srLines = array.new<srLine>()
+var float lastValidLevel = na
+var string lastSwingType = na
+
+// --- Yin Yang Calculations ---
+atrValue = ta.atr(atrLength)
+
+rawHigh = ta.pivothigh(high, leftBars, rightBars)
+rawLow = ta.pivotlow(low, leftBars, rightBars)
+
+isSufficientDistance(currentPrice, lastPrice, threshold) =>
+    na(lastPrice) ? true : math.abs(currentPrice - lastPrice) >= threshold
+
+threshold = useAtrFilter ? atrValue * atrMult : 0
+
+// --- Yin Yang Logic ---
+bool isHigh = not na(rawHigh)
+bool validHigh = false
+
+if isHigh
+    if isSufficientDistance(rawHigh, lastValidLevel, threshold)
+        validHigh := true
+        lastValidLevel := rawHigh
+        lastSwingType := "high"
+        linePrice = rawHigh
+        newLine = line.new(x1=bar_index[rightBars], y1=linePrice, x2=bar_index, y2=linePrice, color=colorHigh, width=lineWidth)
+        array.push(srLines, srLine.new(newLine, linePrice, true))
+
+bool isLow = not na(rawLow)
+bool validLow = false
+
+if isLow
+    if isSufficientDistance(rawLow, lastValidLevel, threshold)
+        validLow := true
+        lastValidLevel := rawLow
+        lastSwingType := "low"
+        linePrice = rawLow
+        newLine = line.new(x1=bar_index[rightBars], y1=linePrice, x2=bar_index, y2=linePrice, color=colorLow, width=lineWidth)
+        array.push(srLines, srLine.new(newLine, linePrice, false))
+
+bool breakoutDetected = false
+bool breakdownDetected = false
+bool resRejectionDetected = false
+bool supRejectionDetected = false
+
+if array.size(srLines) > 0
+    for i = array.size(srLines) - 1 to 0 by 1
+        currentLine = array.get(srLines, i)
+        bool crossed = false
+
+        if currentLine.isResistance
+            if close > currentLine.price and close[1] <= currentLine.price
+                crossed := true
+                breakoutDetected := true
+                breakoutDetected
+            else if high >= currentLine.price and close < currentLine.price
+                resRejectionDetected := true
+                resRejectionDetected
+        else
+            if close < currentLine.price and close[1] >= currentLine.price
+                crossed := true
+                breakdownDetected := true
+                breakdownDetected
+            else if low <= currentLine.price and close > currentLine.price
+                supRejectionDetected := true
+                supRejectionDetected
+
+        if crossed
+            line.set_x2(currentLine.id, bar_index)
+            array.remove(srLines, i)
+        else
+            line.set_x2(currentLine.id, bar_index)
+
+// --- Yin Yang Plots (hardcoded colors → editable in Style tab) ---
+plotshape(validHigh, title="Swing High", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.normal, offset=-rightBars)
+plotshape(validLow, title="Swing Low", style=shape.triangleup, location=location.belowbar, color=color.green, size=size.normal, offset=-rightBars)
+
+plotshape(breakoutDetected, title="Breakout", style=shape.diamond, location=location.belowbar, color=color.green, size=size.small, text="BO", textcolor=color.green)
+plotshape(breakdownDetected, title="Breakdown", style=shape.diamond, location=location.abovebar, color=color.red, size=size.small, text="BD", textcolor=color.red)
+
+plotshape(resRejectionDetected and not breakdownDetected, title="Resistance Rejection", style=shape.xcross, location=location.abovebar, color=color.aqua, size=size.small, text="Rej", textcolor=color.blue)
+plotshape(supRejectionDetected and not breakoutDetected, title="Support Rejection", style=shape.xcross, location=location.belowbar, color=color.purple, size=size.small, text="Rej", textcolor=color.red)
+
+// --- Yin Yang Alerts ---
+alertcondition(validHigh, title="Swing High Detected", message="New Swing High detected")
+alertcondition(validLow, title="Swing Low Detected", message="New Swing Low detected")
+alertcondition(breakoutDetected, title="Resistance Breakout", message="Price broke above resistance line")
+alertcondition(breakdownDetected, title="Support Breakdown", message="Price broke below support line")
+alertcondition(resRejectionDetected, title="Resistance Rejection", message="Price tested resistance and rejected")
+alertcondition(supRejectionDetected, title="Support Rejection", message="Price tested support and rejected")
+
+
+// ============================================================================
+// SECTION 2: DISPLACEMENT IDENTIFIER (Strict FVG Required)
+// ============================================================================
+
+// --- Displacement Inputs ---
+grp_disp_settings = "Displacement Settings"
+i_disp_type = input.string("Open to Close", "Displacement Range Type", options=["Open to Close", "High to Low"], group=grp_disp_settings)
+i_std_len = input.int(100, minval=1, title="Std Dev Length", group=grp_disp_settings)
+i_std_x = input.int(5, minval=0, title="Std Dev Multiplier", group=grp_disp_settings)
+
+// --- Displacement Logic ---
+isBullishFVG = low > high[2] and open[1] < close[1]
+isBearishFVG = high < low[2] and open[1] > close[1]
+
+candle_range = i_disp_type == "Open to Close" ? math.abs(open - close) : high - low
+std_dev = ta.stdev(candle_range, i_std_len)
+displacement_threshold = std_dev * i_std_x
+
+isPreviousBarRangeDisplaced = candle_range[1] > displacement_threshold[1]
+
+isBullishSignal = isBullishFVG and isPreviousBarRangeDisplaced
+isBearishSignal = isBearishFVG and isPreviousBarRangeDisplaced
+
+// --- Displacement Plots (hardcoded colors → editable in Style tab) ---
+plotshape(isBullishSignal, title="Bullish Displacement", location=location.belowbar, color=color.green, style=shape.triangleup, size=size.small, offset=-1)
+plotshape(isBearishSignal, title="Bearish Displacement", location=location.abovebar, color=color.red, style=shape.triangledown, size=size.small, offset=-1)
+
+// --- Displacement Alerts ---
+alertcondition(isBullishSignal, title="Bullish Displacement", message="Bullish Displacement + FVG Detected")
+alertcondition(isBearishSignal, title="Bearish Displacement", message="Bearish Displacement + FVG Detected")
+
+
+// ============================================================================
+// SECTION 3: PB & PBJ (4 Signals) — Exact PRESERVE Engine
+// ============================================================================
+
+// --- PBJ Plot/Alert Toggles ---
+grp_pbj_plots = "★ PBJ Plot Settings ★"
+show_BullPB = input.bool(true, "Bull PB", group=grp_pbj_plots, inline="p1")
+show_BullPBJ = input.bool(true, "Bull PBJ", group=grp_pbj_plots, inline="p1")
+show_BearPB = input.bool(true, "Bear PB", group=grp_pbj_plots, inline="p1")
+show_BearPBJ = input.bool(true, "Bear PBJ", group=grp_pbj_plots, inline="p1")
+
+// --- OKEH Engine Settings ---
+grp_eng = "OKEH - Zoo Engine"
+zoo_ma_type = input.string("VWMA", "Base MA Type", options=["VWMA", "EMA", "SMA", "WMA", "HMA"], group=grp_eng)
+zoo_ma_len = input.int(5, "Base MA Length", minval=1, group=grp_eng)
+zoo_price_src = input.source(close, "Price Source", group=grp_eng)
+
+grp_pbj_filter = "OKEH - PB&J Filter"
+zoo_pbj_ma_period = input.int(20, "MA Period", minval=1, group=grp_pbj_filter)
+zoo_pbj_atr_period = input.int(14, "ATR Period", minval=1, group=grp_pbj_filter)
+zoo_pbj_hh_ll = input.int(25, "HH/LL Lookback", minval=1, group=grp_pbj_filter)
+zoo_pbj_atr_mult = input.float(3.0, "ATR Multiplier", step=0.1, group=grp_pbj_filter)
+zoo_pbj_vol_period = input.int(20, "Volume MA Period", minval=1, group=grp_pbj_filter)
+zoo_pbj_vol_mult = input.float(0.1, "Volume Multiplier", step=0.1, group=grp_pbj_filter)
+
+grp_st = "OKEH - Supertrend"
+zoo_use_st = input.bool(true, "Apply ATR Supertrend", group=grp_st)
+zoo_st_period = input.int(10, "ATR Period", group=grp_st)
+zoo_st_mult = input.float(2.0, "Multiplier", group=grp_st)
+
+// --- PBJ Level Type ---
+type lvl
+    float upper
+    float lower
+    float vol
+    bool approached
+
+// --- PBJ Core Calculations ---
+float atr_pb = ta.atr(14) * 2.0
+
+f_ma(src, len, t) =>
+    switch t
+        "EMA" => ta.ema(src, len)
+        "SMA" => ta.sma(src, len)
+        "WMA" => ta.wma(src, len)
+        "HMA" => ta.hma(src, len)
+        "VWMA" => ta.vwma(src, len)
+        => ta.sma(src, len)
+
+float base_ma = f_ma(zoo_price_src, zoo_ma_len, zoo_ma_type)
+float st_atr = zoo_st_mult * ta.atr(zoo_st_period)
+float dyn_long = base_ma - st_atr
+float dyn_short = base_ma + st_atr
+
+var int st_dir = 1
+float sig_line = 0.0
+float curr_long = 0.0
+curr_long := base_ma > nz(curr_long[1], dyn_long) ? math.max(dyn_long, nz(curr_long[1])) : dyn_long
+float curr_short = 0.0
+curr_short := base_ma < nz(curr_short[1], dyn_short) ? math.min(dyn_short, nz(curr_short[1])) : dyn_short
+
+if zoo_use_st
+    if nz(st_dir[1]) == -1 and zoo_price_src > nz(curr_short[1])
+        st_dir := 1
+    else if nz(st_dir[1]) == 1 and zoo_price_src < nz(curr_long[1])
+        st_dir := -1
+    sig_line := st_dir == 1 ? curr_long : curr_short
+else
+    sig_line := base_ma
+
+bool buy_cross = ta.crossover(zoo_price_src, sig_line)
+bool sell_cross = ta.crossunder(zoo_price_src, sig_line)
+bool is_rising = sig_line > nz(sig_line[1])
+bool is_falling = sig_line < nz(sig_line[1])
+bool bull_reaccel = st_dir == 1 and is_rising and nz(sig_line[1]) == nz(sig_line[2])
+bool bear_reaccel = st_dir == -1 and is_falling and nz(sig_line[1]) == nz(sig_line[2])
+
+float pbj_ma = ta.ema(close, zoo_pbj_ma_period)
+float pbj_atr = ta.atr(zoo_pbj_atr_period)
+float avg_vol = ta.sma(volume, zoo_pbj_vol_period)
+float thresh = close == 0 ? 0 : (pbj_atr / close * zoo_pbj_atr_mult)
+
+bool pbj_buy = low < pbj_ma * (1 - thresh) and low == ta.lowest(low, zoo_pbj_hh_ll) and volume > avg_vol * zoo_pbj_vol_mult
+bool pbj_sell = high > pbj_ma * (1 + thresh) and high == ta.highest(high, zoo_pbj_hh_ll) and volume > avg_vol * zoo_pbj_vol_mult
+
+// --- PBJ Level Management ---
+var bull_lvls = array.new<lvl>()
+var bear_lvls = array.new<lvl>()
+
+f_add_lvl(arr, up, lo, v) =>
+    if math.abs(up - lo) >= syminfo.mintick
+        array.push(arr, lvl.new(up, lo, v, false))
+
+f_add_lander(is_bull, cross, arr) =>
+    if cross
+        float up = 0.0
+        float lo = 0.0
+        if is_bull
+            up := math.max(open[1], close[1])
+            lo := low[1]
+            if up - lo < atr_pb * 0.5
+                up := lo + atr_pb * 0.5
+        else
+            up := high[1]
+            lo := math.min(open[1], close[1])
+            if up - lo < atr_pb * 0.5
+                lo := up - atr_pb * 0.5
+        f_add_lvl(arr, up, lo, volume[1])
+
+f_add_reaccel(is_bull, sig, arr) =>
+    if sig and not na(sig_line)
+        float p1 = sig_line
+        float p2 = is_bull ? math.min(open, close) : math.max(open, close)
+        f_add_lvl(arr, math.max(p1, p2), math.min(p1, p2), volume)
+
+f_check_approach(arr, is_bull) =>
+    bool approached = false
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0
+            if i >= array.size(arr)
+                continue
+            l = array.get(arr, i)
+            if is_bull and close < l.lower
+                array.remove(arr, i)
+                continue
+            if not is_bull and close > l.upper
+                array.remove(arr, i)
+                continue
+            float ap = is_bull ? l.upper * 1.005 : l.lower * 0.995
+            if is_bull
+                if not l.approached and low <= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and low > l.upper
+                    l.approached := false
+            else
+                if not l.approached and high >= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and high < l.lower
+                    l.approached := false
+    approached
+
+f_add_lander(true, buy_cross, bull_lvls)
+f_add_lander(false, sell_cross, bear_lvls)
+f_add_reaccel(true, bull_reaccel, bull_lvls)
+f_add_reaccel(false, bear_reaccel, bear_lvls)
+
+var bool wait_buy = false
+var bool wait_sell = false
+var bool wait_pbj_buy = false
+var bool wait_pbj_sell = false
+
+if barstate.isconfirmed
+    if f_check_approach(bull_lvls, true)
+        wait_buy := true
+    if f_check_approach(bear_lvls, false)
+        wait_sell := true
+
+if pbj_buy
+    wait_pbj_buy := true
+if pbj_sell
+    wait_pbj_sell := true
+
+while array.size(bull_lvls) > 30
+    array.shift(bull_lvls)
+while array.size(bear_lvls) > 30
+    array.shift(bear_lvls)
+
+// --- PBJ Signals ---
+bool sig_pb_buy = buy_cross and wait_buy
+bool sig_pbj_buy = buy_cross and wait_pbj_buy
+bool sig_pb_sell = sell_cross and wait_sell
+bool sig_pbj_sell = sell_cross and wait_pbj_sell
+
+if sig_pb_buy
+    wait_buy := false
+if sig_pbj_buy
+    wait_pbj_buy := false
+if sig_pb_sell
+    wait_sell := false
+if sig_pbj_sell
+    wait_pbj_sell := false
+
+bool sigBullPB = sig_pb_buy and not sig_pbj_buy
+bool sigBullPBJ = sig_pbj_buy
+bool sigBearPB = sig_pb_sell and not sig_pbj_sell
+bool sigBearPBJ = sig_pbj_sell
+
+// --- PBJ Plots (hardcoded colors → editable in Style tab) ---
+plotshape(show_BullPB and sigBullPB, title="Bull PB", style=shape.labelup, location=location.belowbar, color=color.new(color.aqua, 50), size=size.small, text="PB", textcolor=color.white)
+plotshape(show_BullPBJ and sigBullPBJ, title="Bull PBJ", style=shape.diamond, location=location.belowbar, color=color.new(color.yellow, 50), size=size.normal, text="PBJ", textcolor=color.black)
+plotshape(show_BearPB and sigBearPB, title="Bear PB", style=shape.labeldown, location=location.abovebar, color=color.new(color.orange, 0), size=size.small, text="PB", textcolor=color.white)
+plotshape(show_BearPBJ and sigBearPBJ, title="Bear PBJ", style=shape.labeldown, location=location.abovebar, color=color.new(color.red, 0), size=size.normal, text="PBJ", textcolor=color.white)
+
+// --- PBJ Alerts ---
+alertcondition(show_BullPB and sigBullPB, title="Bull PB", message="Bull PB fired")
+alertcondition(show_BullPBJ and sigBullPBJ, title="Bull PBJ", message="Bull PBJ fired")
+alertcondition(show_BearPB and sigBearPB, title="Bear PB", message="Bear PB fired")
+alertcondition(show_BearPBJ and sigBearPBJ, title="Bear PBJ", message="Bear PBJ fired")
+
+
+// ============================================================================
+// SECTION 4: COMBO SIGNALS — Confluence Detection
+// ============================================================================
+
+// --- Combo Inputs ---
+grp_combo = "Combo Signal Settings"
+comboWindow = input.int(10, "Combo Lookback (bars)", minval=1, maxval=100, group=grp_combo, tooltip="Max bars between plotted signals for a combo to fire.")
+
+// --- Store event bars (where the shape appears on chart) ---
+var int evtSwingLow = na
+var int evtSwingHigh = na
+var int evtBullDisp = na
+var int evtBearDisp = na
+var int evtBullPB = na
+var int evtBullPBJ = na
+var int evtBearPB = na
+var int evtBearPBJ = na
+
+if validLow
+    evtSwingLow := bar_index - rightBars
+if validHigh
+    evtSwingHigh := bar_index - rightBars
+if isBullishSignal
+    evtBullDisp := bar_index - 1
+if isBearishSignal
+    evtBearDisp := bar_index - 1
+if sigBullPB
+    evtBullPB := bar_index
+if sigBullPBJ
+    evtBullPBJ := bar_index
+if sigBearPB
+    evtBearPB := bar_index
+if sigBearPBJ
+    evtBearPBJ := bar_index
+
+// --- Helper: check if two event bars are within the combo window ---
+f_comboWithin(evtA, evtB, window) =>
+    not na(evtA) and not na(evtB) and math.abs(evtA - evtB) <= window
+
+// --- Which signals just fired this bar ---
+bool swingLowNow = validLow
+bool swingHighNow = validHigh
+bool bullDispNow = isBullishSignal
+bool bearDispNow = isBearishSignal
+bool bullPBNow = sigBullPB
+bool bullPBJNow = sigBullPBJ
+bool bearPBNow = sigBearPB
+bool bearPBJNow = sigBearPBJ
+
+// -----------------------------------------------------------------------
+// 2-WAY COMBOS (10 total: 5 bull + 5 bear)
+// -----------------------------------------------------------------------
+
+// 1. Swing + Displacement — Bull
+bool c2_swingDisp_bull = false
+if swingLowNow and f_comboWithin(evtSwingLow, evtBullDisp, comboWindow)
+    c2_swingDisp_bull := true
+if bullDispNow and f_comboWithin(evtBullDisp, evtSwingLow, comboWindow)
+    c2_swingDisp_bull := true
+
+// 2. Swing + Displacement — Bear
+bool c2_swingDisp_bear = false
+if swingHighNow and f_comboWithin(evtSwingHigh, evtBearDisp, comboWindow)
+    c2_swingDisp_bear := true
+if bearDispNow and f_comboWithin(evtBearDisp, evtSwingHigh, comboWindow)
+    c2_swingDisp_bear := true
+
+// 3. Swing + PB — Bull
+bool c2_swingPB_bull = false
+if swingLowNow and f_comboWithin(evtSwingLow, evtBullPB, comboWindow)
+    c2_swingPB_bull := true
+if bullPBNow and f_comboWithin(evtBullPB, evtSwingLow, comboWindow)
+    c2_swingPB_bull := true
+
+// 4. Swing + PBJ — Bull
+bool c2_swingPBJ_bull = false
+if swingLowNow and f_comboWithin(evtSwingLow, evtBullPBJ, comboWindow)
+    c2_swingPBJ_bull := true
+if bullPBJNow and f_comboWithin(evtBullPBJ, evtSwingLow, comboWindow)
+    c2_swingPBJ_bull := true
+
+// 5. Swing + PB — Bear
+bool c2_swingPB_bear = false
+if swingHighNow and f_comboWithin(evtSwingHigh, evtBearPB, comboWindow)
+    c2_swingPB_bear := true
+if bearPBNow and f_comboWithin(evtBearPB, evtSwingHigh, comboWindow)
+    c2_swingPB_bear := true
+
+// 6. Swing + PBJ — Bear
+bool c2_swingPBJ_bear = false
+if swingHighNow and f_comboWithin(evtSwingHigh, evtBearPBJ, comboWindow)
+    c2_swingPBJ_bear := true
+if bearPBJNow and f_comboWithin(evtBearPBJ, evtSwingHigh, comboWindow)
+    c2_swingPBJ_bear := true
+
+// 7. Displacement + PB — Bull
+bool c2_dispPB_bull = false
+if bullDispNow and f_comboWithin(evtBullDisp, evtBullPB, comboWindow)
+    c2_dispPB_bull := true
+if bullPBNow and f_comboWithin(evtBullPB, evtBullDisp, comboWindow)
+    c2_dispPB_bull := true
+
+// 8. Displacement + PBJ — Bull
+bool c2_dispPBJ_bull = false
+if bullDispNow and f_comboWithin(evtBullDisp, evtBullPBJ, comboWindow)
+    c2_dispPBJ_bull := true
+if bullPBJNow and f_comboWithin(evtBullPBJ, evtBullDisp, comboWindow)
+    c2_dispPBJ_bull := true
+
+// 9. Displacement + PB — Bear
+bool c2_dispPB_bear = false
+if bearDispNow and f_comboWithin(evtBearDisp, evtBearPB, comboWindow)
+    c2_dispPB_bear := true
+if bearPBNow and f_comboWithin(evtBearPB, evtBearDisp, comboWindow)
+    c2_dispPB_bear := true
+
+// 10. Displacement + PBJ — Bear
+bool c2_dispPBJ_bear = false
+if bearDispNow and f_comboWithin(evtBearDisp, evtBearPBJ, comboWindow)
+    c2_dispPBJ_bear := true
+if bearPBJNow and f_comboWithin(evtBearPBJ, evtBearDisp, comboWindow)
+    c2_dispPBJ_bear := true
+
+// -----------------------------------------------------------------------
+// 3-WAY COMBOS (4 total: 2 bull + 2 bear)
+// -----------------------------------------------------------------------
+
+f_trio(a, b, c, window) =>
+    not na(a) and not na(b) and not na(c) and math.abs(a - b) <= window and math.abs(a - c) <= window and math.abs(b - c) <= window
+
+// 11. Triple Bull (PB) — Swing Low + Bull Disp + Bull PB
+bool c3_pb_bull = false
+if swingLowNow and f_trio(evtSwingLow, evtBullDisp, evtBullPB, comboWindow)
+    c3_pb_bull := true
+if bullDispNow and f_trio(evtBullDisp, evtSwingLow, evtBullPB, comboWindow)
+    c3_pb_bull := true
+if bullPBNow and f_trio(evtBullPB, evtSwingLow, evtBullDisp, comboWindow)
+    c3_pb_bull := true
+
+// 12. Triple Bull (PBJ) — Swing Low + Bull Disp + Bull PBJ
+bool c3_pbj_bull = false
+if swingLowNow and f_trio(evtSwingLow, evtBullDisp, evtBullPBJ, comboWindow)
+    c3_pbj_bull := true
+if bullDispNow and f_trio(evtBullDisp, evtSwingLow, evtBullPBJ, comboWindow)
+    c3_pbj_bull := true
+if bullPBJNow and f_trio(evtBullPBJ, evtSwingLow, evtBullDisp, comboWindow)
+    c3_pbj_bull := true
+
+// 13. Triple Bear (PB) — Swing High + Bear Disp + Bear PB
+bool c3_pb_bear = false
+if swingHighNow and f_trio(evtSwingHigh, evtBearDisp, evtBearPB, comboWindow)
+    c3_pb_bear := true
+if bearDispNow and f_trio(evtBearDisp, evtSwingHigh, evtBearPB, comboWindow)
+    c3_pb_bear := true
+if bearPBNow and f_trio(evtBearPB, evtSwingHigh, evtBearDisp, comboWindow)
+    c3_pb_bear := true
+
+// 14. Triple Bear (PBJ) — Swing High + Bear Disp + Bear PBJ
+bool c3_pbj_bear = false
+if swingHighNow and f_trio(evtSwingHigh, evtBearDisp, evtBearPBJ, comboWindow)
+    c3_pbj_bear := true
+if bearDispNow and f_trio(evtBearDisp, evtSwingHigh, evtBearPBJ, comboWindow)
+    c3_pbj_bear := true
+if bearPBJNow and f_trio(evtBearPBJ, evtSwingHigh, evtBearDisp, comboWindow)
+    c3_pbj_bear := true
+
+// --- Aggregate flags ---
+bool any2_bull = c2_swingDisp_bull or c2_swingPB_bull or c2_swingPBJ_bull or c2_dispPB_bull or c2_dispPBJ_bull
+bool any2_bear = c2_swingDisp_bear or c2_swingPB_bear or c2_swingPBJ_bear or c2_dispPB_bear or c2_dispPBJ_bear
+bool any3_bull = c3_pb_bull or c3_pbj_bull
+bool any3_bear = c3_pb_bear or c3_pbj_bear
+
+// -----------------------------------------------------------------------
+// COMBO PLOTS — 14 individual plotshapes (hardcoded colors → Style tab)
+// Each combo gets its own entry so you can toggle/recolor individually
+// -----------------------------------------------------------------------
+
+// 2-Way Bull (5)
+plotshape(c2_swingDisp_bull, title="2x Bull: Swing+Disp", style=shape.flag, location=location.belowbar, color=color.lime, size=size.small, text="Sw+Di", textcolor=color.lime)
+plotshape(c2_swingPB_bull, title="2x Bull: Swing+PB", style=shape.flag, location=location.belowbar, color=color.lime, size=size.small, text="Sw+PB", textcolor=color.lime)
+plotshape(c2_swingPBJ_bull, title="2x Bull: Swing+PBJ", style=shape.flag, location=location.belowbar, color=color.lime, size=size.small, text="Sw+PBJ", textcolor=color.lime)
+plotshape(c2_dispPB_bull, title="2x Bull: Disp+PB", style=shape.flag, location=location.belowbar, color=color.lime, size=size.small, text="Di+PB", textcolor=color.lime)
+plotshape(c2_dispPBJ_bull, title="2x Bull: Disp+PBJ", style=shape.flag, location=location.belowbar, color=color.lime, size=size.small, text="Di+PBJ", textcolor=color.lime)
+
+// 2-Way Bear (5)
+plotshape(c2_swingDisp_bear, title="2x Bear: Swing+Disp", style=shape.flag, location=location.abovebar, color=color.fuchsia, size=size.small, text="Sw+Di", textcolor=color.fuchsia)
+plotshape(c2_swingPB_bear, title="2x Bear: Swing+PB", style=shape.flag, location=location.abovebar, color=color.fuchsia, size=size.small, text="Sw+PB", textcolor=color.fuchsia)
+plotshape(c2_swingPBJ_bear, title="2x Bear: Swing+PBJ", style=shape.flag, location=location.abovebar, color=color.fuchsia, size=size.small, text="Sw+PBJ", textcolor=color.fuchsia)
+plotshape(c2_dispPB_bear, title="2x Bear: Disp+PB", style=shape.flag, location=location.abovebar, color=color.fuchsia, size=size.small, text="Di+PB", textcolor=color.fuchsia)
+plotshape(c2_dispPBJ_bear, title="2x Bear: Disp+PBJ", style=shape.flag, location=location.abovebar, color=color.fuchsia, size=size.small, text="Di+PBJ", textcolor=color.fuchsia)
+
+// 3-Way Bull (2)
+plotshape(c3_pb_bull, title="3x Bull: Swing+Disp+PB", style=shape.circle, location=location.belowbar, color=color.yellow, size=size.normal, text="3x Sw+Di+PB", textcolor=color.yellow)
+plotshape(c3_pbj_bull, title="3x Bull: Swing+Disp+PBJ", style=shape.circle, location=location.belowbar, color=color.yellow, size=size.normal, text="3x Sw+Di+PBJ", textcolor=color.yellow)
+
+// 3-Way Bear (2)
+plotshape(c3_pb_bear, title="3x Bear: Swing+Disp+PB", style=shape.circle, location=location.abovebar, color=color.orange, size=size.normal, text="3x Sw+Di+PB", textcolor=color.orange)
+plotshape(c3_pbj_bear, title="3x Bear: Swing+Disp+PBJ", style=shape.circle, location=location.abovebar, color=color.orange, size=size.normal, text="3x Sw+Di+PBJ", textcolor=color.orange)
+
+// -----------------------------------------------------------------------
+// COMBO ALERTS — 14 individual + 2 catch-all + dynamic alert()
+// -----------------------------------------------------------------------
+
+// Individual combo alertconditions (selectable in dropdown)
+alertcondition(c2_swingDisp_bull, title="2x Bull: Swing+Disp", message="++++ 2x Swing+Disp")
+alertcondition(c2_swingPB_bull, title="2x Bull: Swing+PB", message="++++ 2x Swing+PB")
+alertcondition(c2_swingPBJ_bull, title="2x Bull: Swing+PBJ", message="++++ 2x Swing+PBJ")
+alertcondition(c2_dispPB_bull, title="2x Bull: Disp+PB", message="++++ 2x Disp+PB")
+alertcondition(c2_dispPBJ_bull, title="2x Bull: Disp+PBJ", message="++++ 2x Disp+PBJ")
+alertcondition(c3_pb_bull, title="3x Bull: Swing+Disp+PB", message="++++ 3x Swing+Disp+PB")
+alertcondition(c3_pbj_bull, title="3x Bull: Swing+Disp+PBJ", message="++++ 3x Swing+Disp+PBJ")
+
+alertcondition(c2_swingDisp_bear, title="2x Bear: Swing+Disp", message="---- 2x Swing+Disp")
+alertcondition(c2_swingPB_bear, title="2x Bear: Swing+PB", message="---- 2x Swing+PB")
+alertcondition(c2_swingPBJ_bear, title="2x Bear: Swing+PBJ", message="---- 2x Swing+PBJ")
+alertcondition(c2_dispPB_bear, title="2x Bear: Disp+PB", message="---- 2x Disp+PB")
+alertcondition(c2_dispPBJ_bear, title="2x Bear: Disp+PBJ", message="---- 2x Disp+PBJ")
+alertcondition(c3_pb_bear, title="3x Bear: Swing+Disp+PB", message="---- 3x Swing+Disp+PB")
+alertcondition(c3_pbj_bear, title="3x Bear: Swing+Disp+PBJ", message="---- 3x Swing+Disp+PBJ")
+
+// Catch-all per side
+alertcondition(any2_bull or any3_bull, title="Any Bull Combo", message="Bull Combo fired")
+alertcondition(any2_bear or any3_bear, title="Any Bear Combo", message="Bear Combo fired")
+
+// Dynamic alert() with full detail (fires under "Any alert() function call")
+string bullMsg = ""
+if c2_swingDisp_bull
+    bullMsg += "2x Swing+Disp "
+if c2_swingPB_bull
+    bullMsg += "2x Swing+PB "
+if c2_swingPBJ_bull
+    bullMsg += "2x Swing+PBJ "
+if c2_dispPB_bull
+    bullMsg += "2x Disp+PB "
+if c2_dispPBJ_bull
+    bullMsg += "2x Disp+PBJ "
+if c3_pb_bull
+    bullMsg += "3x Swing+Disp+PB "
+if c3_pbj_bull
+    bullMsg += "3x Swing+Disp+PBJ "
+
+string bearMsg = ""
+if c2_swingDisp_bear
+    bearMsg += "2x Swing+Disp "
+if c2_swingPB_bear
+    bearMsg += "2x Swing+PB "
+if c2_swingPBJ_bear
+    bearMsg += "2x Swing+PBJ "
+if c2_dispPB_bear
+    bearMsg += "2x Disp+PB "
+if c2_dispPBJ_bear
+    bearMsg += "2x Disp+PBJ "
+if c3_pb_bear
+    bearMsg += "3x Swing+Disp+PB "
+if c3_pbj_bear
+    bearMsg += "3x Swing+Disp+PBJ "
+
+if bullMsg != ""
+    alert("++++ " + bullMsg, alert.freq_once_per_bar_close)
+if bearMsg != ""
+    alert("---- " + bearMsg, alert.freq_once_per_bar_close)

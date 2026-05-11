@@ -1,0 +1,277 @@
+indicator:
+  id: anish-50-1st-combo
+  file: anish-50-1st-combo/versions/ANISH_50_1ST_COMBO_v1.pine
+  branch: claude/add-txt-indicator-format-b4FUu
+  pine_version: 6
+  line_count: 181
+  overlay: true
+  one_line_purpose: "PUP/PPD + Anish Stage 2/4 EMA stack + Gap Up/Down + Super PUP/PPD + TB/Foster transitions"
+  non_repainting: true
+  inputs:
+    - "% Change (Barsize) — float, default 3.0, minval 0.1 (line 15)"
+    - "PP Lookback Days — int, default 10, minval 1 (line 16)"
+    - "Gap-Up Required — bool, default false (line 17)"
+    - "Gap-Down Required — bool, default false (line 18)"
+    - "Gap Value % — float, default 0.5, minval 0.1 (line 19)"
+    - "Min Anish Bars (X) — int, default 5, minval 1 (line 22)"
+    - "Follow-up PP Bars (Y) — int, default 2, minval 1 (line 23)"
+
+internal_helpers:
+  - id: anish-50-1st-combo::conf
+    description: "barstate.isconfirmed gate applied to all signal generation and var-state updates"
+    lines: "26"
+  - id: anish-50-1st-combo::ema_stack
+    description: "EMA(50)/EMA(150)/EMA(200) plus 21-bar lagged EMA200 (ema200_1m); used by Anish Stage 2/4 logic. EMA crosses excluded from root catalog per rule."
+    lines: "29-32"
+  - id: anish-50-1st-combo::w52_range
+    description: "52-week (252-bar) high/low used by Anish Stage 2/4 distance gates"
+    lines: "33-34"
+  - id: anish-50-1st-combo::pp_volume_calcs
+    description: "Red/green volume series and lookback highs (hiRedVol/hiGreenVol) used by PUP/PPD price+volume tests"
+    lines: "49-52"
+  - id: anish-50-1st-combo::priceUp_priceDn
+    description: "Bar % change above/below barSize threshold; price leg of PUP/PPD"
+    lines: "54-55"
+  - id: anish-50-1st-combo::volBull_volBear
+    description: "Current volume exceeds prior N-day opposing-color volume max; volume leg of PUP/PPD"
+    lines: "56-57"
+  - id: anish-50-1st-combo::gapUp_gapDn_raw
+    description: "Raw open-vs-prior-close gap detection (unconditional)"
+    lines: "63-64"
+  - id: anish-50-1st-combo::tb_state_machine
+    description: "var-state counters consecAnishBull/reachedMinBull/noBullWithPPDCount driving TB transition; conf-gated"
+    lines: "78-108"
+  - id: anish-50-1st-combo::foster_state_machine
+    description: "var-state counters consecAnishBear/reachedMinBear/noBearWithPUPCount driving Foster transition; conf-gated"
+    lines: "112-142"
+
+roots:
+  - id: anish-50-1st-combo::PPBull
+    family: pocket-pivot
+    aka: ["PUP", "Pocket Pivot Bull", "sPPBull"]
+    definition: "priceUp (bar % up > barSize) AND volBull (volume > N-day max red volume)"
+    lines: "59 (def), 145 (fire), 158 (plot), 171 (alert)"
+    fire_var: fire_PPBull
+    plot:
+      title: "Pocket Pivot Bull"
+      shape: triangleup
+      location: belowbar
+      color: blue
+      size: normal
+      text: "PUP"
+    alert:
+      title: "Pocket Pivot Bull"
+      message: "Bullish Pocket Pivot on {{ticker}}"
+    note: "Defined locally as sPPBull; PUP is also a known cross-indicator primitive"
+
+  - id: anish-50-1st-combo::PPBear
+    family: pocket-pivot
+    aka: ["PPD", "Pocket Pivot Bear", "sPPBear"]
+    definition: "priceDn (bar % down > barSize) AND volBear (volume > N-day max green volume)"
+    lines: "60 (def), 146 (fire), 159 (plot), 172 (alert)"
+    fire_var: fire_PPBear
+    plot:
+      title: "Pocket Pivot Bear"
+      shape: triangledown
+      location: abovebar
+      color: red
+      size: normal
+      text: "PPD"
+    alert:
+      title: "Pocket Pivot Bear"
+      message: "Bearish Pocket Pivot on {{ticker}}"
+    note: "Defined locally as sPPBear; PPD is also a known cross-indicator primitive"
+
+  - id: anish-50-1st-combo::AnishBull
+    family: stage-trend
+    aka: ["Anish Bull", "bullPass", "Stage 2 Uptrend"]
+    definition: "close>EMA50 AND close>=EMA150 AND close>=EMA200 AND EMA50>EMA150 AND EMA50>EMA200 AND EMA150>=EMA200 AND EMA200>EMA200[21] AND close>52wLow*1.30 AND close>=52wHigh*0.75"
+    lines: "37-40 (def), 147 (fire), 160 (plot), 173 (alert)"
+    fire_var: fire_bullPass
+    plot:
+      title: "Anish Bull"
+      shape: diamond
+      location: abovebar
+      color: green
+      size: small
+    alert:
+      title: "Anish Bull Pass"
+      message: "Anish Patel Bull Pass - Stage 2 Uptrend on {{ticker}}"
+    note: "Composite-of-EMAs but named primitive; the Stage 2 stack itself is the helper, this named pass is the root"
+
+  - id: anish-50-1st-combo::AnishBear
+    family: stage-trend
+    aka: ["Anish Bear", "bearPass", "Stage 4 Downtrend"]
+    definition: "close<EMA50 AND close<=EMA150 AND close<=EMA200 AND EMA50<EMA150 AND EMA50<EMA200 AND EMA150<=EMA200 AND EMA200<EMA200[21] AND close<52wHigh*0.70 AND close<=52wLow*1.25"
+    lines: "43-46 (def), 148 (fire), 161 (plot), 174 (alert)"
+    fire_var: fire_bearPass
+    plot:
+      title: "Anish Bear"
+      shape: diamond
+      location: belowbar
+      color: red
+      size: small
+    alert:
+      title: "Anish Bear Pass"
+      message: "Anish Patel Bear Pass - Stage 4 Downtrend on {{ticker}}"
+
+  - id: anish-50-1st-combo::GapUp
+    family: gap
+    aka: ["gapUpSig"]
+    definition: "gapUpEnabled AND open > close[1] * (1 + gapValue/100)"
+    lines: "63 (raw), 65 (gated), used in line 69"
+    fire_var: "(no standalone plot — used inside fire_allBull)"
+    plot: null
+    alert: null
+    note: "Named primitive but only emitted via composite All Three Bull (no standalone plotshape)"
+
+  - id: anish-50-1st-combo::GapDown
+    family: gap
+    aka: ["gapDnSig"]
+    definition: "gapDownEnabled AND open < close[1] * (1 - gapValue/100)"
+    lines: "64 (raw), 66 (gated), used in line 70"
+    fire_var: "(no standalone plot — used inside fire_allBear)"
+    plot: null
+    alert: null
+    note: "Named primitive but only emitted via composite All Three Bear (no standalone plotshape)"
+
+composites:
+  - id: anish-50-1st-combo::AllThreeBull
+    tier: 2
+    aka: ["All Three Bull", "sAllBull", "PP+Gap+Anish Bull"]
+    definition: "sPPBull AND gapUpSig AND bullPass (PUP + GapUp + AnishBull same bar)"
+    depends_on:
+      - anish-50-1st-combo::PPBull
+      - anish-50-1st-combo::GapUp
+      - anish-50-1st-combo::AnishBull
+    lines: "69 (def), 149 (fire), 162 (plot), 175 (alert)"
+    fire_var: fire_allBull
+    plot:
+      title: "All Three Bull"
+      shape: circle
+      location: abovebar
+      color: yellow
+      size: normal
+    alert:
+      title: "All Three Bull"
+      message: "PP + Gap Up + Anish Bull on {{ticker}}"
+
+  - id: anish-50-1st-combo::AllThreeBear
+    tier: 2
+    aka: ["All Three Bear", "sAllBear", "PP+Gap+Anish Bear"]
+    definition: "sPPBear AND gapDnSig AND bearPass (PPD + GapDown + AnishBear same bar)"
+    depends_on:
+      - anish-50-1st-combo::PPBear
+      - anish-50-1st-combo::GapDown
+      - anish-50-1st-combo::AnishBear
+    lines: "70 (def), 150 (fire), 163 (plot), 176 (alert)"
+    fire_var: fire_allBear
+    plot:
+      title: "All Three Bear"
+      shape: circle
+      location: belowbar
+      color: fuchsia
+      size: normal
+    alert:
+      title: "All Three Bear"
+      message: "PP + Gap Down + Anish Bear on {{ticker}}"
+
+  - id: anish-50-1st-combo::SuperPup
+    tier: 2
+    aka: ["Super Pup", "S-PUP", "superPup"]
+    definition: "sPPBull AND bullPass (same-bar PUP+AnishBull confluence, no gap requirement)"
+    depends_on:
+      - anish-50-1st-combo::PPBull
+      - anish-50-1st-combo::AnishBull
+    lines: "74 (def), 151 (fire), 165 (plot), 177 (alert)"
+    fire_var: fire_superPup
+    plot:
+      title: "Super Pup"
+      shape: labelup
+      location: belowbar
+      color: lime
+      size: large
+      text: "S-PUP"
+      textcolor: black
+    alert:
+      title: "Super Pup"
+      message: "PUP + Anish Bull Confluence - Strong Buy on {{ticker}}"
+
+  - id: anish-50-1st-combo::SuperPPD
+    tier: 2
+    aka: ["Super PPD", "S-PPD", "superPPD"]
+    definition: "sPPBear AND bearPass (same-bar PPD+AnishBear confluence, no gap requirement)"
+    depends_on:
+      - anish-50-1st-combo::PPBear
+      - anish-50-1st-combo::AnishBear
+    lines: "73 (def), 152 (fire), 166 (plot), 178 (alert)"
+    fire_var: fire_superPPD
+    plot:
+      title: "Super PPD"
+      shape: labeldown
+      location: abovebar
+      color: maroon
+      size: large
+      text: "S-PPD"
+      textcolor: white
+    alert:
+      title: "Super PPD"
+      message: "PPD + Anish Bear Confluence - Strong Sell on {{ticker}}"
+
+  - id: anish-50-1st-combo::TB
+    tier: 3
+    aka: ["TB Sell", "tbSignal", "Topping Break"]
+    definition: "After X consecutive AnishBull bars (reachedMinBull), wait for Y bars where AnishBull fails AND PPD fires; on Y-th such bar emit one-bar pulse. State resets if AnishBull returns or if PPD disappears mid-sequence."
+    depends_on:
+      - anish-50-1st-combo::AnishBull
+      - anish-50-1st-combo::PPBear
+    lines: "78-108 (state machine), 154 (fire), 168 (plot), 180 (alert)"
+    fire_var: fire_tb
+    plot:
+      title: "TB Sell"
+      shape: labeldown
+      location: abovebar
+      color: purple
+      size: large
+      text: "TB"
+      textcolor: white
+    alert:
+      title: "TB Sell"
+      message: "TB Signal - Breakdown after Bull Phase on {{ticker}}"
+    parameters:
+      X: minAnishBars
+      Y: followUpBars
+
+  - id: anish-50-1st-combo::Foster
+    tier: 3
+    aka: ["Foster Buy", "fosterSignal", "Foster Rescue"]
+    definition: "After X consecutive AnishBear bars (reachedMinBear), wait for Y bars where AnishBear fails AND PUP fires; on Y-th such bar emit one-bar pulse. State resets if AnishBear returns or if PUP disappears mid-sequence."
+    depends_on:
+      - anish-50-1st-combo::AnishBear
+      - anish-50-1st-combo::PPBull
+    lines: "112-142 (state machine), 155 (fire), 167 (plot), 179 (alert)"
+    fire_var: fire_foster
+    plot:
+      title: "Foster Buy"
+      shape: labelup
+      location: belowbar
+      color: aqua
+      size: large
+      text: "FOSTER"
+      textcolor: black
+    alert:
+      title: "Foster Buy"
+      message: "Foster Signal - Rescue Buy after Bear Phase on {{ticker}}"
+    parameters:
+      X: minAnishBars
+      Y: followUpBars
+
+cross_indicator_dependencies:
+  - "PUP — locally redefined as sPPBull (line 59); also a known cross-indicator primitive (e.g. b2b-pup::PUP)"
+  - "PPD — locally redefined as sPPBear (line 60); also a known cross-indicator primitive (e.g. hvd-pbj-ppd::PPD)"
+
+uncertain_or_questions:
+  - "GapUp/GapDown are named conditionals (gapUpSig/gapDnSig) but have no standalone plotshape — only consumed by AllThreeBull/AllThreeBear. Listed as roots since they are named primitives, but caller may prefer to demote them to internal_helpers since they never emit independently."
+  - "AnishBull/AnishBear are pure EMA-stack composites (multi-EMA cross conditions plus 52w distance). The rule says 'EMA crosses are excluded from root catalog'; however these are NAMED stage-trend primitives (Stage 2 / Stage 4), so they were promoted to roots and the underlying EMA stack was kept as internal_helper. Confirm this interpretation."
+  - "TB and Foster reset behavior: counter resets only when reachedMin* is true; the 'else if not sPPBear and not bullPass' branch (line 99) only fires after threshold reached, which means the X-bar Anish run can be interrupted by neutral bars without resetting consecAnishBull (it resets only when bullPass becomes false then stays false — actually consecAnishBull resets every non-bullPass bar via line 88). Documented as-is."
+  - "Line count reported as 181 (last non-empty line is 180; file ends with trailing comment line 181)."

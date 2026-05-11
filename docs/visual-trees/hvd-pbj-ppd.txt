@@ -1,0 +1,385 @@
+VISUAL TREE — hvd-pbj-ppd
+==========================
+File: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+Pine v5  ·  1767 lines  ·  overlay=True
+Purpose: Canonical PBJ/PPD/PB/Displacement engine; consolidated 'THE_ONLY_ONE' build with four decoupled pipelines (A=HV+D, B=PBJ/PB, C=USE 45-signal alarm, D=Triple AND co-occurrence) plus a Back-to-Back HV+D section
+
+ROOTS
+-----
+  ◆ hvd-pbj-ppd::HVD_BULL    [hv · offset=-1]
+      Pipeline-A primitive: prior bar was a high-volume bar (one of the tog…
+  ◆ hvd-pbj-ppd::HVD_BEAR    [hv · offset=-1]
+      Bear mirror of HVD_BULL: prior bar high-volume rank ∧ prior bar disp …
+  ◆ hvd-pbj-ppd::PBJ_BULL    [candle · offset=0]
+      Pipeline-B bullish PBJ landing: a Supertrend buy_cross (Zoo VWMA-5 vs…
+  ◆ hvd-pbj-ppd::PBJ_BEAR    [candle · offset=0]
+      Bear mirror of PBJ_BULL: Supertrend sell_cross + PB&J sell filter (hi…
+  ◆ hvd-pbj-ppd::PB_BULL    [candle · offset=0]
+      Pipeline-B bullish 'plain' Pullback (PB) landing: Supertrend buy_cros…
+  ◆ hvd-pbj-ppd::PB_BEAR    [candle · offset=0]
+      Bear mirror of PB_BULL: Supertrend sell_cross + bear lander box appro…
+  ◆ hvd-pbj-ppd::PUP    [push · offset=0]
+      Push-Up Day: bar's percent body (close-open)/open*100 > 3% AND volume…
+  ◆ hvd-pbj-ppd::PPD    [push · offset=0]
+      Push-Down Day: bar's percent body (open-close)/open*100 > 3% AND volu…
+  ◆ hvd-pbj-ppd::DISP_BULL    [displacement · offset=0]
+      Pipeline-C displacement: prior bar range > stdev*3.0 (capped *100), A…
+  ◆ hvd-pbj-ppd::DISP_BEAR    [displacement · offset=0]
+      Bear mirror of DISP_BULL.
+  ◆ hvd-pbj-ppd::DISP5_BULL    [displacement · offset=0]
+      5x-stdev displacement primitive (close>open ∧ range>stdev*5.0). Used …
+  ◆ hvd-pbj-ppd::DISP5_BEAR    [displacement · offset=0]
+      Bear mirror of DISP5_BULL.
+  ◆ hvd-pbj-ppd::HV5K    [hv · offset=0]
+      Volume on prior bar equals 5000-bar highest. The 'all-time' tier of t…
+  ◆ hvd-pbj-ppd::HVY    [hv · offset=0]
+      Yearly tier — volume on prior bar equals 252-bar highest.
+  ◆ hvd-pbj-ppd::HVQ    [hv · offset=0]
+      Quarterly tier — volume on prior bar equals 63-bar highest.
+  ◆ hvd-pbj-ppd::HV75    [hv · offset=0]
+      Volume >= 75-bar highest of prior bar. Named USE-side HV tier.
+  ◆ hvd-pbj-ppd::HV150    [hv · offset=0]
+      Volume >= 150-bar (configurable hv150_len) highest of prior bar.
+  ◆ hvd-pbj-ppd::HV500    [hv · offset=0]
+      Volume >= 500-bar highest of prior bar.
+  ◆ hvd-pbj-ppd::HV1000    [hv · offset=0]
+      Volume >= 1000-bar highest of prior bar.
+  ◆ hvd-pbj-ppd::HEV    [hv · offset=0]
+      All-time-high volume primitive (volume[1] strictly greater than runni…
+  ◆ hvd-pbj-ppd::NAGASAKI    [rvol · offset=0]
+      USE-side all-time-high volume primitive (volume strictly greater than…
+
+COMPOSITES (by tier)
+-----
+  Tier 0:
+    ● hvd-pbj-ppd::SUPER_BULL    [offset=0 · AND]
+        Tier-0 priority bull: PBJ + DISP + (FAUNA bull or LSLong1) + HW-volum…
+        ├── PBJ_BULL
+        ├── DISP_BULL
+        ├── (FAUNA_BULL or LS_LONG1)
+        ├── (RVOL_1X_BULL or GS or WTC or HIRO or NAG)
+        └── ((csNew1_Bull or csNew2_Bull) and PUP) or (FLOOR_BULL or SECOND_FLOOR_BULL)
+    ● hvd-pbj-ppd::SUPER_BEAR    [offset=0 · AND]
+        Bear mirror of SUPER_BULL.
+        ├── PBJ_BEAR
+        ├── DISP_BEAR
+        ├── (FAUNA_BEAR or LS_SHORT1)
+        ├── (RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)
+        └── ((csNew1_Bear or csNew2_Bear) and PPD) or (ROOFTOP or PENTHOUSE)
+    ● hvd-pbj-ppd::SDUPER_BULL    [offset=0 · AND]
+        'Super Duper' priority: Floor/2F + PBJ + HW-volume slot + Combo-set +…
+        ├── FLOOR_BULL
+        ├── PBJ_BULL
+        ├── (RVOL_1X_BULL or GS or WTC or HIRO or NAG)
+        ├── (csNew1_Bull or csNew2_Bull)
+        ├── PUP
+        ├── DISP_BULL
+        └── (FAUNA_BULL or LS_LONG1)
+    ● hvd-pbj-ppd::SDUPER_BEAR    [offset=0 · AND]
+        Bear mirror of SDUPER_BULL.
+        ├── (ROOFTOP or PENTHOUSE)
+        ├── PBJ_BEAR
+        ├── (RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)
+        ├── (csNew1_Bear or csNew2_Bear)
+        ├── PPD
+        ├── DISP_BEAR
+        └── (FAUNA_BEAR or LS_SHORT1)
+
+  Tier 1:
+    ● hvd-pbj-ppd::BULL_UUUU    [offset=0 · STREAK]
+        4 consecutive bullish bars + must include first bar of trading day + …
+        ├── close>open x4
+        ├── is_new_day in window
+        ├── PBJ_BULL
+        └── DISP_BULL
+    ● hvd-pbj-ppd::BEAR_UUUU    [offset=0 · STREAK]
+        Bear mirror of BULL_UUUU.
+        ├── close<open x4
+        ├── is_new_day in window
+        ├── PBJ_BEAR
+        └── DISP_BEAR
+    ● hvd-pbj-ppd::BULL_UUU    [offset=0 · STREAK]
+        3 consecutive bullish bars each with bb_normalizedPrice>1.0 + first-o…
+        ├── bb_baseBullish ∧ normPrice>1 x3
+        ├── is_new_day in window
+        ├── PBJ_BULL
+        └── DISP_BULL
+    ● hvd-pbj-ppd::BEAR_UUU    [offset=0 · STREAK]
+        Bear mirror of BULL_UUU.
+        ├── bb_baseBearish ∧ normPrice>1 x3
+        ├── is_new_day in window
+        ├── PBJ_BEAR
+        └── DISP_BEAR
+    ● hvd-pbj-ppd::BULL_UU    [offset=0 · STREAK]
+        2 consecutive bullish bars each ≥ normPrice 2.0 + cumulative ≥ RVOL 1…
+        ├── p21_bull_streak == 2
+        ├── p21_bull_sum ≥ th_1x
+        └── (PBJ_BULL_window ∧ DISP_BULL_window) OR uu_excA_bull OR uu_excC_bull
+    ● hvd-pbj-ppd::BEAR_UU    [offset=0 · STREAK]
+        Bear mirror of BULL_UU.
+        ├── p21_bear_streak == 2
+        ├── p21_bear_sum ≥ th_1x
+        └── (PBJ_BEAR_window ∧ DISP_BEAR_window) OR uu_excA_bear OR uu_excC_bear
+    ● hvd-pbj-ppd::BULL_USUB    [offset=0 · STREAK]
+        3+ consecutive bullish bars each ≥ normPrice 2.0 + cum ≥ th_1x + PBJ …
+        ├── p21_bull_streak ≥ 3
+        ├── p21_bull_sum ≥ th_1x
+        ├── PBJ_BULL
+        └── DISP_BULL
+    ● hvd-pbj-ppd::BEAR_USUB    [offset=0 · STREAK]
+        Bear mirror of BULL_USUB.
+        ├── p21_bear_streak ≥ 3
+        ├── p21_bear_sum ≥ th_1x
+        ├── PBJ_BEAR
+        └── DISP_BEAR
+    ● hvd-pbj-ppd::ALPHA_STRIKE_BULL    [offset=0 · AND]
+        First USE-signal of the day + Ping-Pong bull state + (GS or RVOL1x) +…
+        ├── firstOfDay
+        ├── bull_pp
+        ├── (sigGrandSlam or sigBullRVOL1x)
+        ├── (PBJ_BULL or PB_BULL)
+        └── as_fauna_bull
+    ● hvd-pbj-ppd::ALPHA_STRIKE_BEAR    [offset=0 · AND]
+        Bear mirror of ALPHA_STRIKE_BULL.
+        ├── firstOfDay
+        ├── bear_pp
+        ├── (sigMOAB or sigBearRVOL1x)
+        ├── (PBJ_BEAR or PB_BEAR)
+        └── as_fauna_bear
+    ● hvd-pbj-ppd::FOXTROT_BULL    [offset=0 · STREAK]
+        4 consecutive FAUNA-confirmed bullish bars.
+        ├── sigFAUNABull
+        ├── sigFAUNABull[1]
+        ├── sigFAUNABull[2]
+        └── sigFAUNABull[3]
+    ● hvd-pbj-ppd::FOXTROT_BEAR    [offset=0 · STREAK]
+        Bear mirror — 4 consecutive FAUNA-confirmed bearish bars.
+        ├── sigFAUNABear
+        ├── sigFAUNABear[1]
+        ├── sigFAUNABear[2]
+        └── sigFAUNABear[3]
+    ● hvd-pbj-ppd::OMEGA_LONG    [offset=0 · AND]
+        Boom Hunter omega trigger + any of ~35 bull cosignals + NOT MOAB + NO…
+        ├── bh_anyOmega
+        ├── omega_cosignal
+        ├── not sigMOAB
+        └── not DISP_BEAR
+    ● hvd-pbj-ppd::OD_BULL    [offset=0 · AND]
+        Opening Drive Bull: within first od_max_bars of session + any FVG com…
+        ├── sessionBarCount ≤ od_max_bars
+        ├── (gz_bullGZI or comboSet1..4_Bull)
+        ├── disp_prevDisp
+        ├── PUP
+        └── PBJ_BULL
+    ● hvd-pbj-ppd::OD_BEAR    [offset=0 · AND]
+        Bear mirror of OD_BULL.
+        ├── sessionBarCount ≤ od_max_bars
+        ├── (gz_bearGZI or comboSet1..4_Bear)
+        ├── disp_prevDisp
+        ├── PPD
+        └── PBJ_BEAR
+    ● hvd-pbj-ppd::DISP_CONS_BULL2    [offset=0 · STREAK]
+        2+ consecutive DISP2 bars (range > stdev*3) AND FAUNA bull on current…
+        ├── sigDISP2Bull x2
+        ├── sigFAUNABull
+        └── sigFAUNABull[1]
+    ● hvd-pbj-ppd::DISP_CONS_BEAR2    [offset=0 · STREAK]
+        Bear mirror — 2+ consecutive DISP2 bear bars + FAUNA bear x2.
+        ├── sigDISP2Bear x2
+        ├── sigFAUNABear
+        └── sigFAUNABear[1]
+    ● hvd-pbj-ppd::DISP_CONS_BULL3    [offset=0 · STREAK]
+        3+ consecutive DISP3 bull bars + FAUNA bull on current, [1], and [2].
+        ├── sigDISP3Bull x3
+        └── sigFAUNABull on 3 bars
+    ● hvd-pbj-ppd::DISP_CONS_BEAR3    [offset=0 · STREAK]
+        Bear mirror — 3+ consecutive DISP3 bear bars + FAUNA bear x3.
+        ├── sigDISP3Bear x3
+        └── sigFAUNABear on 3 bars
+    ● hvd-pbj-ppd::GOLF_BULL    [offset=-1 · WINDOW]
+        3-bar confirmed bull sequence: DISP_BULL now + FAUNA[1] + PUP[1] + DI…
+        ├── DISP_BULL
+        ├── sigFAUNABull[1]
+        ├── PUP[1]
+        ├── sigDISPBull[1]
+        ├── sigFAUNABull[2]
+        └── PUP[2]
+    ● hvd-pbj-ppd::GOLF_BEAR    [offset=-1 · WINDOW]
+        Bear mirror — DISP_BEAR + FAUNA bear[1] + PPD[1] + DISP_BEAR[1] + FAU…
+        ├── DISP_BEAR
+        ├── sigFAUNABear[1]
+        ├── PPD[1]
+        ├── sigDISPBear[1]
+        ├── sigFAUNABear[2]
+        └── PPD[2]
+    ● hvd-pbj-ppd::PAF_BULL    [offset=0 · STREAK]
+        Back-to-back PUP + FAUNA bull (PUP now + FAUNA now + PUP[1] + FAUNA[1…
+        ├── PUP
+        ├── sigFAUNABull
+        ├── PUP[1]
+        └── sigFAUNABull[1]
+    ● hvd-pbj-ppd::PAF_BEAR    [offset=0 · STREAK]
+        Bear mirror — PPD + FAUNA bear, with [1] also true.
+        ├── PPD
+        ├── sigFAUNABear
+        ├── PPD[1]
+        └── sigFAUNABear[1]
+
+  Tier 1B:
+    ● hvd-pbj-ppd::CS1_FVG_BULL    [offset=-1 · AND]
+        FVG Combo (consolidated): body% ≥ 0.85 on prior bar + (gz_bullHV OR g…
+        ├── cs_vb (body% prior ≥ 0.85)
+        ├── (HV5K|HVY|HVQ via gz_bullHV) OR gz_bullGZI
+        ├── (sigSAAB|sigBullRVOL1x|sigGrandSlam)[1]
+        └── OR comboSet2_Bull (Pentagon/WTC/Hiro/Nag tier-2)
+    ● hvd-pbj-ppd::CS1_FVG_BEAR    [offset=-1 · AND]
+        Bear mirror of CS1_FVG_BULL.
+        ├── cs_vb prior
+        ├── (gz_bearHV OR gz_bearGZI)
+        └── (Kratos|BearRVOL1x|MOAB|Pentagon|WTC|Hiro|Nag)[1]
+    ● hvd-pbj-ppd::CS2_MAT_BULL    [offset=0 · AND]
+        Matrix Combo (consolidated): body% ≥ 0.85 + matrix_any_bull (Neo/Trin…
+        ├── cs_vm
+        ├── matrix_any_bull
+        └── (RVOL slot or HW slot)
+    ● hvd-pbj-ppd::CS2_MAT_BEAR    [offset=0 · AND]
+        Bear mirror of CS2_MAT_BULL.
+        ├── cs_vm
+        ├── matrix_any_bear
+        └── (Kratos|BearRVOL1x|MOAB or Pentagon|WTC|Hiro|Nag)
+    ● hvd-pbj-ppd::CS3_UNIFIED_BULL    [offset=0 · AND]
+        Unified Combo Bull: CS1 (FVG) AND CS2 (MAT) both present.
+        ├── CS1_FVG_BULL
+        └── CS2_MAT_BULL
+    ● hvd-pbj-ppd::CS3_UNIFIED_BEAR    [offset=0 · AND]
+        Bear mirror — CS1 ∧ CS2 both bear.
+        ├── CS1_FVG_BEAR
+        └── CS2_MAT_BEAR
+
+  Tier 1C:
+    ● hvd-pbj-ppd::CC_BULL    [offset=0 · WINDOW]
+        Combo Chain Bull: ≥ cc_min_hits Combo windows in last cc_window bars …
+        ├── cc_win_bull ≥ cc_min_hits
+        └── PBJ_BULL or PB_BULL inside window
+    ● hvd-pbj-ppd::CC_BEAR    [offset=0 · WINDOW]
+        Bear mirror of CC_BULL.
+        ├── cc_win_bear ≥ cc_min_hits
+        └── PBJ_BEAR or PB_BEAR inside window
+    ● hvd-pbj-ppd::LSC_BULL    [offset=0 · WINDOW]
+        Long/Short Chain Bull: ≥ lsc_min_hits LS-Long bars (lsc_L1 or lsc_L2 …
+        ├── count(lsc_L1∨lsc_L2)[0..win-1] ≥ lsc_min_hits
+        └── PBJ_BULL or PB_BULL inside window
+    ● hvd-pbj-ppd::LSC_BEAR    [offset=0 · WINDOW]
+        Bear mirror of LSC_BULL.
+        ├── count(lsc_S1∨lsc_S2) ≥ lsc_min_hits
+        └── PBJ_BEAR or PB_BEAR inside window
+
+  Tier 2:
+    ● hvd-pbj-ppd::FLOOR_BULL    [offset=0 · AND]
+        Floor: Ping-Pong bull state + PBJ_BULL + (RVOL1x or GS or WTC or Hiro…
+        ├── bull_pp
+        ├── PBJ_BULL
+        └── bull_hw_slot
+    ● hvd-pbj-ppd::SECOND_FLOOR_BULL    [offset=0 · AND]
+        2nd Floor: Ping-Pong bull + PB_BULL + HW-volume slot.
+        ├── bull_pp
+        ├── PB_BULL
+        └── bull_hw_slot
+    ● hvd-pbj-ppd::ROOFTOP_BEAR    [offset=0 · AND]
+        Rooftop: Ping-Pong bear + PBJ_BEAR + HW-volume slot bear.
+        ├── bear_pp
+        ├── PBJ_BEAR
+        └── bear_hw_slot
+    ● hvd-pbj-ppd::PENTHOUSE_BEAR    [offset=0 · AND]
+        Penthouse: Ping-Pong bear + PB_BEAR + HW-volume slot bear.
+        ├── bear_pp
+        ├── PB_BEAR
+        └── bear_hw_slot
+    ● hvd-pbj-ppd::HVD_PB_BULL    [offset=-1 · AND]
+        HV+D bull AND PB_BULL on prior bar (offset alignment for the same des…
+        ├── HVD_BULL
+        └── PB_BULL[1]
+    ● hvd-pbj-ppd::HVD_PBJ_BULL    [offset=-1 · AND]
+        HV+D bull AND PBJ_BULL on prior bar.
+        ├── HVD_BULL
+        └── PBJ_BULL[1]
+    ● hvd-pbj-ppd::HVD_PB_BEAR    [offset=-1 · AND]
+        HV+D bear AND PB_BEAR on prior bar.
+        ├── HVD_BEAR
+        └── PB_BEAR[1]
+    ● hvd-pbj-ppd::HVD_PBJ_BEAR    [offset=-1 · AND]
+        HV+D bear AND PBJ_BEAR on prior bar.
+        ├── HVD_BEAR
+        └── PBJ_BEAR[1]
+    ● hvd-pbj-ppd::B2B_HVD_BULL_NOPB    [offset=-1 · AND]
+        Two consecutive HV+D bull bars (bar N-1 and bar N-2) with NEITHER PBJ…
+        ├── HVD_BULL
+        ├── HVD_BULL[1]
+        ├── not (PBJ_BULL[1] or PBJ_BULL[2])
+        └── not (PB_BULL[1] or PB_BULL[2])
+    ● hvd-pbj-ppd::B2B_HVD_PBJ_BULL    [offset=-1 · AND]
+        Two consecutive HV+D bull bars + PBJ_BULL on either of the two.
+        ├── HVD_BULL
+        ├── HVD_BULL[1]
+        └── (PBJ_BULL[1] or PBJ_BULL[2])
+    ● hvd-pbj-ppd::B2B_HVD_PB_BULL    [offset=-1 · AND]
+        Two consecutive HV+D bull bars + PB_BULL on either of the two AND not…
+        ├── HVD_BULL
+        ├── HVD_BULL[1]
+        ├── (PB_BULL[1] or PB_BULL[2])
+        └── not B2B_HVD_PBJ_BULL
+    ● hvd-pbj-ppd::B2B_HVD_BEAR_NOPB    [offset=-1 · AND]
+        Bear mirror of B2B_HVD_BULL_NOPB.
+        ├── HVD_BEAR
+        ├── HVD_BEAR[1]
+        ├── not (PBJ_BEAR[1] or PBJ_BEAR[2])
+        └── not (PB_BEAR[1] or PB_BEAR[2])
+    ● hvd-pbj-ppd::B2B_HVD_PBJ_BEAR    [offset=-1 · AND]
+        Bear mirror of B2B_HVD_PBJ_BULL.
+        ├── HVD_BEAR
+        ├── HVD_BEAR[1]
+        └── (PBJ_BEAR[1] or PBJ_BEAR[2])
+    ● hvd-pbj-ppd::B2B_HVD_PB_BEAR    [offset=-1 · AND]
+        Bear mirror of B2B_HVD_PB_BULL.
+        ├── HVD_BEAR
+        ├── HVD_BEAR[1]
+        ├── (PB_BEAR[1] or PB_BEAR[2])
+        └── not B2B_HVD_PBJ_BEAR
+
+  Tier 3:
+    ● hvd-pbj-ppd::HW_BULL    [offset=0 · AND]
+        HW Bull: green bar + DISP5 (5σ) + PBJ_BULL + HW-volume slot + (Floor …
+        ├── close>open
+        ├── DISP5_BULL
+        ├── PBJ_BULL
+        ├── (GS or WTC or Hiro or directional Nag)
+        └── (FLOOR_BULL or SECOND_FLOOR_BULL)
+    ● hvd-pbj-ppd::HW_BEAR    [offset=0 · AND]
+        HW Bear: red bar + DISP5 bear + PBJ_BEAR + HW-volume slot bear + (Roo…
+        ├── close<open
+        ├── DISP5_BEAR
+        ├── PBJ_BEAR
+        ├── (MOAB or WTC or Hiro or directional Nag)
+        └── (ROOFTOP_BEAR or PENTHOUSE_BEAR)
+    ● hvd-pbj-ppd::CO_BULL_PBJ    [offset=-1 · AND]
+        Triple AND: HV+D bull (Pipeline A) ∧ PBJ_BULL[1] (Pipeline B) ∧ use_a…
+        ├── HVD_BULL
+        ├── PBJ_BULL[1]
+        └── use_any_bull[1]
+    ● hvd-pbj-ppd::CO_BULL_PB    [offset=-1 · AND]
+        Triple AND: HV+D bull ∧ PB_BULL[1] ∧ use_any_bull[1].
+        ├── HVD_BULL
+        ├── PB_BULL[1]
+        └── use_any_bull[1]
+    ● hvd-pbj-ppd::CO_BEAR_PBJ    [offset=-1 · AND]
+        Bear mirror of CO_BULL_PBJ.
+        ├── HVD_BEAR
+        ├── PBJ_BEAR[1]
+        └── use_any_bear[1]
+    ● hvd-pbj-ppd::CO_BEAR_PB    [offset=-1 · AND]
+        Bear mirror of CO_BULL_PB.
+        ├── HVD_BEAR
+        ├── PB_BEAR[1]
+        └── use_any_bear[1]
+
+

@@ -1,0 +1,278 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: HEAVY_YIN_YANG_BULL
+aliases_searched:
+- HEAVY_YIN_YANG_BULL
+- HEAVY_YIN_YANG_BEAR
+- HEAVY_YIN_YANG_NEUTRAL
+- HEAVY_NAGASAKI_BULL
+- HEAVY_NAGASAKI_BEAR
+- HEAVY_NAGASAKI_NEUTRAL
+- HEAVY_NAGASAKI_VOL_BULL
+- HEAVY_NAGASAKI_VOL_BEAR
+- HEAVY_NAGASAKI_VOL_NEUTRAL
+- HEAVY_TRIDENT_BULL
+- HEAVY_TRIDENT_BEAR
+- HEAVY_TRIDENT_NEUTRAL
+- NEUTRAL_HEAVY_X2
+- NEUTRAL_HEAVY_X2_BULL
+- NEUTRAL_HEAVY_X2_BEAR
+- sigHYYBull
+- sigHYYBear
+- sigHYYNeutral
+- sigHNBull
+- sigHNBear
+- sigHNNeutral
+- sigHNVBull
+- sigHNVBear
+- sigHNVNeutral
+- sigHTBull
+- sigHTBear
+- sigHTNeutral
+- sigNHx2Bull
+- sigNHx2Bear
+- sigNHx2Neutral
+pine_files_scanned: 54
+definitions:
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 293
+  pine_variable: sigHYYBull
+  raw_line: bool sigHYYBull    = baseYinYang and dispBull
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 294
+  pine_variable: sigHYYBear
+  raw_line: bool sigHYYBear    = baseYinYang and dispBear
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 295
+  pine_variable: sigHYYNeutral
+  raw_line: bool sigHYYNeutral = baseYinYang and noDisp
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 298
+  pine_variable: sigHNBull
+  raw_line: bool sigHNBull     = baseNagasaki and dispBull
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 299
+  pine_variable: sigHNBear
+  raw_line: bool sigHNBear     = baseNagasaki and dispBear
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 300
+  pine_variable: sigHNNeutral
+  raw_line: bool sigHNNeutral  = baseNagasaki and noDisp
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 303
+  pine_variable: sigHNVBull
+  raw_line: bool sigHNVBull    = baseNagasakiV and dispBull
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 304
+  pine_variable: sigHNVBear
+  raw_line: bool sigHNVBear    = baseNagasakiV and dispBear
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 305
+  pine_variable: sigHNVNeutral
+  raw_line: bool sigHNVNeutral = baseNagasakiV and noDisp
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 308
+  pine_variable: sigHTBull
+  raw_line: bool sigHTBull     = baseTrident and dispBull
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 309
+  pine_variable: sigHTBear
+  raw_line: bool sigHTBear     = baseTrident and dispBear
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 310
+  pine_variable: sigHTNeutral
+  raw_line: bool sigHTNeutral  = baseTrident and noDisp
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 313
+  pine_variable: sigNHx2Bull
+  raw_line: bool sigNHx2Bull    = baseNHx2 and dispBull
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 314
+  pine_variable: sigNHx2Bear
+  raw_line: bool sigNHx2Bear    = baseNHx2 and dispBear
+- indicator_family: heavy-pentagon
+  file: heavy-pentagon/versions/HEAVY_PENTAGON_v1.pine
+  line: 315
+  pine_variable: sigNHx2Neutral
+  raw_line: bool sigNHx2Neutral = baseNHx2 and noDisp
+- &id001
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 226
+  pine_variable: sigHYYBull
+  raw_line: bool sigHYYBull    = baseYinYang and dispBull
+- &id002
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 227
+  pine_variable: sigHYYBear
+  raw_line: bool sigHYYBear    = baseYinYang and dispBear
+- &id003
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 228
+  pine_variable: sigHYYNeutral
+  raw_line: bool sigHYYNeutral = baseYinYang and noDisp
+- &id004
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 230
+  pine_variable: sigHNBull
+  raw_line: bool sigHNBull     = baseNagasaki and dispBull
+- &id005
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 231
+  pine_variable: sigHNBear
+  raw_line: bool sigHNBear     = baseNagasaki and dispBear
+- &id006
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 232
+  pine_variable: sigHNNeutral
+  raw_line: bool sigHNNeutral  = baseNagasaki and noDisp
+- &id007
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 234
+  pine_variable: sigHNVBull
+  raw_line: bool sigHNVBull    = baseNagasakiV and dispBull
+- &id008
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 235
+  pine_variable: sigHNVBear
+  raw_line: bool sigHNVBear    = baseNagasakiV and dispBear
+- &id009
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 236
+  pine_variable: sigHNVNeutral
+  raw_line: bool sigHNVNeutral = baseNagasakiV and noDisp
+- &id010
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 238
+  pine_variable: sigHTBull
+  raw_line: bool sigHTBull     = baseTrident and dispBull
+- &id011
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 239
+  pine_variable: sigHTBear
+  raw_line: bool sigHTBear     = baseTrident and dispBear
+- &id012
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 240
+  pine_variable: sigHTNeutral
+  raw_line: bool sigHTNeutral  = baseTrident and noDisp
+- &id013
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 242
+  pine_variable: sigNHx2Bull
+  raw_line: bool sigNHx2Bull    = baseNHx2 and dispBull
+- &id014
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 243
+  pine_variable: sigNHx2Bear
+  raw_line: bool sigNHx2Bear    = baseNHx2 and dispBear
+- &id015
+  indicator_family: heavy-combo-toggles
+  file: heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine
+  line: 244
+  pine_variable: sigNHx2Neutral
+  raw_line: bool sigNHx2Neutral = baseNHx2 and noDisp
+occurrences_per_indicator:
+  heavy-pentagon:
+    DEFINITION: 15
+    REFERENCE: 15
+    INPUT: 0
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 0
+  heavy-combo-toggles:
+    DEFINITION: 15
+    REFERENCE: 15
+    INPUT: 0
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 0
+yaml_cross_check:
+  yaml_matching_records:
+  - id: heavy-pentagon::HEAVY_YIN_YANG_BULL
+    indicator: heavy-pentagon
+    pine_source_line_range: L278-L283, L293, L381, L422
+  - id: heavy-pentagon::HEAVY_YIN_YANG_BEAR
+    indicator: heavy-pentagon
+    pine_source_line_range: L278-L283, L294, L382, L423
+  - id: heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL
+    indicator: heavy-pentagon
+    pine_source_line_range: L278-L283, L295, L383, L424
+  - id: heavy-pentagon::HEAVY_NAGASAKI_BULL
+    indicator: heavy-pentagon
+    pine_source_line_range: L278-L284, L298, L386, L427
+  - id: heavy-pentagon::HEAVY_NAGASAKI_BEAR
+    indicator: heavy-pentagon
+    pine_source_line_range: L278-L284, L299, L387, L428
+  - id: heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL
+    indicator: heavy-pentagon
+    pine_source_line_range: L278-L284, L300, L388, L429
+  - id: heavy-pentagon::HEAVY_NAGASAKI_VOL_BULL
+    indicator: heavy-pentagon
+    pine_source_line_range: L280, L285, L303, L391, L432
+  - id: heavy-pentagon::HEAVY_NAGASAKI_VOL_BEAR
+    indicator: heavy-pentagon
+    pine_source_line_range: L280, L285, L304, L392, L433
+  - id: heavy-pentagon::HEAVY_NAGASAKI_VOL_NEUTRAL
+    indicator: heavy-pentagon
+    pine_source_line_range: L280, L285, L305, L393, L434
+  - id: heavy-pentagon::HEAVY_TRIDENT_BULL
+    indicator: heavy-pentagon
+    pine_source_line_range: L278-L286, L308, L396, L437
+  - id: heavy-pentagon::HEAVY_TRIDENT_BEAR
+    indicator: heavy-pentagon
+    pine_source_line_range: L278-L286, L309, L397, L438
+  - id: heavy-pentagon::HEAVY_TRIDENT_NEUTRAL
+    indicator: heavy-pentagon
+    pine_source_line_range: L278-L286, L310, L398, L439
+  - id: heavy-pentagon::NEUTRAL_HEAVY_X2_BULL
+    indicator: heavy-pentagon
+    pine_source_line_range: L287, L313, L401, L442
+  - id: heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR
+    indicator: heavy-pentagon
+    pine_source_line_range: L287, L314, L402, L443
+  orphans: []
+  missings:
+  - *id001
+  - *id002
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  - *id008
+  - *id009
+  - *id010
+  - *id011
+  - *id012
+  - *id013
+  - *id014
+  - *id015
+status: COMPLETE

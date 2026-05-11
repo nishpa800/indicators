@@ -1,0 +1,1164 @@
+indicator:
+  id: ultra-combo
+  file: ultra-combo/versions/ULTRA_COMBO_v57_pine6.pine
+  branch: claude/add-txt-indicator-format-b4FUu
+  pine_version: 6
+  line_count: 1147
+  overlay: true
+  one_line_purpose: "Aggregator firing combo signals across PBJ/PB, F2/E3/FC, B2B PUP/PPD, Heavy Weapon, GZ1/HV FVG, FAUNA, displacement, ROC+WaveTrend, TB/Foster, Opener, 3-Bar, Mega, Super B2B Days"
+  has_v5_port: "ULTRA_COMBO_v57_pine5.pine (logic 1:1)"
+  locks_definitions:
+    - "FAUNA = (MB OR RE OR TA) AND NOT (GG OR TR OR ES OR GDR)"
+    - "anyBullRVOL/anyBearRVOL deliberately exclude SAAB/Kratos (header note + L302)"
+    - "All signals gated by barstate.isconfirmed (`conf`) for non-repainting"
+
+internal_helpers:
+  - name: f_barsPerDay
+    purpose: "Estimate confirmed RTH bars/day at current TF for back-2-back-day lookbacks (L17-L23)"
+  - name: bull_MB / bull_RE / bull_TA / bear_MB / bear_RE / bear_TA
+    purpose: "Internal MB/RE/TA primitives used by the FC cluster + F2/E3/FC engine. Defined L99-L106. NOT to be confused with the FAUNA-scoped fMB/fRE/fTA at L717-L719 which redefine the same logic in fauna_* variables."
+  - name: b1_* / b4_* (FC cluster scaffolding)
+    purpose: "Bullish (b1_*) and bearish (b4_*) FC-cluster threshold-vs-sequence overlap engine: rolling rvol windows, threshold-bar arrays, sequence-bar arrays, overlap detection, all to compute sBullFC / sBearFC (L124-L296)"
+  - name: sessBar
+    purpose: "RTH-session bar counter (1-indexed at first session bar). Used for F2/E3 sequencing and Opener (L108-L119)"
+  - name: bb_* (RVOL Heavy Weapon scaffolding)
+    purpose: "Body-spike-vs-volume normalization producing bb_normalizedPrice / bb_baseBullish / bb_baseBearish for the RVOL family thresholds (L304-L337)"
+  - name: f_rvol_1x_threshold / f_gs_moab_threshold / f_hiroshima_threshold
+    purpose: "Per-timeframe threshold tables for 1x / Grand Slam / MOAB / Hiroshima (L308-L320)"
+  - name: f_ma / dyn_long / dyn_short / curr_long / curr_short / st_dir / sig_line
+    purpose: "Anish-TB-Foster supertrend-style trail used by the PBJ/PB engine for buy_cross/sell_cross/bull_reaccel/bear_reaccel (L377-L409)"
+  - name: f_add_lvl / f_add_lander / f_add_reaccel / f_check_approach
+    purpose: "PBJ/PB level-bank management: build, prune, check approach against retained candle/reaccel zones (L422-L500)"
+  - name: wait_buy / wait_sell / wait_pbj_buy / wait_pbj_sell
+    purpose: "PBJ/PB latch flags arming sigBullPB/sigBullPBJ/sigBearPB/sigBearPBJ on the next supertrend cross (L481-L519)"
+  - name: bull_MB / bull_RE / bull_TA (bullPass / bearPass EMA stack)
+    purpose: "PUP/PPD / Anish-stages 50/150/200 EMA + 252-bar 52w hi/lo passes (L524-L532)"
+  - name: sPPBull / sPPBear / b2bPUP / b2bPPD / superPup / superPPD / firstPUPPass / firstPPDPass
+    purpose: "PUP/PPD price+volume burst signals and consecutive-bar / first-pass-after-neutral derivatives (L534-L579). These are internal building blocks; ultra-combo composes them into combos but does not expose them as named roots."
+  - name: tbWindowOpen/tbWindowCount, fosterWindowOpen/fosterWindowCount
+    purpose: "TB/Foster 5+ consecutive-pass setup window state (L584-L642)"
+  - name: roc_val / roc_ema / ld_wt1 / ld_wt2 / ld_hist / ld_xup / ld_xdn
+    purpose: "ROC over 5 bars and LazyBear WaveTrend (HLC3 EMA8 → CI → EMA21 / SMA4) building blocks for b1..b5_roc / r1..r5_roc and bull2_cond/bear2_cond (L647-L671)"
+  - name: f_has
+    purpose: "Window-of-N lookback that returns true if any sig[i] in the last win bars (L673-L679)"
+  - name: bull2_cond / bear2_cond
+    purpose: "ROC+WaveTrend dual-confirmation predicate used to gate sigROCBull/sigROCBear (L681-L682)"
+  - name: hasBullHW / hasBearHW
+    purpose: "Local Heavy-Weapon collapse used as the SAAB/Kratos-free pre-filter for sigROCBull/sigROCBear (L684-L685)"
+  - name: anyBullRVOL / anyBearRVOL
+    purpose: "RVOL-family aggregate explicitly excluding SAAB/Kratos, used inside Super-PBJ/Super-PB constructions (L750-L751)"
+  - name: anyBullHW / anyBearHW
+    purpose: "Wider HW aggregate (RVOL family + sigROC + Super combos) used for HW combo plots (L870-L871)"
+  - name: fauna_* (atr/avgVol/avgBody/avgRange/avgDelta/trendMA/body/rng2/bodySz/bodyRat/up/dn/prev_body/prev_range/StrongBear/WeakBear/StrongBull/WeakBull)
+    purpose: "FAUNA-scoped recomputation of the same MB/RE/TA arithmetic in independent variables, plus the strong/weak-bear/bull qualifiers used by ES/TR (L703-L745)"
+  - name: fvgs (typed array) + lastT
+    purpose: "Rolling FVG bank consumed by GZI/HV detection. Bull/bear FVG defined L776-L777, bank evolves L787-L823"
+  - name: gzThresh
+    purpose: "Cumulative-mean (high-low)/low scaled by bar_index — gating threshold for both bullish/bearish FVG widths (L775)"
+  - name: f_hadSignalYesterday
+    purpose: "Lookback for any sig in the prior ~2 trading days (uses barsPerDay) to power the *_B2BDays_* combos and superB2BDays (L853-L859)"
+  - name: f_hwStr / f_fullScan
+    purpose: "Alert message string builders (L925-L1013)"
+  - name: scanTrigger
+    purpose: "Composite alert-only trigger = sigSuperBullPBJ or sigSuperBullPB or sigSuperBearPBJ or sigSuperBearPB or sigGrandSlam or sigMOAB (L920) — alertcondition-exposed but not plotted as a named shape"
+
+roots:
+  # Per the rules: a "root" is a NAMED LCD primitive that has its own atomic boolean
+  # AND is referenced by name from outside ultra-combo. Inside ultra-combo, none of
+  # the new primitives (F2, E3, FC, MB, RE, TA, GG, TR, ES, GDR, TB, Foster, Opener,
+  # 3-Bar, Mega, SBBD, ROC, LBWT) are imported from elsewhere — every one is locally
+  # defined here. Therefore every primitive that has its own atomic boolean
+  # qualifies as a root authored in ultra-combo's namespace; primitives that only
+  # exist as internal helpers inside a composite (no standalone boolean OR not
+  # plotshape-named) are kept under internal_helpers.
+  #
+  # Roots defined here that DO have a standalone boolean and are first-class
+  # named outputs (own plotshape title or own combo-name in alerts/scan output):
+
+  - id: ultra-combo::F2_BULL
+    family: f2_e3_fc
+    plain_english: "Bullish F2: at session bar 2, this and previous bar are both MB (momentum-body) bullish events"
+    boolean_summary: "sBullF2 = conf and sessBar==2 and bull_MB and bull_MB[1]"
+    parameters:
+      - "atr14 = ta.atr(14)"
+      - "avgVol20 = ta.sma(volume,20)"
+      - "MB threshold: bodySize > 1.6*atr14, bodyRatio > 0.7, volume > 1.8*avgVol20"
+    offset: 0
+    plot_call: "(no dedicated plotshape; surfaced via f_fullScan as 'F2+' and via combo plots e.g. PBJ+F2)"
+    alertcondition_id: "(component of PBJ+F2, B2B+F2, F2+Cluster→E3, etc.)"
+    pine_source_line_range: "L209"
+    notes: "F2 has no own plotshape but is named in alerts (F2+) and is the named atom that combos consume."
+
+  - id: ultra-combo::F2_BEAR
+    family: f2_e3_fc
+    plain_english: "Bearish F2: at session bar 2, this and previous bar are both bearish MB events"
+    boolean_summary: "sBearF2 = conf and sessBar==2 and bear_MB and bear_MB[1]"
+    parameters: ["same MB thresholds as F2_BULL but with bodyDn"]
+    offset: 0
+    plot_call: "(no dedicated plotshape; surfaced as 'F2-' in scan + combo plots)"
+    alertcondition_id: "(component-only)"
+    pine_source_line_range: "L296"
+    notes: ""
+
+  - id: ultra-combo::E3_BULL
+    family: f2_e3_fc
+    plain_english: "Bullish E3: at session bar 3, current and previous two bars each fired MB OR RE OR TA bull"
+    boolean_summary: "sBullE3 = conf and sessBar==3 and b2_ev and b2_ev[1] and b2_ev[2] where b2_ev = bull_MB or bull_RE or bull_TA"
+    parameters: ["same MB/RE/TA atomic thresholds (L99-L101)"]
+    offset: 0
+    plot_call: "(no dedicated plotshape; 'E3+' in scan)"
+    alertcondition_id: "(component of PBJ+E3, F2CL→E3, E3⅔PP, E3×2D, F2E3seq)"
+    pine_source_line_range: "L207-L208"
+    notes: ""
+
+  - id: ultra-combo::E3_BEAR
+    family: f2_e3_fc
+    plain_english: "Bearish E3: at session bar 3, current and previous two bars each fired bear MB/RE/TA"
+    boolean_summary: "sBearE3 = conf and sessBar==3 and b5_ev and b5_ev[1] and b5_ev[2] where b5_ev = bear_MB or bear_RE or bear_TA"
+    parameters: ["same"]
+    offset: 0
+    plot_call: "(no dedicated plotshape; 'E3-' in scan)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L294-L295"
+    notes: ""
+
+  - id: ultra-combo::FC_BULL
+    family: f2_e3_fc
+    plain_english: "Bullish FC cluster: 2-of-3 cluster indicators true (consecutive MB / cumulative-day MB+RE+TA / consecutive in-session MB+RE) AND threshold-bar overlaps a sequence-bar within 20 bars"
+    boolean_summary: "sBullFC = conf and b1_2of3 and b1_ovlp"
+    parameters:
+      - "rvol price spike vs 30-bar SMA prior (b1_rvolP)"
+      - "threshold range: rvolP > 2.9 (b1_inRng)"
+      - "sequence: 2+ uBars with cumulative rvolP >= 0.1"
+      - "20-bar overlap window"
+    offset: 0
+    plot_call: "(no dedicated plotshape; 'FC+' in scan + combo plots)"
+    alertcondition_id: "(component of PBJ+Cluster, F2CL→E3, F2CL+B2B, CL×2D)"
+    pine_source_line_range: "L124-L206"
+    notes: "Engine spans L124-L206 with state arrays b1_thIdx/b1_sqIdx etc."
+
+  - id: ultra-combo::FC_BEAR
+    family: f2_e3_fc
+    plain_english: "Bearish FC cluster mirror of FC_BULL"
+    boolean_summary: "sBearFC = conf and b4_2of3 and b4_ovlp"
+    parameters: ["mirror of bullish; sequence cumulative threshold = 0.5 (vs bull 0.1)"]
+    offset: 0
+    plot_call: "(no dedicated plotshape; 'FC-' in scan)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L211-L293"
+    notes: "Bull cluster uses sum >= 0.1; bear uses sum >= 0.5 (intentional asymmetry — see L167 vs L254)."
+
+  - id: ultra-combo::MB_BULL
+    family: fauna_core
+    plain_english: "FAUNA Momentum-Body bull: confirmed bullish bar with body > 1.6*ATR, body/range > 0.7, volume > 1.8*avg20"
+    boolean_summary: "fMB_b = conf and fauna_up and fauna_bodySz > 1.6*fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8*fauna_avgVol"
+    parameters: ["atr=14", "avgVol=sma20", "body factor 1.6", "body-ratio 0.7", "vol factor 1.8"]
+    offset: 0
+    plot_call: "(no dedicated plotshape — internal to FAUNA composition)"
+    alertcondition_id: "(component of FAUNA)"
+    pine_source_line_range: "L717"
+    notes: "First definition that locks the FAUNA-MB primitive."
+
+  - id: ultra-combo::MB_BEAR
+    family: fauna_core
+    plain_english: "FAUNA Momentum-Body bear (mirror of MB_BULL)"
+    boolean_summary: "fMB_r = conf and fauna_dn and fauna_bodySz > 1.6*fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8*fauna_avgVol"
+    parameters: ["mirror"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L735"
+    notes: ""
+
+  - id: ultra-combo::RE_BULL
+    family: fauna_core
+    plain_english: "FAUNA Range-Expansion bull: confirmed bull bar with range > 2.2*ATR, close in top 15% of range, vol > 1.8*avg"
+    boolean_summary: "fRE_b = conf and fauna_up and fauna_rng2 > 2.2*fauna_atr and (high-close) < 0.15*fauna_rng2 and volume > 1.8*fauna_avgVol"
+    parameters: ["range factor 2.2", "wick fraction 0.15"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L718"
+    notes: ""
+
+  - id: ultra-combo::RE_BEAR
+    family: fauna_core
+    plain_english: "FAUNA Range-Expansion bear (mirror)"
+    boolean_summary: "fRE_r = conf and fauna_dn and fauna_rng2 > 2.2*fauna_atr and (close-low) < 0.15*fauna_rng2 and volume > 1.8*fauna_avgVol"
+    parameters: ["mirror"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L736"
+    notes: ""
+
+  - id: ultra-combo::TA_BULL
+    family: fauna_core
+    plain_english: "FAUNA Trend-Acceleration bull: 50-SMA rising, |close-close[1]| > 1.6*avg|delta|10, body up, vol > 1.8*avg"
+    boolean_summary: "fTA_b = conf and fauna_trendMA > fauna_trendMA[1] and (close-close[1]) > 1.6*fauna_avgDelta and fauna_up and volume > 1.8*fauna_avgVol"
+    parameters: ["trendMA=sma50", "delta SMA 10", "delta factor 1.6"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L719"
+    notes: ""
+
+  - id: ultra-combo::TA_BEAR
+    family: fauna_core
+    plain_english: "FAUNA Trend-Acceleration bear (mirror)"
+    boolean_summary: "fTA_r = conf and fauna_trendMA < fauna_trendMA[1] and (close[1]-close) > 1.6*fauna_avgDelta and fauna_dn and volume > 1.8*fauna_avgVol"
+    parameters: ["mirror"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L737"
+    notes: ""
+
+  - id: ultra-combo::GG_BULL
+    family: fauna_exclusion
+    plain_english: "FAUNA Gap-Gap bull exclusion atom: open gaps up > 0.9*ATR over prior close, body up, low > prior close, volume burst — used only to suppress FAUNA"
+    boolean_summary: "fGG_b = (open-close[1]) > 0.9*fauna_atr and fauna_up and low > close[1] and volume > 1.8*fauna_avgVol"
+    parameters: ["gap factor 0.9*ATR(14)"]
+    offset: 0
+    plot_call: "(internal — pure exclusion atom, never plotted standalone)"
+    alertcondition_id: "(component of FAUNA exclusion)"
+    pine_source_line_range: "L722"
+    notes: "Note: GG_BULL deliberately omits 'conf' because it is consumed by FAUNA which is itself confirmed via the MB/RE/TA core."
+
+  - id: ultra-combo::GG_BEAR
+    family: fauna_exclusion
+    plain_english: "FAUNA Gap-Gap bear exclusion atom"
+    boolean_summary: "fGG_r = (close[1]-open) > 0.9*fauna_atr and fauna_dn and high < close[1] and volume > 1.8*fauna_avgVol"
+    parameters: ["mirror"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L740"
+    notes: ""
+
+  - id: ultra-combo::TR_BULL
+    family: fauna_exclusion
+    plain_english: "FAUNA TR (Trap-Reverse from weak-bear) bull exclusion: prior bar weak-bear (body/range <= 0.2) AND core MB/RE/TA fired"
+    boolean_summary: "fTR_b = fauna_WeakBear and (fMB_b or fRE_b or fTA_b)"
+    parameters: ["WeakBear: prior bar bearish with |body|/range <= 0.2"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L727"
+    notes: "TR is a COMPOSITE in the strict sense (it ANDs MB/RE/TA on top of WeakBear), but the prompt calls it out as a primitive name; classified as root because it is referenced by NAME inside the FAUNA expression and has its own own boolean."
+
+  - id: ultra-combo::TR_BEAR
+    family: fauna_exclusion
+    plain_english: "FAUNA TR bear exclusion (mirror)"
+    boolean_summary: "fTR_r = fauna_WeakBull and (fMB_r or fRE_r or fTA_r)"
+    parameters: ["mirror"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L743"
+    notes: ""
+
+  - id: ultra-combo::ES_BULL
+    family: fauna_exclusion
+    plain_english: "FAUNA ES (Engulf-from-Strong-bear) bull exclusion: prior bar strong-bear (|body|>1.5*avgBody and vol>1.5*avgVol) AND core MB/RE/TA fires"
+    boolean_summary: "fES_b = fauna_StrongBear and (fMB_b or fRE_b or fTA_b)"
+    parameters: ["StrongBear: prior body factor 1.5, prior vol factor 1.5"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L728"
+    notes: "Same root-classification rationale as TR."
+
+  - id: ultra-combo::ES_BEAR
+    family: fauna_exclusion
+    plain_english: "FAUNA ES bear exclusion (mirror)"
+    boolean_summary: "fES_r = fauna_StrongBull and (fMB_r or fRE_r or fTA_r)"
+    parameters: ["mirror"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L744"
+    notes: ""
+
+  - id: ultra-combo::GDR_BULL
+    family: fauna_exclusion
+    plain_english: "FAUNA GDR (Gap Down + Reverse) bull exclusion: prior bar bearish AND GG_BULL fires"
+    boolean_summary: "fGDR_b = close[1] < open[1] and fGG_b"
+    parameters: ["depends on GG"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L729"
+    notes: ""
+
+  - id: ultra-combo::GDR_BEAR
+    family: fauna_exclusion
+    plain_english: "FAUNA GDR bear exclusion (mirror)"
+    boolean_summary: "fGDR_r = close[1] > open[1] and fGG_r"
+    parameters: ["mirror"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L745"
+    notes: ""
+
+  - id: ultra-combo::ROC_BULL_PRIMITIVE
+    family: roc_lbwt
+    plain_english: "Atomic ROC-bull crossover primitive: ta.crossover(roc_ema, 2.0). Pre-merge with WaveTrend signals into bull2_cond."
+    boolean_summary: "b1_roc = ta.crossover(roc_ema, 2.0) (one of five ROC/LBWT atoms b1..b5_roc)"
+    parameters: ["ROC over 5 bars", "abs-diff SMA 100", "EMA(roc/abs-diff,5)"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L661"
+    notes: "Five-atom set b1_roc..b5_roc and r1_roc..r5_roc (L661-L671). Defined here in ultra-combo namespace."
+
+  - id: ultra-combo::ROC_BEAR_PRIMITIVE
+    family: roc_lbwt
+    plain_english: "Atomic ROC-bear crossunder primitive: ta.crossunder(roc_ema, -1.25)"
+    boolean_summary: "r1_roc = ta.crossunder(roc_ema, -1.25)"
+    parameters: ["mirror"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L667"
+    notes: ""
+
+  - id: ultra-combo::LBWT_BULL_CROSS
+    family: roc_lbwt
+    plain_english: "LazyBear WaveTrend bull cross: ld_xup = wt1 crosses over wt2 (with HLC3-EMA8/CI/EMA21/SMA4 stack). One of two raw cross atoms; combined with thresholds in b2..b5_roc."
+    boolean_summary: "ld_xup = ta.crossover(ld_wt1, ld_wt2)"
+    parameters: ["esa=ema(hlc3,8)", "ci normalisation by atr(100)", "wt1=ema(ci,21)", "wt2=sma(wt1,4)"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L658"
+    notes: ""
+
+  - id: ultra-combo::LBWT_BEAR_CROSS
+    family: roc_lbwt
+    plain_english: "LazyBear WaveTrend bear cross: ld_wt1 crosses under ld_wt2"
+    boolean_summary: "ld_xdn = ta.crossunder(ld_wt1, ld_wt2)"
+    parameters: ["mirror"]
+    offset: 0
+    plot_call: "(internal)"
+    alertcondition_id: "(component)"
+    pine_source_line_range: "L659"
+    notes: ""
+
+  - id: ultra-combo::TB
+    family: tb_foster
+    plain_english: "TB (Trend Break-down): after 5+ consecutive bullPass days, on the first bar where bullPass turns false, open a 2-bar window; fire if a sPPBear (PUP-style bear) hits inside the window"
+    boolean_summary: "tbSignal = (window armed by 5+ bullPass) and sPPBear inside 2-bar window"
+    parameters: ["consec >= 5", "window length = 2 bars"]
+    offset: 0
+    plot_call: "(no dedicated plotshape; surfaced via 'TB' in scan and via tbHeavyBear combo)"
+    alertcondition_id: "(component of FOS/TB+HVY)"
+    pine_source_line_range: "L584-L612"
+    notes: "Variants tbPBJSignal / tbPBSignal fire if sigBearPBJ / sigBearPB enters window instead. Anish-style trap signals."
+
+  - id: ultra-combo::FOSTER
+    family: tb_foster
+    plain_english: "Foster (Trend Reversal-up): after 5+ consecutive bearPass days, on the first non-bearPass bar, open 2-bar window; fire if sPPBull (PUP-style bull) hits"
+    boolean_summary: "fosterSignal = (window armed by 5+ bearPass) and sPPBull inside 2-bar window"
+    parameters: ["consec >= 5", "window length = 2 bars"]
+    offset: 0
+    plot_call: "(no dedicated plotshape; 'FOSTER' in scan, drives fosterHeavyBull combo)"
+    alertcondition_id: "(component of FOS/TB+HVY)"
+    pine_source_line_range: "L614-L642"
+    notes: "fosterPBJSignal / fosterPBSignal mirror tbPBJSignal/tbPBSignal."
+
+composites:
+  - id: ultra-combo::FAUNA_BULL
+    tier: 2
+    plain_english: "Bullish FAUNA: any of MB/RE/TA fires AND none of the four exclusion atoms (GG/TR/ES/GDR) fires"
+    composition:
+      type: AND_NOT
+      operands:
+        - "ultra-combo::MB_BULL"
+        - "ultra-combo::RE_BULL"
+        - "ultra-combo::TA_BULL"
+        - "NOT ultra-combo::GG_BULL"
+        - "NOT ultra-combo::TR_BULL"
+        - "NOT ultra-combo::ES_BULL"
+        - "NOT ultra-combo::GDR_BULL"
+    offset: 0
+    plot_call: "(no own plotshape; surfaced as 'FAUNA+' in f_fullScan and consumed by sigSuperBull*, gz1MegaBull, hvMegaBull, gz1hvMegaBull)"
+    alertcondition_id: "(no standalone alertcondition; embedded in MEGA / SUPER alerts)"
+    pine_source_line_range: "L730-L732"
+    notes: "LOCKED definition for the bible: (MB OR RE OR TA) AND NOT (GG OR TR OR ES OR GDR)."
+
+  - id: ultra-combo::FAUNA_BEAR
+    tier: 2
+    plain_english: "Bearish FAUNA: any of bear MB/RE/TA fires AND none of bear GG/TR/ES/GDR exclusion atoms fires"
+    composition:
+      type: AND_NOT
+      operands:
+        - "ultra-combo::MB_BEAR"
+        - "ultra-combo::RE_BEAR"
+        - "ultra-combo::TA_BEAR"
+        - "NOT ultra-combo::GG_BEAR"
+        - "NOT ultra-combo::TR_BEAR"
+        - "NOT ultra-combo::ES_BEAR"
+        - "NOT ultra-combo::GDR_BEAR"
+    offset: 0
+    plot_call: "(no own plotshape)"
+    alertcondition_id: "(embedded in MEGA / SUPER alerts)"
+    pine_source_line_range: "L746-L748"
+    notes: ""
+
+  - id: ultra-combo::ROC_BULL
+    tier: 2
+    plain_english: "Bull ROC composite: PBJ-bull AND ROC+WaveTrend dual-confirmation (b1+b4 OR b3+b2) AND any-bull HW AND green body"
+    composition:
+      type: AND
+      operands:
+        - "hvd-pbj-ppd::PBJ_BULL"
+        - "ultra-combo::ROC_BULL_PRIMITIVE"
+        - "ultra-combo::LBWT_BULL_CROSS"
+        - "(any HW bull: heavy-pentagon::SAAB-style components are NOT used here — only RVOL family)"
+    offset: 0
+    plot_call: "(no plotshape; 'ROC+' in scan; consumed by anyBullHW and several alert composites)"
+    alertcondition_id: "(component-only)"
+    pine_source_line_range: "L687-L690"
+    notes: "Definitions: sigBullCombo = sigBullPBJ and bull2_cond; sigROCBull = conf and sigBullCombo and hasBullHW and (close > open)."
+
+  - id: ultra-combo::ROC_BEAR
+    tier: 2
+    plain_english: "Bear ROC composite mirror"
+    composition:
+      type: AND
+      operands:
+        - "hvd-pbj-ppd::PBJ_BEAR"
+        - "ultra-combo::ROC_BEAR_PRIMITIVE"
+        - "ultra-combo::LBWT_BEAR_CROSS"
+    offset: 0
+    plot_call: "('ROC-' in scan)"
+    alertcondition_id: "(component-only)"
+    pine_source_line_range: "L688-L690"
+    notes: ""
+
+  - id: ultra-combo::DISP_BULL
+    tier: 1
+    plain_english: "Displacement bull: previous bar had range > 5*stdev(range,100) AND current bar is a bullish FVG (low > high[2], prev bar bullish)"
+    composition:
+      type: AND
+      operands: ["disp_prevDisp", "disp_bullFVG (bull FVG primitive)"]
+    offset: 0
+    plot_call: "('DISP+' in scan; consumed by Super and Mega composites)"
+    alertcondition_id: "(component-only)"
+    pine_source_line_range: "L692-L697"
+    notes: "Internal-only displacement primitive — not exported elsewhere by NAME, so kept as a composite local to ultra-combo (not a root)."
+
+  - id: ultra-combo::DISP_BEAR
+    tier: 1
+    plain_english: "Displacement bear mirror"
+    composition:
+      type: AND
+      operands: ["disp_prevDisp", "disp_bearFVG"]
+    offset: 0
+    plot_call: "('DISP-' in scan)"
+    alertcondition_id: "(component-only)"
+    pine_source_line_range: "L698"
+    notes: ""
+
+  - id: ultra-combo::SUPER_BULL_PBJ
+    tier: 3
+    plain_english: "Super Bull PBJ: Disp-bull AND PBJ-bull AND FAUNA-bull AND any RVOL-bull (SAAB excluded)"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::DISP_BULL"
+        - "hvd-pbj-ppd::PBJ_BULL"
+        - "ultra-combo::FAUNA_BULL"
+        - "(anyBullRVOL — heavy-pentagon::SAAB explicitly excluded)"
+    offset: 0
+    plot_call: "(no own shape; drives scanTrigger alert + part of SUPER×2D plot)"
+    alertcondition_id: "Scan Trigger / SUPER/GS/MOAB"
+    pine_source_line_range: "L753"
+    notes: ""
+
+  - id: ultra-combo::SUPER_BULL_PB
+    tier: 3
+    plain_english: "Super Bull PB mirror"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::DISP_BULL"
+        - "hvd-pbj-ppd::PB_BULL"
+        - "ultra-combo::FAUNA_BULL"
+        - "(anyBullRVOL ex-SAAB)"
+    offset: 0
+    plot_call: "(no own shape)"
+    alertcondition_id: "Scan Trigger"
+    pine_source_line_range: "L754"
+    notes: ""
+
+  - id: ultra-combo::SUPER_BEAR_PBJ
+    tier: 3
+    plain_english: "Super Bear PBJ"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::DISP_BEAR"
+        - "hvd-pbj-ppd::PBJ_BEAR"
+        - "ultra-combo::FAUNA_BEAR"
+        - "(anyBearRVOL ex-SAAB)"
+    offset: 0
+    plot_call: "(no own shape)"
+    alertcondition_id: "Scan Trigger"
+    pine_source_line_range: "L755"
+    notes: ""
+
+  - id: ultra-combo::SUPER_BEAR_PB
+    tier: 3
+    plain_english: "Super Bear PB"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::DISP_BEAR"
+        - "hvd-pbj-ppd::PB_BEAR"
+        - "ultra-combo::FAUNA_BEAR"
+        - "(anyBearRVOL ex-SAAB)"
+    offset: 0
+    plot_call: "(no own shape)"
+    alertcondition_id: "Scan Trigger"
+    pine_source_line_range: "L756"
+    notes: ""
+
+  # ---- PBJ × cluster combos (tier 2) ----
+  - id: ultra-combo::PBJ_F2
+    tier: 2
+    plain_english: "PBJ + F2 same bar (bull or bear)"
+    composition:
+      type: OR
+      operands:
+        - "(hvd-pbj-ppd::PBJ_BULL AND ultra-combo::F2_BULL)"
+        - "(hvd-pbj-ppd::PBJ_BEAR AND ultra-combo::F2_BEAR)"
+    offset: 0
+    plot_call: "plotshape(show_pbjF2 and (comboPBJ_F2_Bull or comboPBJ_F2_Bear), \"PBJ+F2\", shape.labelup, location.belowbar, comboPBJ_F2_Bull ? color.lime : color.red, size=size.large, text=\"PBJ+F2\")"
+    alertcondition_id: "PBJ+F2"
+    pine_source_line_range: "L828, L831, L1018, L1142"
+    notes: ""
+
+  - id: ultra-combo::PBJ_E3
+    tier: 2
+    plain_english: "PBJ + E3 same bar"
+    composition:
+      type: OR
+      operands:
+        - "(hvd-pbj-ppd::PBJ_BULL AND ultra-combo::E3_BULL)"
+        - "(hvd-pbj-ppd::PBJ_BEAR AND ultra-combo::E3_BEAR)"
+    offset: 0
+    plot_call: "plotshape(show_pbjE3 and (comboPBJ_E3_Bull or comboPBJ_E3_Bear), \"PBJ+E3\", shape.labelup, location.belowbar, comboPBJ_E3_Bull ? color.lime : color.red, size=size.large, text=\"PBJ+E3\")"
+    alertcondition_id: "PBJ+E3"
+    pine_source_line_range: "L829, L832, L1019, L1143"
+    notes: ""
+
+  - id: ultra-combo::PBJ_CLUSTER
+    tier: 2
+    plain_english: "PBJ + FC cluster same bar"
+    composition:
+      type: OR
+      operands:
+        - "(hvd-pbj-ppd::PBJ_BULL AND ultra-combo::FC_BULL)"
+        - "(hvd-pbj-ppd::PBJ_BEAR AND ultra-combo::FC_BEAR)"
+    offset: 0
+    plot_call: "plotshape(show_pbjCluster and (comboPBJ_Cluster_Bull or comboPBJ_Cluster_Bear), \"PBJ+CL\", shape.labelup, location.belowbar, comboPBJ_Cluster_Bull ? color.lime : color.red, size=size.large, text=\"PBJ+CL\")"
+    alertcondition_id: "PBJ+Cluster"
+    pine_source_line_range: "L830, L833, L1020, L1144"
+    notes: ""
+
+  - id: ultra-combo::PB_F2
+    tier: 2
+    plain_english: "PB + F2 same bar"
+    composition:
+      type: OR
+      operands:
+        - "(hvd-pbj-ppd::PB_BULL AND ultra-combo::F2_BULL)"
+        - "(hvd-pbj-ppd::PB_BEAR AND ultra-combo::F2_BEAR)"
+    offset: 0
+    plot_call: "plotshape(show_pbF2 and (comboPB_F2_Bull or comboPB_F2_Bear), \"PB+F2\", shape.labelup, location.belowbar, comboPB_F2_Bull ? color.green : color.maroon, size=size.large, text=\"PB+F2\")"
+    alertcondition_id: "(none — alertcondition only for PBJ-side variants)"
+    pine_source_line_range: "L835, L838, L1021"
+    notes: ""
+
+  - id: ultra-combo::PB_E3
+    tier: 2
+    plain_english: "PB + E3 same bar"
+    composition:
+      type: OR
+      operands:
+        - "(hvd-pbj-ppd::PB_BULL AND ultra-combo::E3_BULL)"
+        - "(hvd-pbj-ppd::PB_BEAR AND ultra-combo::E3_BEAR)"
+    offset: 0
+    plot_call: "plotshape(show_pbE3 and (comboPB_E3_Bull or comboPB_E3_Bear), \"PB+E3\", shape.labelup, location.belowbar, comboPB_E3_Bull ? color.green : color.maroon, size=size.large, text=\"PB+E3\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L836, L839, L1022"
+    notes: ""
+
+  - id: ultra-combo::PB_CLUSTER
+    tier: 2
+    plain_english: "PB + FC cluster same bar"
+    composition:
+      type: OR
+      operands:
+        - "(hvd-pbj-ppd::PB_BULL AND ultra-combo::FC_BULL)"
+        - "(hvd-pbj-ppd::PB_BEAR AND ultra-combo::FC_BEAR)"
+    offset: 0
+    plot_call: "plotshape(show_pbCluster and (comboPB_Cluster_Bull or comboPB_Cluster_Bear), \"PB+CL\", shape.labelup, location.belowbar, comboPB_Cluster_Bull ? color.green : color.maroon, size=size.large, text=\"PB+CL\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L837, L840, L1023"
+    notes: ""
+
+  # ---- Sequential combos (tier 2) ----
+  - id: ultra-combo::F2CL_THEN_E3
+    tier: 2
+    plain_english: "Yesterday-bar F2 AND yesterday-bar FC, then today E3 (one-bar lag)"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::F2_BULL[1] (or F2_BEAR[1])"
+        - "ultra-combo::FC_BULL[1] (or FC_BEAR[1])"
+        - "ultra-combo::E3_BULL (or E3_BEAR)"
+    offset: 0
+    plot_call: "plotshape(show_f2ClusterE3 and (comboF2Cluster_E3_Bull or comboF2Cluster_E3_Bear), \"F2CL→E3\", shape.diamond, location.top, comboF2Cluster_E3_Bull ? color.aqua : color.fuchsia, size=size.large, text=\"F2CL→E3\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L842-L843, L1025"
+    notes: "Uses [1] index — bar before."
+
+  - id: ultra-combo::F2CL_PLUS_B2B
+    tier: 2
+    plain_english: "F2 + FC cluster + back-to-back PUP (or PPD) on same bar"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::F2_BULL (or F2_BEAR)"
+        - "ultra-combo::FC_BULL (or FC_BEAR)"
+        - "(b2bPUP — internal back-to-back PUP) (or b2bPPD)"
+    offset: 0
+    plot_call: "plotshape(show_f2ClusterB2B and (comboF2ClusterB2B_Bull or comboF2ClusterB2B_Bear), \"F2CL+B2B\", shape.diamond, location.top, comboF2ClusterB2B_Bull ? color.aqua : color.fuchsia, size=size.large, text=\"F2CL+B2B\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L844-L845, L1026"
+    notes: ""
+
+  - id: ultra-combo::B2B_PLUS_F2
+    tier: 2
+    plain_english: "Back-to-back PUP + F2 same bar"
+    composition:
+      type: AND
+      operands:
+        - "(b2bPUP) or (b2bPPD)"
+        - "ultra-combo::F2_BULL (or F2_BEAR)"
+    offset: 0
+    plot_call: "plotshape(show_b2bF2 and (comboB2B_F2_Bull or comboB2B_F2_Bear), \"B2B+F2\", shape.diamond, location.top, comboB2B_F2_Bull ? color.teal : color.orange, size=size.large, text=\"B2B+F2\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L846-L847, L1027"
+    notes: ""
+
+  - id: ultra-combo::E3_2OF3_PUPPPD
+    tier: 2
+    plain_english: "E3 with at least 2 of last 3 bars being PUP (bull) or PPD (bear)"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::E3_BULL (or E3_BEAR)"
+        - "(2 of {sPPBull, sPPBull[1], sPPBull[2]} — internal PUP) or PPD mirror"
+    offset: 0
+    plot_call: "plotshape(show_e3PUP and (comboE3_2of3PUP_Bull or comboE3_2of3PPD_Bear), \"E3⅔PP\", shape.diamond, location.top, comboE3_2of3PUP_Bull ? color.teal : color.orange, size=size.large, text=\"E3⅔PP\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L848-L851, L1028"
+    notes: ""
+
+  # ---- Consecutive-day combos (tier 2) ----
+  - id: ultra-combo::F2_B2B_DAYS
+    tier: 2
+    plain_english: "F2 today AND F2 fired some time in the prior ~2 trading days"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::F2_BULL (or F2_BEAR)"
+        - "f_hadSignalYesterday(F2 same direction)"
+    offset: 0
+    plot_call: "plotshape(show_f2B2B and (comboF2_B2BDays_Bull or comboF2_B2BDays_Bear), \"F2×2D\", shape.flag, location.top, comboF2_B2BDays_Bull ? color.lime : color.red, size=size.huge, text=\"F2×2D\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L861-L862, L1030"
+    notes: ""
+
+  - id: ultra-combo::E3_B2B_DAYS
+    tier: 2
+    plain_english: "E3 today AND E3 fired in prior ~2 days"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::E3_BULL (or E3_BEAR)"
+        - "f_hadSignalYesterday(E3 same direction)"
+    offset: 0
+    plot_call: "plotshape(show_e3B2B and (comboE3_B2BDays_Bull or comboE3_B2BDays_Bear), \"E3×2D\", shape.flag, location.top, comboE3_B2BDays_Bull ? color.lime : color.red, size=size.huge, text=\"E3×2D\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L863-L864, L1031"
+    notes: ""
+
+  - id: ultra-combo::F2E3_CONSEC
+    tier: 2
+    plain_english: "Cross-day F2/E3 sequence: F2 today + E3 in prior ~2 days, OR E3 today + F2 in prior ~2 days"
+    composition:
+      type: OR
+      operands:
+        - "(F2_DIR AND f_hadSignalYesterday(E3_DIR))"
+        - "(E3_DIR AND f_hadSignalYesterday(F2_DIR))"
+    offset: 0
+    plot_call: "plotshape(show_f2e3Consec and (comboF2E3_Consec_Bull or comboF2E3_Consec_Bear), \"F2E3seq\", shape.flag, location.top, comboF2E3_Consec_Bull ? color.yellow : color.purple, size=size.huge, text=\"F2E3seq\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L865-L866, L1032"
+    notes: ""
+
+  - id: ultra-combo::CLUSTER_B2B_DAYS
+    tier: 2
+    plain_english: "FC cluster today AND FC cluster in prior ~2 days"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::FC_BULL (or FC_BEAR)"
+        - "f_hadSignalYesterday(FC same direction)"
+    offset: 0
+    plot_call: "plotshape(show_clusterB2BDays and (comboCluster_B2BDays_Bull or comboCluster_B2BDays_Bear), \"CL×2D\", shape.flag, location.top, comboCluster_B2BDays_Bull ? color.yellow : color.purple, size=size.huge, text=\"CL×2D\")"
+    alertcondition_id: "(none)"
+    pine_source_line_range: "L867-L868, L1033"
+    notes: ""
+
+  # ---- Heavy Weapon combos (tier 2) ----
+  - id: ultra-combo::HW_PLUS_ANY_BULL
+    tier: 2
+    plain_english: "Any bull HW (RVOL family + sigROCBull + Super combos) AND any of (F2/E3/FC) bull"
+    composition:
+      type: AND
+      operands:
+        - "(anyBullHW: heavy-weapon::SIG_RVOL_1X_BULL or heavy-weapon::SIG_GRANDSLAM or heavy-weapon::SIG_WTC or heavy-weapon::SIG_HIROSHIMA or heavy-weapon::SIG_NAGASAKI or ultra-combo::ROC_BULL or ultra-combo::SUPER_BULL_PBJ or ultra-combo::SUPER_BULL_PB)"
+        - "(sAnyBull = ultra-combo::FC_BULL or ultra-combo::E3_BULL or ultra-combo::F2_BULL)"
+    offset: 0
+    plot_call: "plotshape(show_hwBullAny and comboHW_AnyBull, \"HW+Bull\", shape.labelup, location.belowbar, color.lime, size=size.large, text=\"HW+BULL\")"
+    alertcondition_id: "HW+Any"
+    pine_source_line_range: "L870, L873, L1035"
+    notes: "ultra-combo authors all RVOL-family signals locally (sigBullRVOL1x etc.); cross-indicator names map to heavy-weapon::* for bible chaining purposes."
+
+  - id: ultra-combo::HW_PLUS_ANY_BEAR
+    tier: 2
+    plain_english: "Mirror of HW_PLUS_ANY_BULL"
+    composition:
+      type: AND
+      operands:
+        - "(anyBearHW)"
+        - "(sAnyBear)"
+    offset: 0
+    plot_call: "plotshape(show_hwBearAny and comboHW_AnyBear, \"HW+Bear\", shape.labeldown, location.abovebar, color.red, size=size.large, text=\"HW+BEAR\")"
+    alertcondition_id: "HW+Any"
+    pine_source_line_range: "L871, L874, L1036"
+    notes: ""
+
+  # ---- GZ1/HV combos (tier 2) ----
+  - id: ultra-combo::GZHV_ANY_BULL
+    tier: 2
+    plain_english: "(GZ1-bull OR HV-bull FVG) AND (sAnyBull this bar OR last bar)"
+    composition:
+      type: OR
+      operands:
+        - "(comboHV_AnyBull = ultra-combo::HV_BULL_FVG AND (sAnyBull or sAnyBull[1]))"
+        - "(comboGZ_AnyBull = ultra-combo::GZI_BULL AND (sAnyBull or sAnyBull[1]))"
+    offset: -1
+    plot_call: "plotshape(show_gzHvAny and comboGZHV_AnyBull, \"GZ/HV+Bull\", shape.triangleup, location.belowbar, color.blue, size=size.large, text=\"GZ/HV+BULL\", offset=-1)"
+    alertcondition_id: "GZ/HV+Any"
+    pine_source_line_range: "L876-L879, L1038, L1040"
+    notes: "Note offset=-1 (plot on action candle, one bar back relative to detection)."
+
+  - id: ultra-combo::GZHV_ANY_BEAR
+    tier: 2
+    plain_english: "Mirror"
+    composition:
+      type: OR
+      operands:
+        - "(comboHV_AnyBear)"
+        - "(comboGZ_AnyBear)"
+    offset: -1
+    plot_call: "plotshape(show_gzHvAny and comboGZHV_AnyBear, \"GZ/HV+Bear\", shape.triangledown, location.abovebar, color.orange, size=size.large, text=\"GZ/HV+BEAR\", offset=-1)"
+    alertcondition_id: "GZ/HV+Any"
+    pine_source_line_range: "L877-L879, L1039, L1041"
+    notes: ""
+
+  - id: ultra-combo::HV_GZI_COMBO_BULL
+    tier: 2
+    plain_english: "Session bar 2: HV bull on prior AND HV bull AND GZI bull (all same direction)"
+    composition:
+      type: AND
+      operands:
+        - "(sessBar == 2)"
+        - "ultra-combo::HV_BULL_FVG[1]"
+        - "ultra-combo::HV_BULL_FVG"
+        - "ultra-combo::GZI_BULL"
+    offset: -1
+    plot_call: "plotshape(show_hvGziCombo and hvGziComboBull, \"HV+GZI+\", shape.diamond, location.belowbar, #00ffff, size=size.large, text=\"HV+GZI\", offset=-1)"
+    alertcondition_id: "HV+GZI Combo"
+    pine_source_line_range: "L881, L1043"
+    notes: ""
+
+  - id: ultra-combo::HV_GZI_COMBO_BEAR
+    tier: 2
+    plain_english: "Mirror"
+    composition:
+      type: AND
+      operands:
+        - "(sessBar == 2)"
+        - "ultra-combo::HV_BEAR_FVG[1]"
+        - "ultra-combo::HV_BEAR_FVG"
+        - "ultra-combo::GZI_BEAR"
+    offset: -1
+    plot_call: "plotshape(show_hvGziCombo and hvGziComboBear, \"HV+GZI-\", shape.diamond, location.abovebar, #ff00ff, size=size.large, text=\"HV+GZI\", offset=-1)"
+    alertcondition_id: "HV+GZI Combo"
+    pine_source_line_range: "L882, L1044"
+    notes: ""
+
+  # ---- MEGA composites (tier 4 — composes Super) ----
+  - id: ultra-combo::GZ1_MEGA_BULL
+    tier: 4
+    plain_english: "GZ1 bull AND any Super-bull AND PUP AND FAUNA-bull AND DISP-bull — high-water composite"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::GZI_BULL"
+        - "(anySuperBull = ultra-combo::SUPER_BULL_PBJ or SUPER_BULL_PB)"
+        - "(sPPBull — internal PUP primitive)"
+        - "ultra-combo::FAUNA_BULL"
+        - "ultra-combo::DISP_BULL"
+    offset: 0
+    plot_call: "(part of gzHvMegaBull plotshape)"
+    alertcondition_id: "GZ/HV Mega"
+    pine_source_line_range: "L884"
+    notes: "Alert on standalone L1098-L1099."
+
+  - id: ultra-combo::HV_MEGA_BULL
+    tier: 4
+    plain_english: "Mirror with HV instead of GZ1"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::HV_BULL_FVG"
+        - "(anySuperBull)"
+        - "(sPPBull)"
+        - "ultra-combo::FAUNA_BULL"
+        - "ultra-combo::DISP_BULL"
+    offset: 0
+    plot_call: "(part of gzHvMegaBull plotshape)"
+    alertcondition_id: "GZ/HV Mega"
+    pine_source_line_range: "L885"
+    notes: ""
+
+  - id: ultra-combo::GZ1_HV_MEGA_BULL
+    tier: 5
+    plain_english: "BOTH GZ1 and HV bull simultaneously, plus full Super/PUP/FAUNA/DISP stack"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::GZI_BULL"
+        - "ultra-combo::HV_BULL_FVG"
+        - "(anySuperBull)"
+        - "(sPPBull)"
+        - "ultra-combo::FAUNA_BULL"
+        - "ultra-combo::DISP_BULL"
+    offset: -1
+    plot_call: "plotshape(show_gz1hvMegaCombo and gz1hvMegaBull, \"GZ1+HV MEGA+\", shape.labelup, location.belowbar, #FFFF00, size=size.huge, text=\"GZ1+HV\\nMEGA+\", offset=-1)"
+    alertcondition_id: "GZ1+HV Mega"
+    pine_source_line_range: "L886, L1050"
+    notes: ""
+
+  - id: ultra-combo::GZ1_MEGA_BEAR
+    tier: 4
+    plain_english: "Mirror of GZ1_MEGA_BULL"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::GZI_BEAR"
+        - "(anySuperBear)"
+        - "(sPPBear)"
+        - "ultra-combo::FAUNA_BEAR"
+        - "ultra-combo::DISP_BEAR"
+    offset: 0
+    plot_call: "(part of gzHvMegaBear plotshape)"
+    alertcondition_id: "GZ/HV Mega"
+    pine_source_line_range: "L887"
+    notes: ""
+
+  - id: ultra-combo::HV_MEGA_BEAR
+    tier: 4
+    plain_english: "Mirror of HV_MEGA_BULL"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::HV_BEAR_FVG"
+        - "(anySuperBear)"
+        - "(sPPBear)"
+        - "ultra-combo::FAUNA_BEAR"
+        - "ultra-combo::DISP_BEAR"
+    offset: 0
+    plot_call: "(part of gzHvMegaBear plotshape)"
+    alertcondition_id: "GZ/HV Mega"
+    pine_source_line_range: "L888"
+    notes: ""
+
+  - id: ultra-combo::GZ1_HV_MEGA_BEAR
+    tier: 5
+    plain_english: "Mirror of GZ1_HV_MEGA_BULL"
+    composition:
+      type: AND
+      operands:
+        - "ultra-combo::GZI_BEAR"
+        - "ultra-combo::HV_BEAR_FVG"
+        - "(anySuperBear)"
+        - "(sPPBear)"
+        - "ultra-combo::FAUNA_BEAR"
+        - "ultra-combo::DISP_BEAR"
+    offset: -1
+    plot_call: "plotshape(show_gz1hvMegaCombo and gz1hvMegaBear, \"GZ1+HV MEGA-\", shape.labeldown, location.abovebar, #FF6600, size=size.huge, text=\"GZ1+HV\\nMEGA-\", offset=-1)"
+    alertcondition_id: "GZ1+HV Mega"
+    pine_source_line_range: "L889, L1051"
+    notes: ""
+
+  - id: ultra-combo::GZHV_MEGA_BULL
+    tier: 4
+    plain_english: "Aggregation: gz1MegaBull OR hvMegaBull, plotted as MEGA+"
+    composition:
+      type: OR
+      operands: ["ultra-combo::GZ1_MEGA_BULL", "ultra-combo::HV_MEGA_BULL"]
+    offset: -1
+    plot_call: "plotshape(show_gzHvMega and gzHvMegaBull, \"GZ/HV MEGA+\", shape.labelup, location.belowbar, #00FF00, size=size.huge, text=\"GZ/HV\\nMEGA+\", offset=-1)"
+    alertcondition_id: "GZ/HV Mega"
+    pine_source_line_range: "L1046, L1048"
+    notes: ""
+
+  - id: ultra-combo::GZHV_MEGA_BEAR
+    tier: 4
+    plain_english: "Mirror"
+    composition:
+      type: OR
+      operands: ["ultra-combo::GZ1_MEGA_BEAR", "ultra-combo::HV_MEGA_BEAR"]
+    offset: -1
+    plot_call: "plotshape(show_gzHvMega and gzHvMegaBear, \"GZ/HV MEGA-\", shape.labeldown, location.abovebar, #FF0000, size=size.huge, text=\"GZ/HV\\nMEGA-\", offset=-1)"
+    alertcondition_id: "GZ/HV Mega"
+    pine_source_line_range: "L1047, L1049"
+    notes: ""
+
+  # ---- Opener (tier 3) ----
+  - id: ultra-combo::OPENER_BULL
+    tier: 3
+    plain_english: "First session bar (sessBar==1) with (GZ1-bull OR HV-bull) AND (any HW bull OR PBJ bull OR ROC bull OR firstPUPPass+superPup)"
+    composition:
+      type: AND
+      operands:
+        - "(sessBar == 1)"
+        - "(ultra-combo::GZI_BULL OR ultra-combo::HV_BULL_FVG)"
+        - "(anyBullHW OR hvd-pbj-ppd::PBJ_BULL OR ultra-combo::ROC_BULL OR (firstPUPPass AND superPup))"
+    offset: 0
+    plot_call: "plotshape(show_openerBull and openerBull, \"OPENER+\", shape.flag, location.belowbar, #00FF88, size=size.huge, text=\"OPEN1+\")"
+    alertcondition_id: "Opener"
+    pine_source_line_range: "L891, L1053, L1080-L1083, L1136"
+    notes: ""
+
+  - id: ultra-combo::OPENER_BEAR
+    tier: 3
+    plain_english: "Mirror"
+    composition:
+      type: AND
+      operands:
+        - "(sessBar == 1)"
+        - "(ultra-combo::GZI_BEAR OR ultra-combo::HV_BEAR_FVG)"
+        - "(anyBearHW OR hvd-pbj-ppd::PBJ_BEAR OR ultra-combo::ROC_BEAR OR (firstPPDPass AND superPPD))"
+    offset: 0
+    plot_call: "plotshape(show_openerBear and openerBear, \"OPENER-\", shape.flag, location.abovebar, #FF0088, size=size.huge, text=\"OPEN1-\")"
+    alertcondition_id: "Opener"
+    pine_source_line_range: "L892, L1054, L1085-L1088"
+    notes: ""
+
+  # ---- 3-Bar (tier 3) ----
+  - id: ultra-combo::THREE_BAR_BULL
+    tier: 3
+    plain_english: "PBJ bull within last 3 bars AND (b2bPUP within last 3 bars OR ≥2 PUPs within last 3 bars)"
+    composition:
+      type: OR
+      operands:
+        - "(scenarioA = pbjIn3Bull AND b2bIn3Bull)"
+        - "(scenarioB = pbjIn3Bull AND pupsIn3Bull >= 2)"
+    offset: 0
+    plot_call: "plotshape(show_3barBull and threeBar_Bull, \"3BAR+\", shape.circle, location.belowbar, #00CCFF, size=size.large, text=\"3BAR+\")"
+    alertcondition_id: "3Bar"
+    pine_source_line_range: "L894-L899, L1056, L1090-L1092, L1137"
+    notes: ""
+
+  - id: ultra-combo::THREE_BAR_BEAR
+    tier: 3
+    plain_english: "Mirror"
+    composition:
+      type: OR
+      operands:
+        - "(scenarioA_Bear = pbjIn3Bear AND b2bIn3Bear)"
+        - "(scenarioB_Bear = pbjIn3Bear AND ppdsIn3Bear >= 2)"
+    offset: 0
+    plot_call: "plotshape(show_3barBear and threeBar_Bear, \"3BAR-\", shape.circle, location.abovebar, #FF00CC, size=size.large, text=\"3BAR-\")"
+    alertcondition_id: "3Bar"
+    pine_source_line_range: "L901-L906, L1057, L1094-L1096"
+    notes: ""
+
+  # ---- Foster/TB + Heavy (tier 3) ----
+  - id: ultra-combo::FOSTER_PLUS_HEAVY
+    tier: 3
+    plain_english: "Any Foster variant fires AND (ROC bull OR any HW bull OR any Super bull)"
+    composition:
+      type: AND
+      operands:
+        - "(anyFoster = ultra-combo::FOSTER OR fosterPBJSignal OR fosterPBSignal)"
+        - "(ultra-combo::ROC_BULL OR anyBullHW OR anySuperBull)"
+    offset: 0
+    plot_call: "plotshape(show_fosterHeavyBull and fosterHeavyBull, \"FOS+HVY\", shape.labelup, location.belowbar, #88FF00, size=size.large, text=\"FOS+HVY\")"
+    alertcondition_id: "Foster/TB+Heavy"
+    pine_source_line_range: "L908, L910, L1059, L1111-L1112"
+    notes: ""
+
+  - id: ultra-combo::TB_PLUS_HEAVY
+    tier: 3
+    plain_english: "Any TB variant fires AND (ROC bear OR any HW bear OR any Super bear)"
+    composition:
+      type: AND
+      operands:
+        - "(anyTB = ultra-combo::TB OR tbPBJSignal OR tbPBSignal)"
+        - "(ultra-combo::ROC_BEAR OR anyBearHW OR anySuperBear)"
+    offset: 0
+    plot_call: "plotshape(show_tbHeavyBear and tbHeavyBear, \"TB+HVY\", shape.labeldown, location.abovebar, #FF8800, size=size.large, text=\"TB+HVY\")"
+    alertcondition_id: "Foster/TB+Heavy"
+    pine_source_line_range: "L909, L911, L1060, L1113-L1114"
+    notes: ""
+
+  # ---- GZ/HV + Heavy (tier 3) ----
+  - id: ultra-combo::GZHV_HEAVY_BULL
+    tier: 3
+    plain_english: "(GZ1 bull OR HV bull) AND (any HW bull OR any Super bull OR ROC bull)"
+    composition:
+      type: AND
+      operands:
+        - "(ultra-combo::GZI_BULL OR ultra-combo::HV_BULL_FVG)"
+        - "(anyBullHW OR anySuperBull OR ultra-combo::ROC_BULL)"
+    offset: -1
+    plot_call: "plotshape(show_gzHvHeavyBull and gzHvHeavyBull, \"GZ/HV+HVY+\", shape.diamond, location.belowbar, #00FFAA, size=size.large, text=\"GZ/HV+HVY\", offset=-1)"
+    alertcondition_id: "GZ/HV+Heavy"
+    pine_source_line_range: "L913, L1062, L1116-L1117"
+    notes: ""
+
+  - id: ultra-combo::GZHV_HEAVY_BEAR
+    tier: 3
+    plain_english: "Mirror"
+    composition:
+      type: AND
+      operands:
+        - "(ultra-combo::GZI_BEAR OR ultra-combo::HV_BEAR_FVG)"
+        - "(anyBearHW OR anySuperBear OR ultra-combo::ROC_BEAR)"
+    offset: -1
+    plot_call: "plotshape(show_gzHvHeavyBear and gzHvHeavyBear, \"GZ/HV+HVY-\", shape.diamond, location.abovebar, #FF00AA, size=size.large, text=\"GZ/HV+HVY\", offset=-1)"
+    alertcondition_id: "GZ/HV+Heavy"
+    pine_source_line_range: "L914, L1063"
+    notes: ""
+
+  # ---- Super B2B Days (tier 4) ----
+  - id: ultra-combo::SUPER_B2B_DAYS_BULL
+    tier: 4
+    plain_english: "Any Super-bull (PBJ or PB) today AND any Super-bull fired in prior ~2 days"
+    composition:
+      type: AND
+      operands:
+        - "(anySuperBull = ultra-combo::SUPER_BULL_PBJ OR SUPER_BULL_PB)"
+        - "f_hadSignalYesterday(anySuperBull)"
+    offset: 0
+    plot_call: "plotshape(show_superB2BDays and superB2BDaysBull, \"SUPER×2D+\", shape.flag, location.belowbar, #FFD700, size=size.huge, text=\"SUPER×2D\")"
+    alertcondition_id: "Super B2B Days"
+    pine_source_line_range: "L916, L1065, L1126-L1128, L1140"
+    notes: ""
+
+  - id: ultra-combo::SUPER_B2B_DAYS_BEAR
+    tier: 4
+    plain_english: "Mirror"
+    composition:
+      type: AND
+      operands:
+        - "(anySuperBear)"
+        - "f_hadSignalYesterday(anySuperBear)"
+    offset: 0
+    plot_call: "plotshape(show_superB2BDays and superB2BDaysBear, \"SUPER×2D-\", shape.flag, location.abovebar, #FF4500, size=size.huge, text=\"SUPER×2D\")"
+    alertcondition_id: "Super B2B Days"
+    pine_source_line_range: "L917, L1066"
+    notes: ""
+
+  # ---- Standalone Nagasaki passthrough plot ----
+  - id: ultra-combo::NAGA_PASSTHROUGH
+    tier: 1
+    plain_english: "Re-plot ultra-combo's local Nagasaki signal (volume > prior all-time max) with its own NAGA flag — purely a passthrough of an internal RVOL atom for visibility"
+    composition:
+      type: NESTED
+      operands: ["heavy-weapon::SIG_NAGASAKI (computed locally as sigNagasaki here)"]
+    offset: 0
+    plot_call: "plotshape(sigNagasaki, \"NAGA\", shape.flag, location.top, #9900FF, size=size.huge, text=\"NAGA\")"
+    alertcondition_id: "Nagasaki"
+    pine_source_line_range: "L357-L364, L1068, L1133"
+    notes: "ultra-combo redefines sigNagasaki locally from raw bar volume; documented as a passthrough of the canonical Heavy-Weapon Nagasaki for cross-indicator chaining purposes."
+
+# Specifically nail FAUNA's structure:
+fauna_decomposition:
+  expression: "(MB OR RE OR TA) AND NOT (GG OR TR OR ES OR GDR)"
+  positive_components:
+    - { name: MB, role: root, source_line: "L717 (bull) / L735 (bear)" }
+    - { name: RE, role: root, source_line: "L718 (bull) / L736 (bear)" }
+    - { name: TA, role: root, source_line: "L719 (bull) / L737 (bear)" }
+  exclusion_components:
+    - { name: GG, role: root, source_line: "L722 (bull) / L740 (bear)" }
+    - { name: TR, role: root, source_line: "L727 (bull) / L743 (bear) — formula = WeakBear AND (MB OR RE OR TA); has its own boolean and is referenced by name, so classified as root per prompt" }
+    - { name: ES, role: root, source_line: "L728 (bull) / L744 (bear) — formula = StrongBear AND (MB OR RE OR TA); same root rationale" }
+    - { name: GDR, role: root, source_line: "L729 (bull) / L745 (bear) — formula = (close[1]<open[1]) AND GG; same rationale" }
+
+cross_indicator_dependencies:
+  # PBJ / PB engine — locally re-implemented in ultra-combo, but the canonical
+  # detector lives in hvd-pbj-ppd. Bible-side, ultra-combo's PBJ/PB references
+  # CHAIN to hvd-pbj-ppd's primitives.
+  - "hvd-pbj-ppd::PBJ_BULL"
+  - "hvd-pbj-ppd::PBJ_BEAR"
+  - "hvd-pbj-ppd::PB_BULL"
+  - "hvd-pbj-ppd::PB_BEAR"
+  - "hvd-pbj-ppd::PUP"
+  - "hvd-pbj-ppd::PPD"
+  - "hvd-pbj-ppd::B2B_PUP"
+  - "hvd-pbj-ppd::B2B_PPD"
+  - "hvd-pbj-ppd::SUPER_PUP"
+  - "hvd-pbj-ppd::SUPER_PPD"
+  - "hvd-pbj-ppd::FIRST_PUP_PASS"
+  - "hvd-pbj-ppd::FIRST_PPD_PASS"
+  - "hvd-pbj-ppd::ANISH_BULL_PASS"
+  - "hvd-pbj-ppd::ANISH_BEAR_PASS"
+  # Heavy Weapon RVOL family — locally implemented; canonical home varies (RVOL
+  # 1x / Grand Slam / MOAB / WTC / Hiroshima / Nagasaki typically live in heavy-weapon)
+  - "heavy-weapon::SIG_RVOL_1X_BULL"
+  - "heavy-weapon::SIG_RVOL_1X_BEAR"
+  - "heavy-weapon::SIG_GRANDSLAM"
+  - "heavy-weapon::SIG_MOAB"
+  - "heavy-weapon::SIG_WTC"
+  - "heavy-weapon::SIG_HIROSHIMA"
+  - "heavy-weapon::SIG_NAGASAKI"
+  # SAAB explicitly EXCLUDED — but documented for the bible
+  - "heavy-pentagon::SAAB (deliberately EXCLUDED from anyBullRVOL/anyBearRVOL — see header L7 + L302)"
+  # GZ1 / HV FVG — local implementation of the GZI engine
+  - "hv-fvg-gz1-og::GZI_BULL"
+  - "hv-fvg-gz1-og::GZI_BEAR"
+  - "hv-fvg-gz1-og::HV_BULL_FVG"
+  - "hv-fvg-gz1-og::HV_BEAR_FVG"
+
+uncertain_or_questions:
+  - "TR/ES/GDR are technically composite formulas (each AND/depends on MB|RE|TA or GG), but the prompt names them as primitives to classify; classified as roots since each has its OWN boolean variable (fTR_b/fES_b/fGDR_b) AND is referenced by name within the locked FAUNA expression. Confirm bible convention."
+  - "MB/RE/TA are defined TWICE in the file: once at L99-L106 (bull_*/bear_* — used by F2/E3/FC) and again at L717-L737 (fMB_*/fRE_*/fTA_* — used by FAUNA). The arithmetic is identical. Treated as one root per (name, direction); the FAUNA-scoped definition is the canonical lock for the bible."
+  - "F2/E3/FC are first-defined-here LCD primitives — no other indicator owns them in the repo (PBJ/PB/PUP/PPD live in hvd-pbj-ppd, GZ/HV in hv-fvg-gz1-og). They are listed as ultra-combo-namespace roots."
+  - "ROC and LBWT are decomposed into 5 atoms each (b1..b5_roc, r1..r5_roc) — the 'primitive' name 'ROC' and 'LBWT' map to representative crossover/crossunder atoms (b1_roc/r1_roc for ROC, ld_xup/ld_xdn for LBWT). Other atoms (b2..b5_roc, r2..r5_roc) are listed under internal_helpers because they're never referenced standalone outside of bull2_cond/bear2_cond."
+  - "The branch tag was given as claude/add-txt-indicator-format-b4FUu in the prompt, but the working tree is currently on claude/organize-indicators-hierarchy-8JDw1. Recorded the prompt's value verbatim per its instruction."
+  - "anyBullRVOL/anyBearRVOL (L750-L751) deliberately differ from anyBullHW/anyBearHW (L870-L871) — the latter additionally include sigROC* and the Super combos. Both are used as gates in different composites; documented as internal helpers."
+  - "DISP_BULL/DISP_BEAR are listed as composites because the displacement primitive (range > 5*stdev * prevDisp) AND the FVG primitive are bound together in the same boolean (sigDISPBull). They have no NAME outside ultra-combo so are not roots."

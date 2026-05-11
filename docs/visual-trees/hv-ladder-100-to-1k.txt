@@ -1,0 +1,39 @@
+VISUAL TREE — hv-ladder-100-to-1k
+==================================
+File: hv-ladder/versions/HV_LADDER_100_TO_1K_v1.pine
+Pine v5  ·  227 lines  ·  overlay=True
+Purpose: Volume ladder: 100/200/300/400/500/600/700/800/900/1000-bar high volume + all-time high volume (HEV) + calendar-based hot spots (OpEx, Q-end, Russell, tax-loss, Jan effect, HF redemption)
+
+ROOTS
+-----
+  ◆ hv-ladder-100-to-1k::HV100    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HV200    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HV300    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HV400    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HV500    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HV600    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HV700    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HV800    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HV900    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HV1000    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HEV    [volume-ladder · offset=?]
+      
+  ◆ hv-ladder-100-to-1k::HotSpot    [calendar · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 2:
+    ● hv-ladder-100-to-1k::VolumeHierarchy    [offset=? · ?]
+
+

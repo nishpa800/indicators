@@ -1,0 +1,41 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: T1_STACK
+aliases_searched:
+- T1_STACK
+- p_t1StackBull
+- p_t1StackBear
+- t1StackBull
+- t1StackBear
+- T1_STACK_BULL
+- T1_STACK_BEAR
+- t1_stack
+pine_files_scanned: 54
+definitions:
+- &id001
+  indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1674
+  pine_variable: p_t1StackBull
+  raw_line: bool p_t1StackBull = t1_v1_count_b >= 2 and barstate.isconfirmed
+- &id002
+  indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1675
+  pine_variable: p_t1StackBear
+  raw_line: bool p_t1StackBear = t1_v1_count_s >= 2 and barstate.isconfirmed
+occurrences_per_indicator:
+  tnt-od:
+    DEFINITION: 2
+    REFERENCE: 2
+    INPUT: 0
+    PLOT: 2
+    ALERT: 0
+    COMMENT: 0
+yaml_cross_check:
+  yaml_matching_records: []
+  orphans: []
+  missings:
+  - *id001
+  - *id002
+status: COMPLETE

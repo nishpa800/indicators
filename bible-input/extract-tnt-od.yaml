@@ -1,0 +1,459 @@
+indicator:
+  id: tnt-od
+  file: tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine
+  branch: both
+  pine_version: 5
+  line_count: 1802
+  overlay: true
+  one_line_purpose: "TNT Opening Drive — VOB cross + Apex break + Failed-Apex Flip + density/UU + T1 Relay/Stack composites"
+  internally_titled_version: "v2 (despite filename v3)"
+  notes:
+    - "File is internally titled 'TNT Opening Drive OD v2' (line 143) and corresponds to v2 in CHANGELOG (1802 lines, 45/64 plotshapes, WBUSH integration). The v3-named additions in CHANGELOG (gateStdMult, T1 RELAY, T1 STACK, HCT/UC inline ports) are NOT present in this file. They live in the older-named-but-different file `tnt-od/versions/TNT_OD_v3.pine` (148KB) which is cited in the task only for byte-diff context."
+    - "Filename uses the date 2026-05-04 (matches v2 changelog date)."
+
+internal_helpers:
+  - name: f_temporal_ok
+    line_range: "446-448"
+    purpose: "Three-engine temporal-window OK (max - min ≤ CONF_WINDOW)"
+  - name: f_zones_overlap
+    line_range: "449"
+    purpose: "Zone overlap check between two upper/lower pairs"
+  - name: f_synergy_bull
+    line_range: "451"
+    purpose: "Bull synergy gate: vol > median*EMA_SLOW*0.5, slope>0, RSI<80, zone overlap ≥30%"
+  - name: f_synergy_bear
+    line_range: "452"
+    purpose: "Bear synergy gate (mirror of f_synergy_bull)"
+  - name: f_bull_level / f_bear_level
+    line_range: "461-462"
+    purpose: "TNT zone center level (avg of overlap top/bottom)"
+  - name: f_bull_origin / f_bear_origin
+    line_range: "463-464"
+    purpose: "Earliest origin bar across VOB/ANISH/FLUX"
+  - name: f_u5_1x / f_u5_gs / f_u5_saab / f_u5_wtc / f_u5_hiro
+    line_range: "650-654"
+    purpose: "Per-timeframe RVOL/WMD threshold curves (USE V5)"
+  - name: u5_bb_inRange
+    line_range: "648"
+    purpose: "Range-bucket helper for RVOL tiers"
+  - name: f_u5_add_lvl
+    line_range: "753-754"
+    purpose: "PBJ pullback-level array adder"
+  - name: f_u5_check_approach
+    line_range: "774-798"
+    purpose: "Check whether price approached a PBJ pullback level"
+  - name: f_path_agg
+    line_range: "1249-1322"
+    purpose: "U-streak path qualifier aggregator (paths pA/pB/pC/pE/pF over up to 4 bars)"
+  - name: f_alert
+    line_range: "1406"
+    purpose: "Alert string formatter: DIRECTION | FIRST_STATUS | NAME"
+
+# ─────────────────────────────────────────────────────────────────
+# ROOTS — primitives defined in this file (NEW in tnt-od family)
+# ─────────────────────────────────────────────────────────────────
+roots:
+
+  # ── Engine outputs (TNT family raw atoms) ──
+  - id: tnt-od::TNT
+    aka: ["TNT raw", "raw_bullTNT/raw_bearTNT", "Three-engine confluence"]
+    family: structural
+    line_range: "454-459"
+    description: "Three-engine confluence (VOB + ANISH swing-OB + FLUX pullback). Requires temporal-OK across all three confirm bars within CONF_WINDOW (=2*EMA_SLOW), zone overlap between VOB and ANISH zones, plus synergy gate (volume / RSI / slope / overlap-ratio)."
+    booleans:
+      - name: raw_bullTNT
+        line: 458
+      - name: raw_bearTNT
+        line: 459
+    consolidated_into: "det_bullTNT / det_bearTNT (= raw_bullTNT OR raw_bullTNT2 OR raw_superTNTBull)  lines 618-619"
+    inputs:
+      - SENS (default 100, line 157)
+      - SWING_LEN (default 10, line 158)
+      - MIN_SIG_GAP = EMA_SLOW (line 250)
+    notes: "VOB cross (ema_fast/ema_slow crossover/under) and Anish swing-OB and Flux pullback are sub-engines, not separately plotted. They feed TNT."
+
+  - id: tnt-od::Napalm
+    aka: ["NPM", "raw_napalmBull/Bear"]
+    family: structural
+    line_range: "514-529"
+    description: "Displacement (Engine #1: stdev(100)*5 over abs(open-close), bullFVG/bearFVG required) through an OPPOSITE-SIDE active TNT zone. Bullish Napalm: dispBull AND any active bear TNT zone where low[1] > z.level."
+    booleans:
+      - name: raw_napalmBull
+        line: 515
+      - name: raw_napalmBear
+        line: 515
+    consolidated_into: "det_bullNapalm / det_bearNapalm (= raw_napalmBull OR raw_bullCharge)  line 620-621"
+    depends_on:
+      - "TNT zones (tnt_zones array)"
+      - "displacement (dispBull/dispBear, lines 506-512)"
+
+  - id: tnt-od::Charge
+    aka: ["raw_bullCharge/raw_bearCharge", "ChargeLevel violation"]
+    family: structural
+    line_range: "530-548"
+    description: "Displacement crosses an opposite-side prior charge level (TNT-zone-derived). On violation a new charge level is pushed at low[1]/high[1]."
+    booleans:
+      - name: raw_bullCharge
+        line: 530
+      - name: raw_bearCharge
+        line: 530
+    notes: "Effective only when not coincident with an opposite raw_bearTNT/raw_bullTNT (effectiveBullCharge gating, line 555)."
+
+  - id: tnt-od::TNT2
+    aka: ["TNT 2.0", "raw_bullTNT2/raw_bearTNT2"]
+    family: structural
+    line_range: "572-578"
+    description: "Event-log path: ≥2 same-direction events (TNT/Napalm/effective-Charge) accumulated, gated by MIN_SIG_GAP. Internally folded into det_bullTNT/det_bearTNT."
+
+  - id: tnt-od::Return
+    aka: ["RET", "raw_retBullTNT/raw_retBearTNT", "RET TNT 2.0"]
+    family: structural
+    line_range: "482-501, 581-591"
+    description: "Price retraces back into an active TNT zone after breakout (bull: low ≤ retLvl AND close > z.lower). Includes RET TNT 1.0 and RET TNT 2.0 (super-zone variant). Each zone fires return only once."
+    consolidated_into: "det_bullRetTNT / det_bearRetTNT  line 622-623"
+
+  - id: tnt-od::Continuous
+    aka: ["CONT", "raw_contBull/raw_contBear", "sudden-change"]
+    family: structural
+    line_range: "593-615"
+    description: "Three-clause sudden-change/proximity logic — Charge after Return within SUDDEN_PROX bars OR (TNT/TNT2 within SUDDEN_PROX of last Charge) OR Charge within SUDDEN_PROX of last TNT/TNT2."
+    consolidated_into: "det_contBull / det_contBear  line 624"
+
+  # ── DYNAMITE — owns its own dedicated displacement engine ──
+  - id: tnt-od::Dynamite
+    family: structural
+    line_range: "875-903"
+    description: "B2B extreme displacement on bar[1] AND bar[2] using DEDICATED Engine #2 (dyn_std = stdev(abs(open-close), 100), dynStdMult default 5.0), same color on both bars, FAUNA on bar[1] AND bar[2], bar[0] confirms FVG (low > high[2] / high < low[2]). v2: FVG check now mandatory."
+    booleans:
+      - name: det_dynamiteBull
+        line: 902
+      - name: det_dynamiteBear
+        line: 903
+    plot:
+      - "p_dynBull (line 1038, plotshape line 1434, offset=-1)"
+      - "p_dynBear (line 1038, plotshape line 1435, offset=-1)"
+    inputs:
+      - dynStdMult (default 5.0, line 168)
+    plot_label: "★ DYNAMITE"
+
+  # ── Density primitives ──
+  - id: tnt-od::Density1
+    family: other
+    line_range: "1060-1117"
+    description: "Rolling visual-bar window: ≥X events in last Y visual bars over denVisBull/denVisBear. Fires once per cluster (re-arms when count drops below X). Defaults: X=2, Y=2."
+    booleans:
+      - name: sig_d1b
+        line: 1063
+      - name: sig_d1s
+        line: 1063
+    plot:
+      - "p_d1b / p_d1s (line 1117, plotshape lines 1457-1458, offset=-1)"
+    inputs:
+      - den1_X (default 2, line 207)
+      - den1_Y (default 2, line 208)
+    composition_note: "denVisBull/denVisBear (lines 1057-1058) is composed of det_bullTNT/det_contBull/det_rcTRBull/det_ptBull/det_prBull/det_bullNapalm/sig_rcNTBull/det_rcRNBull/det_pnBull — i.e. Density is a composite of Tier-1/Tier-2 atoms. Treated here as a NAMED primitive per task definition list."
+
+  - id: tnt-od::Density2
+    family: other
+    line_range: "1085-1100, 1118"
+    description: "Same engine as Density1, defaults X=3 Y=3 (stricter)."
+    booleans:
+      - name: sig_d2b
+        line: 1063
+      - name: sig_d2s
+        line: 1063
+    plot:
+      - "p_d2b / p_d2s (line 1118, plotshape lines 1459-1460, offset=-1)"
+    inputs:
+      - den2_X (default 3, line 212)
+      - den2_Y (default 3, line 213)
+
+  - id: tnt-od::Density3
+    family: other
+    line_range: "1101-1116, 1119"
+    description: "Same engine as Density1, defaults X=2 Y=6 (looser window for sparse-but-clustered events)."
+    booleans:
+      - name: sig_d3b
+        line: 1063
+      - name: sig_d3s
+        line: 1063
+    plot:
+      - "p_d3b / p_d3s (line 1119, plotshape lines 1461-1462, offset=-1)"
+    inputs:
+      - den3_X (default 2, line 217)
+      - den3_Y (default 6, line 218)
+
+# ─────────────────────────────────────────────────────────────────
+# COMPOSITES — depend on ≥1 root by name
+# ─────────────────────────────────────────────────────────────────
+composites:
+
+  # ── TIER 1 ──
+  - id: tnt-od::B2B_Napalm
+    tier: 1
+    line_range: "1030-1031"
+    composition:
+      type: AND
+      operands: ["det_bullNapalm (Napalm)", "det_bullNapalm[1] (Napalm on prior visual bar)", "NOT supp_bullNPM", "session-bound"]
+    plot:
+      - "p_b2bBull / p_b2bBear (line 1030-1031, plotshape lines 1412-1413, offset=-1)"
+    plot_label: "B2B NAPALM"
+    enables: [en_b2bBull (line 173), en_b2bBear (line 174)]
+
+  - id: tnt-od::RC_NPM_TNT
+    tier: 1
+    line_range: "962-963"
+    composition:
+      type: AND
+      operands: ["det_bullNapalm (Napalm, offset -1)", "det_bullTNT[1] (TNT on prior detection bar = same visual bar)"]
+    plot:
+      - "sig_rcNTBull / sig_rcNTBear (lines 962-963, plotshape lines 1414-1415, offset=-1)"
+    plot_label: "RC NPM+TNT"
+    enables: [en_rcNTBull (line 175), en_rcNTBear (line 176)]
+
+  - id: tnt-od::FUSE
+    tier: 1
+    line_range: "975-986"
+    composition:
+      type: SEQUENCE
+      operands: ["last bull NPM bar < last bull TNT bar < current bar (CONT detection bar)", "all gaps ≤ SUDDEN_PROX", "session-bound"]
+    plot:
+      - "p_fuseBull / p_fuseBear (line 1035, plotshape lines 1417-1418, offset=0)"
+    plot_label: "FUSE"
+    enables: [en_fuseBull (line 177), en_fuseBear (line 178)]
+
+  - id: tnt-od::Catalyst
+    tier: 1
+    line_range: "994-998"
+    composition:
+      type: AND
+      operands: ["det_bullNapalm (Napalm)", "u5_CS1_Bull (CS1 FVG Combo, USE V5)"]
+    plot:
+      - "p_catBull / p_catBear (line 1036, plotshape lines 1420-1421, offset=-1)"
+    plot_label: "CATALYST"
+    enables: [en_catBull (line 179), en_catBear (line 180)]
+
+  - id: tnt-od::PBJ_NPM
+    tier: 1
+    line_range: "969"
+    composition:
+      type: AND
+      operands: ["det_bullNapalm (Napalm)", "u5_PBJBull[1] (PBJ on prior detection bar = same visual bar)", "pnGateBull (sub-minute TF gate)"]
+    plot:
+      - "p_pnBull / p_pnBear (line 1032, plotshape lines 1423-1424, offset=-1)"
+    plot_label: "PBJ+NPM"
+    enables: [en_pnBull (line 181), en_pnBear (line 182)]
+
+  - id: tnt-od::PBJ_TNT
+    tier: 1
+    line_range: "971"
+    composition:
+      type: AND
+      operands: ["det_bullTNT (TNT)", "u5_PBJBull (PBJ same bar)", "ptGateBull (sub-minute TF gate)"]
+    plot:
+      - "p_ptBull / p_ptBear (line 1033, plotshape lines 1426-1427, offset=0)"
+    plot_label: "PBJ+TNT"
+    enables: [en_ptBull (line 183), en_ptBear (line 184)]
+
+  - id: tnt-od::Ignite
+    tier: 1
+    line_range: "988-992"
+    composition:
+      type: OR
+      operands:
+        - "ign_tc_bull = det_bullTNT AND det_contBull (offset 0)"
+        - "ign_nc_bull = det_bullNapalm AND det_contBull[1] (offset -1)"
+    plot:
+      - "p_ignBull AND ign_tc_bull → 'IGNITE TNT+CONT' (plotshape line 1429-1430, offset=0)"
+      - "p_ignBull AND ign_nc_bull → 'IGNITE NPM+CONT' (plotshape line 1431-1432, offset=-1)"
+    plot_label: "IGNITE T+C / IGNITE N+C"
+    enables: [en_ignBull (line 185), en_ignBear (line 186)]
+
+  # ── TIER 2 (hard-gated by enrichment) ──
+  - id: tnt-od::TNT_Enriched
+    tier: 2
+    line_range: "1041-1042"
+    composition:
+      type: AND
+      operands: ["det_bullTNT (TNT)", "NOT supp_bullTNT", "enrichBull_N (USE V5 enrichment co-signal on bar N)"]
+    enrichment_pool_N: "u5_RVOL1xB OR u5_GrandSlam OR u5_PUP OR u5_CS1_Bull OR u5_FAUNABull OR u5_WMD OR u5_HV1000 (line 1015-1016)"
+    plot:
+      - "p_t2tntBull / p_t2tntBear (lines 1041-1042, plotshape lines 1438-1439, offset=0)"
+    plot_label: "TNT ENR"
+    enables: [en_t2tntBull (line 192), en_t2tntBear (line 193)]
+
+  - id: tnt-od::NPM_Enriched
+    tier: 2
+    line_range: "1043-1044"
+    composition:
+      type: AND
+      operands: ["det_bullNapalm (Napalm)", "NOT supp_bullNPM", "enrichBull_N1 (USE V5 enrichment on visual bar N-1)"]
+    enrichment_pool_N1: "RVOL1xB[1] / GrandSlam[1] / PUP[1] / CS1_Bull[1] / FAUNABull[1] / Pentagon[1] / WTC[1] / Hiroshima[1] / Nagasaki[1] / HV1000[1] / det_dynamiteBull / det_dynamiteBull[1] (line 1017-1018)"
+    plot:
+      - "p_t2npmBull / p_t2npmBear (lines 1043-1044, plotshape lines 1441-1442, offset=-1)"
+    plot_label: "NPM ENR"
+    enables: [en_t2npmBull (line 194), en_t2npmBear (line 195)]
+
+  - id: tnt-od::CONT_Enriched
+    tier: 2
+    line_range: "1045-1046"
+    composition:
+      type: AND
+      operands: ["det_contBull (Continuous)", "enrichBull_N"]
+    plot:
+      - "p_t2contBull / p_t2contBear (lines 1045-1046, plotshape lines 1444-1445, offset=0)"
+    plot_label: "CONT ENR"
+    enables: [en_t2contBull (line 196), en_t2contBear (line 197)]
+
+  - id: tnt-od::RC_TNT_RET_Enriched
+    tier: 2
+    line_range: "965, 1047"
+    composition:
+      type: AND
+      operands: ["det_bullTNT (TNT)", "det_bullRetTNT (Return)", "enrichBull_N"]
+    plot:
+      - "p_t2trBull / p_t2trBear (line 1047, plotshape lines 1447-1448, offset=0)"
+    plot_label: "RC T+R ENR"
+    enables: [en_t2trBull (line 198), en_t2trBear (line 199)]
+
+  - id: tnt-od::RC_RET_NPM_Enriched
+    tier: 2
+    line_range: "967, 1048"
+    composition:
+      type: AND
+      operands: ["det_bullNapalm (Napalm)", "det_bullRetTNT[1] (Return on prior detection bar)", "enrichBull_N1"]
+    plot:
+      - "p_t2rnBull / p_t2rnBear (line 1048, plotshape lines 1450-1451, offset=-1)"
+    plot_label: "RC R+N ENR"
+    enables: [en_t2rnBull (line 200), en_t2rnBear (line 201)]
+
+  - id: tnt-od::PBJ_RET_Enriched
+    tier: 2
+    line_range: "973, 1049"
+    composition:
+      type: AND
+      operands: ["det_bullRetTNT (Return)", "u5_PBJBull (PBJ)", "enrichBull_N"]
+    plot:
+      - "p_t2prBull / p_t2prBear (line 1049, plotshape lines 1453-1454, offset=0)"
+    plot_label: "PBJ+RET ENR"
+    enables: [en_t2prBull (line 202), en_t2prBear (line 203)]
+
+  # ── UU/UUU/UUUU ──
+  - id: tnt-od::UU_TNT_Any
+    tier: 2
+    line_range: "1325, 1354-1355"
+    composition:
+      type: AND
+      operands: ["u_pathBull2 (2-bar bullish RVOL streak qualifies via paths pA/pB/pC/pE/pF OR pG ≥2 distinct qualifiers)", "hasTntBull2 (any TNTOD bull detection within 2-bar window)"]
+    plot:
+      - "p_uuBull / p_uuBear (lines 1354-1355, plotshape lines 1465-1466, offset=-1)"
+    plot_label: "UU+TNT ANY"
+    enables: [en_uu_bull (line 224), en_uu_bear (line 225)]
+
+  - id: tnt-od::UUU_TNT_Any
+    tier: 2
+    line_range: "1326, 1356-1357"
+    composition:
+      type: AND
+      operands: ["u_pathBull3 (3-bar streak qualified, pG ≥3 distinct)", "hasTntBull3 (TNTOD bull within 3-bar window)"]
+    plot:
+      - "p_uuuBull / p_uuuBear (lines 1356-1357, plotshape lines 1467-1468, offset=-1)"
+    plot_label: "UUU+TNT ANY"
+    enables: [en_uuu_bull (line 226), en_uuu_bear (line 227)]
+
+  - id: tnt-od::UUUU_TNT_Any
+    tier: 2
+    line_range: "1327, 1358-1359"
+    composition:
+      type: AND
+      operands: ["u_pathBull4 (4+ bar streak qualified, pG ≥4 distinct)", "hasTntBull4 (TNTOD bull within 4-bar window)"]
+    plot:
+      - "p_uuuuBull / p_uuuuBear (lines 1358-1359, plotshape lines 1469-1470, offset=-1)"
+    plot_label: "UUUU+TNT ANY"
+    enables: [en_uuuu_bull (line 228), en_uuuu_bear (line 229)]
+
+  # ── WBUSH (HEAVY PENTAGON × TNTOD ANY) ──
+  - id: tnt-od::WBUSH_Bull
+    tier: 3
+    line_range: "905-956, 1371"
+    composition:
+      type: AND
+      operands:
+        - "sig_WBUSH_Bull = any of {hp_HYYBull, hp_HNBull, hp_HNVBull, hp_HTBull, hp_NHx2Bull} (line 954) — HEAVY PENTAGON 5 Heavy Combo bull classifications using USE V5 RVOL/WMD/Nagasaki + u5_DISPBull"
+        - "tntod_any_bull (line 1368 — any TNTOD bull plot fires this bar)"
+    plot:
+      - "p_wbushBull (line 1371, plotshape line 1473, offset=0)"
+    plot_label: "WBUSH+ANY"
+    enables: [en_wbushBull (line 233)]
+
+  - id: tnt-od::WBUSH_Bear
+    tier: 3
+    line_range: "905-956, 1372"
+    composition:
+      type: AND
+      operands:
+        - "sig_WBUSH_Bear (line 955)"
+        - "tntod_any_bear (line 1369)"
+    plot:
+      - "p_wbushBear (line 1372, plotshape line 1474, offset=0)"
+    plot_label: "WBUSH+ANY"
+    enables: [en_wbushBear (line 234)]
+
+  - id: tnt-od::WBUSH_Neutral
+    tier: 3
+    line_range: "905-956, 1373"
+    composition:
+      type: PASSTHROUGH
+      operands:
+        - "sig_WBUSH_Neutral = any of 5 Heavy Combo Neutrals (line 956) — base × hp_noDisp (no FVG-confirmed displacement either direction). Standalone — does NOT require TNTOD pairing."
+    plot:
+      - "p_wbushNeutral (line 1373, plotshape line 1475)"
+    plot_label: "WBUSH NEUTRAL"
+    enables: [en_wbushNeutral (line 235)]
+
+  # ── tntod_any aggregator (used by WBUSH composites; not a plot itself) ──
+  - id: tnt-od::tntod_any_bull
+    tier: aggregator
+    line_range: "1368"
+    composition:
+      type: OR
+      operands: ["p_b2bBull", "sig_rcNTBull", "p_fuseBull", "p_catBull", "p_pnBull", "p_ptBull", "p_ignBull", "p_dynBull", "p_t2tntBull", "p_t2npmBull", "p_t2contBull", "p_t2trBull", "p_t2rnBull", "p_t2prBull", "p_d1b", "p_d2b", "p_d3b", "p_uuBull", "p_uuuBull", "p_uuuuBull"]
+    plot: "(no plotshape — internal aggregator only)"
+
+  - id: tnt-od::tntod_any_bear
+    tier: aggregator
+    line_range: "1369"
+    composition:
+      type: OR
+      operands: ["p_b2bBear", "sig_rcNTBear", "p_fuseBear", "p_catBear", "p_pnBear", "p_ptBear", "p_ignBear", "p_dynBear", "p_t2tntBear", "p_t2npmBear", "p_t2contBear", "p_t2trBear", "p_t2rnBear", "p_t2prBear", "p_d1s", "p_d2s", "p_d3s", "p_uuBear", "p_uuuBear", "p_uuuuBear"]
+    plot: "(no plotshape — internal aggregator only)"
+
+# ─────────────────────────────────────────────────────────────────
+# CROSS-INDICATOR DEPENDENCIES (inline ports / external refs)
+# ─────────────────────────────────────────────────────────────────
+cross_indicator_dependencies:
+  - name: USE V5 (Bowl)
+    line_range: "626-873"
+    role: "Inline-ported enrichment + atom engine: RVOL (SAAB/Kratos/RVOL1x/GrandSlam/MOAB), WMD (Pentagon/WTC/Hiroshima/Nagasaki), HV1000, FAUNA (MB/RE/TA/GG bull+bear with exclusion logic), Displacement (u5_DISPBull/Bear), PUP/PPD, PBJ supertrend (u5_PBJBull/u5_PBJBear), CS1 FVG Combo. Drives Tier 2 enrichment, U-streak qualifier path pG, CATALYST CS1, WBUSH HEAVY PENTAGON ports."
+  - name: HEAVY PENTAGON (Stage 5)
+    line_range: "905-956"
+    role: "5 Heavy Combo classifications (Heavy Yin-Yang, Heavy Nagasaki, Heavy Nagasaki Vol, Heavy Trident, Neutral Heavy x2) ported using USE V5 atoms; classified by u5_DISPBull/Bear into bull/bear/neutral (15 sub-signals total). Aggregated as WBUSH bull/bear/neutral."
+  - name: TradingView/ta/7
+    line_range: "146, 666"
+    role: "tv_ta.relativeVolume(30, ...) for WMD ratio."
+  - name: B2B PUP (downstream — not consumed)
+    line_range: "README ref"
+    role: "TNT OD is canonical source-of-truth for Napalm/TNT/CONT for downstream auditing per README."
+
+# ─────────────────────────────────────────────────────────────────
+# UNCERTAIN / QUESTIONS
+# ─────────────────────────────────────────────────────────────────
+uncertain_or_questions:
+  - "Task 'expected NEW primitives' list mentions Apex, VOB cross, Failed-Apex Flip, OD (Opening Drive), Fuse, T1 Relay, T1 Stack — NOT ALL PRESENT in this v2 file. Found in this file: TNT, Napalm, Charge, Continuous, Return, FUSE (composite), Catalyst, Ignite, Dynamite, Density 1/2/3, B2B Napalm, RC NPM+TNT, PBJ+NPM, PBJ+TNT, RC TNT+RET, RC RET+NPM, PBJ+RET (Tier 2), UU/UUU/UUUU, WBUSH bull/bear/neutral. NOT FOUND: Apex (no plot/var by that name), Failed-Apex Flip, OD as a named plot (the entire indicator is called 'Opening Drive' but no plot named 'OD'), T1 Relay, T1 Stack, Ignite as primitive (it's a composite of TNT/Napalm/CONT). VOB exists ONLY as Engine 1 internal cross (vob_bull_cross / vob_bear_cross, lines 308-309) — NOT plotted as its own detection."
+  - "T1 RELAY and T1 STACK are described in CHANGELOG v3 as new in TNT_OD_v3.pine (the OLDER predecessor file with 148KB) but the ACTIVE file `TNT_Opening_Drive_OD_v3_2026-05-04.pine` (this one, 122,995 bytes) is internally v2 and does NOT contain these plots, the `gateStdMult` input, the inline HCT engine, or the inline UC engine. Per task instructions to extract only from this file, they are not listed as roots/composites."
+  - "Density 1/2/3 are listed as ROOTS per the task's expected-primitive list, but their composition (denVisBull/denVisBear) literally OR-s Tier 1 atoms — strictly composite by the rule 'depends on ≥1 root by name'. Catalogued as roots per task taxonomy expectation; flagged here for reviewer."
+  - "FUSE catalogued as composite (depends on Napalm + TNT + Continuous by name) per the task definition. Task list includes 'Fuse' as a 'NEW primitive' but its operational definition in this file is a sequence of three named atoms — composite, not root."
+  - "Ignite catalogued as composite (TNT+CONT OR NPM+CONT) per task definition rules. Task list includes Ignite as primitive."
+  - "Catalyst catalogued as composite (Napalm + CS1) per task definition rules."
+  - "TNT 2.0, Charge, Return, Continuous are exposed as named atoms but are folded INSIDE consolidated booleans (det_bullTNT folds raw_bullTNT2; det_bullNapalm folds raw_bullCharge). They are catalogued as named roots because they have explicit names in the source-of-truth role."
+  - "Filename-vs-internal-title mismatch confirmed: `TNT_Opening_Drive_OD_v3_2026-05-04.pine` declares `indicator(\"TNT Opening Drive OD v2\", \"TNT OD v2\", ...)` on line 143 — extraction here treats it as v2 content per task statement."

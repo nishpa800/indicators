@@ -1,0 +1,368 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: SUPER_BULL
+aliases_searched:
+- SUPER_BULL
+- SUPER_BEAR
+- SDUPER_BULL
+- SDUPER_BEAR
+- superBull
+- superBear
+- sduperBull
+- sduperBear
+- sigSuperBull
+- sigSuperBear
+- sigSDuperBull
+- sigSDuperBear
+- super_bull
+- super_bear
+- sduper_bull
+- sduper_bear
+- sigSuperBullPBJ
+- sigSuperBullPB
+- sigSuperBearPBJ
+- sigSuperBearPB
+pine_files_scanned: 54
+definitions:
+- &id001
+  indicator_family: fauna-shifu
+  file: fauna-shifu/versions/FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine
+  line: 1169
+  pine_variable: sigSuperBullPBJ
+  raw_line: sigSuperBullPBJ = conf and dirConfBull and al_anyBullPBJ and al_anyBullRVOL
+- &id002
+  indicator_family: fauna-shifu
+  file: fauna-shifu/versions/FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine
+  line: 1170
+  pine_variable: sigSuperBullPB
+  raw_line: sigSuperBullPB  = conf and dirConfBull and al_anyBullPB and al_anyBullRVOL
+- &id003
+  indicator_family: fauna-shifu
+  file: fauna-shifu/versions/FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine
+  line: 1171
+  pine_variable: sigSuperBearPBJ
+  raw_line: sigSuperBearPBJ = conf and dirConfBear and al_anyBearPBJ and al_anyBearRVOL
+- &id004
+  indicator_family: fauna-shifu
+  file: fauna-shifu/versions/FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine
+  line: 1172
+  pine_variable: sigSuperBearPB
+  raw_line: sigSuperBearPB  = conf and dirConfBear and al_anyBearPB and al_anyBearRVOL
+- &id005
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1687
+  pine_variable: superBull
+  raw_line: bool superBull = conf and csNew3_Bull and det_bullNapalmCons
+- &id006
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1688
+  pine_variable: superBear
+  raw_line: bool superBear = conf and csNew3_Bear and det_bearNapalmCons
+- &id007
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1689
+  pine_variable: sduperBull
+  raw_line: bool sduperBull = conf and csNew3_Bull and det_bullNapalmCons and nz(sigPUP[1])
+- &id008
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1690
+  pine_variable: sduperBear
+  raw_line: bool sduperBear = conf and csNew3_Bear and det_bearNapalmCons and nz(sigPPD[1])
+- &id009
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1695
+  pine_variable: superBull
+  raw_line: bool superBull = conf and csNew3_Bull and det_bullNapalmCons
+- &id010
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1696
+  pine_variable: superBear
+  raw_line: bool superBear = conf and csNew3_Bear and det_bearNapalmCons
+- &id011
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1697
+  pine_variable: sduperBull
+  raw_line: bool sduperBull = conf and csNew3_Bull and det_bullNapalmCons and nz(sigPUP[1])
+- &id012
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1698
+  pine_variable: sduperBear
+  raw_line: bool sduperBear = conf and csNew3_Bear and det_bearNapalmCons and nz(sigPPD[1])
+- &id013
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1302
+  pine_variable: superBull
+  raw_line: bool superBull=conf and nz(sigBullPBJ[1]) and sigDISPBull and (nz(sigFAUNABull[1]) or nz(sigLong1[1])) and super_hw_b
+    and ((super_combo_b and nz(sigPUP[1])) or (nz(anyBullFloor[1]) or nz(anyBull2nd[1])))
+- &id014
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1303
+  pine_variable: superBear
+  raw_line: bool superBear=conf and nz(sigBearPBJ[1]) and sigDISPBear and (nz(sigFAUNABear[1]) or nz(sigShort1[1])) and super_hw_s
+    and ((super_combo_s and nz(sigPPD[1])) or (nz(anyBearRoof[1]) or nz(anyBearPent[1])))
+- &id015
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1304
+  pine_variable: sduperBull
+  raw_line: bool sduperBull=conf and (nz(anyBullFloor[1]) or nz(anyBull2nd[1])) and nz(sigBullPBJ[1]) and super_hw_b and super_combo_b
+    and nz(sigPUP[1]) and sigDISPBull and (nz(sigFAUNABull[1]) or nz(sigLong1[1]))
+- &id016
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1305
+  pine_variable: sduperBear
+  raw_line: bool sduperBear=conf and (nz(anyBearRoof[1]) or nz(anyBearPent[1])) and nz(sigBearPBJ[1]) and super_hw_s and super_combo_s
+    and nz(sigPPD[1]) and sigDISPBear and (nz(sigFAUNABear[1]) or nz(sigShort1[1]))
+- &id017
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1687
+  pine_variable: superBull
+  raw_line: bool superBull = conf and csNew3_Bull and det_bullNapalmCons
+- &id018
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1688
+  pine_variable: superBear
+  raw_line: bool superBear = conf and csNew3_Bear and det_bearNapalmCons
+- &id019
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1689
+  pine_variable: sduperBull
+  raw_line: bool sduperBull = conf and csNew3_Bull and det_bullNapalmCons and nz(sigPUP[1])
+- &id020
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1690
+  pine_variable: sduperBear
+  raw_line: bool sduperBear = conf and csNew3_Bear and det_bearNapalmCons and nz(sigPPD[1])
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 990
+  pine_variable: superBull
+  raw_line: bool superBull=conf and sigBullPBJ and sigDISPBull and (sigFAUNABull or sigLong1) and super_hw_bull and ((super_comboAny_bull
+    and sigPUP) or (anyBullFloor or anyBull2nd))
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 991
+  pine_variable: superBear
+  raw_line: bool superBear=conf and sigBearPBJ and sigDISPBear and (sigFAUNABear or sigShort1) and super_hw_bear and ((super_comboAny_bear
+    and sigPPD) or (anyBearRoof or anyBearPent))
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 992
+  pine_variable: sduperBull
+  raw_line: bool sduperBull=conf and (anyBullFloor or anyBull2nd) and sigBullPBJ and super_hw_bull and super_comboAny_bull
+    and sigPUP and sigDISPBull and (sigFAUNABull or sigLong1)
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 993
+  pine_variable: sduperBear
+  raw_line: bool sduperBear=conf and (anyBearRoof or anyBearPent) and sigBearPBJ and super_hw_bear and super_comboAny_bear
+    and sigPPD and sigDISPBear and (sigFAUNABear or sigShort1)
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1254
+  pine_variable: superBull
+  raw_line: bool superBull=conf and sigBullPBJ and sigDISPBull and (sigFAUNABull or sigLong1) and super_hw_bull and ((super_comboAny_bull
+    and sigPUP) or (anyBullFloor or anyBull2nd))
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1255
+  pine_variable: superBear
+  raw_line: bool superBear=conf and sigBearPBJ and sigDISPBear and (sigFAUNABear or sigShort1) and super_hw_bear and ((super_comboAny_bear
+    and sigPPD) or (anyBearRoof or anyBearPent))
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1256
+  pine_variable: sduperBull
+  raw_line: bool sduperBull=conf and (anyBullFloor or anyBull2nd) and sigBullPBJ and super_hw_bull and super_comboAny_bull
+    and sigPUP and sigDISPBull and (sigFAUNABull or sigLong1)
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1257
+  pine_variable: sduperBear
+  raw_line: bool sduperBear=conf and (anyBearRoof or anyBearPent) and sigBearPBJ and super_hw_bear and super_comboAny_bear
+    and sigPPD and sigDISPBear and (sigFAUNABear or sigShort1)
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 964
+  pine_variable: superBull
+  raw_line: bool superBull=conf and sigBullPBJ and sigDISPBull and (sigFAUNABull or sigLong1) and super_hw_bull and ((super_comboAny_bull
+    and sigPUP) or (anyBullFloor or anyBull2nd))
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 965
+  pine_variable: superBear
+  raw_line: bool superBear=conf and sigBearPBJ and sigDISPBear and (sigFAUNABear or sigShort1) and super_hw_bear and ((super_comboAny_bear
+    and sigPPD) or (anyBearRoof or anyBearPent))
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 966
+  pine_variable: sduperBull
+  raw_line: bool sduperBull=conf and (anyBullFloor or anyBull2nd) and sigBullPBJ and super_hw_bull and super_comboAny_bull
+    and sigPUP and sigDISPBull and (sigFAUNABull or sigLong1)
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 967
+  pine_variable: sduperBear
+  raw_line: bool sduperBear=conf and (anyBearRoof or anyBearPent) and sigBearPBJ and super_hw_bear and super_comboAny_bear
+    and sigPPD and sigDISPBear and (sigFAUNABear or sigShort1)
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 990
+  pine_variable: superBull
+  raw_line: bool superBull=conf and sigBullPBJ and sigDISPBull and (sigFAUNABull or sigLong1) and super_hw_bull and ((super_comboAny_bull
+    and sigPUP) or (anyBullFloor or anyBull2nd))
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 991
+  pine_variable: superBear
+  raw_line: bool superBear=conf and sigBearPBJ and sigDISPBear and (sigFAUNABear or sigShort1) and super_hw_bear and ((super_comboAny_bear
+    and sigPPD) or (anyBearRoof or anyBearPent))
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 992
+  pine_variable: sduperBull
+  raw_line: bool sduperBull=conf and (anyBullFloor or anyBull2nd) and sigBullPBJ and super_hw_bull and super_comboAny_bull
+    and sigPUP and sigDISPBull and (sigFAUNABull or sigLong1)
+- indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 993
+  pine_variable: sduperBear
+  raw_line: bool sduperBear=conf and (anyBearRoof or anyBearPent) and sigBearPBJ and super_hw_bear and super_comboAny_bear
+    and sigPPD and sigDISPBear and (sigFAUNABear or sigShort1)
+- &id021
+  indicator_family: ultra-combo
+  file: ultra-combo/versions/ULTRA_COMBO_v57_pine5.pine
+  line: 772
+  pine_variable: sigSuperBullPBJ
+  raw_line: sigSuperBullPBJ = conf and sigDISPBull and sigBullPBJ and sigFAUNABull and anyBullRVOL
+- &id022
+  indicator_family: ultra-combo
+  file: ultra-combo/versions/ULTRA_COMBO_v57_pine5.pine
+  line: 773
+  pine_variable: sigSuperBullPB
+  raw_line: sigSuperBullPB = conf and sigDISPBull and sigBullPB and sigFAUNABull and anyBullRVOL
+- &id023
+  indicator_family: ultra-combo
+  file: ultra-combo/versions/ULTRA_COMBO_v57_pine5.pine
+  line: 774
+  pine_variable: sigSuperBearPBJ
+  raw_line: sigSuperBearPBJ = conf and sigDISPBear and sigBearPBJ and sigFAUNABear and anyBearRVOL
+- &id024
+  indicator_family: ultra-combo
+  file: ultra-combo/versions/ULTRA_COMBO_v57_pine5.pine
+  line: 775
+  pine_variable: sigSuperBearPB
+  raw_line: sigSuperBearPB = conf and sigDISPBear and sigBearPB and sigFAUNABear and anyBearRVOL
+- &id025
+  indicator_family: ultra-combo
+  file: ultra-combo/versions/ULTRA_COMBO_v57_pine6.pine
+  line: 753
+  pine_variable: sigSuperBullPBJ
+  raw_line: sigSuperBullPBJ = conf and sigDISPBull and sigBullPBJ and sigFAUNABull and anyBullRVOL
+- &id026
+  indicator_family: ultra-combo
+  file: ultra-combo/versions/ULTRA_COMBO_v57_pine6.pine
+  line: 754
+  pine_variable: sigSuperBullPB
+  raw_line: sigSuperBullPB = conf and sigDISPBull and sigBullPB and sigFAUNABull and anyBullRVOL
+- &id027
+  indicator_family: ultra-combo
+  file: ultra-combo/versions/ULTRA_COMBO_v57_pine6.pine
+  line: 755
+  pine_variable: sigSuperBearPBJ
+  raw_line: sigSuperBearPBJ = conf and sigDISPBear and sigBearPBJ and sigFAUNABear and anyBearRVOL
+- &id028
+  indicator_family: ultra-combo
+  file: ultra-combo/versions/ULTRA_COMBO_v57_pine6.pine
+  line: 756
+  pine_variable: sigSuperBearPB
+  raw_line: sigSuperBearPB = conf and sigDISPBear and sigBearPB and sigFAUNABear and anyBearRVOL
+occurrences_per_indicator:
+  fauna-shifu:
+    DEFINITION: 4
+    REFERENCE: 10
+    INPUT: 0
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 0
+  squarify:
+    DEFINITION: 16
+    REFERENCE: 79
+    INPUT: 0
+    PLOT: 8
+    ALERT: 0
+    COMMENT: 0
+  hvd-pbj-ppd:
+    DEFINITION: 16
+    REFERENCE: 88
+    INPUT: 0
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 0
+  ultra-combo:
+    DEFINITION: 8
+    REFERENCE: 32
+    INPUT: 0
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 0
+yaml_cross_check:
+  yaml_matching_records:
+  - id: hvd-pbj-ppd::SUPER_BULL
+    indicator: hvd-pbj-ppd
+    pine_source_line_range: L1254, plot L1361
+  - id: hvd-pbj-ppd::SUPER_BEAR
+    indicator: hvd-pbj-ppd
+    pine_source_line_range: L1255, plot L1386
+  - id: hvd-pbj-ppd::SDUPER_BULL
+    indicator: hvd-pbj-ppd
+    pine_source_line_range: L1256, plot L1362
+  - id: hvd-pbj-ppd::SDUPER_BEAR
+    indicator: hvd-pbj-ppd
+    pine_source_line_range: L1257, plot L1387
+  orphans: []
+  missings:
+  - *id001
+  - *id002
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  - *id008
+  - *id009
+  - *id010
+  - *id011
+  - *id012
+  - *id013
+  - *id014
+  - *id015
+  - *id016
+  - *id017
+  - *id018
+  - *id019
+  - *id020
+  - *id021
+  - *id022
+  - *id023
+  - *id024
+  - *id025
+  - *id026
+  - *id027
+  - *id028
+status: COMPLETE

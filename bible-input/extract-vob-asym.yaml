@@ -1,0 +1,848 @@
+indicator:
+  id: vob-asym
+  file: vob-asym/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine
+  branch: both
+  pine_version: 6
+  line_count: 1473
+  overlay: true
+  one_line_purpose: "VOB asymmetric T3 x6 mutex - staged structural ladder with mutually-exclusive state markers (six sensitivity tiers A..F, bullish/bearish zone-creation markers, T3 SUPER signals, Nagasaki ATH-volume, MutEx priority-line drawing)"
+  notes: >-
+    vob/ folder also contains VOB_LADDER_WATCH_v1.pine - distinct indicator handled by
+    a separate agent. Stage 6 splits into vob-asym/ (this file) and vob-ladder-watch/.
+    The CHANGELOG entry currently only documents the LADDER_WATCH companion; this
+    Asym T3 x6 file is the parent engine the LADDER_WATCH was derived from
+    (its f_bull_vob is the bull-only mirror of f_vob here).
+
+internal_helpers:
+  - name: level
+    kind: udt
+    lines: "74-79"
+    fields: [indx, upper, lower, mid, vol]
+    purpose: "Per-zone record (origin bar time, upper/lower/mid prices, accumulated volume). na fields == invalidated."
+  - name: hist_entry
+    kind: udt
+    lines: "82-86"
+    fields: [t, vol, pct, date_s]
+    purpose: "Historical event record used by audit/T3 tables (timestamp, vol, pct of pool, formatted date string)."
+  - name: f_cd_ok
+    kind: function
+    lines: "396-397"
+    signature: "f_cd_ok(int last_bar, int cd) -> bool"
+    purpose: "Cooldown gate - returns true if last_bar is na or bar_index - last_bar > cd."
+  - name: f_fmt_vol
+    kind: function
+    lines: "399-405"
+    signature: "f_fmt_vol(float v) -> string"
+    purpose: "Formats volume as M/K abbreviated string."
+  - name: f_zones_overlap
+    kind: function
+    lines: "407-408"
+    signature: "f_zones_overlap(float lo1, float hi1, float lo2, float hi2) -> bool"
+    purpose: "Tests whether two price ranges overlap (na-safe)."
+  - name: f_push_hist / f_evt_cell / f_push_t3_hist / f_t3_cell
+    kind: functions
+    lines: "410-437"
+    purpose: "Push events into hist_entry arrays and render Last-N table cells for the audit + T3 tables."
+  - name: f_count_active
+    kind: function
+    lines: "446-452"
+    signature: "f_count_active(array<level> arr) -> int"
+    purpose: "Counts non-invalidated zones (vol not na) in a level array."
+  - name: f_nearest_dist_pct / f_stack_near / f_nearest_above_pct / f_nearest_below_pct / f_nearest_mid / f_nearest_vol
+    kind: functions
+    lines: "456-531"
+    purpose: "Spatial helpers over a level array vs current price - nearest-zone distance %, count of zones within stack threshold %, nearest above/below in %, nearest mid price, nearest vol."
+  - name: f_emit_row
+    kind: function
+    lines: "545-554"
+    signature: "f_emit_row(table, int row, string lbl, int sv, float pool, int zcnt, float nd, int stk, float gap, float slope, float nrvol, color rc)"
+    purpose: "Renders one tier+direction row of the comprehensive emission table."
+  - name: f_vob
+    kind: function
+    lines: "562-679"
+    signature: "f_vob(int len1, array<level> up_lvl, array<level> lo_lvl, float atr_prox, float atr_adj, float sup_mult) -> [bool t3_buy, bool t3_sell, float bp, float sp]"
+    purpose: >-
+      Core engine (preserved-exactly per file header). On EMA(len1)/EMA(len1+13)
+      crossover -> push lower bull zone with accumulated volume from lowest swing;
+      on crossunder -> push upper bear zone from highest swing. Dedupes near
+      duplicates within atr_prox by overwriting prior slot with all-na level;
+      invalidates on close-breach. Returns T3 buy/sell flags (single-zone +
+      pool*sup_mult dominance + price-inside-zone) and total bull/bear pool volumes.
+  - name: f_count_overlaps / f_draw_zone / f_process_zones
+    kind: functions
+    lines: "1039-1086"
+    purpose: >-
+      MutEx priority-line drawing. f_process_zones walks each tier from A (highest)
+      down to F (lowest), counting how many already-drawn zones the current zone
+      overlaps. Priority 0 (no overlap) draws full top+bottom+mid+fill; priority
+      1/2/3 degrade to single midline of varying style. This is the 'mutually
+      exclusive' visual: highest-sensitivity tier wins full treatment.
+  - name: f_emit_label
+    kind: function
+    lines: "1109-1115"
+    signature: "f_emit_label(bool fire, array<level> arr, string dir, string tier, int sens_val, float pool, float rsi_v, int sess_v, float slope_v)"
+    purpose: "Emits a label.new at the new zone's mid carrying pipe-delimited metadata for data_get_pine_labels emission channel."
+  - name: f_bloomberg_t3
+    kind: function
+    lines: "875-876"
+    signature: "f_bloomberg_t3(string sig, string tier, int sens_val, string dir, float bp, float sp, float slope_v) -> string"
+    purpose: "Builds pipe-delimited Bloomberg-style alert payload string for T3 signals."
+  - name: atr_base / atr_proximity / atr_adjust
+    kind: shared_constants
+    lines: "270-272"
+    purpose: "ta.highest(ta.atr(200),200) baseline, *3 = atr_proximity (dedup), *2 = atr_adjust (src clamp inside f_vob). Shared by all six tiers."
+  - name: rsi_14 / sess_bar_count / vol_rank / slope_ema_a..f / ema_a..f_fast
+    kind: emission_context
+    lines: "282-313"
+    purpose: "Supplementary market state computed for emission only (do not affect signal logic). RSI14, bars-since-session-open, percentile rank of volume vs 200, per-tier fast EMA slope %."
+  - name: upper_a..upper_f / lower_a..lower_f
+    kind: persistent_state
+    lines: "321-332"
+    purpose: "Twelve var arrays of level UDTs - six bear (upper_*) and six bull (lower_*) tiers. Each holds <=15 zones."
+  - name: cd_zb_a..cd_zs_f / last_t3_buy_a..last_t3_sell_f / last_nagasaki
+    kind: cooldown_state
+    lines: "338-355"
+    purpose: "Per-signal last-fire bar_index used by f_cd_ok to suppress repeat firings within cooldown_bars."
+  - name: hb_a..hs_f / ht3ba..ht3sf / h_nag
+    kind: history_state
+    lines: "361-390"
+    purpose: "hist_entry arrays driving the audit table (zone events) and T3 signal table (signal events). Capped at hist_depth."
+  - name: nzb_a..nzs_f
+    kind: derived_flags
+    lines: "700-705"
+    purpose: "Zone-creation booleans - true iff f_vob grew the corresponding array on this bar."
+  - name: maxVolEver / isNagasaki
+    kind: persistent_state_and_flag
+    lines: "750-754"
+    purpose: "All-time-high-volume tracker (using volume[1]); isNagasaki fires the bar after a new ATH bar."
+  - name: cnt_b*/cnt_s* / nd_b*/nd_s* / nearest_bull_dist / nearest_bear_dist / stk_bull / stk_bear / bull_gap / bear_gap
+    kind: emission_metrics
+    lines: "713-744"
+    purpose: "Aggregated counts, nearest-distance %, stack-near counts, opposing-zone gap % - feed alert payloads, the comprehensive emission table, and log.info streams."
+  - name: drawn_lines / drawn_fills / ovlp_bull_lo / ovlp_bull_hi / ovlp_bear_lo / ovlp_bear_hi
+    kind: per_bar_state
+    lines: "1020-1037"
+    purpose: "Cleared each bar; track lines drawn and overlap regions used by the MutEx priority engine."
+
+roots:
+  - id: vob-asym::zA-bull
+    family: structural
+    name_in_pine: "fire_zb_a"
+    tier_letter: A
+    direction: bull
+    sensitivity_default: 2500
+    lines:
+      input_sensitivity: "97"
+      input_enable: "126"
+      array: "322 (lower_a)"
+      engine_call: "692"
+      new_zone_flag: "700 (nzb_a)"
+      cooldown_gate: "910 (fire_zb_a)"
+      plotshape: "1002"
+      label_emission: "1117"
+    description: >-
+      Highest-sensitivity bullish VOB zone-creation marker - tier A (longest EMA
+      pair 2500/2513). Fires once-per-zone-birth (cooldown-gated) when f_vob
+      pushes a new bull zone into lower_a. Plotshape: xcross at location.top in
+      col_bull_a with text 'zA'.
+    output:
+      kind: bool_event
+      symbol: fire_zb_a
+      visual: { shape: xcross, location: top, color_input: col_bull_a, size: large, text: "zA" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zA-bear
+    family: structural
+    name_in_pine: "fire_zs_a"
+    tier_letter: A
+    direction: bear
+    sensitivity_default: 2500
+    lines:
+      input_sensitivity: "97"
+      input_enable: "126"
+      array: "321 (upper_a)"
+      engine_call: "692"
+      new_zone_flag: "700 (nzs_a)"
+      cooldown_gate: "911 (fire_zs_a)"
+      plotshape: "1009"
+      label_emission: "1118"
+    description: "Highest-sensitivity bearish VOB zone-creation marker - tier A. Fires when a new bear zone is pushed into upper_a."
+    output:
+      kind: bool_event
+      symbol: fire_zs_a
+      visual: { shape: xcross, location: bottom, color_input: col_bear_a, size: large, text: "zA" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zB-bull
+    family: structural
+    name_in_pine: "fire_zb_b"
+    tier_letter: B
+    direction: bull
+    sensitivity_default: 2250
+    lines:
+      input_sensitivity: "98"
+      input_enable: "127"
+      array: "324 (lower_b)"
+      engine_call: "693"
+      new_zone_flag: "701 (nzb_b)"
+      cooldown_gate: "912 (fire_zb_b)"
+      plotshape: "1003"
+      label_emission: "1119"
+    description: "Tier-B bull zone-creation marker."
+    output:
+      kind: bool_event
+      symbol: fire_zb_b
+      visual: { shape: xcross, location: abovebar, color_input: col_bull_b, size: large, text: "zB" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zB-bear
+    family: structural
+    name_in_pine: "fire_zs_b"
+    tier_letter: B
+    direction: bear
+    sensitivity_default: 2250
+    lines:
+      input_sensitivity: "98"
+      input_enable: "127"
+      array: "323 (upper_b)"
+      engine_call: "693"
+      new_zone_flag: "701 (nzs_b)"
+      cooldown_gate: "913 (fire_zs_b)"
+      plotshape: "1010"
+      label_emission: "1120"
+    description: "Tier-B bear zone-creation marker."
+    output:
+      kind: bool_event
+      symbol: fire_zs_b
+      visual: { shape: xcross, location: belowbar, color_input: col_bear_b, size: large, text: "zB" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zC-bull
+    family: structural
+    name_in_pine: "fire_zb_c"
+    tier_letter: C
+    direction: bull
+    sensitivity_default: 2000
+    lines:
+      input_sensitivity: "99"
+      input_enable: "128"
+      array: "326 (lower_c)"
+      engine_call: "694"
+      new_zone_flag: "702 (nzb_c)"
+      cooldown_gate: "914 (fire_zb_c)"
+      plotshape: "1004"
+      label_emission: "1121"
+    description: "Tier-C bull zone-creation marker."
+    output:
+      kind: bool_event
+      symbol: fire_zb_c
+      visual: { shape: xcross, location: belowbar, color_input: col_bull_c, size: large, text: "zC" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zC-bear
+    family: structural
+    name_in_pine: "fire_zs_c"
+    tier_letter: C
+    direction: bear
+    sensitivity_default: 2000
+    lines:
+      input_sensitivity: "99"
+      input_enable: "128"
+      array: "325 (upper_c)"
+      engine_call: "694"
+      new_zone_flag: "702 (nzs_c)"
+      cooldown_gate: "915 (fire_zs_c)"
+      plotshape: "1011"
+      label_emission: "1122"
+    description: "Tier-C bear zone-creation marker."
+    output:
+      kind: bool_event
+      symbol: fire_zs_c
+      visual: { shape: xcross, location: abovebar, color_input: col_bear_c, size: large, text: "zC" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zD-bull
+    family: structural
+    name_in_pine: "fire_zb_d"
+    tier_letter: D
+    direction: bull
+    sensitivity_default: 1500
+    lines:
+      input_sensitivity: "100"
+      input_enable: "129"
+      array: "328 (lower_d)"
+      engine_call: "695"
+      new_zone_flag: "703 (nzb_d)"
+      cooldown_gate: "916 (fire_zb_d)"
+      plotshape: "1005"
+      label_emission: "1123"
+    description: "Tier-D bull zone-creation marker."
+    output:
+      kind: bool_event
+      symbol: fire_zb_d
+      visual: { shape: xcross, location: bottom, color_input: col_bull_d, size: large, text: "zD" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zD-bear
+    family: structural
+    name_in_pine: "fire_zs_d"
+    tier_letter: D
+    direction: bear
+    sensitivity_default: 1500
+    lines:
+      input_sensitivity: "100"
+      input_enable: "129"
+      array: "327 (upper_d)"
+      engine_call: "695"
+      new_zone_flag: "703 (nzs_d)"
+      cooldown_gate: "917 (fire_zs_d)"
+      plotshape: "1012"
+      label_emission: "1124"
+    description: "Tier-D bear zone-creation marker."
+    output:
+      kind: bool_event
+      symbol: fire_zs_d
+      visual: { shape: xcross, location: top, color_input: col_bear_d, size: large, text: "zD" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zE-bull
+    family: structural
+    name_in_pine: "fire_zb_e"
+    tier_letter: E
+    direction: bull
+    sensitivity_default: 1250
+    lines:
+      input_sensitivity: "101"
+      input_enable: "130"
+      array: "330 (lower_e)"
+      engine_call: "696"
+      new_zone_flag: "704 (nzb_e)"
+      cooldown_gate: "918 (fire_zb_e)"
+      plotshape: "1006"
+      label_emission: "1125"
+    description: "Tier-E bull zone-creation marker."
+    output:
+      kind: bool_event
+      symbol: fire_zb_e
+      visual: { shape: cross, location: abovebar, color_input: col_bull_e, size: large, text: "zE" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zE-bear
+    family: structural
+    name_in_pine: "fire_zs_e"
+    tier_letter: E
+    direction: bear
+    sensitivity_default: 1250
+    lines:
+      input_sensitivity: "101"
+      input_enable: "130"
+      array: "329 (upper_e)"
+      engine_call: "696"
+      new_zone_flag: "704 (nzs_e)"
+      cooldown_gate: "919 (fire_zs_e)"
+      plotshape: "1013"
+      label_emission: "1126"
+    description: "Tier-E bear zone-creation marker."
+    output:
+      kind: bool_event
+      symbol: fire_zs_e
+      visual: { shape: cross, location: belowbar, color_input: col_bear_e, size: large, text: "zE" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zF-bull
+    family: structural
+    name_in_pine: "fire_zb_f"
+    tier_letter: F
+    direction: bull
+    sensitivity_default: 1000
+    lines:
+      input_sensitivity: "102"
+      input_enable: "131"
+      array: "332 (lower_f)"
+      engine_call: "697"
+      new_zone_flag: "705 (nzb_f)"
+      cooldown_gate: "920 (fire_zb_f)"
+      plotshape: "1007"
+      label_emission: "1127"
+    description: "Lowest-sensitivity (shortest EMA pair 1000/1013) bull zone-creation marker - the most-frequent ladder anchor."
+    output:
+      kind: bool_event
+      symbol: fire_zb_f
+      visual: { shape: cross, location: belowbar, color_input: col_bull_f, size: large, text: "zF" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::zF-bear
+    family: structural
+    name_in_pine: "fire_zs_f"
+    tier_letter: F
+    direction: bear
+    sensitivity_default: 1000
+    lines:
+      input_sensitivity: "102"
+      input_enable: "131"
+      array: "331 (upper_f)"
+      engine_call: "697"
+      new_zone_flag: "705 (nzs_f)"
+      cooldown_gate: "921 (fire_zs_f)"
+      plotshape: "1014"
+      label_emission: "1128"
+    description: "Lowest-sensitivity bear zone-creation marker."
+    output:
+      kind: bool_event
+      symbol: fire_zs_f
+      visual: { shape: cross, location: abovebar, color_input: col_bear_f, size: large, text: "zF" }
+    uses_helpers: [f_vob, f_cd_ok, level, atr_base, atr_proximity, atr_adjust]
+
+  - id: vob-asym::T3a-buy
+    family: structural
+    name_in_pine: "plot_t3_buy_a"
+    tier_letter: A
+    direction: bull
+    lines:
+      raw_signal: "692 (t3_buy_a from f_vob)"
+      cooldown_gate: "760"
+      plotshape: "834"
+      alert: "879-880"
+    description: >-
+      T3 SUPER BUY tier A - fires when exactly one bull zone is active in tier A,
+      its volume > bear pool * super_mult (default 1.5), and close is inside that
+      zone. Cooldown-gated and toggle-gated by show_t3_buy_a.
+    output:
+      kind: bool_event
+      symbol: plot_t3_buy_a
+      visual: { shape: circle, location: top, color_hex: "#00e676", size: large, text: "T3a" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3a-sell
+    family: structural
+    name_in_pine: "plot_t3_sell_a"
+    tier_letter: A
+    direction: bear
+    lines:
+      raw_signal: "692 (t3_sell_a from f_vob)"
+      cooldown_gate: "761"
+      plotshape: "841"
+      alert: "881-882"
+    description: "T3 SUPER SELL tier A - mirror of T3a-buy on the bear side."
+    output:
+      kind: bool_event
+      symbol: plot_t3_sell_a
+      visual: { shape: xcross, location: top, color_hex: "#ff5252", size: large, text: "T3a" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3b-buy
+    family: structural
+    name_in_pine: "plot_t3_buy_b"
+    tier_letter: B
+    direction: bull
+    lines:
+      raw_signal: "693"
+      cooldown_gate: "762"
+      plotshape: "835"
+      alert: "883-884"
+    description: "T3 SUPER BUY tier B."
+    output:
+      kind: bool_event
+      symbol: plot_t3_buy_b
+      visual: { shape: circle, location: abovebar, color_hex: "#00bcd4", size: large, text: "T3b" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3b-sell
+    family: structural
+    name_in_pine: "plot_t3_sell_b"
+    tier_letter: B
+    direction: bear
+    lines:
+      raw_signal: "693"
+      cooldown_gate: "763"
+      plotshape: "842"
+      alert: "885-886"
+    description: "T3 SUPER SELL tier B."
+    output:
+      kind: bool_event
+      symbol: plot_t3_sell_b
+      visual: { shape: xcross, location: abovebar, color_hex: "#e91e63", size: large, text: "T3b" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3c-buy
+    family: structural
+    name_in_pine: "plot_t3_buy_c"
+    tier_letter: C
+    direction: bull
+    lines:
+      raw_signal: "694"
+      cooldown_gate: "764"
+      plotshape: "836"
+      alert: "887-888"
+    description: "T3 SUPER BUY tier C."
+    output:
+      kind: bool_event
+      symbol: plot_t3_buy_c
+      visual: { shape: circle, location: belowbar, color_hex: "#2196f3", size: large, text: "T3c" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3c-sell
+    family: structural
+    name_in_pine: "plot_t3_sell_c"
+    tier_letter: C
+    direction: bear
+    lines:
+      raw_signal: "694"
+      cooldown_gate: "765"
+      plotshape: "843"
+      alert: "889-890"
+    description: "T3 SUPER SELL tier C."
+    output:
+      kind: bool_event
+      symbol: plot_t3_sell_c
+      visual: { shape: xcross, location: belowbar, color_hex: "#9c27b0", size: large, text: "T3c" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3d-buy
+    family: structural
+    name_in_pine: "plot_t3_buy_d"
+    tier_letter: D
+    direction: bull
+    lines:
+      raw_signal: "695"
+      cooldown_gate: "766"
+      plotshape: "837"
+      alert: "891-892"
+    description: "T3 SUPER BUY tier D."
+    output:
+      kind: bool_event
+      symbol: plot_t3_buy_d
+      visual: { shape: circle, location: bottom, color_hex: "#ffeb3b", size: large, text: "T3d" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3d-sell
+    family: structural
+    name_in_pine: "plot_t3_sell_d"
+    tier_letter: D
+    direction: bear
+    lines:
+      raw_signal: "695"
+      cooldown_gate: "767"
+      plotshape: "844"
+      alert: "893-894"
+    description: "T3 SUPER SELL tier D."
+    output:
+      kind: bool_event
+      symbol: plot_t3_sell_d
+      visual: { shape: xcross, location: bottom, color_hex: "#ff4400", size: large, text: "T3d" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3e-buy
+    family: structural
+    name_in_pine: "plot_t3_buy_e"
+    tier_letter: E
+    direction: bull
+    lines:
+      raw_signal: "696"
+      cooldown_gate: "768"
+      plotshape: "838"
+      alert: "895-896"
+    description: "T3 SUPER BUY tier E."
+    output:
+      kind: bool_event
+      symbol: plot_t3_buy_e
+      visual: { shape: arrowdown, location: abovebar, color_hex: "#ff9800", size: huge, text: "T3e" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3e-sell
+    family: structural
+    name_in_pine: "plot_t3_sell_e"
+    tier_letter: E
+    direction: bear
+    lines:
+      raw_signal: "696"
+      cooldown_gate: "769"
+      plotshape: "845"
+      alert: "897-898"
+    description: "T3 SUPER SELL tier E."
+    output:
+      kind: bool_event
+      symbol: plot_t3_sell_e
+      visual: { shape: cross, location: abovebar, color_hex: "#d50000", size: large, text: "T3e" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3f-buy
+    family: structural
+    name_in_pine: "plot_t3_buy_f"
+    tier_letter: F
+    direction: bull
+    lines:
+      raw_signal: "697"
+      cooldown_gate: "770"
+      plotshape: "839"
+      alert: "899-900"
+    description: "T3 SUPER BUY tier F."
+    output:
+      kind: bool_event
+      symbol: plot_t3_buy_f
+      visual: { shape: arrowup, location: belowbar, color_hex: "#ffd700", size: huge, text: "T3f" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::T3f-sell
+    family: structural
+    name_in_pine: "plot_t3_sell_f"
+    tier_letter: F
+    direction: bear
+    lines:
+      raw_signal: "697"
+      cooldown_gate: "771"
+      plotshape: "846"
+      alert: "901-902"
+    description: "T3 SUPER SELL tier F."
+    output:
+      kind: bool_event
+      symbol: plot_t3_sell_f
+      visual: { shape: cross, location: belowbar, color_hex: "#b71c1c", size: large, text: "T3f" }
+    uses_helpers: [f_vob, f_cd_ok]
+
+  - id: vob-asym::Nagasaki
+    family: structural
+    name_in_pine: "plot_nagasaki"
+    direction: neutral
+    lines:
+      raw_state: "750-754 (maxVolEver / isNagasaki)"
+      cooldown_gate: "772"
+      plotshape: "848"
+      alert: "903-904"
+    description: >-
+      All-time-high-volume event. Fires the bar AFTER a new ATH bar (volume[1] >
+      maxVolEver). Cooldown- and toggle-gated. Distinct from the six T3 signals -
+      pure volume superlative, no zone semantics.
+    output:
+      kind: bool_event
+      symbol: plot_nagasaki
+      visual: { shape: diamond, location: top, color: purple, size: normal, text: "NAG", offset: -1 }
+    uses_helpers: [f_cd_ok]
+
+composites:
+  - id: vob-asym::any_t3
+    tier: 1
+    kind: derived_flag
+    lines: "860"
+    depends_on_roots: [T3a-buy, T3a-sell, T3b-buy, T3b-sell, T3c-buy, T3c-sell, T3d-buy, T3d-sell, T3e-buy, T3e-sell, T3f-buy, T3f-sell, Nagasaki]
+    description: "OR of all 12 T3 signals + Nagasaki - drives the consolidated 'Any T3 Signal or Nagasaki' alertcondition (line 861)."
+
+  - id: vob-asym::any_zone
+    tier: 1
+    kind: derived_flag
+    lines: "1135"
+    depends_on_roots: [zA-bull, zA-bear, zB-bull, zB-bear, zC-bull, zC-bear, zD-bull, zD-bear, zE-bull, zE-bear, zF-bull, zF-bear]
+    description: "OR of all 12 zone-creation flags - drives the 'Any Zone Formation' alertcondition (line 1136) and the Bloomberg ZONE_FORMATION alert payload (lines 1138-1164)."
+
+  - id: vob-asym::mutex_zone_lines
+    tier: 2
+    kind: zone_drawing
+    lines: "1020-1086"
+    depends_on_roots: [zA-bull, zA-bear, zB-bull, zB-bear, zC-bull, zC-bear, zD-bull, zD-bear, zE-bull, zE-bear, zF-bull, zF-bear]
+    description: >-
+      Mutually-exclusive overlap engine. Each bar redraws all zones from
+      lower_*/upper_* arrays in tier-priority order A->B->C->D->E->F. f_process_zones
+      tracks already-drawn overlap rectangles and asks f_count_overlaps how many
+      hits the current zone has - 0 = full top+bottom+mid+fill, 1 = solid mid only,
+      2 = dotted mid w2, 3+ = dotted mid w1. Bull and bear streams tracked
+      separately. This is the 'mutually exclusive state markers' the indicator
+      name promises.
+    rendered_in: "Chart price layer - lines and linefills, persisted via drawn_lines/drawn_fills arrays cleared each bar."
+
+  - id: vob-asym::bull_pool / bear_pool (per-tier)
+    tier: 2
+    kind: derived_scalar_set
+    lines: "627-651, 692-697 (returned as bp/sp)"
+    depends_on_roots: [zA-bull, zA-bear, zB-bull, zB-bear, zC-bull, zC-bear, zD-bull, zD-bear, zE-bull, zE-bear, zF-bull, zF-bear]
+    description: >-
+      bpa..bpf and spa..spf - per-tier sums of vol across active bull/bear zones.
+      Direct outputs of f_vob. Used as denominators in T3 dominance test, in
+      Bloomberg alert payloads, in emission table rows, in log.info stream, and
+      in audit-table pct% computations.
+
+  - id: vob-asym::cnt_bull_all / cnt_bear_all
+    tier: 2
+    kind: derived_scalar
+    lines: "713-720"
+    depends_on_composites: [bull_pool / bear_pool (per-tier)]
+    description: "Total active-zone counts across all six tiers each side. Surfaced in TOTALS row of emission table (1245) and BULLZONES/BEARZONES alert fields."
+
+  - id: vob-asym::nearest_bull_dist / nearest_bear_dist
+    tier: 2
+    kind: derived_scalar
+    lines: "722-732"
+    depends_on_roots: [zA-bull, zA-bear, zB-bull, zB-bear, zC-bull, zC-bear, zD-bull, zD-bear, zE-bull, zE-bear, zF-bull, zF-bear]
+    description: "Across all tiers, min distance % from close to any active bull/bear zone mid (-1 if none). Surfaced in TOTALS row, alerts, log stream."
+
+  - id: vob-asym::stk_bull / stk_bear
+    tier: 2
+    kind: derived_scalar
+    lines: "734-735"
+    depends_on_roots: [zA-bull, zA-bear, zB-bull, zB-bear, zC-bull, zC-bear, zD-bull, zD-bear, zE-bull, zE-bear, zF-bull, zF-bear]
+    description: "Sum across tiers of zones whose mid is within stack_thresh_pct % of close. >=3 colors lime in tables - the 'stacking near price' confluence indicator."
+
+  - id: vob-asym::bull_gap / bear_gap
+    tier: 2
+    kind: derived_scalar
+    lines: "737-744"
+    depends_on_roots: [zA-bull, zA-bear, zB-bull, zB-bear, zC-bull, zC-bear, zD-bull, zD-bear, zE-bull, zE-bear, zF-bull, zF-bear]
+    description: "Min % distance from close to nearest opposing zone above (bull_gap) or below (bear_gap). 'Room to run' before hitting resistance/support."
+
+  - id: vob-asym::pancake_bull / pancake_bear
+    tier: 3
+    kind: composite_flag_string
+    lines: "1275-1276"
+    depends_on_composites: [stk_bull / stk_bear, bull_gap / bear_gap]
+    description: >-
+      'YES - HIGH CONVICTION BULL/BEAR PANCAKE' when stk_*>=3 and gap>=30%;
+      'PARTIAL' if stacked but gap<30; else 'NO'. Rendered in PANCAKE row of
+      emission table (1277-1285). The named composite confluence the indicator
+      surfaces for human + Claude reads.
+
+  - id: vob-asym::any_t3_alert
+    tier: 3
+    kind: alertcondition
+    lines: "861"
+    depends_on_composites: [any_t3]
+    description: "Single alertcondition consolidating all 13 T3+Nagasaki triggers; saves alertcondition slot budget."
+
+  - id: vob-asym::any_zone_alert
+    tier: 3
+    kind: alertcondition
+    lines: "1136"
+    depends_on_composites: [any_zone]
+    description: "Single alertcondition for any of 12 zone-formation events."
+
+  - id: vob-asym::T3_bloomberg_alert
+    tier: 3
+    kind: alert_payload
+    lines: "875-904"
+    depends_on_roots: [T3a-buy, T3a-sell, T3b-buy, T3b-sell, T3c-buy, T3c-sell, T3d-buy, T3d-sell, T3e-buy, T3e-sell, T3f-buy, T3f-sell, Nagasaki]
+    depends_on_composites: [bull_pool / bear_pool (per-tier), cnt_bull_all / cnt_bear_all, stk_bull / stk_bear, bull_gap / bear_gap, nearest_bull_dist / nearest_bear_dist]
+    description: >-
+      Per-T3-fire alert() with pipe-delimited Bloomberg-format payload built by
+      f_bloomberg_t3 - includes ticker, exchange, TF, signal, tier, sens, dir,
+      close, vol, vol-rank, RSI, sess bar, both pools, all aggregate metrics, and
+      EMA slope. Nagasaki has its own simpler payload at line 904.
+
+  - id: vob-asym::ZONE_FORMATION_bloomberg_alert
+    tier: 3
+    kind: alert_payload
+    lines: "1138-1164"
+    depends_on_composites: [any_zone, bull_pool / bear_pool (per-tier), cnt_bull_all / cnt_bear_all, stk_bull / stk_bear, bull_gap / bear_gap, nearest_bull_dist / nearest_bear_dist]
+    description: "On any_zone, emits ZONE_FORMATION pipe-delimited alert with all aggregate metrics plus a comma-list ZONES: tag enumerating which tier+direction(s) fired this bar."
+
+  - id: vob-asym::zone_formation_label
+    tier: 3
+    kind: emission_label
+    lines: "1109-1128"
+    depends_on_roots: [zA-bull, zA-bear, zB-bull, zB-bear, zC-bull, zC-bear, zD-bull, zD-bear, zE-bull, zE-bear, zF-bull, zF-bear]
+    description: >-
+      Per-zone-birth label.new at the new zone's mid, carrying
+      'DIR|TIER|SENS:.|VOL:.|POOL:.|RSI:.|SESS:.|SLOPE:.' metadata for the
+      data_get_pine_labels emission channel. Gated by en_emission_labels.
+
+  - id: vob-asym::log_emission_stream
+    tier: 4
+    kind: log_stream
+    lines: "1174-1192"
+    depends_on_composites: [bull_pool / bear_pool (per-tier), cnt_bull_all / cnt_bear_all, stk_bull / stk_bear, bull_gap / bear_gap, nearest_bull_dist / nearest_bear_dist]
+    description: >-
+      log.info VOB_EMISSION pipe-delimited per-confirmed-bar stream for the
+      pine_get_console channel. 34 fields including all six per-tier bull/bear
+      pools and slope_ema_a..f.
+
+  - id: vob-asym::comprehensive_emission_table
+    tier: 4
+    kind: dashboard
+    lines: "1202-1285"
+    depends_on_roots: [zA-bull, zA-bear, zB-bull, zB-bear, zC-bull, zC-bear, zD-bull, zD-bear, zE-bull, zE-bear, zF-bull, zF-bear]
+    depends_on_composites: [bull_pool / bear_pool (per-tier), cnt_bull_all / cnt_bear_all, stk_bull / stk_bear, bull_gap / bear_gap, nearest_bull_dist / nearest_bear_dist, pancake_bull / pancake_bear]
+    description: >-
+      Top-left 9x20 table on barstate.islast - headers + DEFINITIONS legend row +
+      12 tier-direction data rows (f_emit_row) + TOTALS row + MARKET snapshot
+      (RSI, sess, vol, vrank, ATH, close) + INPUTS row + PANCAKE row. The
+      'richest single source of truth' per file comments.
+
+  - id: vob-asym::audit_table
+    tier: 4
+    kind: dashboard
+    lines: "1296-1381"
+    depends_on_roots: [zA-bull, zA-bear, zB-bull, zB-bear, zC-bull, zC-bear, zD-bull, zD-bear, zE-bull, zE-bear, zF-bull, zF-bear, Nagasaki]
+    description: >-
+      Audit table at user-positioned location showing Last 1/2/3 zone events per
+      tier+direction (pulled from hb_*/hs_* hist arrays via f_evt_cell), plus a
+      NAG row for the most recent Nagasaki events. Date string + abbreviated vol
+      + rounded pct of pool.
+
+  - id: vob-asym::T3_signal_table
+    tier: 4
+    kind: dashboard
+    lines: "1388-1473"
+    depends_on_roots: [T3a-buy, T3a-sell, T3b-buy, T3b-sell, T3c-buy, T3c-sell, T3d-buy, T3d-sell, T3e-buy, T3e-sell, T3f-buy, T3f-sell, Nagasaki]
+    description: >-
+      Bottom-left 5x15 table - Last 1/2/3 events for each of 12 T3 signals plus
+      NAG row plus an ATH row showing maxVolEver. f_t3_cell-based.
+
+cross_indicator_dependencies:
+  - target: vob-ladder-watch
+    relationship: parent_engine_donor
+    notes: >-
+      VOB_LADDER_WATCH_v1.pine derives its f_bull_vob (lines 59-85 there) by
+      mirroring this file's f_vob (lines 562-679 here) with the bear half and
+      T3/MutEx logic stripped. The ladder-watch's zA..zF roots conceptually map
+      onto this file's zA-bull..zF-bull roots, but the two indicators run
+      independent state arrays (no live data sharing inside Pine).
+  - target: external (TradingView alert engine)
+    relationship: alert_consumer
+    notes: >-
+      Two alertcondition() entries (lines 861, 1136) plus 13 alert() calls for
+      T3+Nagasaki (lines 879-904) plus one zone-formation alert() (line 1164)
+      expect TradingView 'Any alert() function call' wiring.
+  - target: external (Claude Code MCP readers)
+    relationship: emission_consumer
+    notes: >-
+      File is explicitly designed to emit through six MCP channels
+      (data_get_study_values disabled - plot budget consumed; data_get_pine_labels
+      via f_emit_label; data_get_pine_tables via comprehensive emission table;
+      pine_get_console via log.info; alert() via Bloomberg-format strings;
+      data_get_pine_lines via MutEx zone lines). See file header comments
+      54-64 and 1090-1099.
+
+uncertain_or_questions:
+  - q: >-
+      The CHANGELOG (/home/user/indicators/vob/CHANGELOG.md) has only one entry,
+      for VOB_LADDER_WATCH_v1.pine on 2026-05-04. There is no CHANGELOG entry
+      for this file (VOB_Asym_T3x6_MutEx_Claude_v8 dated 2026-05-02 in its
+      filename). Treat that as 'changelog covers companion only' rather than
+      missing data.
+    severity: info
+  - q: >-
+      The MutEx priority engine in f_process_zones (1075-1086) is called with
+      tiers in order A,B,C,D,E,F bull then A,B,C,D,E,F bear. Earlier-pushed
+      tiers (A) get full visual; later (F) get degraded. This is the named
+      'mutually exclusive' contract - confirmed by file header comment 39-43.
+      No ambiguity, but worth flagging that 'priority' here is by tier letter
+      (A wins) not by zone freshness or volume.
+    severity: info
+  - q: >-
+      f_vob's dedup-by-overwrite-with-na pattern (lines 602, 616) plus the
+      arr.shift() size cap at 15 (lines 605-606, 619-620) could in theory evict
+      an active zone if 15 mostly-na slots accumulate before a real zone is
+      pushed. Inherited characteristic also flagged in vob-ladder-watch extract.
+    severity: low
+  - q: >-
+      Each tier exposes a SINGLE bull and SINGLE bear zone-creation marker root
+      (zA-bull, zA-bear, etc.) per the LCD rule - even though f_vob can push
+      multiple zones per tier-array over time. The named primitive is the
+      birth-event boolean (fire_zb_*/fire_zs_*), not the zone object itself.
+      Down-stream composites that need zone-set semantics (pools, counts, gaps)
+      are listed as composites depending on the root set.
+    severity: info
+  - q: >-
+      The indicator name 'VOB Asym T3 x6' references 'asymmetric' but the
+      asym_threshold input (line 140) is documented as RESERVED for future Tier
+      1 asymmetric signals; T3 uses super_mult only. So the 'asymmetric' in the
+      name currently refers to the file's six-tier ladder topology rather than
+      a separate asym signal.
+    severity: info

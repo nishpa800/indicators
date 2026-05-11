@@ -1,0 +1,200 @@
+indicator:
+  id: hv-fvg-gz1-og
+  file: hv-fvg-gz1-og/versions/HV_FVG_GZ1_OG_v1.pine
+  branch: claude/add-txt-indicator-format-b4FUu
+  pine_version: 5
+  line_count: 253
+  overlay: true
+  one_line_purpose: "Canonical HV/GZI/FVG engine; defines bull/bear GZI, HV, FVG roots + mitigation tracking"
+  is_canonical_for: ["GZI_BULL/BEAR", "HV_BULL/BEAR", "FVG_BULL/BEAR raw"]
+  variant_of: null
+  has_variants: ["proximity-gzi-hv (stripped variant)"]
+
+internal_helpers:
+  - name: bull_mitigated / bear_mitigated
+    purpose: "Counters incremented when an unmitigated FVG is invalidated by a close beyond its level (close < bull.min or close > bear.max). Referenced by 'Bullish FVG Mitigation' / 'Bearish FVG Mitigation' alertconditions."
+    notes: "Not a root; internal counter state used by alerts (L81, L85, L196, L204, L242-L243)."
+  - name: bull_count / bear_count
+    purpose: "Counters incremented on each new FVG; referenced by 'Bullish FVG' / 'Bearish FVG' alertconditions (FVG creation alerts)."
+    notes: "Not a root; counter state used by FVG-creation alerts (L80, L84, L140, L180, L240-L241)."
+  - name: isFormationHV / isFormationHVE / isFormationHVY / isFormationHVQ
+    purpose: "Boolean flag: prior bar's volume equals the highest volume over 5000 / 252 / 63 lookbacks (any of the three triggers HV)."
+    notes: "Internal predicate consumed by HV root computation; HVE/HVY/HVQ are PARAMETERS of HV, not separate roots (L53-L63)."
+  - name: gziProximity (input)
+    purpose: "Bar-distance threshold for GZI overlap (default 6 per CHANGELOG)."
+    notes: "Parameter of GZI root, not a separate root (L21)."
+  - name: fvg_records / fvg_areas
+    purpose: "Arrays of unmitigated FVG records and their drawn boxes; iterated for GZI overlap checks and mitigation processing."
+    notes: "State containers, not roots (L88-L89)."
+  - name: bull_fvg_raw / bear_fvg_raw (raw chart-TF detection)
+    purpose: "Raw 3-bar gap detection on chart timeframe with auto/manual threshold; passed through request.security at the user-selected timeframe."
+    notes: "Producers of FVG_BULL_RAW / FVG_BEAR_RAW after MTF resolution at L73."
+
+roots:
+  - id: hv-fvg-gz1-og::GZI_BULL
+    family: gzi
+    plain_english: "Fires on a newly detected bullish FVG when a same-polarity (bullish) FVG already exists within gziProximity bars AND the two zones overlap in price (or merely touch when both are HV)."
+    boolean_summary: "bull_fvg AND fvg_time != lastTime AND showGZI AND any prior bullish fvg_record with (n - existing.barIdx) <= gziProximity AND (price-overlap OR adjacent-when-both-HV)"
+    parameters:
+      - name: showGZI
+        default: true
+        units: bool
+      - name: gziProximity
+        default: 6
+        units: bars
+      - name: thresholdPer
+        default: 1
+        units: percent
+      - name: auto
+        default: true
+        units: bool
+      - name: tf
+        default: ""
+        units: timeframe
+    offset: -1
+    plot_call: 'plotshape(bullGZI_trigger, title="Bullish GZI", style=shape.flag, location=location.top, color=gziBullCss, size=size.normal, offset=-1)'
+    alertcondition_id: "Bullish GZI"
+    pine_source_line_range: "L92, L102-L130, L225-L226, L245"
+    notes: "GZI overlap = price overlap (overlap_bottom < overlap_top) OR adjacent (overlap_bottom <= overlap_top) when both existing and new FVG are HV. Same polarity required (existing.isbull). Loop breaks on first match."
+
+  - id: hv-fvg-gz1-og::GZI_BEAR
+    family: gzi
+    plain_english: "Fires on a newly detected bearish FVG when a same-polarity (bearish) FVG already exists within gziProximity bars AND the two zones overlap in price (or merely touch when both are HV)."
+    boolean_summary: "bear_fvg AND fvg_time != lastTime AND showGZI AND any prior bearish fvg_record with (n - existing.barIdx) <= gziProximity AND (price-overlap OR adjacent-when-both-HV)"
+    parameters:
+      - name: showGZI
+        default: true
+        units: bool
+      - name: gziProximity
+        default: 6
+        units: bars
+      - name: thresholdPer
+        default: 1
+        units: percent
+      - name: auto
+        default: true
+        units: bool
+      - name: tf
+        default: ""
+        units: timeframe
+    offset: -1
+    plot_call: 'plotshape(bearGZI_trigger, title="Bearish GZI", style=shape.flag, location=location.top, color=gziBearCss, size=size.normal, offset=-1)'
+    alertcondition_id: "Bearish GZI"
+    pine_source_line_range: "L93, L144-L170, L228-L229, L246"
+    notes: "Mirror of GZI_BULL on bearish polarity (not existing.isbull). Adjacent-HV rule and break-on-first-match identical."
+
+  - id: hv-fvg-gz1-og::HV_BULL
+    family: hv
+    plain_english: "Fires on a newly detected bullish FVG when the prior bar's volume equals the highest volume over 5000, 252, or 63 bars (HVE / HVY / HVQ milestone)."
+    boolean_summary: "bull_fvg AND fvg_time != lastTime AND showHV AND (volume[1] == highest(volume,5000)[1] OR volume[1] == highest(volume,252)[1] OR volume[1] == highest(volume,63)[1])"
+    parameters:
+      - name: showHV
+        default: true
+        units: bool
+      - name: HVE_lookback
+        default: 5000
+        units: bars
+      - name: HVY_lookback
+        default: 252
+        units: bars
+      - name: HVQ_lookback
+        default: 63
+        units: bars
+      - name: thresholdPer
+        default: 1
+        units: percent
+      - name: auto
+        default: true
+        units: bool
+      - name: tf
+        default: ""
+        units: timeframe
+    offset: -1
+    plot_call: 'plotshape(bullHV_trigger, title="Bullish HV", style=shape.flag, location=location.belowbar, color=hvBullCss, size=size.normal, offset=-1)'
+    alertcondition_id: "Bullish HV FVG"
+    pine_source_line_range: "L94, L53-L63, L132-L134, L231-L232, L249"
+    notes: "HVE 5000 / HVY 252 / HVQ 63 lookbacks are PARAMETERS of HV root, not separate roots. Uses prior bar (volume[1]) so signal aligns with the FVG-formation bar (the middle bar of the 3-bar gap)."
+
+  - id: hv-fvg-gz1-og::HV_BEAR
+    family: hv
+    plain_english: "Fires on a newly detected bearish FVG when the prior bar's volume equals the highest volume over 5000, 252, or 63 bars (HVE / HVY / HVQ milestone)."
+    boolean_summary: "bear_fvg AND fvg_time != lastTime AND showHV AND (volume[1] == highest(volume,5000)[1] OR volume[1] == highest(volume,252)[1] OR volume[1] == highest(volume,63)[1])"
+    parameters:
+      - name: showHV
+        default: true
+        units: bool
+      - name: HVE_lookback
+        default: 5000
+        units: bars
+      - name: HVY_lookback
+        default: 252
+        units: bars
+      - name: HVQ_lookback
+        default: 63
+        units: bars
+      - name: thresholdPer
+        default: 1
+        units: percent
+      - name: auto
+        default: true
+        units: bool
+      - name: tf
+        default: ""
+        units: timeframe
+    offset: -1
+    plot_call: 'plotshape(bearHV_trigger, title="Bearish HV", style=shape.flag, location=location.belowbar, color=hvBearCss, size=size.normal, offset=-1)'
+    alertcondition_id: "Bearish HV FVG"
+    pine_source_line_range: "L95, L53-L63, L172-L174, L234-L235, L250"
+    notes: "Mirror of HV_BULL on bearish polarity. HVE/HVY/HVQ lookbacks are parameters, not separate roots."
+
+  - id: hv-fvg-gz1-og::FVG_BULL_RAW
+    family: fvg
+    plain_english: "Raw bullish 3-bar Fair Value Gap: current low above the high of two bars ago, with prior close confirming above that gap, and the gap size exceeding an auto (cumulative-avg-range) or manual percentage threshold. Resolved at the user-selected timeframe via request.security."
+    boolean_summary: "low > high[2] AND close[1] > high[2] AND (low - high[2]) / high[2] > threshold   [threshold = auto ? cum((high-low)/low)/bar_index : thresholdPer/100; resolved at tf via request.security; one-shot via fvg_time != lastTime]"
+    parameters:
+      - name: thresholdPer
+        default: 1
+        units: percent
+      - name: auto
+        default: true
+        units: bool
+      - name: tf
+        default: ""
+        units: timeframe
+    offset: -1
+    plot_call: "(no dedicated plotshape; visualized as bullCss FVG box; alertcondition only)"
+    alertcondition_id: "Bullish FVG"
+    pine_source_line_range: "L68-L73, L102, L138, L240"
+    notes: "FVG_BULL_RAW is the raw detection root; the GZI_BULL and HV_BULL plots are composites that depend on this root being true (plus their own predicates). Box draw extends n+480 bars (extend = 480, L32, L138). Alert fires when bull_count increments (L240)."
+
+  - id: hv-fvg-gz1-og::FVG_BEAR_RAW
+    family: fvg
+    plain_english: "Raw bearish 3-bar Fair Value Gap: current high below the low of two bars ago, with prior close confirming below that gap, and the gap size exceeding an auto (cumulative-avg-range) or manual percentage threshold. Resolved at the user-selected timeframe via request.security."
+    boolean_summary: "high < low[2] AND close[1] < low[2] AND (low[2] - high) / high > threshold   [threshold = auto ? cum((high-low)/low)/bar_index : thresholdPer/100; resolved at tf via request.security; one-shot via fvg_time != lastTime]"
+    parameters:
+      - name: thresholdPer
+        default: 1
+        units: percent
+      - name: auto
+        default: true
+        units: bool
+      - name: tf
+        default: ""
+        units: timeframe
+    offset: -1
+    plot_call: "(no dedicated plotshape; visualized as bearCss FVG box; alertcondition only)"
+    alertcondition_id: "Bearish FVG"
+    pine_source_line_range: "L68-L73, L144, L178, L241"
+    notes: "Mirror of FVG_BULL_RAW. Note bear_fvg_raw uses (low[2] - high) / high in the denominator (vs / high[2] for bull) — verbatim from L71. Box draw extends n+480 bars. Alert fires when bear_count increments (L241)."
+
+composites: []
+# No local composites in this file beyond the GZI/HV plots themselves, which are
+# already cataloged as roots (canonical primitives for the suite). Downstream
+# indicators that combine these roots (e.g. proximity-gzi-hv) would expose
+# composites in their own extracts.
+
+uncertain_or_questions:
+  - "FVG_BULL_RAW / FVG_BEAR_RAW have no dedicated plotshape in this file — they are surfaced visually as boxes (bullCss/bearCss) and via the 'Bullish FVG' / 'Bearish FVG' alertconditions tied to bull_count / bear_count incrementing. Cataloged as roots because they are the named LCD detection that GZI/HV plots depend on, and because the suite-wide 'FVG bull/bear raw' canonicalization is hosted here. Confirm this matches the bible's root convention (named primitive even when not directly plotshape'd)."
+  - "Plotshape count = 4 (Bull/Bear GZI top, Bull/Bear HV belowbar) — matches CHANGELOG. Alertcondition count = 10 (FVG bull/bear creation + bull/bear mitigation + GZI bull/bear/any + HV bull/bear/any) — matches CHANGELOG. Confirmed."
+  - "Per CHANGELOG, all plotshapes use offset=-1 — confirmed at L226, L229, L232, L235."
+  - "GZI 'adjacent-HV' rule (overlap_bottom <= overlap_top when both FVGs are HV) is part of the GZI root definition, not a separate root — treated as a parameter/branch of GZI_BULL/BEAR (L126, L166)."

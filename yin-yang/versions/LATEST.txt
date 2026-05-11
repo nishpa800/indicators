@@ -1,0 +1,7 @@
+# yin-yang has TWO sibling canonical variants:
+#   - YIN_YANG_OG_MOFO_v1.pine          — Pine v6 (FLAGGED: v5-only rule violation). 6 S/R roots only.
+#   - YIN_YANG_DISPLACEMENT_PBJ_v8.pine  — Pine v5. YY roots + Displacement + PBJ combos.
+# DPBJ is the primary canonical (Pine v5 compliant); OG_MOFO is the
+# pure-engine reference. Both stay until Anish picks one.
+YIN_YANG_DISPLACEMENT_PBJ_v8.pine
+YIN_YANG_OG_MOFO_v1.pine

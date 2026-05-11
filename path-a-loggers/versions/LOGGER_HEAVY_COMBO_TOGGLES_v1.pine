@@ -1,0 +1,60 @@
+//@version=5
+// =============================================================================
+// LOGGER — Heavy Combo Toggles (S1 Bull / S2 Bear / S3 Neutral)
+// =============================================================================
+// PURPOSE:
+//   Path A verification: emit one label.new() per fire of the 3 Heavy Combo
+//   master OR-gates so `data_get_pine_labels` can pull the full chart history
+//   in a single MCP call. Label text encodes which combo fired.
+//
+// SETUP:
+//   1. Load this AFTER "Heavy Combo Toggles" on the chart.
+//   2. In this logger's settings, point the three "Source: ..." inputs at the
+//      corresponding plots from Heavy Combo Toggles:
+//        - HCT Bull Source     → "Heavy Combo Toggles : S1: Heavy Combo Bull"
+//        - HCT Bear Source     → "Heavy Combo Toggles : S2: Heavy Combo Bear"
+//        - HCT Neutral Source  → "Heavy Combo Toggles : S3: Heavy Combo Neutral"
+//
+// CONSUMPTION:
+//   data_get_pine_labels(study_filter="LOGGER Heavy Combo Toggles")
+//   returns {text, price} pairs across the full chart history. The `text`
+//   field is the composite name ("HCB" / "HCN" / "HCNeutral"). The
+//   timestamp comes from the bar the label was placed on.
+//
+// NON-DESTRUCTIVE:
+//   This script reads input.source() values. It does NOT modify Heavy Combo
+//   Toggles' state or Anish's indicator stack. It only writes labels.
+// =============================================================================
+
+indicator("LOGGER Heavy Combo Toggles", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+// === SOURCE INPUTS ===
+grp_src = "★ Source Plots — point at Heavy Combo Toggles ★"
+src_bull    = input.source(close, "HCT Bull Source",    group=grp_src)
+src_bear    = input.source(close, "HCT Bear Source",    group=grp_src)
+src_neutral = input.source(close, "HCT Neutral Source", group=grp_src)
+
+// === FIRING DETECTION ===
+// A plotshape series is non-zero / true on its fire bar. We treat any
+// non-zero, non-na value as a fire.
+fire_bull    = not na(src_bull)    and src_bull    != 0
+fire_bear    = not na(src_bear)    and src_bear    != 0
+fire_neutral = not na(src_neutral) and src_neutral != 0
+
+// === LABELS ===
+// Place a tiny label on every fire — text encodes which composite fired so
+// data_get_pine_labels returns enough context to bucket the fires later.
+//
+// Per Verification Protocol v3.2: only place labels on confirmed bars to
+// avoid intra-bar repaints distorting the history we read.
+if barstate.isconfirmed and fire_bull
+    label.new(bar_index, low, "HCB", color=color.new(color.lime, 90), style=label.style_label_up, textcolor=color.lime, size=size.tiny, yloc=yloc.belowbar)
+if barstate.isconfirmed and fire_bear
+    label.new(bar_index, high, "HCBear", color=color.new(color.red, 90), style=label.style_label_down, textcolor=color.red, size=size.tiny, yloc=yloc.abovebar)
+if barstate.isconfirmed and fire_neutral
+    label.new(bar_index, high, "HCN", color=color.new(color.white, 90), style=label.style_label_down, textcolor=color.white, size=size.tiny, yloc=yloc.abovebar)
+
+// === PLOTS (so the script registers as a study with values) ===
+plot(fire_bull    ? 1.0 : 0.0, title="LOG: HCB",     display=display.data_window)
+plot(fire_bear    ? 1.0 : 0.0, title="LOG: HCBear",  display=display.data_window)
+plot(fire_neutral ? 1.0 : 0.0, title="LOG: HCN",     display=display.data_window)

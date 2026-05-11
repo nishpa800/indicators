@@ -1,0 +1,24 @@
+VISUAL TREE — yin-yang-og-mofo
+===============================
+File: yin-yang/versions/YIN_YANG_OG_MOFO_v1.pine
+Pine v6  ·  148 lines  ·  overlay=True
+Purpose: Pivot-based support/resistance swing detection with ATR distance filter; emits S/R lines, breakouts, breakdowns, and rejection patterns
+
+ROOTS
+-----
+  ◆ yin-yang-og-mofo::SwingHigh    [swing-pivot · offset=?]
+      
+  ◆ yin-yang-og-mofo::SwingLow    [swing-pivot · offset=?]
+      
+  ◆ yin-yang-og-mofo::Breakout    [line-cross · offset=?]
+      
+  ◆ yin-yang-og-mofo::Breakdown    [line-cross · offset=?]
+      
+  ◆ yin-yang-og-mofo::ResistanceRejection    [line-test · offset=?]
+      
+  ◆ yin-yang-og-mofo::SupportRejection    [line-test · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+

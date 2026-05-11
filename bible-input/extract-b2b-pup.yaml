@@ -1,0 +1,757 @@
+indicator:
+  id: b2b-pup
+  file: b2b-pup/versions/B2B_PUP_Combined_v4.32_2026-05-04.pine
+  branch: both
+  pine_version: 5
+  line_count: 1259
+  overlay: true
+  one_line_purpose: "Aggregator: 20 numbered S-plots fusing back-to-back PUP/PPD with FAUNA, displacement, HV+D, PBJ, RVOL ladder, TNT/Napalm/Charge/CONT engines, and FVG/Matrix/Unified combos"
+  is_canonical_for: ["PUP (likely)", "PPD (likely)"]
+  sibling_byte_diff: "B2B_PUP_v4.32.pine differs only in line endings (Combined file uses CRLF; sibling uses LF). Both 1259 lines, identical content."
+  reference_indicator: "TNT OD (../tnt-od/) is the canonical reference for Napalm/TNT/CONT engine logic; Engine G must mirror it."
+
+internal_helpers:
+  - name: f_touches2
+    pine_source_line_range: "L52"
+    notes: "Returns true if either of two bar indices equals the session-first bar index. Used by first-bar gating for plotshape offset alignment."
+  - name: f_add
+    pine_source_line_range: "L53"
+    notes: "String concat helper for Bloomberg-format alert aggregator (joins parts with '+')."
+  - name: masterGate
+    pine_source_line_range: "L66-L68"
+    notes: "First-bar-only gate: when en_firstBarOnly is ON, requires session.isfirstbar AND any HV-50/100/200/500/1000 hit on bar[0]. Otherwise true."
+  - name: f_ma
+    pine_source_line_range: "L146-L153"
+    notes: "Switch over MA type strings (EMA/SMA/WMA/HMA/VWMA) returning the matching ta.* call."
+  - name: pp_redVol / pp_greenVol / pp_hiRedVol / pp_hiGreenVol
+    pine_source_line_range: "L76-L77"
+    notes: "Red/green volume series and rolling-highest opposite-color volume over pp_lookback bars (excludes current bar via [1]). Used by det_PUP and det_PPD."
+  - name: "FAUNA family booleans (f_MB_b/r, f_RE_b/r, f_GG_b/r, f_TA_b/r) and exclusion booleans (f_TR_b/r, f_ES_b/r, f_GDR_b/r, f_excluded_bull, f_excluded_bear)"
+    pine_source_line_range: "L85-L114"
+    notes: "Per the v4.30 README all 7 family checkboxes are hardcoded ON. det_FAUNABull/Bear are computed from MB OR RE OR TA, with GG only via the score>=2 + bodyRat>=0.80 path; TR/ES/GDR exclude."
+  - name: "PBJ engine helpers (f_add_lvl, f_add_lander, f_add_reaccel, f_check_approach)"
+    pine_source_line_range: "L185-L235"
+    notes: "Builds and maintains bull_lvls/bear_lvls arrays of `lvl` (Pine type at L177-181) for level-approach detection used by det_PBBull/Bear and det_PBJBull/Bear."
+  - name: "RVOL threshold table functions (f_th_1x, f_th_gs, f_th_saab, f_th_wtc, f_th_hiro)"
+    pine_source_line_range: "L277-L282"
+    notes: "Pre-Mythos timeframe-keyed σ-multiplier ladders for the SAAB / 1x / GS / WTC / Hiroshima tiers."
+  - name: "TNT zone+event types (TntZone, ChargeLvl, BBEvent, tnt_SP)"
+    pine_source_line_range: "L383-L386, L497-L505, L588-L593, L627-L631"
+    notes: "Pine type definitions backing the multi-zone TNT tracker, charge ladder, event log (for TNT 2.0), and swing-pivot tracker."
+  - name: "TNT helpers (f_tnt_tok, f_tnt_zov, f_tnt_sb, f_tnt_ss)"
+    pine_source_line_range: "L480-L484"
+    notes: "Confluence helpers for TNT raw detection (window-overlap, zone-overlap, side-of-RSI/EMA-slope checks)."
+  - name: "GZ1 / HV-FVG helpers (gz_isHV, gz_thr, gz_bFVG, gz_sFVG, gz_fvgs array)"
+    pine_source_line_range: "L705-L753"
+    notes: "Bull/Bear FVG detection plus interlock with prior FVG entries; produces gz_bullHV/Bear and gz_bullGZI/bearGZI consumed by CS1."
+  - name: "UU pathway scanners (f_uu_bull_scan, f_uu_bear_scan)"
+    pine_source_line_range: "L863-L918"
+    notes: "Squareify A-F evaluation loops returning [hp,hpb,hh,hd,hf,ad,asd,dnp,pnd] flags consumed by det_UUBull/Bear, det_UUUBull/Bear, det_UUUUBull/Bear."
+  - name: "Bloomberg alert aggregators (f_agg_bull_b2b, f_agg_bear_b2b)"
+    pine_source_line_range: "L1092-L1173"
+    notes: "Concatenate +-joined alert strings from all 20 S-plot fire booleans."
+
+roots:
+  - id: b2b-pup::PUP
+    family: push
+    plain_english: "Bullish push: bar closes ≥3% above its open AND its volume exceeds the highest red-bar volume in the prior 10 bars (red volume of the current bar excluded)."
+    boolean_summary: "conf AND (close-open)/open*100 > pp_barSize AND volume > ta.highest(pp_redVol[1], pp_lookback)"
+    parameters:
+      - { name: pp_barSize,    default: 3.0, units: "%" }
+      - { name: pp_lookback,   default: 10,  units: bars }
+    offset: 0
+    plot_call: "(no direct plot — det_PUP feeds det_b2bPUP and S-plots; bar[0] anchor)"
+    pine_source_line_range: "L73-L78"
+    notes: "Definition is local. PUP is named here as a primitive (Anish identifies PUP as a root). Likely overlaps with hvd-pbj-ppd's PUP — bible may need to designate one canonical."
+  - id: b2b-pup::PPD
+    family: push
+    plain_english: "Bearish pocket-pivot day: bar closes ≥3% below its open AND its volume exceeds the highest green-bar volume in the prior 10 bars (green volume of the current bar excluded)."
+    boolean_summary: "conf AND (open-close)/open*100 > pp_barSize AND volume > ta.highest(pp_greenVol[1], pp_lookback)"
+    parameters:
+      - { name: pp_barSize,    default: 3.0, units: "%" }
+      - { name: pp_lookback,   default: 10,  units: bars }
+    offset: 0
+    plot_call: "(no direct plot — det_PPD feeds det_b2bPPD and S-plots; bar[0] anchor)"
+    pine_source_line_range: "L73-L79"
+    notes: "Mirror of PUP for the down direction. Same parameter inputs."
+  - id: b2b-pup::FAUNA_BULL
+    family: bar-strength-composite
+    plain_english: "FAUNA bull bar: an up-bar that satisfies at least one of MB (Momentum Bar: body ≥1.6×ATR14, body/range ≥0.70, vol ≥1.8×AvgVol), RE (Range Expansion: range ≥2.2×ATR14, close near high, vol ≥1.8×AvgVol), or TA (Trend Acceleration: rising 50-SMA, Δclose ≥1.6×AvgΔ, vol ≥1.8×AvgVol); the GG (Gap-and-Go) family is only allowed when 2+ core-FAUNA hit AND body/range ≥0.80; excluded by TR/ES/GDR (post-weak/strong/gap-down-reversal pre-bar context)."
+    boolean_summary: "conf AND (f_MB_b OR f_RE_b OR f_TA_b) AND NOT (f_TR_b OR f_ES_b OR f_GDR_b OR (f_GG_b AND NOT (core>=2 AND bodyRat>=0.80)))"
+    parameters:
+      - { name: ATR_len,            default: 14,  units: bars }
+      - { name: AvgVol_sma_len,     default: 20,  units: bars }
+      - { name: AvgBody_sma_len,    default: 20,  units: bars }
+      - { name: AvgDelta_sma_len,   default: 10,  units: bars }
+      - { name: TrendMA_len,        default: 50,  units: bars }
+    offset: 0
+    plot_call: "(no direct plot — det_FAUNABull is consumed by S2/S4/Matrix paths; bar[0] anchor)"
+    pine_source_line_range: "L85-L113"
+    notes: "Per v4.30 changelog the 7 family checkboxes were removed and all are hardcoded ON. Whether FAUNA is a 'root' or composite-of-named-primitives depends on the bible's stance on MB/RE/GG/TA being individually-named family primitives."
+  - id: b2b-pup::FAUNA_BEAR
+    family: bar-strength-composite
+    plain_english: "FAUNA bear bar: mirror of FAUNA_BULL — down-bar satisfying at least one of MB/RE/TA bear families, with GG-bear only allowed via the 2-core + bodyRat≥0.80 path; excluded by mirror TR/ES/GDR."
+    boolean_summary: "conf AND (f_MB_r OR f_RE_r OR f_TA_r) AND NOT (f_TR_r OR f_ES_r OR f_GDR_r OR (f_GG_r AND NOT (core>=2 AND bodyRat>=0.80)))"
+    parameters:
+      - { name: ATR_len,            default: 14,  units: bars }
+      - { name: AvgVol_sma_len,     default: 20,  units: bars }
+      - { name: AvgBody_sma_len,    default: 20,  units: bars }
+      - { name: AvgDelta_sma_len,   default: 10,  units: bars }
+      - { name: TrendMA_len,        default: 50,  units: bars }
+    offset: 0
+    plot_call: "(no direct plot — det_FAUNABear is consumed by S2/S4/Matrix paths; bar[0] anchor)"
+    pine_source_line_range: "L85-L114"
+    notes: "Same as FAUNA_BULL questions about root vs composite status."
+  - id: b2b-pup::DISPBull
+    family: displacement
+    plain_english: "Bullish 3-bar FVG: prior bar's body (or range) exceeds disp_mult × stdev (default 5×) AND a bullish FVG forms (low > high[2] AND close[1] > open[1])."
+    boolean_summary: "conf AND disp_rng[1] > disp_thresh[1] AND low > high[2] AND close[1] > open[1]"
+    parameters:
+      - { name: disp_type, default: "Open to Close", units: "enum {Open to Close, High to Low}" }
+      - { name: disp_len,  default: 100,             units: bars }
+      - { name: disp_mult, default: 5.0,             units: σ }
+    offset: -1
+    plot_call: "(no direct plot — det_DISPBull feeds S3/S4/S6/UU paths; bar[1] anchor)"
+    pine_source_line_range: "L119-L127"
+    notes: "Anchored to the FVG-creation bar via offset=-1 in plotshapes that consume it."
+  - id: b2b-pup::DISPBear
+    family: displacement
+    plain_english: "Bearish 3-bar FVG: prior bar's body (or range) exceeds disp_mult × stdev AND a bearish FVG forms (high < low[2] AND close[1] < open[1])."
+    boolean_summary: "conf AND disp_rng[1] > disp_thresh[1] AND high < low[2] AND close[1] < open[1]"
+    parameters:
+      - { name: disp_type, default: "Open to Close", units: "enum" }
+      - { name: disp_len,  default: 100,             units: bars }
+      - { name: disp_mult, default: 5.0,             units: σ }
+    offset: -1
+    plot_call: "(no direct plot — det_DISPBear consumed by S3/S4/S6/UU; bar[1] anchor)"
+    pine_source_line_range: "L119-L128"
+    notes: "Mirror of DISPBull."
+  - id: b2b-pup::PBJBull
+    family: pbj
+    plain_english: "PBJ bull cross-firing: a Supertrend (over VWMA/EMA/SMA/WMA/HMA base) bullish crossover that lands at a previously-armed PBJ buy level (low < pbj_ma*(1-zoo_thresh), low = lowest of zoo_pbj_hh_ll, vol > avg_vol*zoo_pbj_vol_mult)."
+    boolean_summary: "conf AND ta.crossover(close, sig_line) AND wait_pbj_buy"
+    parameters:
+      - { name: zoo_ma_type,        default: "VWMA", units: "enum" }
+      - { name: zoo_ma_len,         default: 5,      units: bars }
+      - { name: zoo_use_st,         default: true,   units: bool }
+      - { name: zoo_st_period,      default: 10,     units: bars }
+      - { name: zoo_st_mult,        default: 2.0,    units: × }
+      - { name: zoo_pbj_ma_period,  default: 20,     units: bars }
+      - { name: zoo_pbj_atr_period, default: 14,     units: bars }
+      - { name: zoo_pbj_hh_ll,      default: 25,     units: bars }
+      - { name: zoo_pbj_atr_mult,   default: 3.0,    units: × }
+      - { name: zoo_pbj_vol_period, default: 20,     units: bars }
+      - { name: zoo_pbj_vol_mult,   default: 0.1,    units: × }
+    offset: 0
+    plot_call: "(no direct plot — det_PBJBull feeds S6/UU and HVD-PBJ chains; bar[0] anchor)"
+    pine_source_line_range: "L134-L260"
+    notes: "PBJ is the entry-quality refinement of the PB level-approach engine. det_PBBull (line 262) is the lower-tier 'PB but NOT PBJ' classifier — also a named primitive in this file."
+  - id: b2b-pup::PBJBear
+    family: pbj
+    plain_english: "Mirror PBJ bear: Supertrend bearish crossunder + previously-armed PBJ sell level (high > pbj_ma*(1+zoo_thresh), high = highest of zoo_pbj_hh_ll, vol > avg_vol*zoo_pbj_vol_mult)."
+    boolean_summary: "conf AND ta.crossunder(close, sig_line) AND wait_pbj_sell"
+    parameters: [{ name: "(see PBJBull)" }]
+    offset: 0
+    plot_call: "(no direct plot — det_PBJBear feeds S6/UU/HVD-PBJ; bar[0] anchor)"
+    pine_source_line_range: "L134-L261"
+    notes: "Mirror of PBJBull."
+  - id: b2b-pup::PBBull
+    family: pbj
+    plain_english: "PB-only bull: Supertrend cross-up at an armed PB level approach but NOT a PBJ-quality level."
+    boolean_summary: "conf AND sig_pb_buy AND NOT sig_pbj_buy"
+    offset: 0
+    plot_call: "(no direct plot — building block for UU pathways)"
+    pine_source_line_range: "L262"
+    notes: "Strict-disjoint partner to PBJBull. Whether this is a 'root' depends on whether PB is named separately in the bible."
+  - id: b2b-pup::PBBear
+    family: pbj
+    plain_english: "PB-only bear: mirror of PBBull."
+    boolean_summary: "conf AND sig_pb_sell AND NOT sig_pbj_sell"
+    offset: 0
+    plot_call: "(no direct plot — building block)"
+    pine_source_line_range: "L263"
+    notes: "Mirror of PBBull."
+  - id: b2b-pup::SAAB
+    family: rvol-tier
+    plain_release: "RVOL band SAAB bull: rv_baseBull AND rv_normPrice in [0.56× threshold ladder, 1× threshold)."
+    boolean_summary: "rv_baseBull AND rv_normPrice >= th_saab AND rv_normPrice < th_1x"
+    offset: 0
+    plot_call: "(no direct plot — feeds CS1, S5, UU)"
+    pine_source_line_range: "L283"
+    notes: "th_saab = th_1x * 0.56 from f_th_saab/f_th_1x ladders."
+  - id: b2b-pup::Kratos
+    family: rvol-tier
+    plain_english: "RVOL band Kratos = SAAB-bear analogue: rv_baseBear AND rv_normPrice in [th_saab, th_1x)."
+    offset: 0
+    plot_call: "(no direct plot — feeds CS1-bear, S5-bear, UU-bear)"
+    pine_source_line_range: "L284"
+  - id: b2b-pup::RVOL1xBull
+    family: rvol-tier
+    plain_english: "RVOL 1× bull: rv_normPrice in [th_1x, th_gs)."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L285"
+  - id: b2b-pup::RVOL1xBear
+    family: rvol-tier
+    plain_english: "RVOL 1× bear: mirror of RVOL1xBull on rv_baseBear."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L286"
+  - id: b2b-pup::GrandSlam
+    family: rvol-tier
+    plain_english: "RVOL Grand Slam bull: rv_normPrice >= th_gs."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L287"
+  - id: b2b-pup::MOAB
+    family: rvol-tier
+    plain_english: "RVOL MOAB = Grand Slam bear analogue: rv_baseBear AND rv_normPrice >= th_gs."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L288"
+  - id: b2b-pup::Pentagon
+    family: rvol-tier
+    plain_english: "Pentagon: tv_ta.relativeVolume(30, '', cumulative=true, sameTime=true) ratio in [th_1x, th_wtc]."
+    offset: 0
+    plot_call: "(no direct plot — feeds CS1/CS2)"
+    pine_source_line_range: "L289-L291"
+  - id: b2b-pup::WTC
+    family: rvol-tier
+    plain_english: "WTC: relVol ratio in (th_wtc, th_hiro]. th_wtc = th_1x*2.0."
+    offset: 0
+    plot_call: "(no direct plot — feeds CS2-neutral path and S5 neutral)"
+    pine_source_line_range: "L292"
+  - id: b2b-pup::Hiroshima
+    family: rvol-tier
+    plain_english: "Hiroshima: relVol ratio > th_hiro."
+    offset: 0
+    plot_call: "(no direct plot — feeds CS2-neutral and S5)"
+    pine_source_line_range: "L293"
+  - id: b2b-pup::Nagasaki
+    family: rvol-tier
+    plain_english: "Nagasaki: bar volume sets a new running all-time max (rv_isNag)."
+    offset: 0
+    plot_call: "(no direct plot — feeds CS2)"
+    pine_source_line_range: "L294-L301"
+  - id: b2b-pup::HVDBull
+    family: hv+disp
+    plain_english: "Highest-volume + Displacement bull: bar[1] is HV (top of 50/100/200/500/1000 OR ever-HV) AND bullish displacement+FVG fires."
+    boolean_summary: "(hv_isHEV OR hv_is1000 OR hv_is500 OR hv_is200 OR hv_is100 OR hv_is50) AND hvd_dispBull"
+    parameters:
+      - { name: hvd_type,  default: "Open to Close", units: "enum" }
+      - { name: hvd_len,   default: 100,             units: bars }
+      - { name: hvd_mult,  default: 5.0,             units: σ }
+    offset: -1
+    plot_call: "(no direct plot — feeds S3d/S4d/S6/S17/S18 and UU pathways)"
+    pine_source_line_range: "L306-L324"
+    notes: "Same disp engine pattern as Engine C, bound to HV-rank bar[1]."
+  - id: b2b-pup::HVDBear
+    family: hv+disp
+    plain_english: "Mirror HVDBull on bear side."
+    offset: -1
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L306-L325"
+  - id: b2b-pup::HVDPBJBull
+    family: hv+disp+pbj
+    plain_english: "HVDBull AND PBJ bull on bar[1]."
+    boolean_summary: "det_HVDBull AND nz(det_PBJBull[1])"
+    offset: -1
+    plot_call: "(no direct plot — feeds S6/S18 chains)"
+    pine_source_line_range: "L326"
+  - id: b2b-pup::HVDPBJBear
+    family: hv+disp+pbj
+    plain_english: "Mirror HVDPBJBull bear."
+    offset: -1
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L327"
+  - id: b2b-pup::TNT_RAW_BULL
+    family: tnt
+    plain_english: "Raw bull TNT: simultaneous (within tnt_CW=2*EMA_SLOW window) confluence of (a) volume-weighted EMA crossover zone, (b) Anish swing-pivot zone, (c) Flux/displacement zone, with strong-bull side test (median-vol gate, EMA slope > 0, RSI < 80, > 30% vertical zone overlap)."
+    boolean_summary: "tnt_bConf AND f_tnt_sb(...) AND conf AND (bar_index - tnt_lBSB) > tnt_MIN_SIG_GAP"
+    parameters:
+      - { name: tnt_SENS,         default: 100,   units: bars }
+      - { name: tnt_SWING_LEN,    default: 10,    units: bars }
+      - { name: tnt_DISP_STD_X,   default: 5,     units: σ }
+      - { name: tnt_SUDDEN_PROX,  default: 3,     units: bars }
+      - { name: tnt_MAX_ZONES,    default: 30,    units: zones }
+      - { name: tnt_RET_PCT,      default: 100.0, units: "%" }
+    offset: 0
+    plot_call: "(no direct plot — feeds det_bullTNT, charge ladder, event log, CONT, S15)"
+    pine_source_line_range: "L356-L494"
+    notes: "Must mirror TNT OD. Per CHANGELOG v4.30 the rewrite ported TNT OD's full architecture (3-clause CONT, Return-leg, super-TNT)."
+  - id: b2b-pup::TNT_RAW_BEAR
+    family: tnt
+    plain_english: "Mirror TNT_RAW_BULL on the bear side."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L356-L494"
+  - id: b2b-pup::RetBullTNT
+    family: tnt-return
+    plain_english: "Return-to-TNT bull: an active bull TNT zone is touched at retLvl = lower + (upper-lower)*(tnt_RET_PCT/100) by low and close > zone.lower; fires once per zone."
+    offset: 0
+    plot_call: "(no direct plot — feeds CONT path)"
+    pine_source_line_range: "L540-L552"
+  - id: b2b-pup::RetBearTNT
+    family: tnt-return
+    plain_english: "Mirror RetBullTNT on bear-zone side."
+    offset: 0
+    plot_call: "(no direct plot — feeds CONT)"
+    pine_source_line_range: "L553-L562"
+  - id: b2b-pup::Napalm_BULL
+    family: napalm
+    plain_english: "Bull Napalm: a bull TNT-internal-displacement bar where the prior bar's low > the level of any active opposing (bear) TNT zone (scans all active bear zones, breaks on first hit)."
+    boolean_summary: "conf AND tnt_dBull AND any active bear zone z where low[1] > z.level"
+    offset: 0
+    plot_call: "(no direct plot — feeds S13/S16 and CONT/event-log)"
+    pine_source_line_range: "L569-L578"
+    notes: "v4.30: changed from single tnt_lastBearLvl scan to all-active-zones scan."
+  - id: b2b-pup::Napalm_BEAR
+    family: napalm
+    plain_english: "Mirror Napalm_BULL on bear side."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L579-L585"
+  - id: b2b-pup::Charge_BULL
+    family: charge
+    plain_english: "Bull Charge: bull TNT-internal-displacement bar that violates an unviolated bear ChargeLvl (close[1] > level). On fire, pushes a NEW bull ChargeLvl at low[1] to maintain the alternating-direction ladder (v4.32 fix)."
+    offset: 0
+    plot_call: "(no direct plot — feeds CONT, super-TNT, event-log)"
+    pine_source_line_range: "L602-L612"
+    notes: "v4.32 patched the ladder push (line 611). Anish notes Napalm and Charge are the same conceptual signal."
+  - id: b2b-pup::Charge_BEAR
+    family: charge
+    plain_english: "Mirror Charge_BULL on bear side; pushes a new bear ChargeLvl at high[1] on fire."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L613-L621"
+    notes: "v4.32 patched the ladder push (line 620)."
+  - id: b2b-pup::TNT2_BULL
+    family: tnt-super
+    plain_english: "TNT 2.0 bull (super): the bull event-log has 2+ entries (TNT-raw OR Napalm OR effective-Charge), AND any bull event fires this bar, AND > tnt_MIN_SIG_GAP since last."
+    offset: 0
+    plot_call: "(no direct plot — folded into det_bullTNT consolidated)"
+    pine_source_line_range: "L626-L658"
+    notes: "Bear-event log clears when a bull event fires (and vice versa)."
+  - id: b2b-pup::TNT2_BEAR
+    family: tnt-super
+    plain_english: "Mirror TNT2_BULL on bear side."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L626-L658"
+  - id: b2b-pup::SuperTNT_BULL
+    family: tnt-super
+    plain_english: "Super-TNT bull: raw bull TNT AND bear Charge on the same bar."
+    boolean_summary: "det_bullTNT_raw AND det_bearCharge"
+    offset: 0
+    plot_call: "(no direct plot — folded into det_bullTNT)"
+    pine_source_line_range: "L661"
+  - id: b2b-pup::SuperTNT_BEAR
+    family: tnt-super
+    plain_english: "Mirror SuperTNT_BULL on bear side."
+    offset: 0
+    plot_call: "(no direct plot — folded into det_bearTNT)"
+    pine_source_line_range: "L662"
+  - id: b2b-pup::TNT_CONS_BULL
+    family: tnt
+    plain_english: "Consolidated bull TNT (matches TNT OD output): raw OR TNT 2.0 OR super-TNT."
+    boolean_summary: "det_bullTNT_raw OR det_bullTNT2 OR det_superBullTNT"
+    offset: 0
+    plot_call: "(no direct plot — feeds S15)"
+    pine_source_line_range: "L665"
+  - id: b2b-pup::TNT_CONS_BEAR
+    family: tnt
+    plain_english: "Consolidated bear TNT mirror."
+    offset: 0
+    plot_call: "(no direct plot — feeds S15)"
+    pine_source_line_range: "L666"
+  - id: b2b-pup::CONT_BULL
+    family: cont
+    plain_english: "Bull CONT: 3-clause OR matching TNT OD — (Charge with prior Return within prox) OR ((rawTNT or TNT2) with prior Charge within prox) OR (Charge with prior rawTNT or TNT2 within prox)."
+    offset: 0
+    plot_call: "(no direct plot — feeds S14)"
+    pine_source_line_range: "L668-L675"
+    notes: "tnt_SUDDEN_PROX defaults to 3 bars (was 10 in v4.30)."
+  - id: b2b-pup::CONT_BEAR
+    family: cont
+    plain_english: "Mirror CONT_BULL on bear side."
+    offset: 0
+    plot_call: "(no direct plot — feeds S14)"
+    pine_source_line_range: "L668-L675"
+  - id: b2b-pup::CS1Bull
+    family: combo-fvg
+    plain_english: "FVG-Combo bull (offset=-1): bar[1] body% ≥ cs_bodyPct_FVG AND a bull HV-FVG or GZI fires, AND a directional RVOL hit on bar[1] (SAAB / 1× / GS) OR a Pentagon-tier hit (Pentagon/WTC/Hiroshima/Nagasaki when cs_inc_pent_FVG)."
+    offset: -1
+    plot_call: "(no direct plot — feeds S8/S9/S11)"
+    pine_source_line_range: "L755-L767"
+  - id: b2b-pup::CS1Bear
+    family: combo-fvg
+    plain_english: "Mirror CS1Bull on bear side (Kratos/RVOL1xR/MOAB OR Pentagon-tier neutral)."
+    offset: -1
+    plot_call: "(no direct plot — feeds S8/S9/S11)"
+    pine_source_line_range: "L755-L767"
+  - id: b2b-pup::CS2Bull
+    family: combo-matrix
+    plain_english: "Matrix-Combo bull (offset=0): body% ≥ cs_bodyPct_MAT AND (Neo-bull OR Trinity-bull) AND directional RVOL OR Pentagon-tier."
+    offset: 0
+    plot_call: "(no direct plot — feeds S8/S9 unified path)"
+    pine_source_line_range: "L769-L780"
+    notes: "Neo-bull = is_matrix_number AND FAUNABull; Trinity-bull = is_matrix_number AND NOT FAUNABull AND close>open. is_matrix_number = volume == ta.highest(volume,67)."
+  - id: b2b-pup::CS2Bear
+    family: combo-matrix
+    plain_english: "Mirror CS2Bull on bear side."
+    offset: 0
+    plot_call: "(no direct plot — feeds S8/S9)"
+    pine_source_line_range: "L769-L780"
+  - id: b2b-pup::UnifiedBull
+    family: combo-unified
+    plain_english: "Unified Combo bull: FVG-Combo bull on bar[0] AND Matrix-Combo bull on bar[1] — both events anchor to the displacement bar (visual bar 1)."
+    boolean_summary: "det_CS1Bull AND nz(det_CS2Bull[1])"
+    offset: -1
+    plot_call: "(no direct plot — feeds S8 and S19/S20)"
+    pine_source_line_range: "L782-L783"
+  - id: b2b-pup::UnifiedBear
+    family: combo-unified
+    plain_english: "Mirror UnifiedBull on bear side."
+    offset: -1
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L782-L783"
+  - id: b2b-pup::Long1
+    family: long1
+    plain_english: "Long 1 (Squareify): regular RVOL ratio > 7.0 AND cumulative RVOL ratio > 3.5 AND close>open AND body/range ≥ 0.60."
+    offset: 0
+    plot_call: "(no direct plot — feeds S10/S11)"
+    pine_source_line_range: "L785-L789"
+  - id: b2b-pup::Short1
+    family: long1
+    plain_english: "Mirror Long1 for the down side."
+    offset: 0
+    plot_call: "(no direct plot — feeds S10/S11)"
+    pine_source_line_range: "L790"
+  - id: b2b-pup::UUBull
+    family: uu-streak
+    plain_english: "UU bull (2-bar): 2-bar qualified-bull streak (rv_baseBull AND rv_normPrice >= 0.5) PLUS one of multiple Squareify A-F pathway dispositions evaluated by f_uu_bull_scan(2)."
+    offset: 0
+    plot_call: "(no direct plot — feeds S12)"
+    pine_source_line_range: "L933-L939"
+  - id: b2b-pup::UUUBull
+    family: uu-streak
+    plain_english: "UUU bull (3-bar streak)."
+    offset: 0
+    plot_call: "(no direct plot — feeds S12)"
+    pine_source_line_range: "L926-L932"
+  - id: b2b-pup::UUUUBull
+    family: uu-streak
+    plain_english: "UUUU bull (4+-bar streak)."
+    offset: 0
+    plot_call: "(no direct plot — feeds S12)"
+    pine_source_line_range: "L919-L925"
+  - id: b2b-pup::UUBear
+    family: uu-streak
+    plain_english: "UU bear mirror (Squareify A-F bearside)."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L948-L951"
+  - id: b2b-pup::UUUBear
+    family: uu-streak
+    plain_english: "UUU bear mirror."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L944-L947"
+  - id: b2b-pup::UUUUBear
+    family: uu-streak
+    plain_english: "UUUU bear mirror."
+    offset: 0
+    plot_call: "(no direct plot)"
+    pine_source_line_range: "L940-L943"
+
+composites:
+  - id: b2b-pup::B2B_PUP
+    tier: 1
+    plain_english: "Back-to-back PUP: PUP fires on bar[0] AND PUP fired on bar[1]."
+    composition:
+      type: AND_LAGGED
+      operands: ["b2b-pup::PUP", "b2b-pup::PUP[-1]"]
+    offset: 0
+    plot_call: "(intermediate det_b2bPUP — also fires as S1 plot via fire_S1_bull)"
+    pine_source_line_range: "L978"
+  - id: b2b-pup::B2B_PPD
+    tier: 1
+    plain_english: "Back-to-back PPD."
+    composition:
+      type: AND_LAGGED
+      operands: ["b2b-pup::PPD", "b2b-pup::PPD[-1]"]
+    offset: 0
+    plot_call: "(intermediate det_b2bPPD — also S1 bear)"
+    pine_source_line_range: "L978"
+  - id: b2b-pup::B2B_HVD_BULL
+    tier: 2
+    plain_english: "Back-to-back HV+D bull: HVDBull on bar[0] AND HVDBull on bar[1]."
+    composition:
+      type: AND_LAGGED
+      operands: ["b2b-pup::HVDBull", "b2b-pup::HVDBull[-1]"]
+    offset: -1
+    plot_call: "(intermediate det_B2BHVDBull — feeds S17)"
+    pine_source_line_range: "L328"
+  - id: b2b-pup::B2B_HVD_BEAR
+    tier: 2
+    plain_english: "Mirror B2B_HVD_BULL bear."
+    composition: { type: AND_LAGGED, operands: ["b2b-pup::HVDBear", "b2b-pup::HVDBear[-1]"] }
+    offset: -1
+    plot_call: "(intermediate det_B2BHVDBear)"
+    pine_source_line_range: "L329"
+  - id: b2b-pup::B2B_HVDPBJ_BULL
+    tier: 3
+    plain_english: "B2B HV+D bull AND PBJ bull on bar[1] or bar[2]."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_HVD_BULL", "b2b-pup::PBJBull[-1] OR b2b-pup::PBJBull[-2]"] }
+    offset: -1
+    plot_call: "(intermediate det_B2BHVDPBJBull — feeds S18)"
+    pine_source_line_range: "L330"
+  - id: b2b-pup::B2B_HVDPBJ_BEAR
+    tier: 3
+    plain_english: "Mirror B2B_HVDPBJ_BULL bear."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_HVD_BEAR", "b2b-pup::PBJBear[-1] OR b2b-pup::PBJBear[-2]"] }
+    offset: -1
+    plot_call: "(intermediate det_B2BHVDPBJBear)"
+    pine_source_line_range: "L331"
+  - id: b2b-pup::B2B_NAPALM_BULL
+    tier: 2
+    plain_english: "Back-to-back consolidated Napalm bull (Napalm OR Charge fires on this bar AND on the prior bar)."
+    composition: { type: AND_LAGGED, operands: ["(Napalm_BULL OR Charge_BULL)", "(Napalm_BULL OR Charge_BULL)[-1]"] }
+    offset: 0
+    plot_call: "(intermediate det_b2bBullNapalm — feeds S13)"
+    pine_source_line_range: "L695-L697"
+  - id: b2b-pup::B2B_NAPALM_BEAR
+    tier: 2
+    plain_english: "Mirror B2B_NAPALM_BULL bear."
+    composition: { type: AND_LAGGED, operands: ["(Napalm_BEAR OR Charge_BEAR)", "(Napalm_BEAR OR Charge_BEAR)[-1]"] }
+    offset: 0
+    plot_call: "(intermediate det_b2bBearNapalm)"
+    pine_source_line_range: "L696-L698"
+
+  - id: b2b-pup::S1
+    tier: 1
+    plain_english: "B2B PUP/PPD plot — pure back-to-back PUP (bull) or PPD (bear)."
+    composition: { type: PLOT_OF, operands: ["b2b-pup::B2B_PUP", "b2b-pup::B2B_PPD"] }
+    offset: 0
+    plot_call: |
+      plotshape(fire_S1_bull,"B2B Bull",shape.diamond,location.belowbar,color.new(#4CAF50,0),text="B2B",textcolor=color.white,size=size.normal)
+      plotshape(fire_S1_bear,"B2B Bear",shape.diamond,location.abovebar,color.new(#E91E63,0),text="B2B",textcolor=color.white,size=size.normal)
+    pine_source_line_range: "L1047-L1048 (det at L978; en_S1 at L958; fire at L1023)"
+  - id: b2b-pup::S2
+    tier: 2
+    plain_english: "B2B PUP + FAUNA on both candles."
+    composition: { type: AND, operands: ["b2b-pup::B2B_PUP", "b2b-pup::FAUNA_BULL[0]", "b2b-pup::FAUNA_BULL[-1]"] }
+    offset: 0
+    plot_call: |
+      plotshape(fire_S2_bull,"B2B+FAU Bull",shape.diamond,location.belowbar,color.new(#00E676,0),text="B2B\nFAU",textcolor=color.white,size=size.normal)
+      plotshape(fire_S2_bear,"B2B+FAU Bear",shape.diamond,location.abovebar,color.new(#FF1744,0),text="B2B\nFAU",textcolor=color.white,size=size.normal)
+    pine_source_line_range: "L1049-L1050 (det at L979; fire at L1024)"
+  - id: b2b-pup::S3
+    tier: 2
+    plain_english: "B2B PUP-on-bar[1]/bar[2] + same-type displacement on bar[0] AND bar[1]. Two disjoint paths: DISP-only path (DISPBull on both bars) OR HVD-only path (HVDBull on both bars). Cross-type mixing is silently disallowed by Pine."
+    composition:
+      type: OR
+      operands:
+        - type: AND
+          label: "DISP path"
+          operands: ["b2b-pup::PUP[-1]", "b2b-pup::PUP[-2]", "b2b-pup::DISPBull", "b2b-pup::DISPBull[-1]"]
+        - type: AND
+          label: "HVD path"
+          operands: ["b2b-pup::PUP[-1]", "b2b-pup::PUP[-2]", "b2b-pup::HVDBull", "b2b-pup::HVDBull[-1]"]
+    offset: -1
+    plot_call: |
+      plotshape(fire_S3_bull,"B2B+DISP Bull",shape.diamond,location.belowbar,color.new(#00BCD4,0),text="B2B\nDISP",textcolor=color.white,size=size.normal,offset=-1)
+      plotshape(fire_S3_bear,"B2B+DISP Bear",shape.diamond,location.abovebar,color.new(#FF5722,0),text="B2B\nDISP",textcolor=color.white,size=size.normal,offset=-1)
+    pine_source_line_range: "L1051-L1052 (det at L980-L982; fire at L1025)"
+    notes: "Aggregator distinguishes B2B-DISP vs B2B-HVD per det_S3d_bull at alert time."
+  - id: b2b-pup::S4
+    tier: 3
+    plain_english: "B2B PUP + FAUNA + same-type displacement on both bars. Two disjoint paths: DISP-only path (PUP+FAUNA on bar[1]+bar[2] AND DISPBull on bar[0]+bar[1]) OR HVD-only path (same PUP+FAUNA AND HVDBull on bar[0]+bar[1]). Cross-type mixing is silently disallowed by Pine."
+    composition:
+      type: OR
+      operands:
+        - type: AND
+          label: "DISP path"
+          operands: ["b2b-pup::PUP[-1]", "b2b-pup::PUP[-2]", "b2b-pup::FAUNA_BULL[-1]", "b2b-pup::FAUNA_BULL[-2]", "b2b-pup::DISPBull", "b2b-pup::DISPBull[-1]"]
+        - type: AND
+          label: "HVD path"
+          operands: ["b2b-pup::PUP[-1]", "b2b-pup::PUP[-2]", "b2b-pup::FAUNA_BULL[-1]", "b2b-pup::FAUNA_BULL[-2]", "b2b-pup::HVDBull", "b2b-pup::HVDBull[-1]"]
+    offset: -1
+    plot_call: |
+      plotshape(fire_S4_bull,"B2B+F+D Bull",shape.labelup,location.belowbar,color.new(#00E5FF,0),text="B2B\nF+D",textcolor=color.black,size=size.large,offset=-1)
+      plotshape(fire_S4_bear,"B2B+F+D Bear",shape.labeldown,location.abovebar,color.new(#D50000,0),text="B2B\nF+D",textcolor=color.white,size=size.large,offset=-1)
+    pine_source_line_range: "L1053-L1054 (det at L983-L987; fire at L1026)"
+  - id: b2b-pup::S5
+    tier: 2
+    plain_english: "B2B PUP + directional RVOL (SAAB/1×/GS bull or Kratos/1×/MOAB bear) on both candles, with neutral WTC/Hiroshima allowed as the 'other' side."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP", "(SAAB OR RVOL1xBull OR GrandSlam) on bars-aware AND/OR (WTC OR Hiroshima)"] }
+    offset: 0
+    plot_call: |
+      plotshape(fire_S5_bull,"B2B+SAAB Bull",shape.diamond,location.belowbar,color.new(#FFD700,0),text="B2B\nSAAB",textcolor=color.black,size=size.normal)
+      plotshape(fire_S5_bear,"B2B+KRAT Bear",shape.diamond,location.abovebar,color.new(#FF6F00,0),text="B2B\nKRAT",textcolor=color.white,size=size.normal)
+    pine_source_line_range: "L1055-L1056 (det at L988-L992; fire at L1027)"
+  - id: b2b-pup::S6
+    tier: 3
+    plain_english: "Any B2B (S1/S2/S5 OR S3/S4 chains) + PBJ bull or HVD-PBJ bull on the relevant offset bars."
+    composition: { type: AND_OR, operands: ["any B2B chain", "PBJBull/Bear or HVDPBJBull/Bear on bar[0/1/2]"] }
+    offset: -1
+    plot_call: |
+      plotshape(fire_S6_bull,"B2B+PBJ Bull",shape.labelup,location.belowbar,color.new(#7C4DFF,0),text="B2B\nPBJ",textcolor=color.white,size=size.large,offset=-1)
+      plotshape(fire_S6_bear,"B2B+PBJ Bear",shape.labeldown,location.abovebar,color.new(#AA00FF,0),text="B2B\nPBJ",textcolor=color.white,size=size.large,offset=-1)
+    pine_source_line_range: "L1057-L1058 (det at L994-L995; fire at L1028)"
+    notes: "v4.30 fixed missing offset=-1."
+  - id: b2b-pup::S8
+    tier: 3
+    plain_english: "Unified Combo + B2B PUP. Two arms with different UC lag rules: (1) B2B_PUP arm: det_b2bPUP AND det_UnifiedBull (current bar ONLY — no lag); (2) S3-chain arm: det_S3_any_bull AND (det_UnifiedBull OR det_UnifiedBull[-1]) (current or prior). Only the S3-chain arm accepts UC on bar[-1]."
+    composition:
+      type: OR
+      operands:
+        - type: AND
+          label: "B2B_PUP arm (UC current-bar only)"
+          operands: ["b2b-pup::B2B_PUP", "b2b-pup::UnifiedBull"]
+        - type: AND
+          label: "S3-chain arm (UC current or [-1])"
+          operands: ["b2b-pup::S3", "b2b-pup::UnifiedBull OR b2b-pup::UnifiedBull[-1]"]
+    offset: -1
+    plot_call: |
+      plotshape(fire_S8_bull,"UC+B2B Bull",shape.labelup,location.belowbar,color.new(#00C853,0),text="UC\nB2B",textcolor=color.black,size=size.large,offset=-1)
+      plotshape(fire_S8_bear,"UC+B2B Bear",shape.labeldown,location.abovebar,color.new(#D500F9,0),text="UC\nB2B",textcolor=color.white,size=size.large,offset=-1)
+    pine_source_line_range: "L1059-L1060 (det at L996-L997; fire at L1029)"
+  - id: b2b-pup::S9
+    tier: 3
+    plain_english: "Uni Combo + B2B PUP — fires when EITHER S19 (UC×2) OR S20 (FMU×2) lands alongside B2B PUP, plus the S3-chain analog."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP OR S3-chain", "b2b-pup::UC2 OR b2b-pup::FMU (current or lagged)"] }
+    offset: -1
+    plot_call: |
+      plotshape(fire_S9_bull,"Uni+B2B Bull",shape.flag,location.belowbar,color.new(#FFAB00,0),text="Uni\nB2B",textcolor=color.black,size=size.large,offset=-1)
+      plotshape(fire_S9_bear,"Uni+B2B Bear",shape.flag,location.abovebar,color.new(#FF3D00,0),text="Uni\nB2B",textcolor=color.white,size=size.large,offset=-1)
+    pine_source_line_range: "L1061-L1062 (det at L1000-L1003; fire at L1030)"
+    notes: "v4.31 dropped the source dropdown; both feeds OR'd."
+  - id: b2b-pup::S10
+    tier: 3
+    plain_english: "Long1-B2B + B2B PUP: Long1 on this AND prior bar, AND B2B PUP on this OR prior bar."
+    composition: { type: AND_OR, operands: ["b2b-pup::Long1 ×2", "b2b-pup::B2B_PUP current or [-1]"] }
+    offset: 0
+    plot_call: |
+      plotshape(fire_S10_bull,"L1B2B Bull",shape.flag,location.belowbar,color.new(#64DD17,0),text="L1\nB2B",textcolor=color.black,size=size.large)
+      plotshape(fire_S10_bear,"S1B2B Bear",shape.flag,location.abovebar,color.new(#DD2C00,0),text="S1\nB2B",textcolor=color.white,size=size.large)
+    pine_source_line_range: "L1063-L1064 (det at L1005-L1006; fire at L1031)"
+  - id: b2b-pup::S11
+    tier: 3
+    plain_english: "(FVG combo or Long1) + B2B PUP."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP", "b2b-pup::CS1Bull OR Long1 (current or [-1])"] }
+    offset: -1
+    plot_call: |
+      plotshape(fire_S11_bull,"FVG/L1 Bull",shape.labelup,location.belowbar,color.new(#18FFFF,0),text="FVG\nL1",textcolor=color.black,size=size.normal,offset=-1)
+      plotshape(fire_S11_bear,"FVG/S1 Bear",shape.labeldown,location.abovebar,color.new(#FF6E40,0),text="FVG\nS1",textcolor=color.white,size=size.normal,offset=-1)
+    pine_source_line_range: "L1065-L1066 (det at L1007-L1008; fire at L1032)"
+  - id: b2b-pup::S12
+    tier: 3
+    plain_english: "UU/UUU/UUUU + B2B PUP."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP", "(UU OR UUU OR UUUU) current or [-1]"] }
+    offset: 0
+    plot_call: |
+      plotshape(fire_S12_bull,"UU+B2B Bull",shape.labelup,location.belowbar,color.new(#76FF03,0),text="UU\nB2B",textcolor=color.black,size=size.large)
+      plotshape(fire_S12_bear,"DD+B2B Bear",shape.labeldown,location.abovebar,color.new(#FF1744,0),text="DD\nB2B",textcolor=color.white,size=size.large)
+    pine_source_line_range: "L1067-L1068 (det at L1009-L1010; fire at L1033)"
+  - id: b2b-pup::S13
+    tier: 3
+    plain_english: "B2B Napalm + B2B PUP."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP", "b2b-pup::B2B_NAPALM_BULL current or [-1]"] }
+    offset: 0
+    plot_call: |
+      plotshape(fire_S13_bull,"B2BNPM Bull",shape.labelup,location.belowbar,color.new(#1DE9B6,0),text="NPM\nB2B",textcolor=color.black,size=size.large)
+      plotshape(fire_S13_bear,"B2BNPM Bear",shape.labeldown,location.abovebar,color.new(#FF1744,0),text="NPM\nB2B",textcolor=color.white,size=size.large)
+    pine_source_line_range: "L1069-L1070 (det at L1011; fire at L1034)"
+  - id: b2b-pup::S14
+    tier: 3
+    plain_english: "CONT + B2B PUP."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP", "b2b-pup::CONT_BULL current or [-1]"] }
+    offset: 0
+    plot_call: |
+      plotshape(fire_S14_bull,"CONT Bull",shape.circle,location.belowbar,color.new(#00ACC1,0),text="CONT",textcolor=color.white,size=size.normal)
+      plotshape(fire_S14_bear,"CONT Bear",shape.circle,location.abovebar,color.new(#F06292,0),text="CONT",textcolor=color.white,size=size.normal)
+    pine_source_line_range: "L1071-L1072 (det at L1012; fire at L1035)"
+  - id: b2b-pup::S15
+    tier: 3
+    plain_english: "Consolidated TNT (raw OR TNT 2.0 OR super) + B2B PUP."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP", "b2b-pup::TNT_CONS_BULL current or [-1]"] }
+    offset: 0
+    plot_call: |
+      plotshape(fire_S15_bull,"TNT+B2B Bull",shape.labelup,location.belowbar,color.new(#089981,0),text="TNT\nB2B",textcolor=color.white,size=size.huge)
+      plotshape(fire_S15_bear,"TNT+B2B Bear",shape.labeldown,location.abovebar,color.new(#F23645,0),text="TNT\nB2B",textcolor=color.white,size=size.huge)
+    pine_source_line_range: "L1073-L1074 (det at L1013; fire at L1036)"
+  - id: b2b-pup::S16
+    tier: 3
+    plain_english: "Napalm-consolidated (Napalm OR Charge) + B2B PUP."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP", "(Napalm_BULL OR Charge_BULL) current or [-1]"] }
+    offset: -1
+    plot_call: |
+      plotshape(fire_S16_bull,"NPM Bull",shape.diamond,location.belowbar,color.new(#00BCD4,0),text="NPM",textcolor=color.white,size=size.normal,offset=-1)
+      plotshape(fire_S16_bear,"NPM Bear",shape.diamond,location.abovebar,color.new(#FF9800,0),text="NPM",textcolor=color.white,size=size.normal,offset=-1)
+    pine_source_line_range: "L1075-L1076 (det at L1014; fire at L1037)"
+    notes: "v4.30 fixed missing offset=-1."
+  - id: b2b-pup::S17
+    tier: 3
+    plain_english: "B2B HV+D + B2B PUP."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP", "b2b-pup::B2B_HVD_BULL current or [-1]"] }
+    offset: -1
+    plot_call: |
+      plotshape(fire_S17_bull,"HVD+B2B Bull",shape.flag,location.belowbar,color.new(#00E676,0),text="HVD\nB2B",textcolor=color.white,size=size.large,offset=-1)
+      plotshape(fire_S17_bear,"HVD+B2B Bear",shape.flag,location.abovebar,color.new(#FF1744,0),text="HVD\nB2B",textcolor=color.white,size=size.large,offset=-1)
+    pine_source_line_range: "L1077-L1078 (det at L1015; fire at L1038)"
+    notes: "v4.30 moved to offset=-1 to match the bar where HV+D completes."
+  - id: b2b-pup::S18
+    tier: 4
+    plain_english: "B2B HV+D-PBJ + B2B PUP."
+    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP", "b2b-pup::B2B_HVDPBJ_BULL current or [-1]"] }
+    offset: -1
+    plot_call: |
+      plotshape(fire_S18_bull,"HVDPBJ Bull",shape.flag,location.belowbar,color.new(#FFD700,0),text="HVD\nPBJ",textcolor=color.black,size=size.huge,offset=-1)
+      plotshape(fire_S18_bear,"HVDPBJ Bear",shape.flag,location.abovebar,color.new(#FF1744,0),text="HVD\nPBJ",textcolor=color.white,size=size.huge,offset=-1)
+    pine_source_line_range: "L1079-L1080 (det at L1016; fire at L1039)"
+    notes: "v4.30 moved to offset=-1."
+  - id: b2b-pup::S19_UC2
+    tier: 3
+    plain_english: "Standalone Unified Combo ×2: count visual bars in [1, uc2_window] where BOTH FVG-combo AND Matrix-combo fired (Unified-Combo bar); fires if hits ≥ uc2_min_hits."
+    composition: { type: COUNT_GE, operands: ["b2b-pup::UnifiedBull (per-bar)"], gate_inputs: ["uc2_min_hits", "uc2_window"] }
+    offset: -1
+    plot_call: |
+      plotshape(fire_UC2_bull,"S19 UC×2 Bull",shape.diamond,location.belowbar,color.new(#00E5FF,0),text="S19",textcolor=color.black,size=size.normal,offset=-1)
+      plotshape(fire_UC2_bear,"S19 UC×2 Bear",shape.diamond,location.abovebar,color.new(#FF3D00,0),text="S19",textcolor=color.white,size=size.normal,offset=-1)
+    pine_source_line_range: "L1083-L1084 (det at L803-L816; fire at L1040)"
+    notes: "Defaults: uc2_min_hits=2, uc2_window=2. Renamed from Plot A in v4.31."
+  - id: b2b-pup::S20_FMU
+    tier: 3
+    plain_english: "Standalone FVG/MAT/Uni Combo ×2: count visual bars where ANY of FVG-combo, Matrix-combo, or Unified-Combo fired; fires if hits ≥ fmu_min_hits."
+    composition: { type: COUNT_GE, operands: ["b2b-pup::CS1Bull OR b2b-pup::CS2Bull (per-bar)"], gate_inputs: ["fmu_min_hits", "fmu_window"] }
+    offset: -1
+    plot_call: |
+      plotshape(fire_FMU_bull,"S20 FMU×2 Bull",shape.diamond,location.belowbar,color.new(#80DEEA,0),text="S20",textcolor=color.black,size=size.small,offset=-1)
+      plotshape(fire_FMU_bear,"S20 FMU×2 Bear",shape.diamond,location.abovebar,color.new(#FFAB91,0),text="S20",textcolor=color.black,size=size.small,offset=-1)
+    pine_source_line_range: "L1086-L1087 (det at L825-L841; fire at L1041)"
+    notes: "Defaults: fmu_min_hits=2, fmu_window=2. Renamed from Plot B in v4.31."
+
+cross_indicator_dependencies:
+  - target: tnt-od
+    relationship: "canonical-source mirror"
+    notes: "Engine G (TNT/Napalm/Charge/CONT/TNT 2.0/Return-to-TNT) is required by README and CHANGELOG to mirror TNT OD's definitions exactly. Per v4.30 changelog the rewrite ported TNT OD's full architecture; v4.32 fixed a Charge-ladder regression detected by re-auditing against TNT OD."
+  - target: hvd-pbj-ppd
+    relationship: "potential PUP/PPD definition overlap"
+    notes: "PUP and PPD are defined locally here at L78-L79 with identical-looking semantics. The bible may need to designate one indicator's definition as canonical and mark the other as a duplicate."
+  - target: heavy-pentagon
+    relationship: "RVOL ladder definition overlap"
+    notes: "SAAB/1×/GS/Pentagon/WTC/Hiroshima/Nagasaki/Kratos/MOAB tiers and the f_th_* threshold tables overlap in concept and naming with heavy-pentagon's pipelines P1/P2/P3."
+  - target: heavy-combo-toggles
+    relationship: "FVG/Matrix/Unified combo overlap"
+    notes: "CS1/CS2/CS3 (Unified) here mirror the combo families used by heavy-pentagon → heavy-combo-toggles, but the implementations are local."
+
+uncertain_or_questions:
+  - "Is PUP/PPD the canonical definition here, or is hvd-pbj-ppd canonical? Both files appear to define the same primitive — bible should pick one."
+  - "FAUNA: should this be modeled as a single root, or should MB / RE / GG / TA be the named roots and FAUNA be a tier-1 composite of them? The CHANGELOG and code treat the family-level name as primary (checkboxes were removed), suggesting FAUNA-level is the primitive."
+  - "PB-only (det_PBBull/Bear) vs PBJ (det_PBJBull/Bear): is PB a separately-named primitive in the bible, or just a PBJ near-miss?"
+  - "All RVOL tiers (SAAB/Kratos/RVOL1x/GrandSlam/MOAB/Pentagon/WTC/Hiroshima/Nagasaki) are listed as roots since they are named primitives. They could also be modeled as a single 'RVOL ladder' composite of one underlying band-classification engine — bible should decide granularity."
+  - "Napalm vs Charge: per v4.32 CHANGELOG, Anish considers Napalm and Charge 'the same conceptual signal'. Should they be merged in the bible, or kept distinct (since their detection bodies are different)?"
+  - "TNT 2.0 (super-TNT) and consolidated TNT_CONS: are these separately-named primitives or just internal scaffolding? They get folded into det_bullTNT/det_bearTNT before any plot, but they have distinct semantics."
+  - "S7 is intentionally missing from the S-numbered scheme (per README and v4.29 baseline)."
+  - "Sibling file B2B_PUP_v4.32.pine is byte-for-byte equivalent except for line endings (Combined uses CRLF, sibling uses LF). They appear to be the same release packaged twice."

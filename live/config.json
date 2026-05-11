@@ -1,0 +1,12 @@
+{
+  "feed": "binance",
+  "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+  "window_minutes": 5,
+  "weights": {
+    "Bull RVOL 1x": 1.0,
+    "Bear RVOL 1x": 1.0,
+    "MOAB": 2.0,
+    "Vol Spike": 0.5,
+    "Body 3σ": 0.3
+  }
+}

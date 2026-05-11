@@ -1,0 +1,492 @@
+indicator:
+  id: yin-yang-displacement-pbj
+  file: yin-yang/versions/YIN_YANG_DISPLACEMENT_PBJ_v8.pine
+  pine_version: 5
+  line_count: 617
+  overlay: true
+  one_line_purpose: "Three-layer combo: Yin Yang S/R swings + Displacement (FVG+displaced range) + PB&J and PBJ lander system; emits 14 confluence patterns across 2-way and 3-way combinations"
+  non_repainting: true
+
+inputs:
+  - "Lookback Settings: Left Bars (75), Right Bars (2), ATR Length (50), ATR Multiplier (3.0) — shared with Yin Yang"
+  - "Displacement Settings: Displacement Range Type (Open to Close / High to Low, line 129), Std Dev Length (100, line 130), Std Dev Multiplier (5, line 131)"
+  - "OKEH - Zoo Engine: Base MA Type (VWMA, line 168), Base MA Length (5, line 169), Price Source (close, line 170)"
+  - "OKEH - PB&J Filter: MA Period (20, line 173), ATR Period (14, line 174), HH/LL Lookback (25, line 175), ATR Multiplier (3.0, line 176), Volume MA Period (20, line 177), Volume Multiplier (0.1, line 178)"
+  - "OKEH - Supertrend: Apply ATR Supertrend (true, line 181), ATR Period (10, line 182), Multiplier (2.0, line 183)"
+  - "PBJ Plot Settings: Show BullPB, BullPBJ, BearPB, BearPBJ (all true, lines 161-164)"
+  - "Combo Lookback (bars): int, default 10, maxval 100 (line 363) — max bars between plotted signals for a combo to fire"
+
+internal_helpers:
+  - id: yin-yang-displacement-pbj::yin_yang_core
+    description: "SECTION 1 (L4-120): identical to YIN_YANG_OG_MOFO, includes srLine UDT, srLines array, pivot detection, ATR filter, line lifecycle (breakout/breakdown/rejection logic)."
+    lines: "24-28 (type), 31-33 (vars), 36-102 (logic), 105-112 (plots)"
+  - id: yin-yang-displacement-pbj::displacement_raw_primitives
+    description: "SECTION 2 (L123-152): FVG detection (isBullishFVG/isBearishFVG) and std-dev range calculation; gates for plotting Bullish/Bearish Displacement."
+    lines: "134-144 (FVG+stdev logic)"
+  - id: yin-yang-displacement-pbj::zoo_supertrend
+    description: "OKEH Zoo Supertrend state machine: base_ma, st_atr, curr_long/curr_short, st_dir ±1 driving buy/sell crosses. Internal to PB&J engine."
+    lines: "204-230"
+  - id: yin-yang-displacement-pbj::zoo_lander_array
+    description: "lvl UDT array (bull_lvls, bear_lvls) maintaining upper/lower/vol/approached state for each lander box. Populated by f_add_lander (on cross) and f_add_reaccel (on reaccel). Checked by f_check_approach to set wait_buy/wait_sell flags."
+    lines: "186-190 (type), 241-242 (vars), 244-301 (funcs)"
+  - id: yin-yang-displacement-pbj::pbj_filter_gate
+    description: "PB&J filter primitives: pbj_ma, pbj_atr, avg_vol, thresh, pbj_buy, pbj_sell (lines 232-238). Gates the wait_pbj_buy/wait_pbj_sell flags for final PBJ signal."
+    lines: "232-238"
+  - id: yin-yang-displacement-pbj::combo_event_tracking
+    description: "var int event bar indices (evtSwingLow, evtSwingHigh, evtBullDisp, evtBullPBJ, evtBullPB, etc.) tracking when each signal plotted. Used by f_comboWithin and f_trio to detect confluence windows."
+    lines: "366-390"
+  - id: yin-yang-displacement-pbj::f_comboWithin
+    description: "Helper function: checks if two event bars are within comboWindow bars of each other (L393-394)."
+    lines: "393-394"
+  - id: yin-yang-displacement-pbj::f_trio
+    description: "Helper function: checks if three event bars are all within comboWindow bars of each other (L484-485)."
+    lines: "484-485"
+
+roots:
+  # Yin Yang S/R roots (same as OG MOFO)
+  - id: yin-yang-displacement-pbj::SwingHigh
+    family: swing-pivot
+    aka: ["Resistance Swing", "validHigh"]
+    definition: "ta.pivothigh(high, leftBars, rightBars) with ATR-distance gate; emits triangledown plotshape."
+    lines: "38-57 (def+fire), 105 (plot)"
+    fire_var: validHigh
+    plot:
+      title: "Swing High"
+      shape: triangledown
+      location: abovebar
+      color: color.red
+      size: normal
+      offset: -rightBars
+    note: "Yin Yang SECTION 1 root."
+
+  - id: yin-yang-displacement-pbj::SwingLow
+    family: swing-pivot
+    aka: ["Support Swing", "validLow"]
+    definition: "ta.pivotlow(low, leftBars, rightBars) with ATR-distance gate; emits triangleup plotshape."
+    lines: "39-69 (def+fire), 106 (plot)"
+    fire_var: validLow
+    plot:
+      title: "Swing Low"
+      shape: triangleup
+      location: belowbar
+      color: color.green
+      size: normal
+      offset: -rightBars
+    note: "Yin Yang SECTION 1 root."
+
+  - id: yin-yang-displacement-pbj::Breakout
+    family: line-cross
+    definition: "close > resistance line AND close[1] <= resistance line."
+    lines: "82-84, 108 (plot)"
+    fire_var: breakoutDetected
+    plot:
+      title: "Breakout"
+      shape: diamond
+      location: belowbar
+      color: color.green
+      size: small
+      text: "BO"
+    note: "Yin Yang SECTION 1 root."
+
+  - id: yin-yang-displacement-pbj::Breakdown
+    family: line-cross
+    definition: "close < support line AND close[1] >= support line."
+    lines: "90-92, 109 (plot)"
+    fire_var: breakdownDetected
+    plot:
+      title: "Breakdown"
+      shape: diamond
+      location: abovebar
+      color: color.red
+      size: small
+      text: "BD"
+    note: "Yin Yang SECTION 1 root."
+
+  - id: yin-yang-displacement-pbj::ResistanceRejection
+    family: line-test
+    definition: "high >= resistance line AND close < resistance line AND NOT breakdownDetected (mutex: breakdown suppresses rejection)."
+    lines: "86-87, 111 (plot)"
+    fire_var: resRejectionDetected
+    plot:
+      title: "Resistance Rejection"
+      shape: xcross
+      location: abovebar
+      color: color.aqua
+      size: small
+      text: "Rej"
+      textcolor: color.blue
+    note: "Yin Yang SECTION 1 root. Pine gates plotshape with `and not breakdownDetected` to prevent co-firing when a breakdown is also detected on the same bar."
+
+  - id: yin-yang-displacement-pbj::SupportRejection
+    family: line-test
+    definition: "low <= support line AND close > support line AND NOT breakoutDetected (mutex: breakout suppresses rejection)."
+    lines: "94-95, 112 (plot)"
+    fire_var: supRejectionDetected
+    plot:
+      title: "Support Rejection"
+      shape: xcross
+      location: belowbar
+      color: color.purple
+      size: small
+      text: "Rej"
+      textcolor: color.purple
+    note: "Yin Yang SECTION 1 root. Pine gates plotshape with `and not breakoutDetected` to prevent co-firing when a breakout is also detected on the same bar."
+
+  # Displacement roots (SECTION 2)
+  - id: yin-yang-displacement-pbj::BullishDisplacement
+    family: displacement
+    aka: ["isBullishSignal"]
+    definition: "isBullishFVG (low > high[2] AND open[1] < close[1]) AND isPreviousBarRangeDisplaced (candle_range[1] > displacement_threshold[1])."
+    lines: "134-144 (def), 147 (plot)"
+    fire_var: isBullishSignal
+    plot:
+      title: "Bullish Displacement"
+      shape: triangleup
+      location: belowbar
+      color: color.green
+      size: small
+      offset: -1
+    note: "Fires on bar N to signal bar N-1 displaced + bullish FVG on bar N. Plotted with offset=-1."
+
+  - id: yin-yang-displacement-pbj::BearishDisplacement
+    family: displacement
+    aka: ["isBearishSignal"]
+    definition: "isBearishFVG (high < low[2] AND open[1] > close[1]) AND isPreviousBarRangeDisplaced (candle_range[1] > displacement_threshold[1])."
+    lines: "135, 144, 148 (plot)"
+    fire_var: isBearishSignal
+    plot:
+      title: "Bearish Displacement"
+      shape: triangledown
+      location: abovebar
+      color: color.red
+      size: small
+      offset: -1
+    note: "Mirror of BullishDisplacement."
+
+  # PBJ roots (SECTION 3)
+  - id: yin-yang-displacement-pbj::BullPB
+    family: candle
+    aka: ["Pullback Buy", "sigBullPB"]
+    definition: "buy_cross (Zoo VWMA-5 + ATR Supertrend) AND wait_buy (lander box approached) AND NOT wait_pbj_buy (excludes PBJ coincidence)."
+    lines: "225 (buy_cross), 309-312 (wait flag), 339 (fire), 345 (plot)"
+    fire_var: sigBullPB
+    plot:
+      title: "Bull PB"
+      shape: labelup
+      location: belowbar
+      color: color.new(color.aqua, 50)
+      size: small
+      text: "PB"
+      textcolor: color.white
+    note: "SECTION 3 root. Redefines PB locally (not pulled from hvd-pbj-ppd; uses same Zoo lander architecture but fires independently)."
+
+  - id: yin-yang-displacement-pbj::BullPBJ
+    family: candle
+    aka: ["Pullback-Joyride Buy", "sigBullPBJ"]
+    definition: "buy_cross (Zoo VWMA-5 + ATR Supertrend) AND wait_pbj_buy (PB&J filter: low<EMA20*(1-thresh) AND low==25-bar lowest AND volume>SMA20*0.1)."
+    lines: "225 (buy_cross), 314-317 (wait flag), 340 (fire), 346 (plot)"
+    fire_var: sigBullPBJ
+    plot:
+      title: "Bull PBJ"
+      shape: diamond
+      location: belowbar
+      color: color.new(color.yellow, 50)
+      size: normal
+      text: "PBJ"
+      textcolor: color.black
+    note: "SECTION 3 root. Locally defined PBJ filter + Zoo cross."
+
+  - id: yin-yang-displacement-pbj::BearPB
+    family: candle
+    aka: ["Pullback Sell", "sigBearPB"]
+    definition: "sell_cross (Zoo VWMA-5 + ATR Supertrend) AND wait_sell (bear lander box approached) AND NOT wait_pbj_sell."
+    lines: "226 (sell_cross), 309-312 (wait flag), 341 (fire), 347 (plot)"
+    fire_var: sigBearPB
+    plot:
+      title: "Bear PB"
+      shape: labeldown
+      location: abovebar
+      color: color.new(color.orange, 0)
+      size: small
+      text: "PB"
+      textcolor: color.white
+    note: "SECTION 3 root. Mirror of BullPB."
+
+  - id: yin-yang-displacement-pbj::BearPBJ
+    family: candle
+    aka: ["Pullback-Joyride Sell", "sigBearPBJ"]
+    definition: "sell_cross (Zoo) AND wait_pbj_sell (PB&J sell filter: high>EMA20*(1+thresh) AND high==25-bar highest AND volume>SMA20*0.1)."
+    lines: "226 (sell_cross), 314-317 (wait flag), 342 (fire), 348 (plot)"
+    fire_var: sigBearPBJ
+    plot:
+      title: "Bear PBJ"
+      shape: labeldown
+      location: abovebar
+      color: color.new(color.red, 0)
+      size: normal
+      text: "PBJ"
+      textcolor: color.white
+    note: "SECTION 3 root. Mirror of BullPBJ."
+
+composites:
+  # 2-Way Bull (5)
+  - id: yin-yang-displacement-pbj::Combo2SwingDispBull
+    tier: 2
+    aka: ["2x Bull: Swing+Disp", "c2_swingDisp_bull"]
+    definition: "validLow (Swing Low) AND isBullishSignal (Displacement) fired within comboWindow bars of each other."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingLow
+      - yin-yang-displacement-pbj::BullishDisplacement
+    lines: "411-415 (def), 535 (plot)"
+    fire_var: c2_swingDisp_bull
+    plot:
+      title: "2x Bull: Swing+Disp"
+      shape: flag
+      location: belowbar
+      color: color.lime
+      size: small
+      text: "Sw+Di"
+      textcolor: color.lime
+
+  - id: yin-yang-displacement-pbj::Combo2SwingPBBull
+    tier: 2
+    aka: ["2x Bull: Swing+PB", "c2_swingPB_bull"]
+    definition: "validLow AND sigBullPB fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingLow
+      - yin-yang-displacement-pbj::BullPB
+    lines: "425-429 (def), 536 (plot)"
+    fire_var: c2_swingPB_bull
+    plot:
+      title: "2x Bull: Swing+PB"
+      shape: flag
+      location: belowbar
+      color: color.lime
+      size: small
+      text: "Sw+PB"
+
+  - id: yin-yang-displacement-pbj::Combo2SwingPBJBull
+    tier: 2
+    aka: ["2x Bull: Swing+PBJ", "c2_swingPBJ_bull"]
+    definition: "validLow AND sigBullPBJ fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingLow
+      - yin-yang-displacement-pbj::BullPBJ
+    lines: "432-436 (def), 537 (plot)"
+    fire_var: c2_swingPBJ_bull
+    plot:
+      title: "2x Bull: Swing+PBJ"
+      shape: flag
+      location: belowbar
+      color: color.lime
+      size: small
+      text: "Sw+PBJ"
+
+  - id: yin-yang-displacement-pbj::Combo2DispPBBull
+    tier: 2
+    aka: ["2x Bull: Disp+PB", "c2_dispPB_bull"]
+    definition: "isBullishSignal AND sigBullPB fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::BullishDisplacement
+      - yin-yang-displacement-pbj::BullPB
+    lines: "453-457 (def), 538 (plot)"
+    fire_var: c2_dispPB_bull
+    plot:
+      title: "2x Bull: Disp+PB"
+      shape: flag
+      location: belowbar
+      color: color.lime
+      size: small
+      text: "Di+PB"
+
+  - id: yin-yang-displacement-pbj::Combo2DispPBJBull
+    tier: 2
+    aka: ["2x Bull: Disp+PBJ", "c2_dispPBJ_bull"]
+    definition: "isBullishSignal AND sigBullPBJ fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::BullishDisplacement
+      - yin-yang-displacement-pbj::BullPBJ
+    lines: "460-464 (def), 539 (plot)"
+    fire_var: c2_dispPBJ_bull
+    plot:
+      title: "2x Bull: Disp+PBJ"
+      shape: flag
+      location: belowbar
+      color: color.lime
+      size: small
+      text: "Di+PBJ"
+
+  # 2-Way Bear (5)
+  - id: yin-yang-displacement-pbj::Combo2SwingDispBear
+    tier: 2
+    aka: ["2x Bear: Swing+Disp", "c2_swingDisp_bear"]
+    definition: "validHigh AND isBearishSignal fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingHigh
+      - yin-yang-displacement-pbj::BearishDisplacement
+    lines: "418-422 (def), 542 (plot)"
+    fire_var: c2_swingDisp_bear
+    plot:
+      title: "2x Bear: Swing+Disp"
+      shape: flag
+      location: abovebar
+      color: color.fuchsia
+      size: small
+      text: "Sw+Di"
+
+  - id: yin-yang-displacement-pbj::Combo2SwingPBBear
+    tier: 2
+    aka: ["2x Bear: Swing+PB", "c2_swingPB_bear"]
+    definition: "validHigh AND sigBearPB fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingHigh
+      - yin-yang-displacement-pbj::BearPB
+    lines: "439-443 (def), 543 (plot)"
+    fire_var: c2_swingPB_bear
+    plot:
+      title: "2x Bear: Swing+PB"
+      shape: flag
+      location: abovebar
+      color: color.fuchsia
+      size: small
+      text: "Sw+PB"
+
+  - id: yin-yang-displacement-pbj::Combo2SwingPBJBear
+    tier: 2
+    aka: ["2x Bear: Swing+PBJ", "c2_swingPBJ_bear"]
+    definition: "validHigh AND sigBearPBJ fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingHigh
+      - yin-yang-displacement-pbj::BearPBJ
+    lines: "446-450 (def), 544 (plot)"
+    fire_var: c2_swingPBJ_bear
+    plot:
+      title: "2x Bear: Swing+PBJ"
+      shape: flag
+      location: abovebar
+      color: color.fuchsia
+      size: small
+      text: "Sw+PBJ"
+
+  - id: yin-yang-displacement-pbj::Combo2DispPBBear
+    tier: 2
+    aka: ["2x Bear: Disp+PB", "c2_dispPB_bear"]
+    definition: "isBearishSignal AND sigBearPB fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::BearishDisplacement
+      - yin-yang-displacement-pbj::BearPB
+    lines: "467-471 (def), 545 (plot)"
+    fire_var: c2_dispPB_bear
+    plot:
+      title: "2x Bear: Disp+PB"
+      shape: flag
+      location: abovebar
+      color: color.fuchsia
+      size: small
+      text: "Di+PB"
+
+  - id: yin-yang-displacement-pbj::Combo2DispPBJBear
+    tier: 2
+    aka: ["2x Bear: Disp+PBJ", "c2_dispPBJ_bear"]
+    definition: "isBearishSignal AND sigBearPBJ fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::BearishDisplacement
+      - yin-yang-displacement-pbj::BearPBJ
+    lines: "474-478 (def), 546 (plot)"
+    fire_var: c2_dispPBJ_bear
+    plot:
+      title: "2x Bear: Disp+PBJ"
+      shape: flag
+      location: abovebar
+      color: color.fuchsia
+      size: small
+      text: "Di+PBJ"
+
+  # 3-Way Bull (2)
+  - id: yin-yang-displacement-pbj::Combo3PBBull
+    tier: 3
+    aka: ["3x Bull: Swing+Disp+PB", "c3_pb_bull"]
+    definition: "validLow AND isBullishSignal AND sigBullPB all fired within comboWindow bars of each other (f_trio gate)."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingLow
+      - yin-yang-displacement-pbj::BullishDisplacement
+      - yin-yang-displacement-pbj::BullPB
+    lines: "488-494 (def), 549 (plot)"
+    fire_var: c3_pb_bull
+    plot:
+      title: "3x Bull: Swing+Disp+PB"
+      shape: circle
+      location: belowbar
+      color: color.yellow
+      size: normal
+      text: "3x Sw+Di+PB"
+      textcolor: color.yellow
+
+  - id: yin-yang-displacement-pbj::Combo3PBJBull
+    tier: 3
+    aka: ["3x Bull: Swing+Disp+PBJ", "c3_pbj_bull"]
+    definition: "validLow AND isBullishSignal AND sigBullPBJ all fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingLow
+      - yin-yang-displacement-pbj::BullishDisplacement
+      - yin-yang-displacement-pbj::BullPBJ
+    lines: "497-503 (def), 550 (plot)"
+    fire_var: c3_pbj_bull
+    plot:
+      title: "3x Bull: Swing+Disp+PBJ"
+      shape: circle
+      location: belowbar
+      color: color.yellow
+      size: normal
+      text: "3x Sw+Di+PBJ"
+
+  # 3-Way Bear (2)
+  - id: yin-yang-displacement-pbj::Combo3PBBear
+    tier: 3
+    aka: ["3x Bear: Swing+Disp+PB", "c3_pb_bear"]
+    definition: "validHigh AND isBearishSignal AND sigBearPB all fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingHigh
+      - yin-yang-displacement-pbj::BearishDisplacement
+      - yin-yang-displacement-pbj::BearPB
+    lines: "506-512 (def), 553 (plot)"
+    fire_var: c3_pb_bear
+    plot:
+      title: "3x Bear: Swing+Disp+PB"
+      shape: circle
+      location: abovebar
+      color: color.orange
+      size: normal
+      text: "3x Sw+Di+PB"
+      textcolor: color.orange
+
+  - id: yin-yang-displacement-pbj::Combo3PBJBear
+    tier: 3
+    aka: ["3x Bear: Swing+Disp+PBJ", "c3_pbj_bear"]
+    definition: "validHigh AND isBearishSignal AND sigBearPBJ all fired within comboWindow bars."
+    depends_on:
+      - yin-yang-displacement-pbj::SwingHigh
+      - yin-yang-displacement-pbj::BearishDisplacement
+      - yin-yang-displacement-pbj::BearPBJ
+    lines: "515-521 (def), 554 (plot)"
+    fire_var: c3_pbj_bear
+    plot:
+      title: "3x Bear: Swing+Disp+PBJ"
+      shape: circle
+      location: abovebar
+      color: color.orange
+      size: normal
+      text: "3x Sw+Di+PBJ"
+
+cross_indicator_dependencies:
+  - "PB (Pullback) and PBJ (Pullback-Joyride) are locally redefined in SECTION 3 (L622-761) using the OKEH Zoo Supertrend + lander array system. This is NOT pulled from hvd-pbj-ppd; the architecture is self-contained here."
+  - "Displacement in SECTION 2 (L124-152, isBullishFVG/isBearishFVG + stdev range) is a local interpretation using standard FVG geometry. It is distinct from Pipeline-A HVD in hvd-pbj-ppd (which uses rank-tier volume filtering). This DISP is a simpler 'large range + FVG' detector."
+  - "SwingHigh/SwingLow/Breakout/Breakdown/Rejection are locally copied from YIN_YANG_OG_MOFO (SECTION 1, L4-120) with identical logic."
+  - "No explicit import or cross-indicator reference to hvd-pbj-ppd or pb-pbj in this file. PB and PBJ roots are fully self-defined."
+
+uncertain_or_questions:
+  - "No mentions of 'floor', 'roof', 'rooftop', 'penthouse', '2nd floor', 'ping pong', or related named concepts found in this file."
+  - "Displacement offset=-1 vs PBJ offset=0: Displacement fires on bar N to signal bar N-1's displaced range (offset=-1 plotshape). PB/PBJ fire on bar N describing bar N (offset=0, no plot offset). This asymmetry may lead to plotting position misalignment; verify this is intentional."
+  - "2-way and 3-way combo event tracking: evtSwingLow, evtSwingHigh, evtBullDisp, evtBullPBJ, evtBullPB (L366-390) are never reset. Over a multi-month backtest, old event bars can remain in scope and falsely trigger combos if they fall within comboWindow. Consider adding time-decay or explicit reset logic to event vars."
+  - "Catch-all alerts (L578-579) fire on any_bull or any_bear (aggregate of all 2-way + 3-way combos). These are convenient for macro-alerts but may create alert fatigue if multiple combos fire near each other."
+

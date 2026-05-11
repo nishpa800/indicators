@@ -1,0 +1,5 @@
+# hv-ladder has TWO sibling canonical variants — they are DIFFERENT
+# ladders (50→1K granularity vs 100→1K granularity), not redundant.
+# Both stay canonical until Anish decides one supersedes the other.
+HV_LADDER_50_TO_1K_v1.pine
+HV_LADDER_100_TO_1K_v1.pine
