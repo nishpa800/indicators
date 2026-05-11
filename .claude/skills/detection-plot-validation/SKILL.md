@@ -111,15 +111,16 @@ Side artifacts (only created if the run discovers them):
 - [ ] Every drift-finding artifact follows `templates/drift-finding.md`
 - [ ] The Phase-1 enumeration table is updated with the per-location verdict
 
-### Phase 3 — TV-FIRING
+### Phase 3 — TV-FIRING (autonomous-only — Path B)
 
-**Goal**: confirm the target fires correctly on real chart bars. This is the runtime drift check — it catches drifts that Phase 2 misses (state-machine bugs, offset cascades, indicator-internal helper drift).
+**Goal**: confirm the target fires correctly on real chart bars. Runtime drift check.
 
-**Two paths**:
+**Path A (chart-side, requires Anish) is NOT in this skill.** It lives in the separate `detection-plot-tv-firing` skill (`.claude/skills/detection-plot-tv-firing/SKILL.md`). The main skill MUST NOT block waiting for Anish.
 
-- **Path A** (Anish-driven, primary): if Path A logger Pines exist for the target's indicator(s), load them on the user's TradingView canvas. Logger emits one `label.new()` per fire. Use `data_get_pine_labels` MCP (if connected) to query fire bars. See `references/path-a-logger-usage.md`.
-- **Path B** (Python ports): if the target's Pine is replicated in `realtime-indicators` (Phase M pipeline), run the historical sample. See `references/python-port-usage.md`. **CAVEAT**: stateful composites return zero on Path B until Phase 2 state-threading is shipped — fall back to Path A.
-- **Manual fallback**: if neither path is available, the skill PAUSES and writes a "Phase 3 BLOCKED — manual TV verification required" section in the validation report. The user must verify on chart and paste fire-bar timestamps back.
+**Two outcomes only**:
+
+- **Path B (Python ports / Phase M)** — autonomous. If the target's Pine is replicated in `realtime-indicators/rti/signals/`, run the historical sample. See `references/python-port-usage.md`. If Path B succeeds (returns non-empty fire bars), use those bars for the agreement/drift set computation.
+- **BLOCKED-NEEDS-TV-FIRING-SKILL** — if Path B is unavailable (target not in any port pack) OR returns zero fires due to stateful-composite limitation, mark Phase 3 as `BLOCKED-NEEDS-TV-FIRING-SKILL` and CONTINUE to Phase 4 with Phase-2 static findings only. Do NOT pause. Do NOT ask the user. The flag is picked up later by the `detection-plot-tv-firing` skill when Anish is at his desk.
 
 **Procedure**:
 
@@ -189,20 +190,21 @@ Subagent contract — every subagent MUST:
 
 ## When to ask the user vs proceed autonomously
 
-**ALWAYS ASK** (skill must not proceed):
+**Standing approval applies** per `STANDING_APPROVAL.md` in this directory. The skill proceeds autonomously by default. The HARD GUARDRAILS are minimal — only ask Anish if:
 
-- Phase 2 finds `semantic drift` between locations — present the diff side-by-side, ask which is canonical
-- Phase 3 reveals fire-bar disagreement on a significant fraction of bars (>5% of agreement-set size)
-- Phase 4 reconcile involves Pine source rename, file deletion, or filename change
-- Cross-condition check returns zero historical fires — could be impossible (bug) or rare (real); user calls it
-- Any decision involving a CHANGELOG-documented canonical designation
+- Deleting any file (NEVER do this — always version-control instead)
+- Dropping any database
+- Spending money or hitting rate-limited APIs > 100 times in 5 minutes
+- Mass-renaming Pine files (NEVER do this — always add a new versioned file with a descriptive suffix; update CHANGELOG.md describing what changed)
 
-**PROCEED AUTONOMOUSLY**:
+**EVERYTHING ELSE PROCEEDS AUTONOMOUSLY**, including:
 
-- Phase 2 `identical` / `cosmetic-drift` / `IPSF default variation` verdicts (record in report, no edit needed)
-- Phase 3 100% agreement-set (all locations fire on identical bars) — report and move on
-- Phase 4 `IPSF asymmetry` flagged with the `add input.*` recommendation (only if user has standing approval per `UNLIMITED_APPROVAL.md`)
-- Pure regen runs (merge_extracts → build_lineage_cards → build_docs) — no Pine touched
+- Phase 2 `semantic-drift` findings — create a NEW versioned file in the affected indicator's `versions/` directory documenting both implementations; update extract-*.yaml to reflect both with a `variant_of:` relationship; let Anish review the documented finding later. Do NOT halt.
+- Phase 3 fire-bar disagreement — record in the drift-finding artifact; treat as a runtime drift; CONTINUE.
+- Phase 4 reconciliation — apply YAML edits via `bible-input/extract-*.yaml`; regen all derived artifacts; commit + push. Don't pause.
+- Cross-condition zero co-occurrence — flag in the report with the three-class characterisation (impossible / bug / rare); pick the most likely interpretation based on the static-diff evidence; document in the report; CONTINUE.
+
+**The single permitted pause**: if a `BLOCKED-NEEDS-TV-FIRING-SKILL` outcome is the BEST we can do for a target (Path B unavailable + chart-side required), MARK IT AND MOVE ON. Never wait for Anish to be at his desk.
 
 ## When validation is COMPLETE
 

@@ -2,6 +2,16 @@
 
 Skill version history. Bump on any procedural change. Re-run in-flight validations under the new version if the change is procedural (not cosmetic).
 
+## v1.1.0 — 2026-05-10
+
+Anish-directive update: TV-firing autonomy + standing approval embedded.
+
+- **Phase 3 Path A removed from this skill.** Path A (chart-side TV MCP queries) required Anish at his desk — incompatible with the "never block on Anish while he's at work" directive. Moved to the new `detection-plot-tv-firing` skill in `.claude/skills/detection-plot-tv-firing/`.
+- **Phase 3 in this skill is now Path B only**. If Path B is unavailable (target not in any Python port pack) OR stateful-blocked (returns zero), mark Phase 3 `BLOCKED-NEEDS-TV-FIRING-SKILL` and CONTINUE to Phase 4 with Phase-2 static findings only. Never pause.
+- **`STANDING_APPROVAL.md` added inside the skill.** Embeds Anish's unlimited approval verbatim. Every agent invocation of the skill loads it. Hard guardrails reduced to 4: file deletion, DB drop, rate-limited APIs >100/5min, mass Pine renames.
+- **Phase 4 reconcile is now autonomous for `semantic-drift` too**: instead of pausing for canonical decision, the skill creates a NEW versioned file in the affected indicator's `versions/` directory documenting both implementations; updates `extract-*.yaml` with `variant_of:` relationships; commits + pushes. Anish reviews the documented finding later. **No more validation pauses**.
+- **Version-control mantra enforced**: never rename, never delete; always add a new versioned file. CHANGELOG documents what changed.
+
 ## v1.0.0 — 2026-05-10
 
 Initial release.

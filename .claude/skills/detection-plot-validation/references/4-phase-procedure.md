@@ -90,30 +90,33 @@ The Phase-2 pairwise classification table in the validation report under `## Pha
 
 ---
 
-## Phase 3 — TV-FIRING
+## Phase 3 — TV-FIRING (autonomous — Path B only)
+
+**Path A removed in skill v1.1**. See `.claude/skills/detection-plot-tv-firing/SKILL.md` for the chart-side path. This skill does Path B only; never blocks waiting for Anish.
 
 ### Inputs
 
 - Phase 1 enumeration table (DEFINITION locations)
 - The target's plot offset (from `data/indicators.yaml`)
-- Either: TradingView MCP connection + Path A logger Pines, OR: realtime-indicators repo + Phase M pipeline, OR: nothing (manual fallback)
+- `realtime-indicators` repo at `~/code/anish/realtime-indicators/` (if available locally) + the per-pack `phase_m_run.py` or equivalent
 
-### Path selection
+### Outcome — Path B only
 
-- **Path A** preferred if: TV MCP connected AND Path A logger Pines exist for the target's indicator(s). See `references/path-a-logger-usage.md`.
-- **Path B** if: Path A unavailable AND the target's Pine is replicated in `realtime-indicators/rti/signals/`. See `references/python-port-usage.md`. **Skip Path B for stateful composites** — Phase M pipeline currently re-instantiates state per `detect()` call.
-- **Manual** if: neither available. Write a "Phase 3 BLOCKED" section in the report; user runs the chart-side check and pastes timestamps back.
+1. Run Path B: `python3 ~/code/anish/realtime-indicators/scripts/phase_m_run.py --target=<canonical-name> --pack=<pack-name>` (or equivalent — see `references/python-port-usage.md`).
+2. If Path B returns **non-empty fire bars** → use those for the agreement/drift set computation.
+3. If Path B returns **zero fires** (stateful composite limitation) OR Path B is **unavailable** (target not in any port pack) → mark Phase 3 status `BLOCKED-NEEDS-TV-FIRING-SKILL` in the report and CONTINUE to Phase 4 with Phase 2 static findings only. **Do not pause. Do not ask Anish.**
 
-### Steps (Path A)
+### `BLOCKED-NEEDS-TV-FIRING-SKILL` behavior
 
-1. For each DEFINITION location, identify the Path A logger that captures it
-2. Query the logger via `data_get_pine_labels` (MCP)
-3. Collect the fire-bar set (list of `{timestamp, bar_index, symbol, timeframe}` tuples) per DEFINITION
+When marked BLOCKED, the validation report's "Phase 3 — TV firing" section reads:
 
-### Steps (Path B)
+```
+Path used: BLOCKED-NEEDS-TV-FIRING-SKILL
+Reason: <Path B unavailable / Path B stateful-blocked / etc.>
+Followup: see detection-plot-tv-firing skill — invoke when Anish is at his desk
+```
 
-1. Run `realtime-indicators/scripts/phase_m_run.py --target=<canonical-name> --pack=<pack-name>` (or equivalent — see `references/python-port-usage.md`)
-2. Output is fire bars per location
+The target's final verdict reflects Phase 2 findings only. If Phase 2 found `identical` for all pairs, verdict is `OK-PENDING-TV-FIRING`. If Phase 2 found drift, the drift is REAL regardless of TV firing — verdict is `DRIFT-RECONCILED` (if Phase 4 versioned a new file documenting both) or `OK-WITH-DRIFT-VERSIONED` (same).
 
 ### Compute the bar-set algebra
 
