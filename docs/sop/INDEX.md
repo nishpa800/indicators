@@ -13,6 +13,15 @@ outputs / failure modes.
 | [`drift-triage.md`](./drift-triage.md) | When the same root fires differently in two indicators or a composite that should fire doesn't. |
 | [`offset-triage.md`](./offset-triage.md) | When a composite fires "one bar off" or fails to align with its dependencies. |
 | [`icloud-mirror.md`](./icloud-mirror.md) | When syncing the bible to local + iCloud Drive for offline access. |
+| [`phase-m-runner.md`](./phase-m-runner.md) | When running historical detection sampling (Massive REST → Python ports → fires CSV). Used to refresh Stage 4 inputs after port changes. |
+
+## Stage-level methodology docs (live above SOPs)
+
+| Doc | Stage |
+|---|---|
+| [`../STAGE_3_TV_VERIFICATION.md`](../STAGE_3_TV_VERIFICATION.md) | Stage 3 — TradingView root verification |
+| [`../STAGE_4_COMPOSITE_VALIDATION.md`](../STAGE_4_COMPOSITE_VALIDATION.md) | Stage 4 — composite firing validation cross-reference |
+| [`../STAGE_6_CANONICAL_SELECTION.md`](../STAGE_6_CANONICAL_SELECTION.md) | Stage 6 — canonical pick + archive reconciliation |
 
 ## Operating principle
 
