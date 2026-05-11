@@ -1,0 +1,41 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: T1_RELAY
+aliases_searched:
+- T1_RELAY
+- p_t1RelayBull
+- p_t1RelayBear
+- t1RelayBull
+- t1RelayBear
+- T1_RELAY_BULL
+- T1_RELAY_BEAR
+- t1_relay
+pine_files_scanned: 54
+definitions:
+- &id001
+  indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1668
+  pine_variable: p_t1RelayBull
+  raw_line: bool p_t1RelayBull = t1_v2_anyB and t1_v1_anyB and barstate.isconfirmed
+- &id002
+  indicator_family: tnt-od
+  file: tnt-od/versions/TNT_OD_v3.pine
+  line: 1669
+  pine_variable: p_t1RelayBear
+  raw_line: bool p_t1RelayBear = t1_v2_anyS and t1_v1_anyS and barstate.isconfirmed
+occurrences_per_indicator:
+  tnt-od:
+    DEFINITION: 2
+    REFERENCE: 2
+    INPUT: 0
+    PLOT: 2
+    ALERT: 0
+    COMMENT: 0
+yaml_cross_check:
+  yaml_matching_records: []
+  orphans: []
+  missings:
+  - *id001
+  - *id002
+status: COMPLETE
