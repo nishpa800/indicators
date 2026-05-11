@@ -11335,7 +11335,7 @@
         {
           "id": "hvd-pbj-ppd::CC_BULL",
           "tier": "1C",
-          "plain_english": "Combo Chain Bull: \u2265 cc_min_hits Combo windows in last cc_window bars + a PBJ_BULL or PB_BULL within the window. Latches active until any/all combo expire.",
+          "plain_english": "Combo Chain Bull: \u2265 cc_min_hits Combo windows in last cc_window bars + a PBJ_BULL or PB_BULL within the window. Latches active until comboSet3_Bull OR comboSet4_Bull expire (THE_ONLY_ONE) or until any of CS1-CS4 expire (legacy). See drift finding.",
           "composition": {
             "type": "WINDOW",
             "operands": [
@@ -11347,7 +11347,11 @@
           "plot_call": "plotshape(fire_CCBull,\"CC Bull\",shape.square,location.belowbar,color.new(#00BFA5,0),text=\"CC\",textcolor=color.white,size=size.huge)",
           "alertcondition_id": null,
           "pine_source_line_range": "L1077-L1111, plot L1356",
-          "notes": "Includes shifted operand (comboSet1/2_Bull[i-1] for i\u22651).",
+          "pine_variable": "sigCCBull",
+          "drift_status": "SEMANTIC-DRIFT-3-WAY",
+          "drift_finding": "docs/validation/2026-05-10-combo-chain-bull-drift-1.md",
+          "variant_kind": "semantic-drift-narrowest-operands (CS3+CS4 only reset \u2014 THE_ONLY_ONE sole outlier)",
+          "notes": "THE_ONLY_ONE resets cc_bull_active when not(comboSet3_Bull or comboSet4_Bull) \u2014 CS3+CS4 only. Legacy HVDPBJPPD (1939, 2246, 4.26) and all squarify versions reset on full CS1+CS2+CS3+CS4. THE_ONLY_ONE is the lone outlier; 7 of 8 locations agree on the wider reset. PENDING user decision on canonical. show_CCBull is input.bool here (tunable) vs hardcoded true in squarify (IPSF-asymmetry).",
           "in_indicator": "hvd-pbj-ppd",
           "plot_offset": 0,
           "lifecycle_stage": 5
@@ -11367,7 +11371,11 @@
           "plot_call": "plotshape(fire_CCBear,\"CC Bear\",shape.square,location.bottom,color.new(#E91E63,0),text=\"CC\",textcolor=color.white,size=size.large)",
           "alertcondition_id": null,
           "pine_source_line_range": "L1088-L1111, plot L1381",
-          "notes": "Mirror.",
+          "pine_variable": "sigCCBear",
+          "drift_status": "SEMANTIC-DRIFT-3-WAY",
+          "drift_finding": "docs/validation/2026-05-10-combo-chain-bull-drift-1.md",
+          "variant_kind": "semantic-drift-narrowest-operands (CS3+CS4 only reset \u2014 THE_ONLY_ONE sole outlier)",
+          "notes": "Bear mirror. Same 3-way drift applies symmetrically.",
           "in_indicator": "hvd-pbj-ppd",
           "plot_offset": 0,
           "lifecycle_stage": 5
@@ -13919,6 +13927,56 @@
           "pine_source_line_range": "L2077 (def); L2288 (plot)",
           "in_indicator": "squarify",
           "plot_offset": -1,
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "squarify::CC_BULL",
+          "tier": 2,
+          "plain_english": "Combo Chain Bull: stateful latch that activates when \u2265 cc_min_hits Combo window hits accumulate in cc_window bars AND a PBJ/PB occurred in that window. Resets when ALL combo streams (CS1+CS2+CS3+CS4) go false.",
+          "composition": {
+            "type": "STATEFUL_LATCH",
+            "operands": [
+              "cc_win_bull \u2265 cc_min_hits",
+              "cc_pbj_bull",
+              "reset: not(csNew1_Bull or csNew2_Bull)"
+            ]
+          },
+          "offset": 0,
+          "plot_call": "plotshape(fire_CCBull,\"CC Bull\",shape.square,location.belowbar,color.new(#00BFA5,0),text=\"CC\",textcolor=color.white,size=size.huge)",
+          "alertcondition_id": null,
+          "pine_source_line_range": "L1282-L1312, plot L1794 (46_v2)",
+          "pine_variable": "sigCCBull",
+          "drift_status": "SEMANTIC-DRIFT-3-WAY",
+          "drift_finding": "docs/validation/2026-05-10-combo-chain-bull-drift-1.md",
+          "variant_kind": "semantic-drift-widest-operands (CS1+CS2+CS3+CS4 reset \u2014 agrees with legacy hvd-pbj-ppd; differs from THE_ONLY_ONE)",
+          "notes": "Squarify's 4 versions are internally consistent. Reset: if not(csNew1_Bull or csNew2_Bull) which expands to all 4 comboSets. THE_ONLY_ONE resets on CS3+CS4 only \u2014 semantic drift. show_CCBull is hardcoded true here (IPSF-asymmetry vs hvd-pbj-ppd input.bool). MISSING from squarify numbered S-plots \u2014 CC is an unlabeled non-numbered composite. PENDING user decision on canonical.",
+          "in_indicator": "squarify",
+          "plot_offset": 0,
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "squarify::CC_BEAR",
+          "tier": 2,
+          "plain_english": "Bear mirror of CC_BULL.",
+          "composition": {
+            "type": "STATEFUL_LATCH",
+            "operands": [
+              "cc_win_bear \u2265 cc_min_hits",
+              "cc_pbj_bear",
+              "reset: not(csNew1_Bear or csNew2_Bear)"
+            ]
+          },
+          "offset": 0,
+          "plot_call": "plotshape(fire_CCBear,\"CC Bear\",shape.square,location.abovebar,color.new(#E91E63,0),text=\"CC\",textcolor=color.white,size=size.small)",
+          "alertcondition_id": null,
+          "pine_source_line_range": "L1282-L1312, plot L1804 (46_v2)",
+          "pine_variable": "sigCCBear",
+          "drift_status": "SEMANTIC-DRIFT-3-WAY",
+          "drift_finding": "docs/validation/2026-05-10-combo-chain-bull-drift-1.md",
+          "variant_kind": "semantic-drift-widest-operands (CS1+CS2+CS3+CS4 reset)",
+          "notes": "Bear mirror. Same drift applies symmetrically.",
+          "in_indicator": "squarify",
+          "plot_offset": 0,
           "lifecycle_stage": 5
         },
         {
@@ -34474,7 +34532,7 @@
     {
       "id": "hvd-pbj-ppd::CC_BULL",
       "tier": "1C",
-      "plain_english": "Combo Chain Bull: \u2265 cc_min_hits Combo windows in last cc_window bars + a PBJ_BULL or PB_BULL within the window. Latches active until any/all combo expire.",
+      "plain_english": "Combo Chain Bull: \u2265 cc_min_hits Combo windows in last cc_window bars + a PBJ_BULL or PB_BULL within the window. Latches active until comboSet3_Bull OR comboSet4_Bull expire (THE_ONLY_ONE) or until any of CS1-CS4 expire (legacy). See drift finding.",
       "composition": {
         "type": "WINDOW",
         "operands": [
@@ -34486,7 +34544,11 @@
       "plot_call": "plotshape(fire_CCBull,\"CC Bull\",shape.square,location.belowbar,color.new(#00BFA5,0),text=\"CC\",textcolor=color.white,size=size.huge)",
       "alertcondition_id": null,
       "pine_source_line_range": "L1077-L1111, plot L1356",
-      "notes": "Includes shifted operand (comboSet1/2_Bull[i-1] for i\u22651).",
+      "pine_variable": "sigCCBull",
+      "drift_status": "SEMANTIC-DRIFT-3-WAY",
+      "drift_finding": "docs/validation/2026-05-10-combo-chain-bull-drift-1.md",
+      "variant_kind": "semantic-drift-narrowest-operands (CS3+CS4 only reset \u2014 THE_ONLY_ONE sole outlier)",
+      "notes": "THE_ONLY_ONE resets cc_bull_active when not(comboSet3_Bull or comboSet4_Bull) \u2014 CS3+CS4 only. Legacy HVDPBJPPD (1939, 2246, 4.26) and all squarify versions reset on full CS1+CS2+CS3+CS4. THE_ONLY_ONE is the lone outlier; 7 of 8 locations agree on the wider reset. PENDING user decision on canonical. show_CCBull is input.bool here (tunable) vs hardcoded true in squarify (IPSF-asymmetry).",
       "in_indicator": "hvd-pbj-ppd",
       "plot_offset": 0,
       "lifecycle_stage": 5
@@ -34506,7 +34568,11 @@
       "plot_call": "plotshape(fire_CCBear,\"CC Bear\",shape.square,location.bottom,color.new(#E91E63,0),text=\"CC\",textcolor=color.white,size=size.large)",
       "alertcondition_id": null,
       "pine_source_line_range": "L1088-L1111, plot L1381",
-      "notes": "Mirror.",
+      "pine_variable": "sigCCBear",
+      "drift_status": "SEMANTIC-DRIFT-3-WAY",
+      "drift_finding": "docs/validation/2026-05-10-combo-chain-bull-drift-1.md",
+      "variant_kind": "semantic-drift-narrowest-operands (CS3+CS4 only reset \u2014 THE_ONLY_ONE sole outlier)",
+      "notes": "Bear mirror. Same 3-way drift applies symmetrically.",
       "in_indicator": "hvd-pbj-ppd",
       "plot_offset": 0,
       "lifecycle_stage": 5
@@ -35902,6 +35968,56 @@
       "pine_source_line_range": "L2077 (def); L2288 (plot)",
       "in_indicator": "squarify",
       "plot_offset": -1,
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "squarify::CC_BULL",
+      "tier": 2,
+      "plain_english": "Combo Chain Bull: stateful latch that activates when \u2265 cc_min_hits Combo window hits accumulate in cc_window bars AND a PBJ/PB occurred in that window. Resets when ALL combo streams (CS1+CS2+CS3+CS4) go false.",
+      "composition": {
+        "type": "STATEFUL_LATCH",
+        "operands": [
+          "cc_win_bull \u2265 cc_min_hits",
+          "cc_pbj_bull",
+          "reset: not(csNew1_Bull or csNew2_Bull)"
+        ]
+      },
+      "offset": 0,
+      "plot_call": "plotshape(fire_CCBull,\"CC Bull\",shape.square,location.belowbar,color.new(#00BFA5,0),text=\"CC\",textcolor=color.white,size=size.huge)",
+      "alertcondition_id": null,
+      "pine_source_line_range": "L1282-L1312, plot L1794 (46_v2)",
+      "pine_variable": "sigCCBull",
+      "drift_status": "SEMANTIC-DRIFT-3-WAY",
+      "drift_finding": "docs/validation/2026-05-10-combo-chain-bull-drift-1.md",
+      "variant_kind": "semantic-drift-widest-operands (CS1+CS2+CS3+CS4 reset \u2014 agrees with legacy hvd-pbj-ppd; differs from THE_ONLY_ONE)",
+      "notes": "Squarify's 4 versions are internally consistent. Reset: if not(csNew1_Bull or csNew2_Bull) which expands to all 4 comboSets. THE_ONLY_ONE resets on CS3+CS4 only \u2014 semantic drift. show_CCBull is hardcoded true here (IPSF-asymmetry vs hvd-pbj-ppd input.bool). MISSING from squarify numbered S-plots \u2014 CC is an unlabeled non-numbered composite. PENDING user decision on canonical.",
+      "in_indicator": "squarify",
+      "plot_offset": 0,
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "squarify::CC_BEAR",
+      "tier": 2,
+      "plain_english": "Bear mirror of CC_BULL.",
+      "composition": {
+        "type": "STATEFUL_LATCH",
+        "operands": [
+          "cc_win_bear \u2265 cc_min_hits",
+          "cc_pbj_bear",
+          "reset: not(csNew1_Bear or csNew2_Bear)"
+        ]
+      },
+      "offset": 0,
+      "plot_call": "plotshape(fire_CCBear,\"CC Bear\",shape.square,location.abovebar,color.new(#E91E63,0),text=\"CC\",textcolor=color.white,size=size.small)",
+      "alertcondition_id": null,
+      "pine_source_line_range": "L1282-L1312, plot L1804 (46_v2)",
+      "pine_variable": "sigCCBear",
+      "drift_status": "SEMANTIC-DRIFT-3-WAY",
+      "drift_finding": "docs/validation/2026-05-10-combo-chain-bull-drift-1.md",
+      "variant_kind": "semantic-drift-widest-operands (CS1+CS2+CS3+CS4 reset)",
+      "notes": "Bear mirror. Same drift applies symmetrically.",
+      "in_indicator": "squarify",
+      "plot_offset": 0,
       "lifecycle_stage": 5
     },
     {

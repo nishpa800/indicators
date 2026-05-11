@@ -663,13 +663,17 @@ composites:
   # ── Tier 1C: Chains ──
   - id: hvd-pbj-ppd::CC_BULL
     tier: 1C
-    plain_english: "Combo Chain Bull: ≥ cc_min_hits Combo windows in last cc_window bars + a PBJ_BULL or PB_BULL within the window. Latches active until any/all combo expire."
+    plain_english: "Combo Chain Bull: ≥ cc_min_hits Combo windows in last cc_window bars + a PBJ_BULL or PB_BULL within the window. Latches active until comboSet3_Bull OR comboSet4_Bull expire (THE_ONLY_ONE) or until any of CS1-CS4 expire (legacy). See drift finding."
     composition: { type: WINDOW, operands: ["cc_win_bull ≥ cc_min_hits", "PBJ_BULL or PB_BULL inside window"] }
     offset: 0
     plot_call: "plotshape(fire_CCBull,\"CC Bull\",shape.square,location.belowbar,color.new(#00BFA5,0),text=\"CC\",textcolor=color.white,size=size.huge)"
     alertcondition_id: null
     pine_source_line_range: "L1077-L1111, plot L1356"
-    notes: "Includes shifted operand (comboSet1/2_Bull[i-1] for i≥1)."
+    pine_variable: sigCCBull
+    drift_status: SEMANTIC-DRIFT-3-WAY
+    drift_finding: "docs/validation/2026-05-10-combo-chain-bull-drift-1.md"
+    variant_kind: "semantic-drift-narrowest-operands (CS3+CS4 only reset — THE_ONLY_ONE sole outlier)"
+    notes: "THE_ONLY_ONE resets cc_bull_active when not(comboSet3_Bull or comboSet4_Bull) — CS3+CS4 only. Legacy HVDPBJPPD (1939, 2246, 4.26) and all squarify versions reset on full CS1+CS2+CS3+CS4. THE_ONLY_ONE is the lone outlier; 7 of 8 locations agree on the wider reset. PENDING user decision on canonical. show_CCBull is input.bool here (tunable) vs hardcoded true in squarify (IPSF-asymmetry)."
 
   - id: hvd-pbj-ppd::CC_BEAR
     tier: 1C
@@ -679,7 +683,11 @@ composites:
     plot_call: "plotshape(fire_CCBear,\"CC Bear\",shape.square,location.bottom,color.new(#E91E63,0),text=\"CC\",textcolor=color.white,size=size.large)"
     alertcondition_id: null
     pine_source_line_range: "L1088-L1111, plot L1381"
-    notes: "Mirror."
+    pine_variable: sigCCBear
+    drift_status: SEMANTIC-DRIFT-3-WAY
+    drift_finding: "docs/validation/2026-05-10-combo-chain-bull-drift-1.md"
+    variant_kind: "semantic-drift-narrowest-operands (CS3+CS4 only reset — THE_ONLY_ONE sole outlier)"
+    notes: "Bear mirror. Same 3-way drift applies symmetrically."
 
   - id: hvd-pbj-ppd::LSC_BULL
     tier: 1C

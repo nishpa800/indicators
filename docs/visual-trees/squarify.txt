@@ -59,6 +59,18 @@ ROOTS
 
 COMPOSITES (by tier)
 -----
+  Tier 2:
+    ● squarify::CC_BULL    [offset=0 · STATEFUL_LATCH]
+        Combo Chain Bull: stateful latch that activates when ≥ cc_min_hits Co…
+        ├── cc_win_bull ≥ cc_min_hits
+        ├── cc_pbj_bull
+        └── reset: not(csNew1_Bull or csNew2_Bull)
+    ● squarify::CC_BEAR    [offset=0 · STATEFUL_LATCH]
+        Bear mirror of CC_BULL.
+        ├── cc_win_bear ≥ cc_min_hits
+        ├── cc_pbj_bear
+        └── reset: not(csNew1_Bear or csNew2_Bear)
+
   Tier 3:
     ● squarify::S1_SD_BANG    [offset=-1 · AND]
         SD! (Super Duper) — REDEFINED v2: Unified Combo + consolidated NPM + …

@@ -6,7 +6,7 @@ Two tables. **(a)** name collisions — same primitive name appearing under two 
 
 ## (a) Name collisions across indicators
 
-**174 colliding names.** Each row groups all canonical IDs that share an unqualified name.
+**176 colliding names.** Each row groups all canonical IDs that share an unqualified name.
 
 | Short name | Occurrences | Verdict | Recommendation |
 |---|---|---|---|
@@ -32,6 +32,8 @@ Two tables. **(a)** name collisions — same primitive name appearing under two 
 | `BullPBJ` | `anish-tb-foster::BullPBJ` (in anish-tb-foster); `yin-yang-displacement-pbj::BullPBJ` (in yin-yang-displacement-pbj) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `CC Bear` | `hvd-pbj-ppd-1939::CC Bear` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::CC Bear` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `CC Bull` | `hvd-pbj-ppd-1939::CC Bull` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::CC Bull` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `CC_BEAR` | `hvd-pbj-ppd::CC_BEAR` (in hvd-pbj-ppd); `squarify::CC_BEAR` (in squarify) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `CC_BULL` | `hvd-pbj-ppd::CC_BULL` (in hvd-pbj-ppd); `squarify::CC_BULL` (in squarify) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `CS1 FVG Bear` | `hvd-pbj-ppd-1939::CS1 FVG Bear` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::CS1 FVG Bear` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `CS1 FVG Bull` | `hvd-pbj-ppd-1939::CS1 FVG Bull` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::CS1 FVG Bull` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `CS2 MAT Bear` | `hvd-pbj-ppd-1939::CS2 MAT Bear` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::CS2 MAT Bear` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
