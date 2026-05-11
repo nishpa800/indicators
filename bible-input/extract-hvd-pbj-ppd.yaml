@@ -331,7 +331,7 @@ composites:
     plain_english: "Tier-0 priority bull: PBJ + DISP + (FAUNA bull or LSLong1) + HW-volume slot + ((Combo-set + PUP) OR Floor/2F)."
     composition:
       type: AND
-      operands: [PBJ_BULL, DISP_BULL, "(FAUNA_BULL or LS_LONG1)", "(RVOL_1x or GS or WTC or HIRO or NAG)", "((csNew1_Bull or csNew2_Bull) and PUP) or (FLOOR_BULL or SECOND_FLOOR_BULL)"]
+      operands: [PBJ_BULL, DISP_BULL, "(FAUNA_BULL or LS_LONG1)", "(RVOL_1X_BULL or GS or WTC or HIRO or NAG)", "((csNew1_Bull or csNew2_Bull) and PUP) or (FLOOR_BULL or SECOND_FLOOR_BULL)"]
     offset: 0
     plot_call: "plotshape(fire_SuperBull,\"S! Bull\",shape.flag,location.top,color.new(#00FF00,0),text=\"S!\",textcolor=color.white,size=size.huge)"
     alertcondition_id: null
@@ -341,7 +341,7 @@ composites:
   - id: hvd-pbj-ppd::SUPER_BEAR
     tier: 0
     plain_english: "Bear mirror of SUPER_BULL."
-    composition: { type: AND, operands: [PBJ_BEAR, DISP_BEAR, "(FAUNA_BEAR or LS_SHORT1)", "(RVOL_1x_bear or MOAB or WTC or HIRO or NAG)", "((csNew1_Bear or csNew2_Bear) and PPD) or (ROOFTOP or PENTHOUSE)"] }
+    composition: { type: AND, operands: [PBJ_BEAR, DISP_BEAR, "(FAUNA_BEAR or LS_SHORT1)", "(RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)", "((csNew1_Bear or csNew2_Bear) and PPD) or (ROOFTOP or PENTHOUSE)"] }
     offset: 0
     plot_call: "plotshape(fire_SuperBear,\"S! Bear\",shape.flag,location.top,color.new(#FF0000,0),text=\"S!\",textcolor=color.white,size=size.normal)"
     alertcondition_id: null
@@ -351,7 +351,7 @@ composites:
   - id: hvd-pbj-ppd::SDUPER_BULL
     tier: 0
     plain_english: "'Super Duper' priority: Floor/2F + PBJ + HW-volume slot + Combo-set + PUP + DISP + (FAUNA or LSLong1)."
-    composition: { type: AND, operands: [FLOOR_BULL, PBJ_BULL, "(RVOL_1x or GS or WTC or HIRO or NAG)", "(csNew1_Bull or csNew2_Bull)", PUP, DISP_BULL, "(FAUNA_BULL or LS_LONG1)"] }
+    composition: { type: AND, operands: [FLOOR_BULL, PBJ_BULL, "(RVOL_1X_BULL or GS or WTC or HIRO or NAG)", "(csNew1_Bull or csNew2_Bull)", PUP, DISP_BULL, "(FAUNA_BULL or LS_LONG1)"] }
     offset: 0
     plot_call: "plotshape(fire_SDuperBull,\"SD! Bull\",shape.flag,location.bottom,color.new(#FFD700,0),text=\"SD!\",textcolor=color.white,size=size.huge)"
     alertcondition_id: null
@@ -361,7 +361,7 @@ composites:
   - id: hvd-pbj-ppd::SDUPER_BEAR
     tier: 0
     plain_english: "Bear mirror of SDUPER_BULL."
-    composition: { type: AND, operands: ["(ROOFTOP or PENTHOUSE)", PBJ_BEAR, "(RVOL_1x_bear or MOAB or WTC or HIRO or NAG)", "(csNew1_Bear or csNew2_Bear)", PPD, DISP_BEAR, "(FAUNA_BEAR or LS_SHORT1)"] }
+    composition: { type: AND, operands: ["(ROOFTOP or PENTHOUSE)", PBJ_BEAR, "(RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)", "(csNew1_Bear or csNew2_Bear)", PPD, DISP_BEAR, "(FAUNA_BEAR or LS_SHORT1)"] }
     offset: 0
     plot_call: "plotshape(fire_SDuperBear,\"SD! Bear\",shape.flag,location.bottom,color.new(#FFD700,0),text=\"SD!\",textcolor=color.white,size=size.large)"
     alertcondition_id: null
@@ -603,8 +603,8 @@ composites:
   - id: hvd-pbj-ppd::CS1_FVG_BULL
     tier: 1B
     plain_english: "FVG Combo (consolidated): body% ≥ 0.85 on prior bar + (gz_bullHV OR gz_bullGZI) + (SAAB or RVOL1x or GS) on prior."
-    composition: { type: AND, operands: ["cs_vb (body% prior ≥ 0.85)", "(HV5K|HVY|HVQ via gz_bullHV) OR gz_bullGZI", "(sigSAAB|sigBullRVOL1x|sigGrandSlam)[1]", "OR comboSet2_Bull (Pentagon/WTC/Hiro/Nag tier-2)"] }
-    offset: 0
+    composition: { type: AND, operands: ["cs_vb (body% prior ≥ 0.85)", "(HV5K|HVY|HVQ via gz_bullHV) OR gz_bullGZI", "(sigSAAB|sigBullRVOL1x|sigGrandSlam)[1]", "OR comboSet2_Bull (Pentagon/WTC/Hiro/Nag tier-2)"], offset: -1 }
+    offset: -1
     plot_call: "plotshape(fire_CS1B,\"CS1 FVG\",shape.labelup,location.top,color.new(#00BCD4,0),text=\"FVG\",textcolor=color.white,size=size.tiny,offset=-1)"
     alertcondition_id: null
     pine_source_line_range: "L1037-L1050 (csNew1_Bull = comboSet1_Bull or comboSet2_Bull), plot L1353"
@@ -613,8 +613,8 @@ composites:
   - id: hvd-pbj-ppd::CS1_FVG_BEAR
     tier: 1B
     plain_english: "Bear mirror of CS1_FVG_BULL."
-    composition: { type: AND, operands: ["cs_vb prior", "(gz_bearHV OR gz_bearGZI)", "(Kratos|BearRVOL1x|MOAB|Pentagon|WTC|Hiro|Nag)[1]"] }
-    offset: 0
+    composition: { type: AND, operands: ["cs_vb prior", "(gz_bearHV OR gz_bearGZI)", "(Kratos|BearRVOL1x|MOAB|Pentagon|WTC|Hiro|Nag)[1]"], offset: -1 }
+    offset: -1
     plot_call: "plotshape(fire_CS1R,\"CS1 FVG Bear\",shape.labeldown,location.top,color.new(#FF1744,0),text=\"FVG\",textcolor=color.white,size=size.tiny,offset=-1)"
     alertcondition_id: null
     pine_source_line_range: "L1037-L1050, plot L1378"

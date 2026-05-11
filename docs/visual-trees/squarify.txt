@@ -64,7 +64,7 @@ COMPOSITES (by tier)
         SD! (Super Duper) — REDEFINED v2: Unified Combo + consolidated NPM + …
         ├── squarify::UNIFIED_COMBO_BULL
         ├── squarify::NPM_CONS_BULL
-        └── squarify::PUP[1]
+        └── sigPUP[1]
     ● squarify::S2_SUPER    [offset=-1 · AND_NOT]
         SUPER — REDEFINED v2: Unified Combo + consolidated NPM. Suppressed wh…
         ├── squarify::UNIFIED_COMBO_BULL
@@ -76,7 +76,7 @@ COMPOSITES (by tier)
         ├── disp5_bull
         ├── hvd-pbj-ppd::PBJ_BULL
         ├── (heavy-pentagon::GRAND_SLAM OR heavy-pentagon::WTC OR heavy-pentagon::HIROSHIMA OR (heavy-pentagon::NAGASAKI AND nag_dir_bull))
-        └── (squarify::ANY_FLOOR OR squarify::ANY_2F)
+        └── (squarify::S4_FLOOR OR squarify::S5_2F)
     ● squarify::S4_FLOOR    [offset=0 · AND]
         Floor: Ping-Pong bull + PBJ + directional RVOL slot (1x/GS/WTC/Hiro/d…
         ├── heavy-pentagon::PING_PONG_BULL

@@ -214,17 +214,23 @@ roots:
 composites:
   - id: heavy-pentagon::HEAVY_YIN_YANG_BULL
     tier: 1
-    plain_english: "Heavy Yin-Yang fires bullish: a directional P1 RVOL spike (Bull RVOL 1x or Grand Slam) co-occurs with any neutral P2 tier (Pentagon/WTC/Hiroshima), and the displacement engine reads bullish."
+    plain_english: "Heavy Yin-Yang fires bullish: any P1 directional spike (groupA: Bull RVOL 1x OR Grand Slam OR Bear RVOL 1x OR MOAB) co-occurs with any neutral P2 tier (groupB: Pentagon OR WTC OR Hiroshima), and the displacement engine reads bullish. Structure: (groupA_Bull OR groupA_Bear) AND groupB."
     composition:
       type: AND
       operands:
-        - "heavy-pentagon::RVOL_1X_BULL"
-        - "heavy-pentagon::GRAND_SLAM"
-        - "heavy-pentagon::RVOL_1X_BEAR"
-        - "heavy-pentagon::MOAB"
-        - "heavy-pentagon::PENTAGON"
-        - "heavy-pentagon::WTC"
-        - "heavy-pentagon::HIROSHIMA"
+        - type: OR
+          label: "groupA (any P1 directional)"
+          operands:
+            - "heavy-pentagon::RVOL_1X_BULL"
+            - "heavy-pentagon::GRAND_SLAM"
+            - "heavy-pentagon::RVOL_1X_BEAR"
+            - "heavy-pentagon::MOAB"
+        - type: OR
+          label: "groupB (any P2 neutral)"
+          operands:
+            - "heavy-pentagon::PENTAGON"
+            - "heavy-pentagon::WTC"
+            - "heavy-pentagon::HIROSHIMA"
       direction_gate: dispBull
     offset: 0
     plot_call: 'plotshape(fire_HYYBull,    title="Heavy Yin-Yang Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="HYY")'
@@ -234,17 +240,23 @@ composites:
 
   - id: heavy-pentagon::HEAVY_YIN_YANG_BEAR
     tier: 1
-    plain_english: "Heavy Yin-Yang fires bearish: same directional-P1 + neutral-P2 base, gated by displacement bearish."
+    plain_english: "Heavy Yin-Yang fires bearish: same (groupA OR groupB) AND structure as Bull variant, gated by displacement bearish."
     composition:
       type: AND
       operands:
-        - "heavy-pentagon::RVOL_1X_BULL"
-        - "heavy-pentagon::GRAND_SLAM"
-        - "heavy-pentagon::RVOL_1X_BEAR"
-        - "heavy-pentagon::MOAB"
-        - "heavy-pentagon::PENTAGON"
-        - "heavy-pentagon::WTC"
-        - "heavy-pentagon::HIROSHIMA"
+        - type: OR
+          label: "groupA (any P1 directional)"
+          operands:
+            - "heavy-pentagon::RVOL_1X_BULL"
+            - "heavy-pentagon::GRAND_SLAM"
+            - "heavy-pentagon::RVOL_1X_BEAR"
+            - "heavy-pentagon::MOAB"
+        - type: OR
+          label: "groupB (any P2 neutral)"
+          operands:
+            - "heavy-pentagon::PENTAGON"
+            - "heavy-pentagon::WTC"
+            - "heavy-pentagon::HIROSHIMA"
       direction_gate: dispBear
     offset: 0
     plot_call: 'plotshape(fire_HYYBear,    title="Heavy Yin-Yang Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="HYY")'
@@ -254,17 +266,23 @@ composites:
 
   - id: heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL
     tier: 1
-    plain_english: "Heavy Yin-Yang fires neutral: same base, but displacement engine produced neither a bull nor bear classification."
+    plain_english: "Heavy Yin-Yang fires neutral: same (groupA OR groupB) AND structure, but displacement engine produced neither a bull nor bear classification."
     composition:
       type: AND
       operands:
-        - "heavy-pentagon::RVOL_1X_BULL"
-        - "heavy-pentagon::GRAND_SLAM"
-        - "heavy-pentagon::RVOL_1X_BEAR"
-        - "heavy-pentagon::MOAB"
-        - "heavy-pentagon::PENTAGON"
-        - "heavy-pentagon::WTC"
-        - "heavy-pentagon::HIROSHIMA"
+        - type: OR
+          label: "groupA (any P1 directional)"
+          operands:
+            - "heavy-pentagon::RVOL_1X_BULL"
+            - "heavy-pentagon::GRAND_SLAM"
+            - "heavy-pentagon::RVOL_1X_BEAR"
+            - "heavy-pentagon::MOAB"
+        - type: OR
+          label: "groupB (any P2 neutral)"
+          operands:
+            - "heavy-pentagon::PENTAGON"
+            - "heavy-pentagon::WTC"
+            - "heavy-pentagon::HIROSHIMA"
       direction_gate: noDisp
     offset: 0
     plot_call: 'plotshape(fire_HYYNeutral, title="Heavy Yin-Yang Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="HYY")'
@@ -442,13 +460,17 @@ composites:
 
   - id: heavy-pentagon::NEUTRAL_HEAVY_X2_BULL
     tier: 1
-    plain_english: "Neutral Heavy x2 fires bullish: at least two of the three Reg@Time tiers (Pentagon, WTC, Hiroshima) co-occur on the same bar, gated bullish by displacement."
+    plain_english: "Neutral Heavy x2 fires bullish: at least 2-of-3 Reg@Time tiers (Pentagon, WTC, Hiroshima) co-occur on the same bar, gated bullish by displacement. Structure: (Pentagon AND WTC) OR (Pentagon AND Hiroshima) OR (WTC AND Hiroshima)."
     composition:
-      type: AND
+      type: OR
+      label: "2-of-3 P2 tiers"
       operands:
-        - "heavy-pentagon::PENTAGON"
-        - "heavy-pentagon::WTC"
-        - "heavy-pentagon::HIROSHIMA"
+        - type: AND
+          operands: ["heavy-pentagon::PENTAGON", "heavy-pentagon::WTC"]
+        - type: AND
+          operands: ["heavy-pentagon::PENTAGON", "heavy-pentagon::HIROSHIMA"]
+        - type: AND
+          operands: ["heavy-pentagon::WTC", "heavy-pentagon::HIROSHIMA"]
       direction_gate: dispBull
     offset: 0
     plot_call: 'plotshape(fire_NHx2Bull,    title="Neutral Heavy x2 Bull",    style=shape.circle, location=location.bottom, size=size.small, color=color.lime,    text="NHx2")'
@@ -458,13 +480,17 @@ composites:
 
   - id: heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR
     tier: 1
-    plain_english: "Neutral Heavy x2 fires bearish: two-of-three P2 tier co-occurrence, gated bearish."
+    plain_english: "Neutral Heavy x2 fires bearish: 2-of-3 P2 tier co-occurrence, gated bearish."
     composition:
-      type: AND
+      type: OR
+      label: "2-of-3 P2 tiers"
       operands:
-        - "heavy-pentagon::PENTAGON"
-        - "heavy-pentagon::WTC"
-        - "heavy-pentagon::HIROSHIMA"
+        - type: AND
+          operands: ["heavy-pentagon::PENTAGON", "heavy-pentagon::WTC"]
+        - type: AND
+          operands: ["heavy-pentagon::PENTAGON", "heavy-pentagon::HIROSHIMA"]
+        - type: AND
+          operands: ["heavy-pentagon::WTC", "heavy-pentagon::HIROSHIMA"]
       direction_gate: dispBear
     offset: 0
     plot_call: 'plotshape(fire_NHx2Bear,    title="Neutral Heavy x2 Bear",    style=shape.circle, location=location.top,    size=size.small, color=color.red,     text="NHx2")'
@@ -474,13 +500,17 @@ composites:
 
   - id: heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL
     tier: 1
-    plain_english: "Neutral Heavy x2 fires neutral: two-of-three P2 tier co-occurrence, no displacement classification."
+    plain_english: "Neutral Heavy x2 fires neutral: 2-of-3 P2 tier co-occurrence, no displacement classification."
     composition:
-      type: AND
+      type: OR
+      label: "2-of-3 P2 tiers"
       operands:
-        - "heavy-pentagon::PENTAGON"
-        - "heavy-pentagon::WTC"
-        - "heavy-pentagon::HIROSHIMA"
+        - type: AND
+          operands: ["heavy-pentagon::PENTAGON", "heavy-pentagon::WTC"]
+        - type: AND
+          operands: ["heavy-pentagon::PENTAGON", "heavy-pentagon::HIROSHIMA"]
+        - type: AND
+          operands: ["heavy-pentagon::WTC", "heavy-pentagon::HIROSHIMA"]
       direction_gate: noDisp
     offset: 0
     plot_call: 'plotshape(fire_NHx2Neutral, title="Neutral Heavy x2 Neutral", style=shape.circle, location=location.top,    size=size.small, color=color.white,   text="NHx2")'

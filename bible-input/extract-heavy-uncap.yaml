@@ -246,7 +246,7 @@ roots:
     plot_offset: -1
     plot_call: 'plotshape(plot_HS, title="Hot Spot", style=shape.cross, location=location.bottom, color=color.new(color.red, 0), size=size.tiny, offset=-1)'
     alertcondition_id: null
-    pine_source_line_range: "L590-L601"
+    pine_source_line_range: "L651-L665 (def), L746 (plot)"
     lifecycle_stage: 2
     notes: "Evaluated on bar[1] (NRA — non-repainting); plotted with offset=-1 to land on the actual calendar bar. No IPSF — windows are hardcoded constants reflecting market-structure timing."
 

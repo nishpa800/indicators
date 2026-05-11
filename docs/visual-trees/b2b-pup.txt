@@ -153,12 +153,16 @@ COMPOSITES (by tier)
         ├── b2b-pup::B2B_PUP
         ├── b2b-pup::FAUNA_BULL[0]
         └── b2b-pup::FAUNA_BULL[-1]
-    ● b2b-pup::S3    [offset=-1 · AND_OR]
-        B2B PUP-on-bar[1]/bar[2] + (DISP or HV+D) bull on bar[0] AND on bar[1…
-        ├── PUP[-1]
-        ├── PUP[-2]
-        ├── (DISPBull OR HVDBull) on bar[0]
-        └── (DISPBull OR HVDBull) on bar[-1]
+    ● b2b-pup::S3    [offset=-1 · OR]
+        B2B PUP-on-bar[1]/bar[2] + same-type displacement on bar[0] AND bar[1…
+        ├── b2b-pup::PUP[-1]
+        ├── b2b-pup::PUP[-2]
+        ├── b2b-pup::DISPBull
+        ├── b2b-pup::DISPBull[-1]
+        ├── b2b-pup::PUP[-1]
+        ├── b2b-pup::PUP[-2]
+        ├── b2b-pup::HVDBull
+        └── b2b-pup::HVDBull[-1]
     ● b2b-pup::S5    [offset=0 · AND_OR]
         B2B PUP + directional RVOL (SAAB/1×/GS bull or Kratos/1×/MOAB bear) o…
         ├── b2b-pup::B2B_PUP
@@ -173,18 +177,27 @@ COMPOSITES (by tier)
         Mirror B2B_HVDPBJ_BULL bear.
         ├── b2b-pup::B2B_HVD_BEAR
         └── b2b-pup::PBJBear[-1] OR b2b-pup::PBJBear[-2]
-    ● b2b-pup::S4    [offset=-1 · AND]
-        B2B PUP + FAUNA + (DISP or HV+D) — PUP and FAUNA on bar[1] and bar[2]…
-        ├── S2-style B2B PUP+FAUNA
-        └── (DISPBull OR HVDBull) ×2
+    ● b2b-pup::S4    [offset=-1 · OR]
+        B2B PUP + FAUNA + same-type displacement on both bars. Two disjoint p…
+        ├── b2b-pup::PUP[-1]
+        ├── b2b-pup::PUP[-2]
+        ├── b2b-pup::FAUNA_BULL[-1]
+        ├── b2b-pup::FAUNA_BULL[-2]
+        ├── b2b-pup::DISPBull
+        ├── b2b-pup::DISPBull[-1]
+        ├── b2b-pup::PUP[-1]
+        ├── b2b-pup::PUP[-2]
+        └── … and 4 more
     ● b2b-pup::S6    [offset=-1 · AND_OR]
         Any B2B (S1/S2/S5 OR S3/S4 chains) + PBJ bull or HVD-PBJ bull on the …
         ├── any B2B chain
         └── PBJBull/Bear or HVDPBJBull/Bear on bar[0/1/2]
-    ● b2b-pup::S8    [offset=-1 · AND_OR]
-        Unified Combo + B2B PUP — B2B PUP AND UnifiedBull (current or prior) …
-        ├── b2b-pup::B2B_PUP OR S3-chain
-        └── b2b-pup::UnifiedBull current or [-1]
+    ● b2b-pup::S8    [offset=-1 · OR]
+        Unified Combo + B2B PUP. Two arms with different UC lag rules: (1) B2…
+        ├── b2b-pup::B2B_PUP
+        ├── b2b-pup::UnifiedBull
+        ├── b2b-pup::S3
+        └── b2b-pup::UnifiedBull OR b2b-pup::UnifiedBull[-1]
     ● b2b-pup::S9    [offset=-1 · AND_OR]
         Uni Combo + B2B PUP — fires when EITHER S19 (UC×2) OR S20 (FMU×2) lan…
         ├── b2b-pup::B2B_PUP OR S3-chain

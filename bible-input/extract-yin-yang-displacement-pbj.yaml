@@ -104,7 +104,7 @@ roots:
 
   - id: yin-yang-displacement-pbj::ResistanceRejection
     family: line-test
-    definition: "high >= resistance line AND close < resistance line."
+    definition: "high >= resistance line AND close < resistance line AND NOT breakdownDetected (mutex: breakdown suppresses rejection)."
     lines: "86-87, 111 (plot)"
     fire_var: resRejectionDetected
     plot:
@@ -114,11 +114,12 @@ roots:
       color: color.aqua
       size: small
       text: "Rej"
-    note: "Yin Yang SECTION 1 root."
+      textcolor: color.blue
+    note: "Yin Yang SECTION 1 root. Pine gates plotshape with `and not breakdownDetected` to prevent co-firing when a breakdown is also detected on the same bar."
 
   - id: yin-yang-displacement-pbj::SupportRejection
     family: line-test
-    definition: "low <= support line AND close > support line."
+    definition: "low <= support line AND close > support line AND NOT breakoutDetected (mutex: breakout suppresses rejection)."
     lines: "94-95, 112 (plot)"
     fire_var: supRejectionDetected
     plot:
@@ -128,7 +129,8 @@ roots:
       color: color.purple
       size: small
       text: "Rej"
-    note: "Yin Yang SECTION 1 root."
+      textcolor: color.purple
+    note: "Yin Yang SECTION 1 root. Pine gates plotshape with `and not breakoutDetected` to prevent co-firing when a breakout is also detected on the same bar."
 
   # Displacement roots (SECTION 2)
   - id: yin-yang-displacement-pbj::BullishDisplacement

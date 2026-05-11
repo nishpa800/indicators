@@ -57,7 +57,7 @@ roots:
     plot:
       title: "50-Bar High"
       shape: triangledown
-      location: belowbar
+      location: bottom
       color: purple
       size: small
       text: "50"
@@ -77,7 +77,7 @@ roots:
     plot:
       title: "150-Bar High"
       shape: triangledown
-      location: belowbar
+      location: bottom
       color: aqua
       size: small
       text: "150"
@@ -177,7 +177,7 @@ roots:
     plot:
       title: "Hot Spot"
       shape: cross
-      location: belowbar
+      location: bottom
       color: red
       size: tiny
       offset: -1

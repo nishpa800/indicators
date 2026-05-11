@@ -57,20 +57,20 @@ COMPOSITES (by tier)
         ├── PBJ_BULL
         ├── DISP_BULL
         ├── (FAUNA_BULL or LS_LONG1)
-        ├── (RVOL_1x or GS or WTC or HIRO or NAG)
+        ├── (RVOL_1X_BULL or GS or WTC or HIRO or NAG)
         └── ((csNew1_Bull or csNew2_Bull) and PUP) or (FLOOR_BULL or SECOND_FLOOR_BULL)
     ● hvd-pbj-ppd::SUPER_BEAR    [offset=0 · AND]
         Bear mirror of SUPER_BULL.
         ├── PBJ_BEAR
         ├── DISP_BEAR
         ├── (FAUNA_BEAR or LS_SHORT1)
-        ├── (RVOL_1x_bear or MOAB or WTC or HIRO or NAG)
+        ├── (RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)
         └── ((csNew1_Bear or csNew2_Bear) and PPD) or (ROOFTOP or PENTHOUSE)
     ● hvd-pbj-ppd::SDUPER_BULL    [offset=0 · AND]
         'Super Duper' priority: Floor/2F + PBJ + HW-volume slot + Combo-set +…
         ├── FLOOR_BULL
         ├── PBJ_BULL
-        ├── (RVOL_1x or GS or WTC or HIRO or NAG)
+        ├── (RVOL_1X_BULL or GS or WTC or HIRO or NAG)
         ├── (csNew1_Bull or csNew2_Bull)
         ├── PUP
         ├── DISP_BULL
@@ -79,7 +79,7 @@ COMPOSITES (by tier)
         Bear mirror of SDUPER_BULL.
         ├── (ROOFTOP or PENTHOUSE)
         ├── PBJ_BEAR
-        ├── (RVOL_1x_bear or MOAB or WTC or HIRO or NAG)
+        ├── (RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)
         ├── (csNew1_Bear or csNew2_Bear)
         ├── PPD
         ├── DISP_BEAR
@@ -226,13 +226,13 @@ COMPOSITES (by tier)
         └── sigFAUNABear[1]
 
   Tier 1B:
-    ● hvd-pbj-ppd::CS1_FVG_BULL    [offset=0 · AND]
+    ● hvd-pbj-ppd::CS1_FVG_BULL    [offset=-1 · AND]
         FVG Combo (consolidated): body% ≥ 0.85 on prior bar + (gz_bullHV OR g…
         ├── cs_vb (body% prior ≥ 0.85)
         ├── (HV5K|HVY|HVQ via gz_bullHV) OR gz_bullGZI
         ├── (sigSAAB|sigBullRVOL1x|sigGrandSlam)[1]
         └── OR comboSet2_Bull (Pentagon/WTC/Hiro/Nag tier-2)
-    ● hvd-pbj-ppd::CS1_FVG_BEAR    [offset=0 · AND]
+    ● hvd-pbj-ppd::CS1_FVG_BEAR    [offset=-1 · AND]
         Bear mirror of CS1_FVG_BULL.
         ├── cs_vb prior
         ├── (gz_bearHV OR gz_bearGZI)

@@ -2383,14 +2383,30 @@
         {
           "id": "b2b-pup::S3",
           "tier": 2,
-          "plain_english": "B2B PUP-on-bar[1]/bar[2] + (DISP or HV+D) bull on bar[0] AND on bar[1].",
+          "plain_english": "B2B PUP-on-bar[1]/bar[2] + same-type displacement on bar[0] AND bar[1]. Two disjoint paths: DISP-only path (DISPBull on both bars) OR HVD-only path (HVDBull on both bars). Cross-type mixing is silently disallowed by Pine.",
           "composition": {
-            "type": "AND_OR",
+            "type": "OR",
             "operands": [
-              "PUP[-1]",
-              "PUP[-2]",
-              "(DISPBull OR HVDBull) on bar[0]",
-              "(DISPBull OR HVDBull) on bar[-1]"
+              {
+                "type": "AND",
+                "label": "DISP path",
+                "operands": [
+                  "b2b-pup::PUP[-1]",
+                  "b2b-pup::PUP[-2]",
+                  "b2b-pup::DISPBull",
+                  "b2b-pup::DISPBull[-1]"
+                ]
+              },
+              {
+                "type": "AND",
+                "label": "HVD path",
+                "operands": [
+                  "b2b-pup::PUP[-1]",
+                  "b2b-pup::PUP[-2]",
+                  "b2b-pup::HVDBull",
+                  "b2b-pup::HVDBull[-1]"
+                ]
+              }
             ]
           },
           "offset": -1,
@@ -2404,12 +2420,34 @@
         {
           "id": "b2b-pup::S4",
           "tier": 3,
-          "plain_english": "B2B PUP + FAUNA + (DISP or HV+D) \u2014 PUP and FAUNA on bar[1] and bar[2], DISP/HV+D on bar[0] and bar[1].",
+          "plain_english": "B2B PUP + FAUNA + same-type displacement on both bars. Two disjoint paths: DISP-only path (PUP+FAUNA on bar[1]+bar[2] AND DISPBull on bar[0]+bar[1]) OR HVD-only path (same PUP+FAUNA AND HVDBull on bar[0]+bar[1]). Cross-type mixing is silently disallowed by Pine.",
           "composition": {
-            "type": "AND",
+            "type": "OR",
             "operands": [
-              "S2-style B2B PUP+FAUNA",
-              "(DISPBull OR HVDBull) \u00d72"
+              {
+                "type": "AND",
+                "label": "DISP path",
+                "operands": [
+                  "b2b-pup::PUP[-1]",
+                  "b2b-pup::PUP[-2]",
+                  "b2b-pup::FAUNA_BULL[-1]",
+                  "b2b-pup::FAUNA_BULL[-2]",
+                  "b2b-pup::DISPBull",
+                  "b2b-pup::DISPBull[-1]"
+                ]
+              },
+              {
+                "type": "AND",
+                "label": "HVD path",
+                "operands": [
+                  "b2b-pup::PUP[-1]",
+                  "b2b-pup::PUP[-2]",
+                  "b2b-pup::FAUNA_BULL[-1]",
+                  "b2b-pup::FAUNA_BULL[-2]",
+                  "b2b-pup::HVDBull",
+                  "b2b-pup::HVDBull[-1]"
+                ]
+              }
             ]
           },
           "offset": -1,
@@ -2459,12 +2497,26 @@
         {
           "id": "b2b-pup::S8",
           "tier": 3,
-          "plain_english": "Unified Combo + B2B PUP \u2014 B2B PUP AND UnifiedBull (current or prior) OR S3-chain AND UnifiedBull (current or prior).",
+          "plain_english": "Unified Combo + B2B PUP. Two arms with different UC lag rules: (1) B2B_PUP arm: det_b2bPUP AND det_UnifiedBull (current bar ONLY \u2014 no lag); (2) S3-chain arm: det_S3_any_bull AND (det_UnifiedBull OR det_UnifiedBull[-1]) (current or prior). Only the S3-chain arm accepts UC on bar[-1].",
           "composition": {
-            "type": "AND_OR",
+            "type": "OR",
             "operands": [
-              "b2b-pup::B2B_PUP OR S3-chain",
-              "b2b-pup::UnifiedBull current or [-1]"
+              {
+                "type": "AND",
+                "label": "B2B_PUP arm (UC current-bar only)",
+                "operands": [
+                  "b2b-pup::B2B_PUP",
+                  "b2b-pup::UnifiedBull"
+                ]
+              },
+              {
+                "type": "AND",
+                "label": "S3-chain arm (UC current or [-1])",
+                "operands": [
+                  "b2b-pup::S3",
+                  "b2b-pup::UnifiedBull OR b2b-pup::UnifiedBull[-1]"
+                ]
+              }
             ]
           },
           "offset": -1,
@@ -5242,17 +5294,29 @@
         {
           "id": "heavy-pentagon::HEAVY_YIN_YANG_BULL",
           "tier": 1,
-          "plain_english": "Heavy Yin-Yang fires bullish: a directional P1 RVOL spike (Bull RVOL 1x or Grand Slam) co-occurs with any neutral P2 tier (Pentagon/WTC/Hiroshima), and the displacement engine reads bullish.",
+          "plain_english": "Heavy Yin-Yang fires bullish: any P1 directional spike (groupA: Bull RVOL 1x OR Grand Slam OR Bear RVOL 1x OR MOAB) co-occurs with any neutral P2 tier (groupB: Pentagon OR WTC OR Hiroshima), and the displacement engine reads bullish. Structure: (groupA_Bull OR groupA_Bear) AND groupB.",
           "composition": {
             "type": "AND",
             "operands": [
-              "heavy-pentagon::RVOL_1X_BULL",
-              "heavy-pentagon::GRAND_SLAM",
-              "heavy-pentagon::RVOL_1X_BEAR",
-              "heavy-pentagon::MOAB",
-              "heavy-pentagon::PENTAGON",
-              "heavy-pentagon::WTC",
-              "heavy-pentagon::HIROSHIMA"
+              {
+                "type": "OR",
+                "label": "groupA (any P1 directional)",
+                "operands": [
+                  "heavy-pentagon::RVOL_1X_BULL",
+                  "heavy-pentagon::GRAND_SLAM",
+                  "heavy-pentagon::RVOL_1X_BEAR",
+                  "heavy-pentagon::MOAB"
+                ]
+              },
+              {
+                "type": "OR",
+                "label": "groupB (any P2 neutral)",
+                "operands": [
+                  "heavy-pentagon::PENTAGON",
+                  "heavy-pentagon::WTC",
+                  "heavy-pentagon::HIROSHIMA"
+                ]
+              }
             ],
             "direction_gate": "dispBull"
           },
@@ -5268,17 +5332,29 @@
         {
           "id": "heavy-pentagon::HEAVY_YIN_YANG_BEAR",
           "tier": 1,
-          "plain_english": "Heavy Yin-Yang fires bearish: same directional-P1 + neutral-P2 base, gated by displacement bearish.",
+          "plain_english": "Heavy Yin-Yang fires bearish: same (groupA OR groupB) AND structure as Bull variant, gated by displacement bearish.",
           "composition": {
             "type": "AND",
             "operands": [
-              "heavy-pentagon::RVOL_1X_BULL",
-              "heavy-pentagon::GRAND_SLAM",
-              "heavy-pentagon::RVOL_1X_BEAR",
-              "heavy-pentagon::MOAB",
-              "heavy-pentagon::PENTAGON",
-              "heavy-pentagon::WTC",
-              "heavy-pentagon::HIROSHIMA"
+              {
+                "type": "OR",
+                "label": "groupA (any P1 directional)",
+                "operands": [
+                  "heavy-pentagon::RVOL_1X_BULL",
+                  "heavy-pentagon::GRAND_SLAM",
+                  "heavy-pentagon::RVOL_1X_BEAR",
+                  "heavy-pentagon::MOAB"
+                ]
+              },
+              {
+                "type": "OR",
+                "label": "groupB (any P2 neutral)",
+                "operands": [
+                  "heavy-pentagon::PENTAGON",
+                  "heavy-pentagon::WTC",
+                  "heavy-pentagon::HIROSHIMA"
+                ]
+              }
             ],
             "direction_gate": "dispBear"
           },
@@ -5294,17 +5370,29 @@
         {
           "id": "heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL",
           "tier": 1,
-          "plain_english": "Heavy Yin-Yang fires neutral: same base, but displacement engine produced neither a bull nor bear classification.",
+          "plain_english": "Heavy Yin-Yang fires neutral: same (groupA OR groupB) AND structure, but displacement engine produced neither a bull nor bear classification.",
           "composition": {
             "type": "AND",
             "operands": [
-              "heavy-pentagon::RVOL_1X_BULL",
-              "heavy-pentagon::GRAND_SLAM",
-              "heavy-pentagon::RVOL_1X_BEAR",
-              "heavy-pentagon::MOAB",
-              "heavy-pentagon::PENTAGON",
-              "heavy-pentagon::WTC",
-              "heavy-pentagon::HIROSHIMA"
+              {
+                "type": "OR",
+                "label": "groupA (any P1 directional)",
+                "operands": [
+                  "heavy-pentagon::RVOL_1X_BULL",
+                  "heavy-pentagon::GRAND_SLAM",
+                  "heavy-pentagon::RVOL_1X_BEAR",
+                  "heavy-pentagon::MOAB"
+                ]
+              },
+              {
+                "type": "OR",
+                "label": "groupB (any P2 neutral)",
+                "operands": [
+                  "heavy-pentagon::PENTAGON",
+                  "heavy-pentagon::WTC",
+                  "heavy-pentagon::HIROSHIMA"
+                ]
+              }
             ],
             "direction_gate": "noDisp"
           },
@@ -5542,13 +5630,32 @@
         {
           "id": "heavy-pentagon::NEUTRAL_HEAVY_X2_BULL",
           "tier": 1,
-          "plain_english": "Neutral Heavy x2 fires bullish: at least two of the three Reg@Time tiers (Pentagon, WTC, Hiroshima) co-occur on the same bar, gated bullish by displacement.",
+          "plain_english": "Neutral Heavy x2 fires bullish: at least 2-of-3 Reg@Time tiers (Pentagon, WTC, Hiroshima) co-occur on the same bar, gated bullish by displacement. Structure: (Pentagon AND WTC) OR (Pentagon AND Hiroshima) OR (WTC AND Hiroshima).",
           "composition": {
-            "type": "AND",
+            "type": "OR",
+            "label": "2-of-3 P2 tiers",
             "operands": [
-              "heavy-pentagon::PENTAGON",
-              "heavy-pentagon::WTC",
-              "heavy-pentagon::HIROSHIMA"
+              {
+                "type": "AND",
+                "operands": [
+                  "heavy-pentagon::PENTAGON",
+                  "heavy-pentagon::WTC"
+                ]
+              },
+              {
+                "type": "AND",
+                "operands": [
+                  "heavy-pentagon::PENTAGON",
+                  "heavy-pentagon::HIROSHIMA"
+                ]
+              },
+              {
+                "type": "AND",
+                "operands": [
+                  "heavy-pentagon::WTC",
+                  "heavy-pentagon::HIROSHIMA"
+                ]
+              }
             ],
             "direction_gate": "dispBull"
           },
@@ -5564,13 +5671,32 @@
         {
           "id": "heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR",
           "tier": 1,
-          "plain_english": "Neutral Heavy x2 fires bearish: two-of-three P2 tier co-occurrence, gated bearish.",
+          "plain_english": "Neutral Heavy x2 fires bearish: 2-of-3 P2 tier co-occurrence, gated bearish.",
           "composition": {
-            "type": "AND",
+            "type": "OR",
+            "label": "2-of-3 P2 tiers",
             "operands": [
-              "heavy-pentagon::PENTAGON",
-              "heavy-pentagon::WTC",
-              "heavy-pentagon::HIROSHIMA"
+              {
+                "type": "AND",
+                "operands": [
+                  "heavy-pentagon::PENTAGON",
+                  "heavy-pentagon::WTC"
+                ]
+              },
+              {
+                "type": "AND",
+                "operands": [
+                  "heavy-pentagon::PENTAGON",
+                  "heavy-pentagon::HIROSHIMA"
+                ]
+              },
+              {
+                "type": "AND",
+                "operands": [
+                  "heavy-pentagon::WTC",
+                  "heavy-pentagon::HIROSHIMA"
+                ]
+              }
             ],
             "direction_gate": "dispBear"
           },
@@ -5586,13 +5712,32 @@
         {
           "id": "heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL",
           "tier": 1,
-          "plain_english": "Neutral Heavy x2 fires neutral: two-of-three P2 tier co-occurrence, no displacement classification.",
+          "plain_english": "Neutral Heavy x2 fires neutral: 2-of-3 P2 tier co-occurrence, no displacement classification.",
           "composition": {
-            "type": "AND",
+            "type": "OR",
+            "label": "2-of-3 P2 tiers",
             "operands": [
-              "heavy-pentagon::PENTAGON",
-              "heavy-pentagon::WTC",
-              "heavy-pentagon::HIROSHIMA"
+              {
+                "type": "AND",
+                "operands": [
+                  "heavy-pentagon::PENTAGON",
+                  "heavy-pentagon::WTC"
+                ]
+              },
+              {
+                "type": "AND",
+                "operands": [
+                  "heavy-pentagon::PENTAGON",
+                  "heavy-pentagon::HIROSHIMA"
+                ]
+              },
+              {
+                "type": "AND",
+                "operands": [
+                  "heavy-pentagon::WTC",
+                  "heavy-pentagon::HIROSHIMA"
+                ]
+              }
             ],
             "direction_gate": "noDisp"
           },
@@ -6090,7 +6235,7 @@
           "plot_offset": -1,
           "plot_call": "plotshape(plot_HS, title=\"Hot Spot\", style=shape.cross, location=location.bottom, color=color.new(color.red, 0), size=size.tiny, offset=-1)",
           "alertcondition_id": null,
-          "pine_source_line_range": "L590-L601",
+          "pine_source_line_range": "L651-L665 (def), L746 (plot)",
           "lifecycle_stage": 2,
           "notes": "Evaluated on bar[1] (NRA \u2014 non-repainting); plotted with offset=-1 to land on the actual calendar bar. No IPSF \u2014 windows are hardcoded constants reflecting market-structure timing.",
           "in_indicator": "heavy-uncap"
@@ -7420,11 +7565,21 @@
           "composition": {
             "type": "AND",
             "operands": [
-              "heavy-weapons-8fvg-matrix::BULL_GZI",
-              "heavy-weapons-8fvg-matrix::BULL_HV",
-              "heavy-weapons-8fvg-matrix::SAAB",
-              "heavy-weapons-8fvg-matrix::RVOL_1X_BULL",
-              "heavy-weapons-8fvg-matrix::GRAND_SLAM"
+              {
+                "type": "OR",
+                "operands": [
+                  "heavy-weapons-8fvg-matrix::BULL_GZI",
+                  "heavy-weapons-8fvg-matrix::BULL_HV"
+                ]
+              },
+              {
+                "type": "OR",
+                "operands": [
+                  "heavy-weapons-8fvg-matrix::SAAB",
+                  "heavy-weapons-8fvg-matrix::RVOL_1X_BULL",
+                  "heavy-weapons-8fvg-matrix::GRAND_SLAM"
+                ]
+              }
             ],
             "time_domain": "bar[1] body check; bar[1] RVOL checks; fires on bar[0]"
           },
@@ -7449,11 +7604,21 @@
           "composition": {
             "type": "AND",
             "operands": [
-              "heavy-weapons-8fvg-matrix::BEAR_GZI",
-              "heavy-weapons-8fvg-matrix::BEAR_HV",
-              "heavy-weapons-8fvg-matrix::KRATOS",
-              "heavy-weapons-8fvg-matrix::RVOL_1X_BEAR",
-              "heavy-weapons-8fvg-matrix::MOAB"
+              {
+                "type": "OR",
+                "operands": [
+                  "heavy-weapons-8fvg-matrix::BEAR_GZI",
+                  "heavy-weapons-8fvg-matrix::BEAR_HV"
+                ]
+              },
+              {
+                "type": "OR",
+                "operands": [
+                  "heavy-weapons-8fvg-matrix::KRATOS",
+                  "heavy-weapons-8fvg-matrix::RVOL_1X_BEAR",
+                  "heavy-weapons-8fvg-matrix::MOAB"
+                ]
+              }
             ],
             "time_domain": "bar[1] body check; bar[1] RVOL checks; fires on bar[0]"
           },
@@ -7478,12 +7643,22 @@
           "composition": {
             "type": "AND",
             "operands": [
-              "heavy-weapons-8fvg-matrix::BULL_GZI",
-              "heavy-weapons-8fvg-matrix::BULL_HV",
-              "heavy-weapons-8fvg-matrix::PENTAGON",
-              "heavy-weapons-8fvg-matrix::WTC",
-              "heavy-weapons-8fvg-matrix::HIROSHIMA",
-              "heavy-weapons-8fvg-matrix::NAGASAKI"
+              {
+                "type": "OR",
+                "operands": [
+                  "heavy-weapons-8fvg-matrix::BULL_GZI",
+                  "heavy-weapons-8fvg-matrix::BULL_HV"
+                ]
+              },
+              {
+                "type": "OR",
+                "operands": [
+                  "heavy-weapons-8fvg-matrix::PENTAGON",
+                  "heavy-weapons-8fvg-matrix::WTC",
+                  "heavy-weapons-8fvg-matrix::HIROSHIMA",
+                  "heavy-weapons-8fvg-matrix::NAGASAKI"
+                ]
+              }
             ],
             "gate_inputs": [
               "inc_pentagon_FVG"
@@ -7511,12 +7686,22 @@
           "composition": {
             "type": "AND",
             "operands": [
-              "heavy-weapons-8fvg-matrix::BEAR_GZI",
-              "heavy-weapons-8fvg-matrix::BEAR_HV",
-              "heavy-weapons-8fvg-matrix::PENTAGON",
-              "heavy-weapons-8fvg-matrix::WTC",
-              "heavy-weapons-8fvg-matrix::HIROSHIMA",
-              "heavy-weapons-8fvg-matrix::NAGASAKI"
+              {
+                "type": "OR",
+                "operands": [
+                  "heavy-weapons-8fvg-matrix::BEAR_GZI",
+                  "heavy-weapons-8fvg-matrix::BEAR_HV"
+                ]
+              },
+              {
+                "type": "OR",
+                "operands": [
+                  "heavy-weapons-8fvg-matrix::PENTAGON",
+                  "heavy-weapons-8fvg-matrix::WTC",
+                  "heavy-weapons-8fvg-matrix::HIROSHIMA",
+                  "heavy-weapons-8fvg-matrix::NAGASAKI"
+                ]
+              }
             ],
             "gate_inputs": [
               "inc_pentagon_FVG"
@@ -8077,7 +8262,7 @@
           "plot": {
             "title": "100-Bar High",
             "shape": "triangledown",
-            "location": "belowbar",
+            "location": "bottom",
             "color": "purple",
             "size": "small",
             "text": "100",
@@ -8105,7 +8290,7 @@
           "plot": {
             "title": "200-Bar High",
             "shape": "triangledown",
-            "location": "belowbar",
+            "location": "bottom",
             "color": "aqua",
             "size": "small",
             "text": "200",
@@ -8387,7 +8572,7 @@
           "plot": {
             "title": "Hot Spot",
             "shape": "cross",
-            "location": "belowbar",
+            "location": "bottom",
             "color": "red",
             "size": "tiny",
             "offset": -1
@@ -8529,7 +8714,7 @@
           "plot": {
             "title": "50-Bar High",
             "shape": "triangledown",
-            "location": "belowbar",
+            "location": "bottom",
             "color": "purple",
             "size": "small",
             "text": "50",
@@ -8557,7 +8742,7 @@
           "plot": {
             "title": "150-Bar High",
             "shape": "triangledown",
-            "location": "belowbar",
+            "location": "bottom",
             "color": "aqua",
             "size": "small",
             "text": "150",
@@ -8699,7 +8884,7 @@
           "plot": {
             "title": "Hot Spot",
             "shape": "cross",
-            "location": "belowbar",
+            "location": "bottom",
             "color": "red",
             "size": "tiny",
             "offset": -1
@@ -10424,7 +10609,7 @@
               "PBJ_BULL",
               "DISP_BULL",
               "(FAUNA_BULL or LS_LONG1)",
-              "(RVOL_1x or GS or WTC or HIRO or NAG)",
+              "(RVOL_1X_BULL or GS or WTC or HIRO or NAG)",
               "((csNew1_Bull or csNew2_Bull) and PUP) or (FLOOR_BULL or SECOND_FLOOR_BULL)"
             ]
           },
@@ -10447,7 +10632,7 @@
               "PBJ_BEAR",
               "DISP_BEAR",
               "(FAUNA_BEAR or LS_SHORT1)",
-              "(RVOL_1x_bear or MOAB or WTC or HIRO or NAG)",
+              "(RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)",
               "((csNew1_Bear or csNew2_Bear) and PPD) or (ROOFTOP or PENTHOUSE)"
             ]
           },
@@ -10469,7 +10654,7 @@
             "operands": [
               "FLOOR_BULL",
               "PBJ_BULL",
-              "(RVOL_1x or GS or WTC or HIRO or NAG)",
+              "(RVOL_1X_BULL or GS or WTC or HIRO or NAG)",
               "(csNew1_Bull or csNew2_Bull)",
               "PUP",
               "DISP_BULL",
@@ -10494,7 +10679,7 @@
             "operands": [
               "(ROOFTOP or PENTHOUSE)",
               "PBJ_BEAR",
-              "(RVOL_1x_bear or MOAB or WTC or HIRO or NAG)",
+              "(RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)",
               "(csNew1_Bear or csNew2_Bear)",
               "PPD",
               "DISP_BEAR",
@@ -11027,15 +11212,16 @@
               "(HV5K|HVY|HVQ via gz_bullHV) OR gz_bullGZI",
               "(sigSAAB|sigBullRVOL1x|sigGrandSlam)[1]",
               "OR comboSet2_Bull (Pentagon/WTC/Hiro/Nag tier-2)"
-            ]
+            ],
+            "offset": -1
           },
-          "offset": 0,
+          "offset": -1,
           "plot_call": "plotshape(fire_CS1B,\"CS1 FVG\",shape.labelup,location.top,color.new(#00BCD4,0),text=\"FVG\",textcolor=color.white,size=size.tiny,offset=-1)",
           "alertcondition_id": null,
           "pine_source_line_range": "L1037-L1050 (csNew1_Bull = comboSet1_Bull or comboSet2_Bull), plot L1353",
           "notes": "csNew1_Bull is the consolidated FVG combo (RVOL slot OR HW slot). Plot offset=-1.",
           "in_indicator": "hvd-pbj-ppd",
-          "plot_offset": 0,
+          "plot_offset": -1,
           "lifecycle_stage": 5
         },
         {
@@ -11048,15 +11234,16 @@
               "cs_vb prior",
               "(gz_bearHV OR gz_bearGZI)",
               "(Kratos|BearRVOL1x|MOAB|Pentagon|WTC|Hiro|Nag)[1]"
-            ]
+            ],
+            "offset": -1
           },
-          "offset": 0,
+          "offset": -1,
           "plot_call": "plotshape(fire_CS1R,\"CS1 FVG Bear\",shape.labeldown,location.top,color.new(#FF1744,0),text=\"FVG\",textcolor=color.white,size=size.tiny,offset=-1)",
           "alertcondition_id": null,
           "pine_source_line_range": "L1037-L1050, plot L1378",
           "notes": "Plot offset=-1.",
           "in_indicator": "hvd-pbj-ppd",
-          "plot_offset": 0,
+          "plot_offset": -1,
           "lifecycle_stage": 5
         },
         {
@@ -12810,9 +12997,10 @@
             "operands": [
               "squarify::UNIFIED_COMBO_BULL",
               "squarify::NPM_CONS_BULL",
-              "squarify::PUP[1]"
+              "sigPUP[1]"
             ]
           },
+          "composition_note": "PUP operand is raw sigPUP[1] (the atomic PUP boolean, prior bar), NOT det_b2bPUP. Pine L1689 uses nz(sigPUP[1]) where sigPUP is defined locally in squarify \u2014 it is the single-bar PUP atom, not the B2B composite.",
           "offset": -1,
           "plot_call": "plotshape(_masterGate and en_1 and sduperBull, \"1 SD!\",shape.flag,location.bottom,#FFD700,text=\"SD!\",textcolor=color.white,size=size.huge,offset=-1)",
           "alertcondition_id": "SD!",
@@ -12852,7 +13040,7 @@
               "disp5_bull",
               "hvd-pbj-ppd::PBJ_BULL",
               "(heavy-pentagon::GRAND_SLAM OR heavy-pentagon::WTC OR heavy-pentagon::HIROSHIMA OR (heavy-pentagon::NAGASAKI AND nag_dir_bull))",
-              "(squarify::ANY_FLOOR OR squarify::ANY_2F)"
+              "(squarify::S4_FLOOR OR squarify::S5_2F)"
             ]
           },
           "offset": 0,
@@ -20011,7 +20199,7 @@
         {
           "id": "yin-yang-displacement-pbj::ResistanceRejection",
           "family": "line-test",
-          "definition": "high >= resistance line AND close < resistance line.",
+          "definition": "high >= resistance line AND close < resistance line AND NOT breakdownDetected (mutex: breakdown suppresses rejection).",
           "lines": "86-87, 111 (plot)",
           "fire_var": "resRejectionDetected",
           "plot": {
@@ -20020,16 +20208,17 @@
             "location": "abovebar",
             "color": "color.aqua",
             "size": "small",
-            "text": "Rej"
+            "text": "Rej",
+            "textcolor": "color.blue"
           },
-          "note": "Yin Yang SECTION 1 root.",
+          "note": "Yin Yang SECTION 1 root. Pine gates plotshape with `and not breakdownDetected` to prevent co-firing when a breakdown is also detected on the same bar.",
           "in_indicator": "yin-yang-displacement-pbj",
           "lifecycle_stage": 2
         },
         {
           "id": "yin-yang-displacement-pbj::SupportRejection",
           "family": "line-test",
-          "definition": "low <= support line AND close > support line.",
+          "definition": "low <= support line AND close > support line AND NOT breakoutDetected (mutex: breakout suppresses rejection).",
           "lines": "94-95, 112 (plot)",
           "fire_var": "supRejectionDetected",
           "plot": {
@@ -20038,9 +20227,10 @@
             "location": "belowbar",
             "color": "color.purple",
             "size": "small",
-            "text": "Rej"
+            "text": "Rej",
+            "textcolor": "color.purple"
           },
-          "note": "Yin Yang SECTION 1 root.",
+          "note": "Yin Yang SECTION 1 root. Pine gates plotshape with `and not breakoutDetected` to prevent co-firing when a breakout is also detected on the same bar.",
           "in_indicator": "yin-yang-displacement-pbj",
           "lifecycle_stage": 2
         },
@@ -23455,7 +23645,7 @@
       "plot_offset": -1,
       "plot_call": "plotshape(plot_HS, title=\"Hot Spot\", style=shape.cross, location=location.bottom, color=color.new(color.red, 0), size=size.tiny, offset=-1)",
       "alertcondition_id": null,
-      "pine_source_line_range": "L590-L601",
+      "pine_source_line_range": "L651-L665 (def), L746 (plot)",
       "lifecycle_stage": 2,
       "notes": "Evaluated on bar[1] (NRA \u2014 non-repainting); plotted with offset=-1 to land on the actual calendar bar. No IPSF \u2014 windows are hardcoded constants reflecting market-structure timing.",
       "in_indicator": "heavy-uncap"
@@ -24576,7 +24766,7 @@
       "plot": {
         "title": "100-Bar High",
         "shape": "triangledown",
-        "location": "belowbar",
+        "location": "bottom",
         "color": "purple",
         "size": "small",
         "text": "100",
@@ -24604,7 +24794,7 @@
       "plot": {
         "title": "200-Bar High",
         "shape": "triangledown",
-        "location": "belowbar",
+        "location": "bottom",
         "color": "aqua",
         "size": "small",
         "text": "200",
@@ -24886,7 +25076,7 @@
       "plot": {
         "title": "Hot Spot",
         "shape": "cross",
-        "location": "belowbar",
+        "location": "bottom",
         "color": "red",
         "size": "tiny",
         "offset": -1
@@ -24912,7 +25102,7 @@
       "plot": {
         "title": "50-Bar High",
         "shape": "triangledown",
-        "location": "belowbar",
+        "location": "bottom",
         "color": "purple",
         "size": "small",
         "text": "50",
@@ -24940,7 +25130,7 @@
       "plot": {
         "title": "150-Bar High",
         "shape": "triangledown",
-        "location": "belowbar",
+        "location": "bottom",
         "color": "aqua",
         "size": "small",
         "text": "150",
@@ -25082,7 +25272,7 @@
       "plot": {
         "title": "Hot Spot",
         "shape": "cross",
-        "location": "belowbar",
+        "location": "bottom",
         "color": "red",
         "size": "tiny",
         "offset": -1
@@ -29833,7 +30023,7 @@
     {
       "id": "yin-yang-displacement-pbj::ResistanceRejection",
       "family": "line-test",
-      "definition": "high >= resistance line AND close < resistance line.",
+      "definition": "high >= resistance line AND close < resistance line AND NOT breakdownDetected (mutex: breakdown suppresses rejection).",
       "lines": "86-87, 111 (plot)",
       "fire_var": "resRejectionDetected",
       "plot": {
@@ -29842,16 +30032,17 @@
         "location": "abovebar",
         "color": "color.aqua",
         "size": "small",
-        "text": "Rej"
+        "text": "Rej",
+        "textcolor": "color.blue"
       },
-      "note": "Yin Yang SECTION 1 root.",
+      "note": "Yin Yang SECTION 1 root. Pine gates plotshape with `and not breakdownDetected` to prevent co-firing when a breakdown is also detected on the same bar.",
       "in_indicator": "yin-yang-displacement-pbj",
       "lifecycle_stage": 2
     },
     {
       "id": "yin-yang-displacement-pbj::SupportRejection",
       "family": "line-test",
-      "definition": "low <= support line AND close > support line.",
+      "definition": "low <= support line AND close > support line AND NOT breakoutDetected (mutex: breakout suppresses rejection).",
       "lines": "94-95, 112 (plot)",
       "fire_var": "supRejectionDetected",
       "plot": {
@@ -29860,9 +30051,10 @@
         "location": "belowbar",
         "color": "color.purple",
         "size": "small",
-        "text": "Rej"
+        "text": "Rej",
+        "textcolor": "color.purple"
       },
-      "note": "Yin Yang SECTION 1 root.",
+      "note": "Yin Yang SECTION 1 root. Pine gates plotshape with `and not breakoutDetected` to prevent co-firing when a breakout is also detected on the same bar.",
       "in_indicator": "yin-yang-displacement-pbj",
       "lifecycle_stage": 2
     },
@@ -30968,14 +31160,30 @@
     {
       "id": "b2b-pup::S3",
       "tier": 2,
-      "plain_english": "B2B PUP-on-bar[1]/bar[2] + (DISP or HV+D) bull on bar[0] AND on bar[1].",
+      "plain_english": "B2B PUP-on-bar[1]/bar[2] + same-type displacement on bar[0] AND bar[1]. Two disjoint paths: DISP-only path (DISPBull on both bars) OR HVD-only path (HVDBull on both bars). Cross-type mixing is silently disallowed by Pine.",
       "composition": {
-        "type": "AND_OR",
+        "type": "OR",
         "operands": [
-          "PUP[-1]",
-          "PUP[-2]",
-          "(DISPBull OR HVDBull) on bar[0]",
-          "(DISPBull OR HVDBull) on bar[-1]"
+          {
+            "type": "AND",
+            "label": "DISP path",
+            "operands": [
+              "b2b-pup::PUP[-1]",
+              "b2b-pup::PUP[-2]",
+              "b2b-pup::DISPBull",
+              "b2b-pup::DISPBull[-1]"
+            ]
+          },
+          {
+            "type": "AND",
+            "label": "HVD path",
+            "operands": [
+              "b2b-pup::PUP[-1]",
+              "b2b-pup::PUP[-2]",
+              "b2b-pup::HVDBull",
+              "b2b-pup::HVDBull[-1]"
+            ]
+          }
         ]
       },
       "offset": -1,
@@ -30989,12 +31197,34 @@
     {
       "id": "b2b-pup::S4",
       "tier": 3,
-      "plain_english": "B2B PUP + FAUNA + (DISP or HV+D) \u2014 PUP and FAUNA on bar[1] and bar[2], DISP/HV+D on bar[0] and bar[1].",
+      "plain_english": "B2B PUP + FAUNA + same-type displacement on both bars. Two disjoint paths: DISP-only path (PUP+FAUNA on bar[1]+bar[2] AND DISPBull on bar[0]+bar[1]) OR HVD-only path (same PUP+FAUNA AND HVDBull on bar[0]+bar[1]). Cross-type mixing is silently disallowed by Pine.",
       "composition": {
-        "type": "AND",
+        "type": "OR",
         "operands": [
-          "S2-style B2B PUP+FAUNA",
-          "(DISPBull OR HVDBull) \u00d72"
+          {
+            "type": "AND",
+            "label": "DISP path",
+            "operands": [
+              "b2b-pup::PUP[-1]",
+              "b2b-pup::PUP[-2]",
+              "b2b-pup::FAUNA_BULL[-1]",
+              "b2b-pup::FAUNA_BULL[-2]",
+              "b2b-pup::DISPBull",
+              "b2b-pup::DISPBull[-1]"
+            ]
+          },
+          {
+            "type": "AND",
+            "label": "HVD path",
+            "operands": [
+              "b2b-pup::PUP[-1]",
+              "b2b-pup::PUP[-2]",
+              "b2b-pup::FAUNA_BULL[-1]",
+              "b2b-pup::FAUNA_BULL[-2]",
+              "b2b-pup::HVDBull",
+              "b2b-pup::HVDBull[-1]"
+            ]
+          }
         ]
       },
       "offset": -1,
@@ -31044,12 +31274,26 @@
     {
       "id": "b2b-pup::S8",
       "tier": 3,
-      "plain_english": "Unified Combo + B2B PUP \u2014 B2B PUP AND UnifiedBull (current or prior) OR S3-chain AND UnifiedBull (current or prior).",
+      "plain_english": "Unified Combo + B2B PUP. Two arms with different UC lag rules: (1) B2B_PUP arm: det_b2bPUP AND det_UnifiedBull (current bar ONLY \u2014 no lag); (2) S3-chain arm: det_S3_any_bull AND (det_UnifiedBull OR det_UnifiedBull[-1]) (current or prior). Only the S3-chain arm accepts UC on bar[-1].",
       "composition": {
-        "type": "AND_OR",
+        "type": "OR",
         "operands": [
-          "b2b-pup::B2B_PUP OR S3-chain",
-          "b2b-pup::UnifiedBull current or [-1]"
+          {
+            "type": "AND",
+            "label": "B2B_PUP arm (UC current-bar only)",
+            "operands": [
+              "b2b-pup::B2B_PUP",
+              "b2b-pup::UnifiedBull"
+            ]
+          },
+          {
+            "type": "AND",
+            "label": "S3-chain arm (UC current or [-1])",
+            "operands": [
+              "b2b-pup::S3",
+              "b2b-pup::UnifiedBull OR b2b-pup::UnifiedBull[-1]"
+            ]
+          }
         ]
       },
       "offset": -1,
@@ -32206,17 +32450,29 @@
     {
       "id": "heavy-pentagon::HEAVY_YIN_YANG_BULL",
       "tier": 1,
-      "plain_english": "Heavy Yin-Yang fires bullish: a directional P1 RVOL spike (Bull RVOL 1x or Grand Slam) co-occurs with any neutral P2 tier (Pentagon/WTC/Hiroshima), and the displacement engine reads bullish.",
+      "plain_english": "Heavy Yin-Yang fires bullish: any P1 directional spike (groupA: Bull RVOL 1x OR Grand Slam OR Bear RVOL 1x OR MOAB) co-occurs with any neutral P2 tier (groupB: Pentagon OR WTC OR Hiroshima), and the displacement engine reads bullish. Structure: (groupA_Bull OR groupA_Bear) AND groupB.",
       "composition": {
         "type": "AND",
         "operands": [
-          "heavy-pentagon::RVOL_1X_BULL",
-          "heavy-pentagon::GRAND_SLAM",
-          "heavy-pentagon::RVOL_1X_BEAR",
-          "heavy-pentagon::MOAB",
-          "heavy-pentagon::PENTAGON",
-          "heavy-pentagon::WTC",
-          "heavy-pentagon::HIROSHIMA"
+          {
+            "type": "OR",
+            "label": "groupA (any P1 directional)",
+            "operands": [
+              "heavy-pentagon::RVOL_1X_BULL",
+              "heavy-pentagon::GRAND_SLAM",
+              "heavy-pentagon::RVOL_1X_BEAR",
+              "heavy-pentagon::MOAB"
+            ]
+          },
+          {
+            "type": "OR",
+            "label": "groupB (any P2 neutral)",
+            "operands": [
+              "heavy-pentagon::PENTAGON",
+              "heavy-pentagon::WTC",
+              "heavy-pentagon::HIROSHIMA"
+            ]
+          }
         ],
         "direction_gate": "dispBull"
       },
@@ -32232,17 +32488,29 @@
     {
       "id": "heavy-pentagon::HEAVY_YIN_YANG_BEAR",
       "tier": 1,
-      "plain_english": "Heavy Yin-Yang fires bearish: same directional-P1 + neutral-P2 base, gated by displacement bearish.",
+      "plain_english": "Heavy Yin-Yang fires bearish: same (groupA OR groupB) AND structure as Bull variant, gated by displacement bearish.",
       "composition": {
         "type": "AND",
         "operands": [
-          "heavy-pentagon::RVOL_1X_BULL",
-          "heavy-pentagon::GRAND_SLAM",
-          "heavy-pentagon::RVOL_1X_BEAR",
-          "heavy-pentagon::MOAB",
-          "heavy-pentagon::PENTAGON",
-          "heavy-pentagon::WTC",
-          "heavy-pentagon::HIROSHIMA"
+          {
+            "type": "OR",
+            "label": "groupA (any P1 directional)",
+            "operands": [
+              "heavy-pentagon::RVOL_1X_BULL",
+              "heavy-pentagon::GRAND_SLAM",
+              "heavy-pentagon::RVOL_1X_BEAR",
+              "heavy-pentagon::MOAB"
+            ]
+          },
+          {
+            "type": "OR",
+            "label": "groupB (any P2 neutral)",
+            "operands": [
+              "heavy-pentagon::PENTAGON",
+              "heavy-pentagon::WTC",
+              "heavy-pentagon::HIROSHIMA"
+            ]
+          }
         ],
         "direction_gate": "dispBear"
       },
@@ -32258,17 +32526,29 @@
     {
       "id": "heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL",
       "tier": 1,
-      "plain_english": "Heavy Yin-Yang fires neutral: same base, but displacement engine produced neither a bull nor bear classification.",
+      "plain_english": "Heavy Yin-Yang fires neutral: same (groupA OR groupB) AND structure, but displacement engine produced neither a bull nor bear classification.",
       "composition": {
         "type": "AND",
         "operands": [
-          "heavy-pentagon::RVOL_1X_BULL",
-          "heavy-pentagon::GRAND_SLAM",
-          "heavy-pentagon::RVOL_1X_BEAR",
-          "heavy-pentagon::MOAB",
-          "heavy-pentagon::PENTAGON",
-          "heavy-pentagon::WTC",
-          "heavy-pentagon::HIROSHIMA"
+          {
+            "type": "OR",
+            "label": "groupA (any P1 directional)",
+            "operands": [
+              "heavy-pentagon::RVOL_1X_BULL",
+              "heavy-pentagon::GRAND_SLAM",
+              "heavy-pentagon::RVOL_1X_BEAR",
+              "heavy-pentagon::MOAB"
+            ]
+          },
+          {
+            "type": "OR",
+            "label": "groupB (any P2 neutral)",
+            "operands": [
+              "heavy-pentagon::PENTAGON",
+              "heavy-pentagon::WTC",
+              "heavy-pentagon::HIROSHIMA"
+            ]
+          }
         ],
         "direction_gate": "noDisp"
       },
@@ -32506,13 +32786,32 @@
     {
       "id": "heavy-pentagon::NEUTRAL_HEAVY_X2_BULL",
       "tier": 1,
-      "plain_english": "Neutral Heavy x2 fires bullish: at least two of the three Reg@Time tiers (Pentagon, WTC, Hiroshima) co-occur on the same bar, gated bullish by displacement.",
+      "plain_english": "Neutral Heavy x2 fires bullish: at least 2-of-3 Reg@Time tiers (Pentagon, WTC, Hiroshima) co-occur on the same bar, gated bullish by displacement. Structure: (Pentagon AND WTC) OR (Pentagon AND Hiroshima) OR (WTC AND Hiroshima).",
       "composition": {
-        "type": "AND",
+        "type": "OR",
+        "label": "2-of-3 P2 tiers",
         "operands": [
-          "heavy-pentagon::PENTAGON",
-          "heavy-pentagon::WTC",
-          "heavy-pentagon::HIROSHIMA"
+          {
+            "type": "AND",
+            "operands": [
+              "heavy-pentagon::PENTAGON",
+              "heavy-pentagon::WTC"
+            ]
+          },
+          {
+            "type": "AND",
+            "operands": [
+              "heavy-pentagon::PENTAGON",
+              "heavy-pentagon::HIROSHIMA"
+            ]
+          },
+          {
+            "type": "AND",
+            "operands": [
+              "heavy-pentagon::WTC",
+              "heavy-pentagon::HIROSHIMA"
+            ]
+          }
         ],
         "direction_gate": "dispBull"
       },
@@ -32528,13 +32827,32 @@
     {
       "id": "heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR",
       "tier": 1,
-      "plain_english": "Neutral Heavy x2 fires bearish: two-of-three P2 tier co-occurrence, gated bearish.",
+      "plain_english": "Neutral Heavy x2 fires bearish: 2-of-3 P2 tier co-occurrence, gated bearish.",
       "composition": {
-        "type": "AND",
+        "type": "OR",
+        "label": "2-of-3 P2 tiers",
         "operands": [
-          "heavy-pentagon::PENTAGON",
-          "heavy-pentagon::WTC",
-          "heavy-pentagon::HIROSHIMA"
+          {
+            "type": "AND",
+            "operands": [
+              "heavy-pentagon::PENTAGON",
+              "heavy-pentagon::WTC"
+            ]
+          },
+          {
+            "type": "AND",
+            "operands": [
+              "heavy-pentagon::PENTAGON",
+              "heavy-pentagon::HIROSHIMA"
+            ]
+          },
+          {
+            "type": "AND",
+            "operands": [
+              "heavy-pentagon::WTC",
+              "heavy-pentagon::HIROSHIMA"
+            ]
+          }
         ],
         "direction_gate": "dispBear"
       },
@@ -32550,13 +32868,32 @@
     {
       "id": "heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL",
       "tier": 1,
-      "plain_english": "Neutral Heavy x2 fires neutral: two-of-three P2 tier co-occurrence, no displacement classification.",
+      "plain_english": "Neutral Heavy x2 fires neutral: 2-of-3 P2 tier co-occurrence, no displacement classification.",
       "composition": {
-        "type": "AND",
+        "type": "OR",
+        "label": "2-of-3 P2 tiers",
         "operands": [
-          "heavy-pentagon::PENTAGON",
-          "heavy-pentagon::WTC",
-          "heavy-pentagon::HIROSHIMA"
+          {
+            "type": "AND",
+            "operands": [
+              "heavy-pentagon::PENTAGON",
+              "heavy-pentagon::WTC"
+            ]
+          },
+          {
+            "type": "AND",
+            "operands": [
+              "heavy-pentagon::PENTAGON",
+              "heavy-pentagon::HIROSHIMA"
+            ]
+          },
+          {
+            "type": "AND",
+            "operands": [
+              "heavy-pentagon::WTC",
+              "heavy-pentagon::HIROSHIMA"
+            ]
+          }
         ],
         "direction_gate": "noDisp"
       },
@@ -32892,11 +33229,21 @@
       "composition": {
         "type": "AND",
         "operands": [
-          "heavy-weapons-8fvg-matrix::BULL_GZI",
-          "heavy-weapons-8fvg-matrix::BULL_HV",
-          "heavy-weapons-8fvg-matrix::SAAB",
-          "heavy-weapons-8fvg-matrix::RVOL_1X_BULL",
-          "heavy-weapons-8fvg-matrix::GRAND_SLAM"
+          {
+            "type": "OR",
+            "operands": [
+              "heavy-weapons-8fvg-matrix::BULL_GZI",
+              "heavy-weapons-8fvg-matrix::BULL_HV"
+            ]
+          },
+          {
+            "type": "OR",
+            "operands": [
+              "heavy-weapons-8fvg-matrix::SAAB",
+              "heavy-weapons-8fvg-matrix::RVOL_1X_BULL",
+              "heavy-weapons-8fvg-matrix::GRAND_SLAM"
+            ]
+          }
         ],
         "time_domain": "bar[1] body check; bar[1] RVOL checks; fires on bar[0]"
       },
@@ -32921,11 +33268,21 @@
       "composition": {
         "type": "AND",
         "operands": [
-          "heavy-weapons-8fvg-matrix::BEAR_GZI",
-          "heavy-weapons-8fvg-matrix::BEAR_HV",
-          "heavy-weapons-8fvg-matrix::KRATOS",
-          "heavy-weapons-8fvg-matrix::RVOL_1X_BEAR",
-          "heavy-weapons-8fvg-matrix::MOAB"
+          {
+            "type": "OR",
+            "operands": [
+              "heavy-weapons-8fvg-matrix::BEAR_GZI",
+              "heavy-weapons-8fvg-matrix::BEAR_HV"
+            ]
+          },
+          {
+            "type": "OR",
+            "operands": [
+              "heavy-weapons-8fvg-matrix::KRATOS",
+              "heavy-weapons-8fvg-matrix::RVOL_1X_BEAR",
+              "heavy-weapons-8fvg-matrix::MOAB"
+            ]
+          }
         ],
         "time_domain": "bar[1] body check; bar[1] RVOL checks; fires on bar[0]"
       },
@@ -32950,12 +33307,22 @@
       "composition": {
         "type": "AND",
         "operands": [
-          "heavy-weapons-8fvg-matrix::BULL_GZI",
-          "heavy-weapons-8fvg-matrix::BULL_HV",
-          "heavy-weapons-8fvg-matrix::PENTAGON",
-          "heavy-weapons-8fvg-matrix::WTC",
-          "heavy-weapons-8fvg-matrix::HIROSHIMA",
-          "heavy-weapons-8fvg-matrix::NAGASAKI"
+          {
+            "type": "OR",
+            "operands": [
+              "heavy-weapons-8fvg-matrix::BULL_GZI",
+              "heavy-weapons-8fvg-matrix::BULL_HV"
+            ]
+          },
+          {
+            "type": "OR",
+            "operands": [
+              "heavy-weapons-8fvg-matrix::PENTAGON",
+              "heavy-weapons-8fvg-matrix::WTC",
+              "heavy-weapons-8fvg-matrix::HIROSHIMA",
+              "heavy-weapons-8fvg-matrix::NAGASAKI"
+            ]
+          }
         ],
         "gate_inputs": [
           "inc_pentagon_FVG"
@@ -32983,12 +33350,22 @@
       "composition": {
         "type": "AND",
         "operands": [
-          "heavy-weapons-8fvg-matrix::BEAR_GZI",
-          "heavy-weapons-8fvg-matrix::BEAR_HV",
-          "heavy-weapons-8fvg-matrix::PENTAGON",
-          "heavy-weapons-8fvg-matrix::WTC",
-          "heavy-weapons-8fvg-matrix::HIROSHIMA",
-          "heavy-weapons-8fvg-matrix::NAGASAKI"
+          {
+            "type": "OR",
+            "operands": [
+              "heavy-weapons-8fvg-matrix::BEAR_GZI",
+              "heavy-weapons-8fvg-matrix::BEAR_HV"
+            ]
+          },
+          {
+            "type": "OR",
+            "operands": [
+              "heavy-weapons-8fvg-matrix::PENTAGON",
+              "heavy-weapons-8fvg-matrix::WTC",
+              "heavy-weapons-8fvg-matrix::HIROSHIMA",
+              "heavy-weapons-8fvg-matrix::NAGASAKI"
+            ]
+          }
         ],
         "gate_inputs": [
           "inc_pentagon_FVG"
@@ -33367,7 +33744,7 @@
           "PBJ_BULL",
           "DISP_BULL",
           "(FAUNA_BULL or LS_LONG1)",
-          "(RVOL_1x or GS or WTC or HIRO or NAG)",
+          "(RVOL_1X_BULL or GS or WTC or HIRO or NAG)",
           "((csNew1_Bull or csNew2_Bull) and PUP) or (FLOOR_BULL or SECOND_FLOOR_BULL)"
         ]
       },
@@ -33390,7 +33767,7 @@
           "PBJ_BEAR",
           "DISP_BEAR",
           "(FAUNA_BEAR or LS_SHORT1)",
-          "(RVOL_1x_bear or MOAB or WTC or HIRO or NAG)",
+          "(RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)",
           "((csNew1_Bear or csNew2_Bear) and PPD) or (ROOFTOP or PENTHOUSE)"
         ]
       },
@@ -33412,7 +33789,7 @@
         "operands": [
           "FLOOR_BULL",
           "PBJ_BULL",
-          "(RVOL_1x or GS or WTC or HIRO or NAG)",
+          "(RVOL_1X_BULL or GS or WTC or HIRO or NAG)",
           "(csNew1_Bull or csNew2_Bull)",
           "PUP",
           "DISP_BULL",
@@ -33437,7 +33814,7 @@
         "operands": [
           "(ROOFTOP or PENTHOUSE)",
           "PBJ_BEAR",
-          "(RVOL_1x_bear or MOAB or WTC or HIRO or NAG)",
+          "(RVOL_1X_BEAR or MOAB or WTC or HIRO or NAG)",
           "(csNew1_Bear or csNew2_Bear)",
           "PPD",
           "DISP_BEAR",
@@ -33970,15 +34347,16 @@
           "(HV5K|HVY|HVQ via gz_bullHV) OR gz_bullGZI",
           "(sigSAAB|sigBullRVOL1x|sigGrandSlam)[1]",
           "OR comboSet2_Bull (Pentagon/WTC/Hiro/Nag tier-2)"
-        ]
+        ],
+        "offset": -1
       },
-      "offset": 0,
+      "offset": -1,
       "plot_call": "plotshape(fire_CS1B,\"CS1 FVG\",shape.labelup,location.top,color.new(#00BCD4,0),text=\"FVG\",textcolor=color.white,size=size.tiny,offset=-1)",
       "alertcondition_id": null,
       "pine_source_line_range": "L1037-L1050 (csNew1_Bull = comboSet1_Bull or comboSet2_Bull), plot L1353",
       "notes": "csNew1_Bull is the consolidated FVG combo (RVOL slot OR HW slot). Plot offset=-1.",
       "in_indicator": "hvd-pbj-ppd",
-      "plot_offset": 0,
+      "plot_offset": -1,
       "lifecycle_stage": 5
     },
     {
@@ -33991,15 +34369,16 @@
           "cs_vb prior",
           "(gz_bearHV OR gz_bearGZI)",
           "(Kratos|BearRVOL1x|MOAB|Pentagon|WTC|Hiro|Nag)[1]"
-        ]
+        ],
+        "offset": -1
       },
-      "offset": 0,
+      "offset": -1,
       "plot_call": "plotshape(fire_CS1R,\"CS1 FVG Bear\",shape.labeldown,location.top,color.new(#FF1744,0),text=\"FVG\",textcolor=color.white,size=size.tiny,offset=-1)",
       "alertcondition_id": null,
       "pine_source_line_range": "L1037-L1050, plot L1378",
       "notes": "Plot offset=-1.",
       "in_indicator": "hvd-pbj-ppd",
-      "plot_offset": 0,
+      "plot_offset": -1,
       "lifecycle_stage": 5
     },
     {
@@ -34597,9 +34976,10 @@
         "operands": [
           "squarify::UNIFIED_COMBO_BULL",
           "squarify::NPM_CONS_BULL",
-          "squarify::PUP[1]"
+          "sigPUP[1]"
         ]
       },
+      "composition_note": "PUP operand is raw sigPUP[1] (the atomic PUP boolean, prior bar), NOT det_b2bPUP. Pine L1689 uses nz(sigPUP[1]) where sigPUP is defined locally in squarify \u2014 it is the single-bar PUP atom, not the B2B composite.",
       "offset": -1,
       "plot_call": "plotshape(_masterGate and en_1 and sduperBull, \"1 SD!\",shape.flag,location.bottom,#FFD700,text=\"SD!\",textcolor=color.white,size=size.huge,offset=-1)",
       "alertcondition_id": "SD!",
@@ -34639,7 +35019,7 @@
           "disp5_bull",
           "hvd-pbj-ppd::PBJ_BULL",
           "(heavy-pentagon::GRAND_SLAM OR heavy-pentagon::WTC OR heavy-pentagon::HIROSHIMA OR (heavy-pentagon::NAGASAKI AND nag_dir_bull))",
-          "(squarify::ANY_FLOOR OR squarify::ANY_2F)"
+          "(squarify::S4_FLOOR OR squarify::S5_2F)"
         ]
       },
       "offset": 0,

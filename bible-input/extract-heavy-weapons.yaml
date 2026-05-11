@@ -646,11 +646,15 @@ composites:
     composition:
       type: AND
       operands:
-        - "heavy-weapons-8fvg-matrix::BULL_GZI"
-        - "heavy-weapons-8fvg-matrix::BULL_HV"
-        - "heavy-weapons-8fvg-matrix::SAAB"
-        - "heavy-weapons-8fvg-matrix::RVOL_1X_BULL"
-        - "heavy-weapons-8fvg-matrix::GRAND_SLAM"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::BULL_GZI"
+            - "heavy-weapons-8fvg-matrix::BULL_HV"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::SAAB"
+            - "heavy-weapons-8fvg-matrix::RVOL_1X_BULL"
+            - "heavy-weapons-8fvg-matrix::GRAND_SLAM"
       time_domain: "bar[1] body check; bar[1] RVOL checks; fires on bar[0]"
     offset: -1
     plot_call: 'plotshape(fire_CS1_Bull, title="Combo Set 1 Bull (FVG)", style=shape.labelup, location=location.belowbar, color=color.green, text="F-S1", textcolor=color.white, offset=-1)'
@@ -665,11 +669,15 @@ composites:
     composition:
       type: AND
       operands:
-        - "heavy-weapons-8fvg-matrix::BEAR_GZI"
-        - "heavy-weapons-8fvg-matrix::BEAR_HV"
-        - "heavy-weapons-8fvg-matrix::KRATOS"
-        - "heavy-weapons-8fvg-matrix::RVOL_1X_BEAR"
-        - "heavy-weapons-8fvg-matrix::MOAB"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::BEAR_GZI"
+            - "heavy-weapons-8fvg-matrix::BEAR_HV"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::KRATOS"
+            - "heavy-weapons-8fvg-matrix::RVOL_1X_BEAR"
+            - "heavy-weapons-8fvg-matrix::MOAB"
       time_domain: "bar[1] body check; bar[1] RVOL checks; fires on bar[0]"
     offset: -1
     plot_call: 'plotshape(fire_CS1_Bear, title="Combo Set 1 Bear (FVG)", style=shape.labeldown, location=location.abovebar, color=color.red, text="F-S1", textcolor=color.white, offset=-1)'
@@ -685,12 +693,16 @@ composites:
     composition:
       type: AND
       operands:
-        - "heavy-weapons-8fvg-matrix::BULL_GZI"
-        - "heavy-weapons-8fvg-matrix::BULL_HV"
-        - "heavy-weapons-8fvg-matrix::PENTAGON"
-        - "heavy-weapons-8fvg-matrix::WTC"
-        - "heavy-weapons-8fvg-matrix::HIROSHIMA"
-        - "heavy-weapons-8fvg-matrix::NAGASAKI"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::BULL_GZI"
+            - "heavy-weapons-8fvg-matrix::BULL_HV"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::PENTAGON"
+            - "heavy-weapons-8fvg-matrix::WTC"
+            - "heavy-weapons-8fvg-matrix::HIROSHIMA"
+            - "heavy-weapons-8fvg-matrix::NAGASAKI"
       gate_inputs:
         - inc_pentagon_FVG
       time_domain: "bar[1] body check; bar[1] P2 checks; fires on bar[0]"
@@ -707,12 +719,16 @@ composites:
     composition:
       type: AND
       operands:
-        - "heavy-weapons-8fvg-matrix::BEAR_GZI"
-        - "heavy-weapons-8fvg-matrix::BEAR_HV"
-        - "heavy-weapons-8fvg-matrix::PENTAGON"
-        - "heavy-weapons-8fvg-matrix::WTC"
-        - "heavy-weapons-8fvg-matrix::HIROSHIMA"
-        - "heavy-weapons-8fvg-matrix::NAGASAKI"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::BEAR_GZI"
+            - "heavy-weapons-8fvg-matrix::BEAR_HV"
+        - type: OR
+          operands:
+            - "heavy-weapons-8fvg-matrix::PENTAGON"
+            - "heavy-weapons-8fvg-matrix::WTC"
+            - "heavy-weapons-8fvg-matrix::HIROSHIMA"
+            - "heavy-weapons-8fvg-matrix::NAGASAKI"
       gate_inputs:
         - inc_pentagon_FVG
       time_domain: "bar[1] body check; bar[1] P2 checks; fires on bar[0]"

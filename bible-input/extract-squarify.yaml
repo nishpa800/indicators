@@ -295,7 +295,8 @@ composites:
     plain_english: "SD! (Super Duper) — REDEFINED v2: Unified Combo + consolidated NPM + PUP. All on visual bar [1]."
     composition:
       type: AND
-      operands: ["squarify::UNIFIED_COMBO_BULL", "squarify::NPM_CONS_BULL", "squarify::PUP[1]"]
+      operands: ["squarify::UNIFIED_COMBO_BULL", "squarify::NPM_CONS_BULL", "sigPUP[1]"]
+    composition_note: "PUP operand is raw sigPUP[1] (the atomic PUP boolean, prior bar), NOT det_b2bPUP. Pine L1689 uses nz(sigPUP[1]) where sigPUP is defined locally in squarify — it is the single-bar PUP atom, not the B2B composite."
     offset: -1
     plot_call: "plotshape(_masterGate and en_1 and sduperBull, \"1 SD!\",shape.flag,location.bottom,#FFD700,text=\"SD!\",textcolor=color.white,size=size.huge,offset=-1)"
     alertcondition_id: "SD!"
@@ -317,7 +318,7 @@ composites:
     plain_english: "Heavy Weapon: green bar + 5x-std displacement (no FVG) + PBJ + (GS or WTC or Hiroshima or directional Nagasaki) + (Floor or 2F)."
     composition:
       type: AND
-      operands: ["close>open","disp5_bull","hvd-pbj-ppd::PBJ_BULL","(heavy-pentagon::GRAND_SLAM OR heavy-pentagon::WTC OR heavy-pentagon::HIROSHIMA OR (heavy-pentagon::NAGASAKI AND nag_dir_bull))","(squarify::ANY_FLOOR OR squarify::ANY_2F)"]
+      operands: ["close>open","disp5_bull","hvd-pbj-ppd::PBJ_BULL","(heavy-pentagon::GRAND_SLAM OR heavy-pentagon::WTC OR heavy-pentagon::HIROSHIMA OR (heavy-pentagon::NAGASAKI AND nag_dir_bull))","(squarify::S4_FLOOR OR squarify::S5_2F)"]
     offset: 0
     plot_call: "plotshape(_masterGate and en_3 and hwBull, \"3 HW\",shape.xcross,location.abovebar,#FF6D00,text=\"HW\",textcolor=color.white,size=size.large)"
     alertcondition_id: "HW"

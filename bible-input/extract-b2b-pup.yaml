@@ -548,8 +548,16 @@ composites:
     pine_source_line_range: "L1049-L1050 (det at L979; fire at L1024)"
   - id: b2b-pup::S3
     tier: 2
-    plain_english: "B2B PUP-on-bar[1]/bar[2] + (DISP or HV+D) bull on bar[0] AND on bar[1]."
-    composition: { type: AND_OR, operands: ["PUP[-1]", "PUP[-2]", "(DISPBull OR HVDBull) on bar[0]", "(DISPBull OR HVDBull) on bar[-1]"] }
+    plain_english: "B2B PUP-on-bar[1]/bar[2] + same-type displacement on bar[0] AND bar[1]. Two disjoint paths: DISP-only path (DISPBull on both bars) OR HVD-only path (HVDBull on both bars). Cross-type mixing is silently disallowed by Pine."
+    composition:
+      type: OR
+      operands:
+        - type: AND
+          label: "DISP path"
+          operands: ["b2b-pup::PUP[-1]", "b2b-pup::PUP[-2]", "b2b-pup::DISPBull", "b2b-pup::DISPBull[-1]"]
+        - type: AND
+          label: "HVD path"
+          operands: ["b2b-pup::PUP[-1]", "b2b-pup::PUP[-2]", "b2b-pup::HVDBull", "b2b-pup::HVDBull[-1]"]
     offset: -1
     plot_call: |
       plotshape(fire_S3_bull,"B2B+DISP Bull",shape.diamond,location.belowbar,color.new(#00BCD4,0),text="B2B\nDISP",textcolor=color.white,size=size.normal,offset=-1)
@@ -558,8 +566,16 @@ composites:
     notes: "Aggregator distinguishes B2B-DISP vs B2B-HVD per det_S3d_bull at alert time."
   - id: b2b-pup::S4
     tier: 3
-    plain_english: "B2B PUP + FAUNA + (DISP or HV+D) — PUP and FAUNA on bar[1] and bar[2], DISP/HV+D on bar[0] and bar[1]."
-    composition: { type: AND, operands: ["S2-style B2B PUP+FAUNA", "(DISPBull OR HVDBull) ×2"] }
+    plain_english: "B2B PUP + FAUNA + same-type displacement on both bars. Two disjoint paths: DISP-only path (PUP+FAUNA on bar[1]+bar[2] AND DISPBull on bar[0]+bar[1]) OR HVD-only path (same PUP+FAUNA AND HVDBull on bar[0]+bar[1]). Cross-type mixing is silently disallowed by Pine."
+    composition:
+      type: OR
+      operands:
+        - type: AND
+          label: "DISP path"
+          operands: ["b2b-pup::PUP[-1]", "b2b-pup::PUP[-2]", "b2b-pup::FAUNA_BULL[-1]", "b2b-pup::FAUNA_BULL[-2]", "b2b-pup::DISPBull", "b2b-pup::DISPBull[-1]"]
+        - type: AND
+          label: "HVD path"
+          operands: ["b2b-pup::PUP[-1]", "b2b-pup::PUP[-2]", "b2b-pup::FAUNA_BULL[-1]", "b2b-pup::FAUNA_BULL[-2]", "b2b-pup::HVDBull", "b2b-pup::HVDBull[-1]"]
     offset: -1
     plot_call: |
       plotshape(fire_S4_bull,"B2B+F+D Bull",shape.labelup,location.belowbar,color.new(#00E5FF,0),text="B2B\nF+D",textcolor=color.black,size=size.large,offset=-1)
@@ -586,8 +602,16 @@ composites:
     notes: "v4.30 fixed missing offset=-1."
   - id: b2b-pup::S8
     tier: 3
-    plain_english: "Unified Combo + B2B PUP — B2B PUP AND UnifiedBull (current or prior) OR S3-chain AND UnifiedBull (current or prior)."
-    composition: { type: AND_OR, operands: ["b2b-pup::B2B_PUP OR S3-chain", "b2b-pup::UnifiedBull current or [-1]"] }
+    plain_english: "Unified Combo + B2B PUP. Two arms with different UC lag rules: (1) B2B_PUP arm: det_b2bPUP AND det_UnifiedBull (current bar ONLY — no lag); (2) S3-chain arm: det_S3_any_bull AND (det_UnifiedBull OR det_UnifiedBull[-1]) (current or prior). Only the S3-chain arm accepts UC on bar[-1]."
+    composition:
+      type: OR
+      operands:
+        - type: AND
+          label: "B2B_PUP arm (UC current-bar only)"
+          operands: ["b2b-pup::B2B_PUP", "b2b-pup::UnifiedBull"]
+        - type: AND
+          label: "S3-chain arm (UC current or [-1])"
+          operands: ["b2b-pup::S3", "b2b-pup::UnifiedBull OR b2b-pup::UnifiedBull[-1]"]
     offset: -1
     plot_call: |
       plotshape(fire_S8_bull,"UC+B2B Bull",shape.labelup,location.belowbar,color.new(#00C853,0),text="UC\nB2B",textcolor=color.black,size=size.large,offset=-1)

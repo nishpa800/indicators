@@ -41,9 +41,9 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 | [`e3-f2-cluster::BearF2`](e3-f2-cluster__BearF2.md) | 1 | e3-f2-cluster | ? |  |
 | [`e3-f2-cluster::AnyBull`](e3-f2-cluster__AnyBull.md) | 2 | e3-f2-cluster | ? |  |
 | [`e3-f2-cluster::AnyBear`](e3-f2-cluster__AnyBear.md) | 2 | e3-f2-cluster | ? |  |
-| [`heavy-pentagon::HEAVY_YIN_YANG_BULL`](heavy-pentagon__HEAVY_YIN_YANG_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bullish: a directional P1 RVOL spike (Bull RVOL 1x or Grand |
-| [`heavy-pentagon::HEAVY_YIN_YANG_BEAR`](heavy-pentagon__HEAVY_YIN_YANG_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bearish: same directional-P1 + neutral-P2 base, gated by di |
-| [`heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL`](heavy-pentagon__HEAVY_YIN_YANG_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires neutral: same base, but displacement engine produced neithe |
+| [`heavy-pentagon::HEAVY_YIN_YANG_BULL`](heavy-pentagon__HEAVY_YIN_YANG_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bullish: any P1 directional spike (groupA: Bull RVOL 1x OR  |
+| [`heavy-pentagon::HEAVY_YIN_YANG_BEAR`](heavy-pentagon__HEAVY_YIN_YANG_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bearish: same (groupA OR groupB) AND structure as Bull vari |
+| [`heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL`](heavy-pentagon__HEAVY_YIN_YANG_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires neutral: same (groupA OR groupB) AND structure, but displac |
 | [`heavy-pentagon::HEAVY_NAGASAKI_BULL`](heavy-pentagon__HEAVY_NAGASAKI_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Nagasaki fires bullish: an all-time high volume bar (Nagasaki) co-occurs w |
 | [`heavy-pentagon::HEAVY_NAGASAKI_BEAR`](heavy-pentagon__HEAVY_NAGASAKI_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Nagasaki fires bearish: Nagasaki co-occurs with any directional P1, gated  |
 | [`heavy-pentagon::HEAVY_NAGASAKI_NEUTRAL`](heavy-pentagon__HEAVY_NAGASAKI_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Nagasaki fires neutral: Nagasaki co-occurs with any directional P1, but no |
@@ -53,9 +53,9 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 | [`heavy-pentagon::HEAVY_TRIDENT_BULL`](heavy-pentagon__HEAVY_TRIDENT_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Trident fires bullish: all three RVOL axes co-occur — Nagasaki (P3) + any  |
 | [`heavy-pentagon::HEAVY_TRIDENT_BEAR`](heavy-pentagon__HEAVY_TRIDENT_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Trident fires bearish: all three RVOL axes co-occur, gated bearish. |
 | [`heavy-pentagon::HEAVY_TRIDENT_NEUTRAL`](heavy-pentagon__HEAVY_TRIDENT_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Trident fires neutral: all three RVOL axes co-occur, no displacement class |
-| [`heavy-pentagon::NEUTRAL_HEAVY_X2_BULL`](heavy-pentagon__NEUTRAL_HEAVY_X2_BULL.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires bullish: at least two of the three Reg@Time tiers (Pentag |
-| [`heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR`](heavy-pentagon__NEUTRAL_HEAVY_X2_BEAR.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires bearish: two-of-three P2 tier co-occurrence, gated bearis |
-| [`heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL`](heavy-pentagon__NEUTRAL_HEAVY_X2_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires neutral: two-of-three P2 tier co-occurrence, no displacem |
+| [`heavy-pentagon::NEUTRAL_HEAVY_X2_BULL`](heavy-pentagon__NEUTRAL_HEAVY_X2_BULL.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires bullish: at least 2-of-3 Reg@Time tiers (Pentagon, WTC, H |
+| [`heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR`](heavy-pentagon__NEUTRAL_HEAVY_X2_BEAR.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires bearish: 2-of-3 P2 tier co-occurrence, gated bearish. |
+| [`heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL`](heavy-pentagon__NEUTRAL_HEAVY_X2_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires neutral: 2-of-3 P2 tier co-occurrence, no displacement cl |
 | [`heavy-weapons-8fvg-matrix::COMBO_SET_1_BULL`](heavy-weapons-8fvg-matrix__COMBO_SET_1_BULL.md) | 2 | heavy-weapons-8fvg-matrix | -1 | Bullish GZI/HV FVG combo: bar[1] has valid body (>= 0.85 candle range) AND (bull |
 | [`heavy-weapons-8fvg-matrix::COMBO_SET_1_BEAR`](heavy-weapons-8fvg-matrix__COMBO_SET_1_BEAR.md) | 2 | heavy-weapons-8fvg-matrix | -1 | Bearish GZI/HV FVG combo: bar[1] has valid body AND (bearGZI OR bearHV) AND (Kra |
 | [`heavy-weapons-8fvg-matrix::COMBO_SET_2_BULL`](heavy-weapons-8fvg-matrix__COMBO_SET_2_BULL.md) | 2 | heavy-weapons-8fvg-matrix | -1 | Bullish GZI/HV FVG combo with time-regularized volume gate: bar[1] valid body AN |

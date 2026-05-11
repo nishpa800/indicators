@@ -31,7 +31,7 @@ COMPOSITES (by tier)
 -----
   Tier 1:
     ● heavy-pentagon::HEAVY_YIN_YANG_BULL    [offset=0 · AND]
-        Heavy Yin-Yang fires bullish: a directional P1 RVOL spike (Bull RVOL …
+        Heavy Yin-Yang fires bullish: any P1 directional spike (groupA: Bull …
         ├── heavy-pentagon::RVOL_1X_BULL
         ├── heavy-pentagon::GRAND_SLAM
         ├── heavy-pentagon::RVOL_1X_BEAR
@@ -40,7 +40,7 @@ COMPOSITES (by tier)
         ├── heavy-pentagon::WTC
         └── heavy-pentagon::HIROSHIMA
     ● heavy-pentagon::HEAVY_YIN_YANG_BEAR    [offset=0 · AND]
-        Heavy Yin-Yang fires bearish: same directional-P1 + neutral-P2 base, …
+        Heavy Yin-Yang fires bearish: same (groupA OR groupB) AND structure a…
         ├── heavy-pentagon::RVOL_1X_BULL
         ├── heavy-pentagon::GRAND_SLAM
         ├── heavy-pentagon::RVOL_1X_BEAR
@@ -49,7 +49,7 @@ COMPOSITES (by tier)
         ├── heavy-pentagon::WTC
         └── heavy-pentagon::HIROSHIMA
     ● heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL    [offset=0 · AND]
-        Heavy Yin-Yang fires neutral: same base, but displacement engine prod…
+        Heavy Yin-Yang fires neutral: same (groupA OR groupB) AND structure, …
         ├── heavy-pentagon::RVOL_1X_BULL
         ├── heavy-pentagon::GRAND_SLAM
         ├── heavy-pentagon::RVOL_1X_BEAR
@@ -126,19 +126,28 @@ COMPOSITES (by tier)
         ├── heavy-pentagon::PENTAGON
         ├── heavy-pentagon::WTC
         └── heavy-pentagon::HIROSHIMA
-    ● heavy-pentagon::NEUTRAL_HEAVY_X2_BULL    [offset=0 · AND]
-        Neutral Heavy x2 fires bullish: at least two of the three Reg@Time ti…
+    ● heavy-pentagon::NEUTRAL_HEAVY_X2_BULL    [offset=0 · OR]
+        Neutral Heavy x2 fires bullish: at least 2-of-3 Reg@Time tiers (Penta…
         ├── heavy-pentagon::PENTAGON
         ├── heavy-pentagon::WTC
-        └── heavy-pentagon::HIROSHIMA
-    ● heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR    [offset=0 · AND]
-        Neutral Heavy x2 fires bearish: two-of-three P2 tier co-occurrence, g…
         ├── heavy-pentagon::PENTAGON
+        └── heavy-pentagon::HIROSHIMA
         ├── heavy-pentagon::WTC
         └── heavy-pentagon::HIROSHIMA
-    ● heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL    [offset=0 · AND]
-        Neutral Heavy x2 fires neutral: two-of-three P2 tier co-occurrence, n…
+    ● heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR    [offset=0 · OR]
+        Neutral Heavy x2 fires bearish: 2-of-3 P2 tier co-occurrence, gated b…
         ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        ├── heavy-pentagon::PENTAGON
+        └── heavy-pentagon::HIROSHIMA
+        ├── heavy-pentagon::WTC
+        └── heavy-pentagon::HIROSHIMA
+    ● heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL    [offset=0 · OR]
+        Neutral Heavy x2 fires neutral: 2-of-3 P2 tier co-occurrence, no disp…
+        ├── heavy-pentagon::PENTAGON
+        ├── heavy-pentagon::WTC
+        ├── heavy-pentagon::PENTAGON
+        └── heavy-pentagon::HIROSHIMA
         ├── heavy-pentagon::WTC
         └── heavy-pentagon::HIROSHIMA
 
