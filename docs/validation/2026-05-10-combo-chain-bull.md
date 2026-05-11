@@ -187,10 +187,10 @@ The semantic drift between Group B (THE_ONLY_ONE — CS3+CS4 only reset) and Gro
 
 **Generators run** (after autonomous YAML adds):
 
-- `python3 tools/merge_extracts.py` — pending
-- `python3 tools/build_lineage_cards.py` — pending
-- `python3 tools/build_docs.py` — pending
-- YAML == JSON byte-equivalent — pending
+- `python3 tools/merge_extracts.py` — ✓ (Indicators: 28, Total roots: 456, Total composites: 420)
+- `python3 tools/build_lineage_cards.py` — ✓ (166 lineage cards written)
+- `python3 tools/build_docs.py` — ✓ (roots.md 456, composites.md 420, 28 visual trees)
+- YAML == JSON byte-equivalent — ✓
 
 ---
 
