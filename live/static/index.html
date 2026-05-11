@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Indicator Leaderboard — Live</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: #0e1116; color: #e8e8e8; margin: 0; padding: 1.2em 2em; }
+  h1 { font-size: 1.4em; margin: 0 0 0.4em 0; letter-spacing: 0.02em; }
+  .meta { font-size: 0.82em; color: #888; margin-bottom: 1.2em; }
+  .meta .feed { color: #7eddc1; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.94em; }
+  th, td { padding: 0.5em 0.7em; border-bottom: 1px solid #2a2f37; text-align: left; }
+  th { background: #1a1f29; font-weight: 600; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.04em; color: #aab; }
+  tr.top { background: linear-gradient(90deg, #122039 0%, #0e1116 100%); }
+  tr:hover { background: #161b25; }
+  td.score { font-weight: 700; color: #7eddc1; text-align: right; }
+  td.numeric { font-variant-numeric: tabular-nums; }
+  .fire-gt-0 { color: #ffa66b; font-weight: 600; }
+  .fire-zero { color: #4a5058; }
+  .feed-section { margin-top: 2.4em; font-size: 0.85em; }
+  .feed-section h2 { font-size: 0.9em; color: #999; margin-bottom: 0.6em; text-transform: uppercase; letter-spacing: 0.05em; }
+  .feed-row { font-family: "SF Mono", Menlo, Consolas, monospace; padding: 3px 0; }
+  .feed-row .ts { color: #666; }
+  .feed-row .sym { color: #7eddc1; font-weight: 600; }
+  .feed-row .plot { color: #ffa66b; font-weight: 600; }
+  .feed-row .px { color: #ddd; }
+  .empty { color: #555; font-style: italic; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 10px; background: #1a1f29; font-size: 0.78em; margin-left: 0.5em; }
+</style>
+</head>
+<body>
+<h1>Indicator Leaderboard <span class="pill" id="status-pill">live</span></h1>
+<div class="meta" id="meta">connecting...</div>
+
+<table>
+  <thead>
+    <tr id="header-row">
+      <th>#</th>
+      <th>Symbol</th>
+      <th>Price</th>
+      <th>Last bar</th>
+      <th style="text-align: right;">Score</th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<div class="feed-section">
+  <h2>Recent fires</h2>
+  <div id="feed"></div>
+</div>
+
+<script>
+const meta = document.getElementById('meta');
+const statusPill = document.getElementById('status-pill');
+const rowsEl = document.getElementById('rows');
+const feedEl = document.getElementById('feed');
+const headerRow = document.getElementById('header-row');
+
+let plotCols = [];
+
+function setStatus(text, ok) {
+  statusPill.textContent = text;
+  statusPill.style.background = ok ? '#1a3525' : '#3a1a1a';
+  statusPill.style.color = ok ? '#7eddc1' : '#ff8888';
+}
+
+function renderHeader(plots) {
+  if (plotCols.join(',') === plots.join(',')) return;
+  plotCols = plots;
+  // remove existing plot columns
+  [...headerRow.querySelectorAll('.plot-h')].forEach(n => n.remove());
+  // insert new plot columns before the Score column (last child)
+  const scoreTh = headerRow.lastElementChild;
+  plots.forEach(p => {
+    const th = document.createElement('th');
+    th.className = 'plot-h';
+    th.textContent = p;
+    th.style.textAlign = 'right';
+    headerRow.insertBefore(th, scoreTh);
+  });
+}
+
+function render(payload) {
+  setStatus('live', true);
+  meta.innerHTML = `<span class="feed">${payload.feed}</span> · ${payload.symbols.length} symbols · ${payload.plots.length} plots · updated ${new Date(payload.now).toLocaleTimeString()}`;
+  renderHeader(payload.plots);
+
+  rowsEl.innerHTML = '';
+  payload.rows.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    if (i === 0 && r.score > 0) tr.className = 'top';
+    let html = `<td class="numeric">${i+1}</td>`;
+    html += `<td><strong>${r.symbol}</strong></td>`;
+    html += `<td class="numeric">${r.price?.toLocaleString(undefined, {maximumFractionDigits: 4}) ?? '-'}</td>`;
+    html += `<td class="numeric">${r.last_bar ? new Date(r.last_bar).toLocaleTimeString() : '-'}</td>`;
+    plotCols.forEach(p => {
+      const c = r.fires[p] ?? 0;
+      html += `<td class="numeric ${c > 0 ? 'fire-gt-0' : 'fire-zero'}" style="text-align:right;">${c}</td>`;
+    });
+    html += `<td class="score">${r.score.toFixed(1)}</td>`;
+    tr.innerHTML = html;
+    rowsEl.appendChild(tr);
+  });
+
+  feedEl.innerHTML = '';
+  if (!payload.feed_recent || payload.feed_recent.length === 0) {
+    feedEl.innerHTML = '<div class="empty">no fires yet — waiting for bars...</div>';
+  } else {
+    payload.feed_recent.forEach(f => {
+      const d = document.createElement('div');
+      d.className = 'feed-row';
+      d.innerHTML = `<span class="ts">${new Date(f.time).toLocaleTimeString()}</span> · <span class="sym">${f.symbol}</span> · <span class="plot">${f.plot}</span> @ <span class="px">${f.price.toLocaleString(undefined, {maximumFractionDigits: 4})}</span>`;
+      feedEl.appendChild(d);
+    });
+  }
+}
+
+const es = new EventSource('/stream');
+es.addEventListener('snapshot', (e) => {
+  try { render(JSON.parse(e.data)); }
+  catch (err) { console.error('parse error', err); }
+});
+es.addEventListener('open', () => setStatus('live', true));
+es.addEventListener('error', () => {
+  setStatus('reconnecting', false);
+  meta.textContent = 'connection lost — reconnecting...';
+});
+</script>
+</body>
+</html>
