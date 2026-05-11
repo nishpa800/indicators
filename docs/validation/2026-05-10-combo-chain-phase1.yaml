@@ -1,0 +1,108 @@
+skill_phase: 1-ENUMERATE
+skill_version: detection-plot-validation@v1.0.0
+target: COMBO_CHAIN_BULL
+aliases_searched:
+- COMBO_CHAIN_BULL
+- COMBO_CHAIN_BEAR
+- ComboChain
+- comboChain
+- combo_chain
+- CC
+- sigComboChainBull
+- sigComboChainBear
+- comboChainBull
+- comboChainBear
+- sigCCBull
+- sigCCBear
+pine_files_scanned: 54
+definitions:
+- &id001
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_46_v2_2026-05-04.pine
+  line: 1312
+  pine_variable: sigCCBull
+  raw_line: bool sigCCBull=conf and cc_bull_active, bool sigCCBear=conf and cc_bear_active
+- &id002
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_ATOMS_v1.pine
+  line: 1320
+  pine_variable: sigCCBull
+  raw_line: bool sigCCBull=conf and cc_bull_active, bool sigCCBear=conf and cc_bear_active
+- &id003
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v1.pine
+  line: 1238
+  pine_variable: sigCCBull
+  raw_line: bool sigCCBull=conf and cc_bull_active, bool sigCCBear=conf and cc_bear_active
+- &id004
+  indicator_family: squarify
+  file: squarify/versions/SQUARIFY_v2.pine
+  line: 1312
+  pine_variable: sigCCBull
+  raw_line: bool sigCCBull=conf and cc_bull_active, bool sigCCBear=conf and cc_bear_active
+- &id005
+  indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  line: 1046
+  pine_variable: sigCCBull
+  raw_line: bool sigCCBull=conf and cc_bull_active, bool sigCCBear=conf and cc_bear_active
+- &id006
+  indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2026-05-10_THE_ONLY_ONE.pine
+  line: 1111
+  pine_variable: sigCCBull
+  raw_line: bool sigCCBull=conf and cc_bull_active, bool sigCCBear=conf and cc_bear_active
+- &id007
+  indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  line: 1020
+  pine_variable: sigCCBull
+  raw_line: bool sigCCBull=conf and cc_bull_active, bool sigCCBear=conf and cc_bear_active
+- &id008
+  indicator_family: hvd-pbj-ppd
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine
+  line: 1046
+  pine_variable: sigCCBull
+  raw_line: bool sigCCBull=conf and cc_bull_active, bool sigCCBear=conf and cc_bear_active
+occurrences_per_indicator:
+  path-a-loggers:
+    DEFINITION: 0
+    REFERENCE: 2
+    INPUT: 0
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 2
+  squarify:
+    DEFINITION: 4
+    REFERENCE: 51
+    INPUT: 0
+    PLOT: 2
+    ALERT: 0
+    COMMENT: 0
+  hvd-pbj-ppd:
+    DEFINITION: 4
+    REFERENCE: 83
+    INPUT: 0
+    PLOT: 16
+    ALERT: 0
+    COMMENT: 0
+  b2b-pup:
+    DEFINITION: 0
+    REFERENCE: 0
+    INPUT: 0
+    PLOT: 0
+    ALERT: 0
+    COMMENT: 3
+yaml_cross_check:
+  yaml_matching_records: []
+  orphans: []
+  missings:
+  - *id001
+  - *id002
+  - *id003
+  - *id004
+  - *id005
+  - *id006
+  - *id007
+  - *id008
+status: COMPLETE
