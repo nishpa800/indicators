@@ -620,6 +620,160 @@ notes: |
 
 <hr>
 
+<h2>20. ADDENDUM 2026-05-11 — Tomorrow's MVP Compendium</h2>
+
+<div class="critical">
+<strong>This addendum is the operating contract for May 11–12, 2026.</strong> Sections 1–19 describe the long-horizon agentic OS. Section 20 describes the 5-hour-to-market-open MVP that ships tomorrow. The two downstream chats — satellite chat and agentic-OS chat — should read both, but execute against this section first.
+</div>
+
+<h3>20.1 Identity Restatement</h3>
+
+<p>We are a hyper-aggressive, alpha-maximizing quant fund. Zero risk management, zero hedge-fund ceremony, zero SEO / marketing / social media / sales funnels. One purpose: identify moments when the four GPS satellites align and capitalize with maximum conviction. The agentic OS exists to externalize Anish's cognition onto a multi-agent system; nothing else. Every component that does not earn its place against that purpose gets cut. Anish 2026-05-11: <em>"We are the absolute most aggressive, hyper alpha, maximize return at all costs investment firm in the world, and everybody knows it."</em></p>
+
+<h3>20.2 The May 11 Constraint</h3>
+
+<p>The US cash market opens in roughly 5 hours. By open we ship three things, in this order: (a) Python parity confirmed for a small set of frequently-firing detection plots against TradingView, (b) a live BTC test running against websocket data because BTC trades 24/7 and we have a 4 AM start, (c) a leaderboard ranking 10 symbols by detection-plot fire intensity. Historical flat files, 10-year tick reconstruction, options data ingestion, and the 4 GPS satellite emissions themselves are <em>all deferred</em> to the multi-week roadmap. They are NOT in tomorrow's scope. Anish: <em>"This is not hard. I can get a high school kid to do this tomorrow."</em></p>
+
+<h3>20.3 What Anish Owes Me for Python Parity</h3>
+
+<p>Per indicator, I need from you:</p>
+<ol>
+<li><strong>Symbol + timeframe + bar count.</strong> Suggested defaults (override at will): HVD+PBJ+PPD → BTCUSD 1m last 500 bars; B2B PUP → SPY 5m last 500; Squarify → SPY 5m last 500; TNT-OD → ES1! 1m last 500; Ultra-combo → SPY 5m last 200; Heavy-pentagon → SPY 5m last 200; Fauna-shifu → SPY 5m last 200.</li>
+<li><strong>Path-A logger run.</strong> Load the matching logger Pine on the chart. I pull labels via <code>mcp__tradingview__data_get_pine_labels(study_filter="LOGGER ...", max_labels=500)</code>. Output lands at <code>verification/fires/&lt;indicator&gt;/&lt;symbol&gt;_&lt;tf&gt;.json</code>.</li>
+<li><strong>OHLCV history</strong> for the same symbol+TF window. For crypto I pull this myself from the exchange REST API. For equities you export from TradingView or your vendor.</li>
+<li><strong>Upstream Pine intrinsics</strong> that my ports stub. Each port has a STUBBED dict. For HVD+PBJ+PPD that's <code>tv_ta.relativeVolume</code> + FVG zone scanner + B2B walker state. For TNT-OD v3 add TNT zone scanner + Napalm/Charge + CONT + PBJ Supertrend + WBUSH heavy-combo + CS1. I will author one stub-logger Pine per indicator that emits these values as label text; you load it once; I pull via MCP.</li>
+</ol>
+
+<p>Decisions you owe me before parity work starts:</p>
+<ul>
+<li>Green-light or override the symbol+TF defaults.</li>
+<li>Parity tolerance: zero (default) or accept known 1-bar offsets explicitly per detection plot.</li>
+<li>Canonical when divergent: per SD-006, the Pine file named in <code>&lt;indicator&gt;/versions/LATEST.txt</code>.</li>
+</ul>
+
+<h3>20.4 The BTC Smoke Test (the 4 AM job)</h3>
+
+<p>Detection plots that fire frequently on BTC 1m with low upstream dependency. Pick three:</p>
+<ol>
+<li><strong>Displacement candle strength</strong> — single-bar range vs rolling stdev. Fires every few minutes on volatile BTC. Zero upstream intrinsics beyond OHLC.</li>
+<li><strong>RVOL 1x bull / bear</strong> — bar volume vs 20-bar rolling mean. 5–10 fires per hour on BTC 1m. Trivial Python port already in scope.</li>
+<li><strong>MOAB</strong> — multi-condition bullish bar (the simple multi-operand AND gate). A few fires per session. Tests AND-logic correctness on real data.</li>
+</ol>
+
+<p>Stack: Python <code>websockets</code> → Binance spot <code>BTCUSDT@kline_1m</code> → asyncio loop accumulates the current bar, runs the three ports on bar close, emits fires to an in-memory queue → leaderboard reads the queue, updates ranked dict → FastAPI + Server-Sent Events → single-page browser UI.</p>
+
+<p><strong>Acceptance:</strong> within 30 minutes of starting, the UI shows ≥ 5 fires per plot with bar-time + price stamped on each, and the rank order updates as counts accumulate. If a port disagrees with TV on a fire, we have a parity bug to fix before market open. We are explicitly NOT running B2B PUP or UC on the smoke test — they fire too rarely on a single symbol at 4 AM.</p>
+
+<h3>20.5 Leaderboard MVP Architecture</h3>
+
+<pre class="ascii">
+[websocket client]──&gt;[bar accumulator]──&gt;[Python port suite]
+   BTCUSDT 1m         rolling OHLCV +    detection plots
+                      stub intrinsics    emit fires
+                                              │
+                              ┌──────────────┘
+                              ▼
+                       [fire queue]──&gt;[leaderboard state]
+                                       per-symbol rolling
+                                       fire count × plot weight
+                                              │
+                                              ▼
+                                       [FastAPI + SSE]──&gt;[browser UI]
+</pre>
+
+<p>In-memory only for tomorrow. No DB. Process restart wipes state. Persistence (SQLite / DuckDB) is a Day-2 add. Symbol list + per-plot weight live in a single <code>config.json</code>. Ranking formula = weighted sum of fires-in-last-5-minutes per detection plot. Default weights = 1.0; Anish tunes via JSON edit.</p>
+
+<p>For Monday 9:30 AM ET equity open: swap the websocket source from Binance to an equity feed. Candidates by free-tier viability: Polygon (paid, best latency), IEX Cloud (free, delayed), Tradier (free with brokerage), Alpaca (free with brokerage). Anish picks before open. Default 10-symbol equity list (override at will): NVDA, TSLA, AMD, SMCI, PLTR, COIN, MSTR, META, AMZN, AAPL.</p>
+
+<h3>20.6 Agentic OS Chat — Build Math</h3>
+
+<p>What to tell the agentic-OS chat to build, by exact count.</p>
+
+<p><strong>Tomorrow's MVP:</strong></p>
+<ul>
+<li><strong>1 Owner thread</strong> — leaderboard orchestrator: picks symbols, schedules ports, exposes the API.</li>
+<li><strong>3 Grunt skills active</strong> for the BTC smoke set: <code>displacement-grunt</code>, <code>rvol1x-grunt</code>, <code>moab-grunt</code>.</li>
+<li><strong>7 Grunt skills queued</strong> (already ported in <code>python_ports/</code>; need only logger-vs-port parity confirmation): HVD+PBJ+PPD, B2B PUP, Squarify, TNT-OD (v2 + v3), Ultra-combo, Heavy-pentagon, Fauna-shifu.</li>
+<li><strong>2 Knowledge skills</strong> already authored: <code>bull-bear-dialectic</code>, <code>four-square-matrix</code>. Both use neutral framing per SD-008 and the post-setup outcome dialectic per SD-010.</li>
+<li><strong>10 Standing decisions</strong> (SD-001 through SD-010) — locked. Read them before writing any code.</li>
+</ul>
+
+<p><strong>3-month horizon, per asset class</strong> (equities + crypto + options):</p>
+<ul>
+<li>5 Grunt workers × 2 sides (bull + bear) = 10 grunts per asset class.</li>
+<li>1 Knowledge worker × 2 sides = 2 per asset class.</li>
+<li>1 Owner per asset class.</li>
+</ul>
+
+<p>Total at 3-month horizon: 3 × 10 + 3 × 2 + 3 = <strong>39 active components.</strong></p>
+
+<p><strong>Skill template = Anthropic Agent Skills standard.</strong> SKILL.md + YAML frontmatter + progressive disclosure. Already adopted in <code>.claude/skills/</code>. Reference repo: <a href="https://github.com/anthropics/skills">github.com/anthropics/skills</a>. Standard reference: <a href="https://agentskills.io/home">agentskills.io</a>. Treat the existing 3 split skills as the canonical pattern. Every new skill MUST: (a) be one folder with one SKILL.md, (b) declare <code>name</code> + <code>description</code> + <code>when_to_use</code> in YAML frontmatter, (c) keep the main body under 500 words and link to sub-docs for depth (progressive disclosure), (d) declare its tier (grunt / knowledge / output) explicitly. The agentic-OS chat is forbidden from inventing a custom skill schema — we are on the open standard.</p>
+
+<p>For sub-agent dispatch the chat should mirror DeerFlow 2.0 (<code>bytedance/deer-flow</code>): lead agent spawns scoped sub-agents in parallel; each has its own context, tools, termination conditions; lead synthesizes structured results. Strip DeerFlow's research-report + slide-deck output modules — we do not produce research papers or slide decks. For role schema, CrewAI's role DSL is the closest fit to our grunt / knowledge / owner tiers — adopt the role spec, drop the social-media / customer-service tooling defaults.</p>
+
+<h3>20.7 Satellite Chat — Emission Math</h3>
+
+<table>
+<tr><th>Satellite</th><th>Layers</th><th>Emission status</th><th>Build task</th></tr>
+<tr><td>VOB-asym A</td><td>6 sensitivity × 2 sides</td><td>partial</td><td>Optimize the 6 thresholds against historical BTC + SPY.</td></tr>
+<tr><td>VOB-asym B</td><td>6 sensitivity × 2 sides</td><td>partial</td><td>Same as A at a different sensitivity tier.</td></tr>
+<tr><td>VOB-single-sens</td><td>1 sens × 3-cell × 3-x</td><td>partial</td><td>Tighten 3-cell variant against false positives.</td></tr>
+<tr><td>HV+FVG+GZ1</td><td>TBD</td><td><strong>NOT YET EMITTED</strong></td><td>Build the emission from scratch — highest priority.</td></tr>
+</table>
+
+<p><strong>The axes (y/z/w), v1 answer:</strong></p>
+<ul>
+<li><strong>y-axis — signed direction-magnitude.</strong> Positive = bull GPS lock strength; negative = bear lock. Range [−1, +1] per satellite, summed to [−4, +4] across the four.</li>
+<li><strong>z-axis — bars-since-last-satellite-shift.</strong> Stability measure. Higher z = more stable alignment = higher conviction.</li>
+<li><strong>w-axis — concurrent detection-plot vector count.</strong> The vector load onto the satellite-defined coordinate frame. UC counts as a 45-degree propulsion vector; a flat range counts as a 180-degree reversion vector.</li>
+</ul>
+
+<p><strong>Triangulation rule (v1, strict):</strong></p>
+<ul>
+<li>4/4 satellites bullish + zone F on both asym VOBs + ≥ 3 concurrent bullish detection plots → <strong>trade-of-a-lifetime prior.</strong> Document and pursue.</li>
+<li>3/4 satellites bullish + concurrent plots → standard high-conviction bull.</li>
+<li>Mixed satellites → bear-case agent inspects bearish asymmetry. If a recent bearish GPS signature is within N bars, halt.</li>
+<li>4/4 satellites bearish + zone F bear → trade-of-a-lifetime short prior.</li>
+</ul>
+
+<p>The bear-case knowledge worker's job is not just "argue the other side." It is specifically: (a) scan for layered bearish VOBs nearby that constitute asymmetric resistance, (b) look back for prior bearish GPS signatures within the symbol's history (months-scale lookback), (c) call halt if either is positive. Krishna and Shiva on opposite sides of the same coin; both must agree the trade is asymmetric before it is sized as trade-of-a-lifetime.</p>
+
+<h3>20.8 Reference Trade — FLNC May 5–6, 2026</h3>
+
+<p>Concrete grounding for the satellite chat. FLNC, week of May 5, 2026. Anish detected a 1-minute candle with displacement strength 9 + unified combo + MOAB the day before earnings. He did not know earnings were coming — no grunt worker was telling him. Stock went 12 → 21 in one session. He made 110% on the trade.</p>
+
+<p>What FLNC tells the satellite chat: emission tightness matters more than emission breadth. A satellite that catches FLNC-class setups while suppressing 95% of false positives is worth more than one that flags every candle. The bear-case agent had no grounds to halt — no nearby bearish VOB layers, no recent bearish GPS signature — so the high-conviction prior was valid. Add to the FLNC observability list: an earnings-calendar grunt worker. Not knowing earnings were coming was the only thing keeping FLNC from being a trade of multiple lifetimes. For the agentic-OS chat: prioritize earnings-calendar grunt as the first data-source pair after the 4 satellites are live.</p>
+
+<h3>20.9 Future Options Expansion (illustrative, 3-month horizon)</h3>
+
+<p>For the options leg, plan 5 grunt workers per side:</p>
+<ol>
+<li><strong>Implied volatility</strong> — IV surface skew, term structure, IV rank/percentile. Skill: snapshot IV state per bar, flag IV crush / expansion regimes.</li>
+<li><strong>Greeks</strong> — delta, gamma, theta, vega, charm. Skill: per-strike-per-expiry Greek dump + portfolio Greek aggregation.</li>
+<li><strong>Strategy patterns</strong> — iron condor, butterfly, calendar, diagonal, straddle, strangle. Skill: detect when the option chain has positive EV for one of these.</li>
+<li><strong>Unusual activity / OI</strong> — block trades, sweeps, OI jumps. Skill: stream the option tape, flag print-anomalies vs OI baseline.</li>
+<li><strong>Term structure / pin mechanics</strong> — gamma flip, dealer positioning, pin risk. Skill: model dealer gamma flow into expiration.</li>
+</ol>
+
+<p>Each options grunt's skill answers two questions: (1) what would an options specialist who makes their living off this variable compute? (2) how does the computed value confirm or defy the 4-satellite GPS reading? The tie-back is what makes the options leg useful vs. a generic options dashboard.</p>
+
+<h3>20.10 Order of Operations for Tomorrow</h3>
+
+<ol>
+<li><strong>This turn:</strong> Compendium addendum lands in the HTML. Anish hands off to satellite chat + agentic-OS chat with the GitHub link.</li>
+<li><strong>Next ~2 hours:</strong> Anish green-lights default symbol+TF combos per indicator. I dispatch parity-confirmation tasks: pull TV labels via MCP, run Python ports, diff fires. Indicators that pass move to "verified." Indicators that fail get a delta report and a same-session fix.</li>
+<li><strong>Next ~2 hours:</strong> BTC smoke test stood up. Three plots running against Binance 1m. Browser UI visible at <code>http://localhost:8080</code>.</li>
+<li><strong>Anish, before 9:30 AM ET:</strong> Pick the equity websocket provider + 10-symbol list.</li>
+<li><strong>9:30 AM ET:</strong> Swap source to equities. Leaderboard live for the open.</li>
+<li><strong>Post-open:</strong> First equity setup that fires multiple satellites + multiple plots is traded.</li>
+</ol>
+
+<h3>20.11 What This Compendium Is Not</h3>
+
+<p>Not a research paper. Not a slide deck. Not a generic-purpose AI-agent framework brief. Not a hedge-fund pitch. Not a risk-management framework. Not a compliance document. Not a marketing piece. It is one trader's externalized cognition, written down so two downstream chats can build the pieces in parallel without inventing new schemas. Read it, build to it, ask if anything is ambiguous, and ship.</p>
+
+<hr>
+
 <h2>P.S. — GitHub Repos for Pattern Library</h2>
 
 <p>Reference these repos for agentic-OS architecture patterns. None of them solve our exact problem (none have built a trading-cognition mirror with bull-vs-bear dialectic on confirmed setups), but each is worth scanning for the specific pattern in column 3.</p>
