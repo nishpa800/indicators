@@ -1,0 +1,148 @@
+//@version=6
+indicator('Yin Yang', overlay = true, max_labels_count = 500, max_lines_count = 500)
+
+// --- Inputs ---
+// Lookback Settings
+grp_lookback = 'Lookback Settings'
+leftBars = input.int(75, 'Left Bars', minval = 1, group = grp_lookback, tooltip = 'Minimum bars to the left to confirm a pivot')
+rightBars = input.int(2, 'Right Bars', minval = 1, group = grp_lookback, tooltip = 'Minimum bars to the right to confirm a pivot')
+
+// ATR Filter Settings
+grp_atr = 'ATR Filter Settings'
+useAtrFilter = input.bool(true, 'Use ATR Distance Filter?', group = grp_atr)
+atrLength = input.int(50, 'ATR Length', minval = 1, group = grp_atr)
+atrMult = input.float(3, 'ATR Multiplier', step = 0.1, group = grp_atr, tooltip = 'The new swing must be at least this many ATRs away from the previous valid swing level.')
+
+// Visual Settings
+grp_vis = 'Visuals'
+colorHigh = input.color(color.red, 'Resistance Color', group = grp_vis)
+colorLow = input.color(color.green, 'Support Color', group = grp_vis)
+lineWidth = input.int(1, 'Line Width', minval = 1, group = grp_vis)
+
+// --- Types ---
+// Define a custom type to hold line information
+type srLine
+    line id
+    float price
+    bool isResistance // true = Resistance (High), false = Support (Low)
+
+// --- Variables ---
+var srLines = array.new<srLine>()
+var float lastValidLevel = na
+var string lastSwingType = na
+
+// --- Calculations ---
+
+// Calculate ATR
+atrValue = ta.atr(atrLength)
+
+// Detect Raw Pivots (Swing High / Swing Low based on High/Low)
+// rawHigh/rawLow contains the specific High or Low price of the pivot
+rawHigh = ta.pivothigh(high, leftBars, rightBars)
+rawLow = ta.pivotlow(low, leftBars, rightBars)
+
+// Function to check if distance is sufficient
+isSufficientDistance(currentPrice, lastPrice, threshold) =>
+    na(lastPrice) ? true : math.abs(currentPrice - lastPrice) >= threshold
+
+// Determine the threshold distance
+threshold = useAtrFilter ? atrValue * atrMult : 0
+
+// --- Logic Loop ---
+
+// 1. Detect New Swings
+bool isHigh = not na(rawHigh)
+bool validHigh = false
+
+if isHigh
+    if isSufficientDistance(rawHigh, lastValidLevel, threshold)
+        validHigh := true
+        lastValidLevel := rawHigh
+        lastSwingType := 'high'
+
+        // Create Resistance Line from the HIGH of the swing bar (rawHigh)
+        // Note: The pivot occurred 'rightBars' ago
+        linePrice = rawHigh
+        newLine = line.new(x1 = bar_index[rightBars], y1 = linePrice, x2 = bar_index, y2 = linePrice, color = colorHigh, width = lineWidth)
+        array.push(srLines, srLine.new(newLine, linePrice, true))
+
+bool isLow = not na(rawLow)
+bool validLow = false
+
+if isLow
+    if isSufficientDistance(rawLow, lastValidLevel, threshold)
+        validLow := true
+        lastValidLevel := rawLow
+        lastSwingType := 'low'
+
+        // Create Support Line from the LOW of the swing bar (rawLow)
+        linePrice = rawLow
+        newLine = line.new(x1 = bar_index[rightBars], y1 = linePrice, x2 = bar_index, y2 = linePrice, color = colorLow, width = lineWidth)
+        array.push(srLines, srLine.new(newLine, linePrice, false))
+
+// 2. Manage Existing Lines & Check for Breaks/Rejections
+bool breakoutDetected = false
+bool breakdownDetected = false
+bool resRejectionDetected = false
+bool supRejectionDetected = false
+
+// Iterate backwards to safely remove elements
+if array.size(srLines) > 0
+    for i = array.size(srLines) - 1 to 0 by 1
+        currentLine = array.get(srLines, i)
+
+        bool crossed = false
+
+        if currentLine.isResistance
+            // Case A: Breakout (Close crosses over Resistance High)
+            if close > currentLine.price and close[1] <= currentLine.price
+                crossed := true
+                breakoutDetected := true
+                breakoutDetected
+            // Case B: Rejection (High tests Resistance, but Close stays below)
+            else if high >= currentLine.price and close < currentLine.price
+                resRejectionDetected := true
+                resRejectionDetected
+        else // Case A: Breakdown (Close crosses under Support Low)
+            if close < currentLine.price and close[1] >= currentLine.price
+                crossed := true
+                breakdownDetected := true
+                breakdownDetected
+            // Case B: Rejection (Low tests Support, but Close stays above)
+            else if low <= currentLine.price and close > currentLine.price
+                supRejectionDetected := true
+                supRejectionDetected
+
+        if crossed
+            // Stop extending the line (set endpoint to current bar)
+            line.set_x2(currentLine.id, bar_index)
+            // Remove from array so it stops processing
+            array.remove(srLines, i)
+        else // Extend the line to the current bar
+            line.set_x2(currentLine.id, bar_index)
+
+// --- Plotting ---
+
+// Swing High/Low Shapes
+plotshape(validHigh, title = 'Swing High', style = shape.triangledown, location = location.abovebar, color = colorHigh, size = size.normal, offset = -rightBars)
+plotshape(validLow, title = 'Swing Low', style = shape.triangleup, location = location.belowbar, color = colorLow, size = size.normal, offset = -rightBars)
+
+// Breakout/Breakdown Symbols (Now DIAMOND)
+plotshape(breakoutDetected, title = 'Breakout', style = shape.diamond, location = location.belowbar, color = color.green, size = size.small, text = 'BO', textcolor = color.green)
+plotshape(breakdownDetected, title = 'Breakdown', style = shape.diamond, location = location.abovebar, color = color.red, size = size.small, text = 'BD', textcolor = color.red)
+
+// Rejection Symbols (Now XCROSS)
+plotshape(resRejectionDetected and not breakdownDetected, title = 'Resistance Rejection', style = shape.xcross, location = location.abovebar, color = color.aqua, size = size.small, text = 'Rej', textcolor = color.blue)
+plotshape(supRejectionDetected and not breakoutDetected, title = 'Support Rejection', style = shape.xcross, location = location.belowbar, color = color.purple, size = size.small, text = 'Rej', textcolor = color.red)
+
+// --- Alerts ---
+
+alertcondition(validHigh, title = 'Swing High Detected', message = 'New Swing High detected')
+alertcondition(validLow, title = 'Swing Low Detected', message = 'New Swing Low detected')
+
+alertcondition(breakoutDetected, title = 'Resistance Breakout', message = 'Price broke above resistance line')
+alertcondition(breakdownDetected, title = 'Support Breakdown', message = 'Price broke below support line')
+
+alertcondition(resRejectionDetected, title = 'Resistance Rejection', message = 'Price tested resistance and rejected')
+alertcondition(supRejectionDetected, title = 'Support Rejection', message = 'Price tested support and rejected')
+

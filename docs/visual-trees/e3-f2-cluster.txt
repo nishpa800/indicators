@@ -1,0 +1,36 @@
+VISUAL TREE — e3-f2-cluster
+============================
+File: e3-f2-cluster/versions/E3_F2_CLUSTER_BULL_BEAR_58PCT_REDUCTION_v1.pine
+Pine v5  ·  387 lines  ·  overlay=True
+Purpose: 6 session-bar primitives (MB/RE/TA bull/bear atoms) feeding 3 clusters (FC/E3/F2) for both directions; 58% size-reduced build with suspected root corruption from compression
+
+ROOTS
+-----
+  ◆ e3-f2-cluster::bull_MB    [session-bar-classifier · offset=?]
+      
+  ◆ e3-f2-cluster::bull_RE    [session-bar-classifier · offset=?]
+      
+  ◆ e3-f2-cluster::bull_TA    [session-bar-classifier · offset=?]
+      
+  ◆ e3-f2-cluster::bear_MB    [session-bar-classifier · offset=?]
+      
+  ◆ e3-f2-cluster::bear_RE    [session-bar-classifier · offset=?]
+      
+  ◆ e3-f2-cluster::bear_TA    [session-bar-classifier · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● e3-f2-cluster::BullFC    [offset=? · ?]
+    ● e3-f2-cluster::BullE3    [offset=? · ?]
+    ● e3-f2-cluster::BullF2    [offset=? · ?]
+    ● e3-f2-cluster::BearFC    [offset=? · ?]
+    ● e3-f2-cluster::BearE3    [offset=? · ?]
+    ● e3-f2-cluster::BearF2    [offset=? · ?]
+
+  Tier 2:
+    ● e3-f2-cluster::AnyBull    [offset=? · ?]
+    ● e3-f2-cluster::AnyBear    [offset=? · ?]
+
+

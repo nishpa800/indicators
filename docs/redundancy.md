@@ -6,7 +6,7 @@ Two tables. **(a)** name collisions — same primitive name appearing under two 
 
 ## (a) Name collisions across indicators
 
-**164 colliding names.** Each row groups all canonical IDs that share an unqualified name.
+**174 colliding names.** Each row groups all canonical IDs that share an unqualified name.
 
 | Short name | Occurrences | Verdict | Recommendation |
 |---|---|---|---|
@@ -21,9 +21,15 @@ Two tables. **(a)** name collisions — same primitive name appearing under two 
 | `Bear UU` | `hvd-pbj-ppd-1939::Bear UU` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::Bear UU` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `Bear UUU` | `hvd-pbj-ppd-1939::Bear UUU` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::Bear UUU` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `Bear UUUU` | `hvd-pbj-ppd-1939::Bear UUUU` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::Bear UUUU` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `BearPB` | `anish-tb-foster::BearPB` (in anish-tb-foster); `yin-yang-displacement-pbj::BearPB` (in yin-yang-displacement-pbj) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `BearPBJ` | `anish-tb-foster::BearPBJ` (in anish-tb-foster); `yin-yang-displacement-pbj::BearPBJ` (in yin-yang-displacement-pbj) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `Breakdown` | `yin-yang-displacement-pbj::Breakdown` (in yin-yang-displacement-pbj); `yin-yang-og-mofo::Breakdown` (in yin-yang-og-mofo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `Breakout` | `yin-yang-displacement-pbj::Breakout` (in yin-yang-displacement-pbj); `yin-yang-og-mofo::Breakout` (in yin-yang-og-mofo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `Bull UU` | `hvd-pbj-ppd-1939::Bull UU` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::Bull UU` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `Bull UUU` | `hvd-pbj-ppd-1939::Bull UUU` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::Bull UUU` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `Bull UUUU` | `hvd-pbj-ppd-1939::Bull UUUU` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::Bull UUUU` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `BullPB` | `anish-tb-foster::BullPB` (in anish-tb-foster); `yin-yang-displacement-pbj::BullPB` (in yin-yang-displacement-pbj) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `BullPBJ` | `anish-tb-foster::BullPBJ` (in anish-tb-foster); `yin-yang-displacement-pbj::BullPBJ` (in yin-yang-displacement-pbj) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `CC Bear` | `hvd-pbj-ppd-1939::CC Bear` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::CC Bear` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `CC Bull` | `hvd-pbj-ppd-1939::CC Bull` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::CC Bull` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `CS1 FVG Bear` | `hvd-pbj-ppd-1939::CS1 FVG Bear` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::CS1 FVG Bear` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
@@ -104,6 +110,7 @@ Two tables. **(a)** name collisions — same primitive name appearing under two 
 | `Penthouse` | `hvd-pbj-ppd-1939::Penthouse` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::Penthouse` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `RVOL_1X_BEAR` | `heavy-pentagon::RVOL_1X_BEAR` (in heavy-pentagon); `heavy-weapons-8fvg-matrix::RVOL_1X_BEAR` (in heavy-weapons-8fvg-matrix) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `RVOL_1X_BULL` | `heavy-pentagon::RVOL_1X_BULL` (in heavy-pentagon); `heavy-weapons-8fvg-matrix::RVOL_1X_BULL` (in heavy-weapons-8fvg-matrix) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `ResistanceRejection` | `yin-yang-displacement-pbj::ResistanceRejection` (in yin-yang-displacement-pbj); `yin-yang-og-mofo::ResistanceRejection` (in yin-yang-og-mofo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `Rooftop` | `hvd-pbj-ppd-1939::Rooftop` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::Rooftop` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `SAAB` | `b2b-pup::SAAB` (in b2b-pup); `fauna-shifu::SAAB` (in fauna-shifu); `heavy-pentagon::SAAB` (in heavy-pentagon); `heavy-weapons-8fvg-matrix::SAAB` (in heavy-weapons-8fvg-matrix) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `SD Bear` | `hvd-pbj-ppd-1939::SD Bear` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::SD Bear` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
@@ -114,6 +121,9 @@ Two tables. **(a)** name collisions — same primitive name appearing under two 
 | `SUPER Bull` | `hvd-pbj-ppd-1939::SUPER Bull` (in hvd-pbj-ppd-1939-masterdir); `hvd-pbj-ppd-2246::SUPER Bull` (in hvd-pbj-ppd-2246-masterdir) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `SuperPPD` | `anish-50-1st-combo::SuperPPD` (in anish-50-1st-combo); `anish-tb-foster::SuperPPD` (in anish-tb-foster) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `SuperPup` | `anish-50-1st-combo::SuperPup` (in anish-50-1st-combo); `anish-tb-foster::SuperPup` (in anish-tb-foster) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `SupportRejection` | `yin-yang-displacement-pbj::SupportRejection` (in yin-yang-displacement-pbj); `yin-yang-og-mofo::SupportRejection` (in yin-yang-og-mofo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `SwingHigh` | `yin-yang-displacement-pbj::SwingHigh` (in yin-yang-displacement-pbj); `yin-yang-og-mofo::SwingHigh` (in yin-yang-og-mofo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
+| `SwingLow` | `yin-yang-displacement-pbj::SwingLow` (in yin-yang-displacement-pbj); `yin-yang-og-mofo::SwingLow` (in yin-yang-og-mofo) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `T1-buy` | `vob-single-sens::T1-buy` (in vob-single-sens-no-tables); `vob-single-sens::T1-buy` (in vob-single-sens-with-tables) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `T1-sell` | `vob-single-sens::T1-sell` (in vob-single-sens-no-tables); `vob-single-sens::T1-sell` (in vob-single-sens-with-tables) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |
 | `T2-buy` | `vob-single-sens::T2-buy` (in vob-single-sens-no-tables); `vob-single-sens::T2-buy` (in vob-single-sens-with-tables) | drifted? — verify per-record | designate one canonical, mark others as variants in YAML |

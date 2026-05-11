@@ -57,6 +57,33 @@ Stage 3 (TV verification).
 
 Bible family count after this ingest: **15 → 20**.
 
+## 2026-05-10 secondary ingest — yin-yang + e3-f2-cluster (2 more families)
+
+Three additional Pine sources added later same day. Anish flagged that yin-yang
+or ping-pong may have been the lineage ancestor of the "floor / rooftop /
+penthouse / 2nd floor" concepts, and that the E3/F2 cluster build was
+size-reduced by ~58% and may have root corruption. All three ingested
+verbatim; canonical determination still pending TV verification.
+
+### New families (2)
+
+| # | Family            | File                                                                          | Pine | Lines | Status                  | Notes                                                                                                             |
+|---|-------------------|-------------------------------------------------------------------------------|------|------:|-------------------------|-------------------------------------------------------------------------------------------------------------------|
+| 21 | `yin-yang`       | `yin-yang/versions/YIN_YANG_OG_MOFO_v1.pine`                                  | **v6** |  148 | pending vetting          | **Pine v6 violates v5-only rule** — flagged for migration. 6 roots (SwingHigh/Low, Breakout, Breakdown, S/R Rejection). |
+| 21 | `yin-yang`       | `yin-yang/versions/YIN_YANG_DISPLACEMENT_PBJ_v8.pine`                         | v5   |   617 | pending vetting          | YY + Disp + PBJ combo. 10 roots (6 YY + 2 Disp + 2 PBJ); 14 composites (2-way + 3-way Swing/Disp/PBJ combos). PB/PBJ are LOCALLY redefined, NOT pulled from hvd-pbj-ppd. |
+| 22 | `e3-f2-cluster`  | `e3-f2-cluster/versions/E3_F2_CLUSTER_BULL_BEAR_58PCT_REDUCTION_v1.pine`      | v5   |   405 | **pending corruption check** | Title says "58% reduction"; suspected root corruption. 6 atomic roots (MB/RE/TA × bull/bear), 8 composites (FC Cluster / E3 / F2 × bull/bear/Any). Asymmetric thresholds (bull 0.1 vs bear 0.5) and bear-side double-gating documented as candidate corruption. |
+
+Bible family count after this ingest: **20 → 22** (28 indicator records including variants).
+
+### "Floor / rooftop / penthouse / 2nd floor" lineage search — NEGATIVE in yin-yang
+
+Anish's recollection: those four concepts may have started in yin-yang or
+ping-pong. The extraction agent searched both yin-yang files (148 + 617
+lines). **No mention** of "floor", "rooftop", "penthouse", "2nd floor",
+"second floor", or "ping pong" as named primitives. The hypothesis stands
+but the source isn't yin-yang. Likely candidate: hvd-pbj-ppd or fauna-shifu
+(both reference Ping Pong as an internal helper).
+
 ## Predecessor / variant files (kept for byte-diff in Stage 1.5)
 
 - `b2b-pup/versions/B2B_PUP_v4.32.pine` — DELETED in Stage 6.3 (was byte-equivalent to Combined except CRLF/LF; verified by md5 after `tr -d '\r'`)

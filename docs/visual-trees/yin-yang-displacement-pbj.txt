@@ -1,0 +1,61 @@
+VISUAL TREE — yin-yang-displacement-pbj
+========================================
+File: yin-yang/versions/YIN_YANG_DISPLACEMENT_PBJ_v8.pine
+Pine v5  ·  617 lines  ·  overlay=True
+Purpose: Three-layer combo: Yin Yang S/R swings + Displacement (FVG+displaced range) + PB&J and PBJ lander system; emits 14 confluence patterns across 2-way and 3-way combinations
+
+ROOTS
+-----
+  ◆ yin-yang-displacement-pbj::SwingHigh    [swing-pivot · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::SwingLow    [swing-pivot · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::Breakout    [line-cross · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::Breakdown    [line-cross · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::ResistanceRejection    [line-test · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::SupportRejection    [line-test · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::BullishDisplacement    [displacement · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::BearishDisplacement    [displacement · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::BullPB    [candle · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::BullPBJ    [candle · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::BearPB    [candle · offset=?]
+      
+  ◆ yin-yang-displacement-pbj::BearPBJ    [candle · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 2:
+    ● yin-yang-displacement-pbj::Combo2SwingDispBull    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo2SwingPBBull    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo2SwingPBJBull    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo2DispPBBull    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo2DispPBJBull    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo2SwingDispBear    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo2SwingPBBear    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo2SwingPBJBear    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo2DispPBBear    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo2DispPBJBear    [offset=? · ?]
+
+  Tier 3:
+    ● yin-yang-displacement-pbj::Combo3PBBull    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo3PBJBull    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo3PBBear    [offset=? · ?]
+    ● yin-yang-displacement-pbj::Combo3PBJBear    [offset=? · ?]
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → PB (Pullback) and PBJ (Pullback-Joyride) are locally redefined in SECTION 3 (L622-761) using the OKEH Zoo Supertrend + lander array system. This is NOT pulled from hvd-pbj-ppd; the architecture is self-contained here.
+  → Displacement in SECTION 2 (L124-152, isBullishFVG/isBearishFVG + stdev range) is a local interpretation using standard FVG geometry. It is distinct from Pipeline-A HVD in hvd-pbj-ppd (which uses rank-tier volume filtering). This DISP is a simpler 'large range + FVG' detector.
+  → SwingHigh/SwingLow/Breakout/Breakdown/Rejection are locally copied from YIN_YANG_OG_MOFO (SECTION 1, L4-120) with identical logic.
+  → No explicit import or cross-indicator reference to hvd-pbj-ppd or pb-pbj in this file. PB and PBJ roots are fully self-defined.
+

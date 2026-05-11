@@ -33,6 +33,14 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 | [`b2b-pup::B2B_NAPALM_BEAR`](b2b-pup__B2B_NAPALM_BEAR.md) | 2 | b2b-pup | 0 | Mirror B2B_NAPALM_BULL bear. |
 | [`b2b-pup::S19_UC2`](b2b-pup__S19_UC2.md) | 3 | b2b-pup | -1 | Standalone Unified Combo ×2: count visual bars in [1, uc2_window] where BOTH FVG |
 | [`b2b-pup::S20_FMU`](b2b-pup__S20_FMU.md) | 3 | b2b-pup | -1 | Standalone FVG/MAT/Uni Combo ×2: count visual bars where ANY of FVG-combo, Matri |
+| [`e3-f2-cluster::BullFC`](e3-f2-cluster__BullFC.md) | 1 | e3-f2-cluster | ? |  |
+| [`e3-f2-cluster::BullE3`](e3-f2-cluster__BullE3.md) | 1 | e3-f2-cluster | ? |  |
+| [`e3-f2-cluster::BullF2`](e3-f2-cluster__BullF2.md) | 1 | e3-f2-cluster | ? |  |
+| [`e3-f2-cluster::BearFC`](e3-f2-cluster__BearFC.md) | 1 | e3-f2-cluster | ? |  |
+| [`e3-f2-cluster::BearE3`](e3-f2-cluster__BearE3.md) | 1 | e3-f2-cluster | ? |  |
+| [`e3-f2-cluster::BearF2`](e3-f2-cluster__BearF2.md) | 1 | e3-f2-cluster | ? |  |
+| [`e3-f2-cluster::AnyBull`](e3-f2-cluster__AnyBull.md) | 2 | e3-f2-cluster | ? |  |
+| [`e3-f2-cluster::AnyBear`](e3-f2-cluster__AnyBear.md) | 2 | e3-f2-cluster | ? |  |
 | [`heavy-pentagon::HEAVY_YIN_YANG_BULL`](heavy-pentagon__HEAVY_YIN_YANG_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bullish: a directional P1 RVOL spike (Bull RVOL 1x or Grand |
 | [`heavy-pentagon::HEAVY_YIN_YANG_BEAR`](heavy-pentagon__HEAVY_YIN_YANG_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bearish: same directional-P1 + neutral-P2 base, gated by di |
 | [`heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL`](heavy-pentagon__HEAVY_YIN_YANG_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires neutral: same base, but displacement engine produced neithe |

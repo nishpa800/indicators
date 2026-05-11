@@ -3039,6 +3039,552 @@
       ]
     },
     {
+      "id": "e3-f2-cluster",
+      "file": "e3-f2-cluster/versions/E3_F2_CLUSTER_BULL_BEAR_58PCT_REDUCTION_v1.pine",
+      "pine_version": 5,
+      "line_count": 387,
+      "overlay": true,
+      "one_line_purpose": "6 session-bar primitives (MB/RE/TA bull/bear atoms) feeding 3 clusters (FC/E3/F2) for both directions; 58% size-reduced build with suspected root corruption from compression",
+      "non_repainting": false,
+      "note": "Title explicitly states '58% reduction' \u2014 this is a size-compressed derivative. Anish flagged potential corruption of roots during the reduction process.",
+      "_extract_file": "bible-input/extract-e3-f2-cluster.yaml",
+      "internal_helpers": [
+        {
+          "id": "e3-f2-cluster::core_bar_classifiers",
+          "description": "ATR14, avgVol20, avgDelta, trendMA, body direction/size/ratio, range, upTrend/dnTrend, inSession flags",
+          "lines": "51-64",
+          "note": "Shared foundation for all 6 atoms (MB/RE/TA); inSession uses NY session mask"
+        },
+        {
+          "id": "e3-f2-cluster::bull_sequence_counters",
+          "description": "Bull FC cluster internal counters: b1_s1 (MB streak), b1_s2 (MBRETA streak), b1_s3 (MB+RE session streak)",
+          "lines": "93-112"
+        },
+        {
+          "id": "e3-f2-cluster::bear_sequence_counters",
+          "description": "Bear FC cluster internal counters: b4_s1 (MB streak), b4_s2 (MBRETA streak), b4_s3 (MB+RE session streak)",
+          "lines": "194-213"
+        },
+        {
+          "id": "e3-f2-cluster::bull_2of3_aggregator",
+          "description": "Sums boolean counters (b1_ind1, b1_ind2, b1_ind3) to fire when >= 2 of 3 sequence conditions met (line 114)",
+          "lines": "114"
+        },
+        {
+          "id": "e3-f2-cluster::bear_2of3_aggregator",
+          "description": "Sums boolean counters (b4_ind1, b4_ind2, b4_ind3) to fire when >= 2 of 3 sequence conditions met (line 215)",
+          "lines": "215"
+        },
+        {
+          "id": "e3-f2-cluster::bull_rvol_price_spike",
+          "description": "b1_spk (price spike as abs(body)), b1_avgSpk (30-bar SMA lagged), b1_rvolP (price relative volume); feeds overlap detection",
+          "lines": "117-125"
+        },
+        {
+          "id": "e3-f2-cluster::bull_rvol_volume_spike",
+          "description": "b1_rvolV (actual volume / 30-bar avg volume lagged); used in b1_diff = b1_rvolP - b1_rvolV",
+          "lines": "120-125"
+        },
+        {
+          "id": "e3-f2-cluster::bull_overlap_diff_filter",
+          "description": "b1_diff (price RVOL minus volume RVOL); positive when price spike > volume spike. b1_pos isolates positive diffs, b1_smaP is 20-bar SMA of b1_pos. Base condition requires b1_base AND b1_pos > b1_smaP",
+          "lines": "122-125"
+        },
+        {
+          "id": "e3-f2-cluster::bull_base_condition",
+          "description": "b1_base: bodyUp AND nz(b1_pos) > nz(b1_smaP) \u2014 detects price-spike-leading bars; excludes barstate checks (b1_uBar vs b1_thEv)",
+          "lines": "125"
+        },
+        {
+          "id": "e3-f2-cluster::bull_base_checker_gate",
+          "description": "b1_inRng(v): v > 2.9 AND v < 1000000.0 \u2014 sanity range filter for b1_rvolP",
+          "lines": "126"
+        },
+        {
+          "id": "e3-f2-cluster::bull_threshold_event",
+          "description": "b1_thEv: b1_base AND b1_inRng(b1_rvolP) AND barstate.isconfirmed \u2014 fires once confirmed; used to record price-spike window",
+          "lines": "127"
+        },
+        {
+          "id": "e3-f2-cluster::bull_unconfirmed_bar",
+          "description": "b1_uBar: b1_base AND b1_inRng(b1_rvolP) (NO barstate check) \u2014 counts toward b1_len accumulation for overlap overlap detection during buildup",
+          "lines": "128"
+        },
+        {
+          "id": "e3-f2-cluster::bull_sum_accumulator",
+          "description": "b1_sum: accumulates b1_rvolP when b1_uBar is true; resets to 0 when b1_uBar is false. THRESHOLD: b1_seqEv fires when (b1_len >= 2 AND b1_sum >= 0.1) AND barstate.isconfirmed \u2014 THIS IS THE ASYMMETRY POINT",
+          "lines": "130-138",
+          "asymmetry_flag": true
+        },
+        {
+          "id": "e3-f2-cluster::bull_overlap_arrays",
+          "description": "b1_thIdx/thHi/thLo (threshold event windows, max 20-bar retention), b1_sqIdx/sqHi/sqLo (sequence event windows, max 20-bar retention)",
+          "lines": "140-145"
+        },
+        {
+          "id": "e3-f2-cluster::bull_overlap_checker",
+          "description": "b1_chk(loA, hiA, loB, hiB) => loA <= hiB AND loB <= hiA \u2014 detects AABB overlap (price ranges of threshold vs sequence events)",
+          "lines": "159"
+        },
+        {
+          "id": "e3-f2-cluster::bear_rvol_price_spike",
+          "description": "b4_spk, b4_avgSpk, b4_rvolP \u2014 mirror of bull pricing logic",
+          "lines": "218-220"
+        },
+        {
+          "id": "e3-f2-cluster::bear_rvol_volume_spike",
+          "description": "b4_rvolV, b4_diff \u2014 mirror of bull volume logic",
+          "lines": "221-223"
+        },
+        {
+          "id": "e3-f2-cluster::bear_rvol_negative_filter",
+          "description": "b4_neg: (b4_diff > 0 AND bodyDn) ? b4_diff : na \u2014 isolates positive price-to-volume ratio ONLY when bodyDn; LOGIC INCONSISTENCY ALERT",
+          "lines": "224",
+          "corruption_flag": true
+        },
+        {
+          "id": "e3-f2-cluster::bear_overlap_diff_filter",
+          "description": "b4_smaN: 20-bar SMA of b4_neg; base condition requires b4_base AND nz(b4_neg) > nz(b4_smaN)",
+          "lines": "225-226"
+        },
+        {
+          "id": "e3-f2-cluster::bear_base_condition",
+          "description": "b4_base: bodyDn AND nz(b4_neg) > nz(b4_smaN) \u2014 expects negative diff filtered, but b4_neg already applies bodyDn gate (line 224)",
+          "lines": "226",
+          "corruption_flag": true
+        },
+        {
+          "id": "e3-f2-cluster::bear_base_checker_gate",
+          "description": "b4_inRng(v): v > 2.9 AND v < 1000000.0 \u2014 sanity range filter for b4_rvolP",
+          "lines": "227"
+        },
+        {
+          "id": "e3-f2-cluster::bear_threshold_event",
+          "description": "b4_thEv: b4_base AND b4_inRng(b4_rvolP) AND barstate.isconfirmed \u2014 records volume-spike window",
+          "lines": "228"
+        },
+        {
+          "id": "e3-f2-cluster::bear_unconfirmed_bar",
+          "description": "b4_dBar: b4_base AND b4_inRng(b4_rvolP) (NO barstate check) \u2014 counts toward b4_len accumulation",
+          "lines": "229"
+        },
+        {
+          "id": "e3-f2-cluster::bear_sum_accumulator",
+          "description": "b4_sum: accumulates b4_rvolP when b4_dBar is true; resets to 0 when b4_dBar is false. THRESHOLD: b4_seqEv fires when (b4_len >= 2 AND b4_sum >= 0.5) AND barstate.isconfirmed \u2014 ASYMMETRIC vs BULL (0.1 vs 0.5)",
+          "lines": "231-239",
+          "asymmetry_flag": true
+        },
+        {
+          "id": "e3-f2-cluster::bear_overlap_arrays",
+          "description": "b4_thIdx/thHi/thLo (threshold event windows, max 20-bar retention), b4_sqIdx/sqHi/sqLo (sequence event windows, max 20-bar retention)",
+          "lines": "241-246"
+        },
+        {
+          "id": "e3-f2-cluster::bear_overlap_checker",
+          "description": "b4_chk(loA, hiA, loB, hiB) => loA <= hiB AND loB <= hiA \u2014 detects AABB overlap",
+          "lines": "260"
+        },
+        {
+          "id": "e3-f2-cluster::session_bar_counter",
+          "description": "Shared across all signals: sessBar increments within NY session (0930-1600 ET), resets on day change",
+          "lines": "77-87"
+        },
+        {
+          "id": "e3-f2-cluster::alert_aggregator",
+          "description": "Builds comma-delimited string (agg) of fired signals; supports per-signal or aggregate alert mode",
+          "lines": "346-386"
+        },
+        {
+          "id": "e3-f2-cluster::mux_switcher",
+          "description": "switch/case statement routing mux_sel to one of 8 signal booleans",
+          "lines": "313-322"
+        },
+        {
+          "id": "e3-f2-cluster::any_signal_resolver",
+          "description": "f_getAny() function: cascading if-else to determine which signal fired first (for 'ANY' alert output)",
+          "lines": "324-341"
+        }
+      ],
+      "roots": [
+        {
+          "id": "e3-f2-cluster::bull_MB",
+          "family": "session-bar-classifier",
+          "aka": [
+            "bull_MB",
+            "Marubozu Bull",
+            "MB Bull Atom"
+          ],
+          "definition": "bodyUp AND bodySize > 1.6*ATR14 AND bodyRatio > 0.7 AND volume > 1.8*avgVol20",
+          "lines": "67 (def)",
+          "fire_var": "bull_MB",
+          "plot": null,
+          "alert": null,
+          "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by all S1/S2/S3 composites",
+          "note": "Core bar classifier: large upward body with high close ratio and elevated volume. Feeds FC/E3/F2 via indirect references.",
+          "in_indicator": "e3-f2-cluster"
+        },
+        {
+          "id": "e3-f2-cluster::bull_RE",
+          "family": "session-bar-classifier",
+          "aka": [
+            "bull_RE",
+            "Range Expansion Bull",
+            "RE Bull Atom"
+          ],
+          "definition": "bodyUp AND wide (rng > 2.2*ATR14) AND (high - close) < 0.15*rng AND volume > 1.8*avgVol20",
+          "lines": "68 (def)",
+          "fire_var": "bull_RE",
+          "plot": null,
+          "alert": null,
+          "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S1/S2/S3 composites",
+          "note": "Wide range with close near high; expansion bar. (high-close) < 0.15*rng ensures close-to-high proximity.",
+          "in_indicator": "e3-f2-cluster"
+        },
+        {
+          "id": "e3-f2-cluster::bull_TA",
+          "family": "session-bar-classifier",
+          "aka": [
+            "bull_TA",
+            "Trend Acceleration Bull",
+            "TA Bull Atom"
+          ],
+          "definition": "upTrend (trendMA > trendMA[1]) AND (close - close[1]) > 1.6*avgDelta AND bodyUp AND volume > 1.8*avgVol20",
+          "lines": "69 (def)",
+          "fire_var": "bull_TA",
+          "plot": null,
+          "alert": null,
+          "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S1/S2/S3 composites",
+          "note": "Trend acceleration: SMA(50)-based uptrend, bar delta > 1.6x average, bullish body, volume gate.",
+          "in_indicator": "e3-f2-cluster"
+        },
+        {
+          "id": "e3-f2-cluster::bear_MB",
+          "family": "session-bar-classifier",
+          "aka": [
+            "bear_MB",
+            "Marubozu Bear",
+            "MB Bear Atom"
+          ],
+          "definition": "bodyDn AND bodySize > 1.6*ATR14 AND bodyRatio > 0.7 AND volume > 1.8*avgVol20",
+          "lines": "72 (def)",
+          "fire_var": "bear_MB",
+          "plot": null,
+          "alert": null,
+          "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S4/S5/S6 composites",
+          "note": "Mirror of bull_MB: large downward body with low close ratio and elevated volume.",
+          "in_indicator": "e3-f2-cluster"
+        },
+        {
+          "id": "e3-f2-cluster::bear_RE",
+          "family": "session-bar-classifier",
+          "aka": [
+            "bear_RE",
+            "Range Expansion Bear",
+            "RE Bear Atom"
+          ],
+          "definition": "bodyDn AND wide (rng > 2.2*ATR14) AND (close - low) < 0.15*rng AND volume > 1.8*avgVol20",
+          "lines": "73 (def)",
+          "fire_var": "bear_RE",
+          "plot": null,
+          "alert": null,
+          "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S4/S5/S6 composites",
+          "note": "Mirror of bull_RE: wide range with close near low. (close-low) < 0.15*rng ensures close-to-low proximity (INCONSISTENT FLIP from bull logic).",
+          "in_indicator": "e3-f2-cluster"
+        },
+        {
+          "id": "e3-f2-cluster::bear_TA",
+          "family": "session-bar-classifier",
+          "aka": [
+            "bear_TA",
+            "Trend Acceleration Bear",
+            "TA Bear Atom"
+          ],
+          "definition": "dnTrend (trendMA < trendMA[1]) AND (close[1] - close) > 1.6*avgDelta AND bodyDn AND volume > 1.8*avgVol20",
+          "lines": "74 (def)",
+          "fire_var": "bear_TA",
+          "plot": null,
+          "alert": null,
+          "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S4/S5/S6 composites",
+          "note": "Mirror of bull_TA: downtrend, backward close delta (close[1]-close), bearish body, volume gate.",
+          "in_indicator": "e3-f2-cluster"
+        }
+      ],
+      "composites": [
+        {
+          "id": "e3-f2-cluster::BullFC",
+          "tier": 1,
+          "aka": [
+            "Bull FC Cluster",
+            "sBullFC",
+            "Bullish First Cluster"
+          ],
+          "definition": "b1_2of3 (MB streak >= 2 OR MBRETA streak >= 2 OR MB+RE session streak >= 2, any 2 true) AND b1_ovlp (price-spike window overlaps volume-spike window within 20-bar lookback)",
+          "depends_on": [
+            "e3-f2-cluster::bull_MB",
+            "e3-f2-cluster::bull_RE",
+            "e3-f2-cluster::bull_TA"
+          ],
+          "lines": "93-177 (full logic), 177 (signal definition)",
+          "fire_var": "sBullFC",
+          "plot": {
+            "title": "Bull FC Cluster",
+            "shape": "labeldown",
+            "location": "belowbar",
+            "color": "yellow (60% transparency)",
+            "size": "huge",
+            "text": "CLUSTER"
+          },
+          "alert": {
+            "title": "Bull FC Cluster",
+            "message": "[ticker]: Bullish FC Cluster",
+            "conditional": "alert_bull_fc"
+          },
+          "note": "Fires on overlap detection when 2+ of 3 sequence conditions are met. Complex state machine accumulating RVOL values (b1_sum >= 0.1).",
+          "in_indicator": "e3-f2-cluster",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "e3-f2-cluster::BullE3",
+          "tier": 1,
+          "aka": [
+            "Bull E3",
+            "sBullE3",
+            "Bullish 3-Bar Session"
+          ],
+          "definition": "sessBar == 3 AND (bull_MB OR bull_RE OR bull_TA) on bar[0] AND bar[1] AND bar[2]",
+          "depends_on": [
+            "e3-f2-cluster::bull_MB",
+            "e3-f2-cluster::bull_RE",
+            "e3-f2-cluster::bull_TA"
+          ],
+          "lines": "182-183 (def), 301 (plot)",
+          "fire_var": "sBullE3",
+          "plot": {
+            "title": "Bull E3",
+            "shape": "circle",
+            "location": "top",
+            "color": "white (60% transparency)",
+            "size": "huge",
+            "text": "E3"
+          },
+          "alert": {
+            "title": "Bull E3",
+            "message": "[ticker]: Bullish E3",
+            "conditional": "alert_bull_e3"
+          },
+          "note": "E3 = 'Entry on 3rd bar of session': fires on bar 3 if any of (MB/RE/TA) fired on bars 0, 1, 2. Simple recency check, no state machine.",
+          "in_indicator": "e3-f2-cluster",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "e3-f2-cluster::BullF2",
+          "tier": 1,
+          "aka": [
+            "Bull F2",
+            "sBullF2",
+            "Bullish First Two MB"
+          ],
+          "definition": "sessBar == 2 AND bull_MB AND bull_MB[1]",
+          "depends_on": [
+            "e3-f2-cluster::bull_MB"
+          ],
+          "lines": "188 (def), 302 (plot)",
+          "fire_var": "sBullF2",
+          "plot": {
+            "title": "Bull First Two",
+            "shape": "triangleup",
+            "location": "top",
+            "color": "aqua (0% transparency)",
+            "size": "huge",
+            "text": "F2"
+          },
+          "alert": {
+            "title": "Bull First Two",
+            "message": "[ticker]: Bullish First Two MB",
+            "conditional": "alert_bull_f2"
+          },
+          "note": "F2 = 'First Two': fires on bar 2 of session if MB fired on bars 0 and 1 (back-to-back). Simplest composite.",
+          "in_indicator": "e3-f2-cluster",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "e3-f2-cluster::BearFC",
+          "tier": 1,
+          "aka": [
+            "Bear FC Cluster",
+            "sBearFC",
+            "Bearish First Cluster"
+          ],
+          "definition": "b4_2of3 (MB streak >= 2 OR MBRETA streak >= 2 OR MB+RE session streak >= 2, any 2 true) AND b4_ovlp (price-spike window overlaps volume-spike window within 20-bar lookback)",
+          "depends_on": [
+            "e3-f2-cluster::bear_MB",
+            "e3-f2-cluster::bear_RE",
+            "e3-f2-cluster::bear_TA"
+          ],
+          "lines": "194-278 (full logic), 278 (signal definition)",
+          "fire_var": "sBearFC",
+          "plot": {
+            "title": "Bear FC Cluster",
+            "shape": "labelup",
+            "location": "abovebar",
+            "color": "red (60% transparency)",
+            "size": "huge",
+            "text": "BEAR\nCLUSTER"
+          },
+          "alert": {
+            "title": "Bear FC Cluster",
+            "message": "[ticker]: Bearish FC Cluster",
+            "conditional": "alert_bear_fc"
+          },
+          "note": "Mirror of BullFC. CRITICAL: uses b4_sum >= 0.5 threshold (vs bull 0.1), creating asymmetry.",
+          "in_indicator": "e3-f2-cluster",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "e3-f2-cluster::BearE3",
+          "tier": 1,
+          "aka": [
+            "Bear E3",
+            "sBearE3",
+            "Bearish 3-Bar Session"
+          ],
+          "definition": "sessBar == 3 AND (bear_MB OR bear_RE OR bear_TA) on bar[0] AND bar[1] AND bar[2]",
+          "depends_on": [
+            "e3-f2-cluster::bear_MB",
+            "e3-f2-cluster::bear_RE",
+            "e3-f2-cluster::bear_TA"
+          ],
+          "lines": "283-284 (def), 304 (plot)",
+          "fire_var": "sBearE3",
+          "plot": {
+            "title": "Bear E3",
+            "shape": "circle",
+            "location": "top",
+            "color": "red (60% transparency)",
+            "size": "huge",
+            "text": "Bear E3"
+          },
+          "alert": {
+            "title": "Bear E3",
+            "message": "[ticker]: Bearish E3",
+            "conditional": "alert_bear_e3"
+          },
+          "note": "Mirror of BullE3: fires on bar 3 if any of (MB/RE/TA) fired on bars 0, 1, 2.",
+          "in_indicator": "e3-f2-cluster",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "e3-f2-cluster::BearF2",
+          "tier": 1,
+          "aka": [
+            "Bear F2",
+            "sBearF2",
+            "Bearish First Two MB"
+          ],
+          "definition": "sessBar == 2 AND bear_MB AND bear_MB[1]",
+          "depends_on": [
+            "e3-f2-cluster::bear_MB"
+          ],
+          "lines": "289 (def), 305 (plot)",
+          "fire_var": "sBearF2",
+          "plot": {
+            "title": "Bear First Two",
+            "shape": "triangledown",
+            "location": "top",
+            "color": "red (0% transparency)",
+            "size": "huge",
+            "text": "Bear F2"
+          },
+          "alert": {
+            "title": "Bear First Two",
+            "message": "[ticker]: Bearish First Two MB",
+            "conditional": "alert_bear_f2"
+          },
+          "note": "Mirror of BullF2: fires on bar 2 if MB fired on bars 0 and 1.",
+          "in_indicator": "e3-f2-cluster",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "e3-f2-cluster::AnyBull",
+          "tier": 2,
+          "aka": [
+            "Any Bull",
+            "sAnyBull"
+          ],
+          "definition": "sBullFC OR sBullE3 OR sBullF2",
+          "depends_on": [
+            "e3-f2-cluster::BullFC",
+            "e3-f2-cluster::BullE3",
+            "e3-f2-cluster::BullF2"
+          ],
+          "lines": "294 (def), 306 (plot)",
+          "fire_var": "sAnyBull",
+          "plot": {
+            "title": "Any Bull",
+            "shape": "diamond",
+            "location": "belowbar",
+            "color": "lime (0% transparency)",
+            "size": "huge",
+            "text": "ANY\nBULL"
+          },
+          "alert": {
+            "title": "Any Bull",
+            "message": "[ticker]: Any Bull Signal",
+            "conditional": "alert_any_bull"
+          },
+          "note": "Simple OR aggregator of all three bullish signals.",
+          "in_indicator": "e3-f2-cluster",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "e3-f2-cluster::AnyBear",
+          "tier": 2,
+          "aka": [
+            "Any Bear",
+            "sAnyBear"
+          ],
+          "definition": "sBearFC OR sBearE3 OR sBearF2",
+          "depends_on": [
+            "e3-f2-cluster::BearFC",
+            "e3-f2-cluster::BearE3",
+            "e3-f2-cluster::BearF2"
+          ],
+          "lines": "295 (def), 307 (plot)",
+          "fire_var": "sAnyBear",
+          "plot": {
+            "title": "Any Bear",
+            "shape": "diamond",
+            "location": "abovebar",
+            "color": "fuchsia (0% transparency)",
+            "size": "huge",
+            "text": "ANY\nBEAR"
+          },
+          "alert": {
+            "title": "Any Bear",
+            "message": "[ticker]: Any Bear Signal",
+            "conditional": "alert_any_bear"
+          },
+          "note": "Simple OR aggregator of all three bearish signals.",
+          "in_indicator": "e3-f2-cluster",
+          "lifecycle_stage": 5
+        }
+      ],
+      "cross_indicator_dependencies": [],
+      "uncertain_or_questions": [
+        "CRITICAL ASYMMETRY \u2014 Line 138 (bull): b1_seqEv fires when b1_len >= 2 AND b1_sum >= 0.1. Line 239 (bear): b4_seqEv fires when b4_len >= 2 AND b4_sum >= 0.5. This is a 5x difference in RVOL threshold (0.1 vs 0.5) between bull and bear FC clusters. This may be intentional directional bias (bears require stronger confirmation) OR a corruption artifact from the 58% size reduction. Recommend flagging for Anish verification.",
+        "POSSIBLE DEAD CODE in bear overlap logic \u2014 Line 224 defines b4_neg as (b4_diff > 0 AND bodyDn) ? b4_diff : na, which already gates on bodyDn. Then line 226 re-applies the bodyDn check: b4_base = bodyDn AND nz(b4_neg) > nz(b4_smaN). This double-gate is redundant and differs from the bull side (line 125: b1_base = bodyUp AND nz(b1_pos) > nz(b1_smaP), where b1_pos is NOT pre-gated on bodyUp). This inconsistency may indicate manual compression artifacts.",
+        "E3 DEFINITION: E3 = 'Entry on 3rd bar of session', fires on bar 3 if (MB OR RE OR TA) appears on each of bars 0, 1, 2. Simple recency logic with no state machine or window overlap. Is this the intended 'third bar entry' signal, or should there be additional clustering conditions (like FC's overlap check)?",
+        "F2 DEFINITION: F2 = 'First Two MB', fires on bar 2 of session if bull_MB on bars 0 and 1. Strictly MB-only (not MBRETA), unlike FC's 2-of-3 flexibility. Confirm: is this intentional simplicity, or should F2 also accept RE/TA?",
+        "FC vs E3 vs F2 naming ambiguity \u2014 The doc comment (lines 4-6) refers to 'S1. Bullish FC Cluster | S2. Bullish E3 | S3. Bullish First Two MB'. FC = 'First Cluster'? E3 and F2 are session-bar indexed (3rd bar, 2nd bar), but FC has no session-bar dependency and uses complex overlap state. Consider clarifying naming to avoid confusion with other indicator families.",
+        "RVOL accumulation peculiarity \u2014 In bull FC (line 130-138), b1_sum accumulates only while b1_uBar is true (unconfirmed bars passing base check). Once b1_uBar becomes false, b1_sum resets to 0. This means the 0.1 threshold is evaluated only after a gap (barstate where b1_uBar was false). Is this intended as a 'cooldown' or is it another compression artifact? Bear side uses identical logic with 0.5 threshold.",
+        "BARSTATE GATING \u2014 b1_thEv includes barstate.isconfirmed (line 127), while b1_uBar does not (line 128). This means the threshold event (recording price-spike window) fires only on confirmed bars, but the sequence event (overlap detection trigger, line 138) requires barstate.isconfirmed AND b1_len >= 2 AND b1_sum >= 0.1. Could create multi-bar lag or race conditions during rapid price moves.",
+        "ARRAY RETENTION WINDOWS \u2014 Both bull and bear FC use 20-bar max retention for threshold and sequence event windows (lines 149-157, 250-258). Is 20 bars the correct lookback for session-bar-indexed clusters, or should it be tied to inSession windows (reset on day boundary)?",
+        "UNUSED HELPERS \u2014 The code defines inRng (lines 126, 227) as a sanity-check function (v > 2.9 && v < 1e6), but the lower bound (2.9) is never justified in comments. Is this a magic number from the original uncompressed version, or a red flag?",
+        "SESSION BAR COUNTER DISCONTINUITY \u2014 sessBar (lines 77-87) counts bars within NY session (0930-1600 ET). If market gaps or drops out of session mid-trading, sessBar resets. This could cause E3 and F2 to misfire if e.g. trading halts at bar 2 then resumes. No explicit handle for after-hours or pre-market.",
+        "TITLE '58% REDUCTION' indicates aggressive code compression (likely minification, variable renaming, logic folding). Anish suspects root corruption. Recommend comparing against canonical uncompressed version if available (likely in parent directory or earlier branch) to verify: (1) all six atoms (MB/RE/TA x bull/bear) match original thresholds, (2) FC overlap state machine logic preserved, (3) E3/F2 session-bar indexing intact."
+      ]
+    },
+    {
       "id": "fauna-shifu",
       "file": "fauna-shifu/versions/FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine",
       "branch": "production",
@@ -19329,6 +19875,877 @@
           "severity": "low"
         }
       ]
+    },
+    {
+      "id": "yin-yang-displacement-pbj",
+      "file": "yin-yang/versions/YIN_YANG_DISPLACEMENT_PBJ_v8.pine",
+      "pine_version": 5,
+      "line_count": 617,
+      "overlay": true,
+      "one_line_purpose": "Three-layer combo: Yin Yang S/R swings + Displacement (FVG+displaced range) + PB&J and PBJ lander system; emits 14 confluence patterns across 2-way and 3-way combinations",
+      "non_repainting": true,
+      "_extract_file": "bible-input/extract-yin-yang-displacement-pbj.yaml",
+      "internal_helpers": [
+        {
+          "id": "yin-yang-displacement-pbj::yin_yang_core",
+          "description": "SECTION 1 (L4-120): identical to YIN_YANG_OG_MOFO, includes srLine UDT, srLines array, pivot detection, ATR filter, line lifecycle (breakout/breakdown/rejection logic).",
+          "lines": "24-28 (type), 31-33 (vars), 36-102 (logic), 105-112 (plots)"
+        },
+        {
+          "id": "yin-yang-displacement-pbj::displacement_raw_primitives",
+          "description": "SECTION 2 (L123-152): FVG detection (isBullishFVG/isBearishFVG) and std-dev range calculation; gates for plotting Bullish/Bearish Displacement.",
+          "lines": "134-144 (FVG+stdev logic)"
+        },
+        {
+          "id": "yin-yang-displacement-pbj::zoo_supertrend",
+          "description": "OKEH Zoo Supertrend state machine: base_ma, st_atr, curr_long/curr_short, st_dir \u00b11 driving buy/sell crosses. Internal to PB&J engine.",
+          "lines": "204-230"
+        },
+        {
+          "id": "yin-yang-displacement-pbj::zoo_lander_array",
+          "description": "lvl UDT array (bull_lvls, bear_lvls) maintaining upper/lower/vol/approached state for each lander box. Populated by f_add_lander (on cross) and f_add_reaccel (on reaccel). Checked by f_check_approach to set wait_buy/wait_sell flags.",
+          "lines": "186-190 (type), 241-242 (vars), 244-301 (funcs)"
+        },
+        {
+          "id": "yin-yang-displacement-pbj::pbj_filter_gate",
+          "description": "PB&J filter primitives: pbj_ma, pbj_atr, avg_vol, thresh, pbj_buy, pbj_sell (lines 232-238). Gates the wait_pbj_buy/wait_pbj_sell flags for final PBJ signal.",
+          "lines": "232-238"
+        },
+        {
+          "id": "yin-yang-displacement-pbj::combo_event_tracking",
+          "description": "var int event bar indices (evtSwingLow, evtSwingHigh, evtBullDisp, evtBullPBJ, evtBullPB, etc.) tracking when each signal plotted. Used by f_comboWithin and f_trio to detect confluence windows.",
+          "lines": "366-390"
+        },
+        {
+          "id": "yin-yang-displacement-pbj::f_comboWithin",
+          "description": "Helper function: checks if two event bars are within comboWindow bars of each other (L393-394).",
+          "lines": "393-394"
+        },
+        {
+          "id": "yin-yang-displacement-pbj::f_trio",
+          "description": "Helper function: checks if three event bars are all within comboWindow bars of each other (L484-485).",
+          "lines": "484-485"
+        }
+      ],
+      "roots": [
+        {
+          "id": "yin-yang-displacement-pbj::SwingHigh",
+          "family": "swing-pivot",
+          "aka": [
+            "Resistance Swing",
+            "validHigh"
+          ],
+          "definition": "ta.pivothigh(high, leftBars, rightBars) with ATR-distance gate; emits triangledown plotshape.",
+          "lines": "38-57 (def+fire), 105 (plot)",
+          "fire_var": "validHigh",
+          "plot": {
+            "title": "Swing High",
+            "shape": "triangledown",
+            "location": "abovebar",
+            "color": "color.red",
+            "size": "normal",
+            "offset": "-rightBars"
+          },
+          "note": "Yin Yang SECTION 1 root.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::SwingLow",
+          "family": "swing-pivot",
+          "aka": [
+            "Support Swing",
+            "validLow"
+          ],
+          "definition": "ta.pivotlow(low, leftBars, rightBars) with ATR-distance gate; emits triangleup plotshape.",
+          "lines": "39-69 (def+fire), 106 (plot)",
+          "fire_var": "validLow",
+          "plot": {
+            "title": "Swing Low",
+            "shape": "triangleup",
+            "location": "belowbar",
+            "color": "color.green",
+            "size": "normal",
+            "offset": "-rightBars"
+          },
+          "note": "Yin Yang SECTION 1 root.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Breakout",
+          "family": "line-cross",
+          "definition": "close > resistance line AND close[1] <= resistance line.",
+          "lines": "82-84, 108 (plot)",
+          "fire_var": "breakoutDetected",
+          "plot": {
+            "title": "Breakout",
+            "shape": "diamond",
+            "location": "belowbar",
+            "color": "color.green",
+            "size": "small",
+            "text": "BO"
+          },
+          "note": "Yin Yang SECTION 1 root.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Breakdown",
+          "family": "line-cross",
+          "definition": "close < support line AND close[1] >= support line.",
+          "lines": "90-92, 109 (plot)",
+          "fire_var": "breakdownDetected",
+          "plot": {
+            "title": "Breakdown",
+            "shape": "diamond",
+            "location": "abovebar",
+            "color": "color.red",
+            "size": "small",
+            "text": "BD"
+          },
+          "note": "Yin Yang SECTION 1 root.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::ResistanceRejection",
+          "family": "line-test",
+          "definition": "high >= resistance line AND close < resistance line.",
+          "lines": "86-87, 111 (plot)",
+          "fire_var": "resRejectionDetected",
+          "plot": {
+            "title": "Resistance Rejection",
+            "shape": "xcross",
+            "location": "abovebar",
+            "color": "color.aqua",
+            "size": "small",
+            "text": "Rej"
+          },
+          "note": "Yin Yang SECTION 1 root.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::SupportRejection",
+          "family": "line-test",
+          "definition": "low <= support line AND close > support line.",
+          "lines": "94-95, 112 (plot)",
+          "fire_var": "supRejectionDetected",
+          "plot": {
+            "title": "Support Rejection",
+            "shape": "xcross",
+            "location": "belowbar",
+            "color": "color.purple",
+            "size": "small",
+            "text": "Rej"
+          },
+          "note": "Yin Yang SECTION 1 root.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::BullishDisplacement",
+          "family": "displacement",
+          "aka": [
+            "isBullishSignal"
+          ],
+          "definition": "isBullishFVG (low > high[2] AND open[1] < close[1]) AND isPreviousBarRangeDisplaced (candle_range[1] > displacement_threshold[1]).",
+          "lines": "134-144 (def), 147 (plot)",
+          "fire_var": "isBullishSignal",
+          "plot": {
+            "title": "Bullish Displacement",
+            "shape": "triangleup",
+            "location": "belowbar",
+            "color": "color.green",
+            "size": "small",
+            "offset": -1
+          },
+          "note": "Fires on bar N to signal bar N-1 displaced + bullish FVG on bar N. Plotted with offset=-1.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::BearishDisplacement",
+          "family": "displacement",
+          "aka": [
+            "isBearishSignal"
+          ],
+          "definition": "isBearishFVG (high < low[2] AND open[1] > close[1]) AND isPreviousBarRangeDisplaced (candle_range[1] > displacement_threshold[1]).",
+          "lines": "135, 144, 148 (plot)",
+          "fire_var": "isBearishSignal",
+          "plot": {
+            "title": "Bearish Displacement",
+            "shape": "triangledown",
+            "location": "abovebar",
+            "color": "color.red",
+            "size": "small",
+            "offset": -1
+          },
+          "note": "Mirror of BullishDisplacement.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::BullPB",
+          "family": "candle",
+          "aka": [
+            "Pullback Buy",
+            "sigBullPB"
+          ],
+          "definition": "buy_cross (Zoo VWMA-5 + ATR Supertrend) AND wait_buy (lander box approached) AND NOT wait_pbj_buy (excludes PBJ coincidence).",
+          "lines": "225 (buy_cross), 309-312 (wait flag), 339 (fire), 345 (plot)",
+          "fire_var": "sigBullPB",
+          "plot": {
+            "title": "Bull PB",
+            "shape": "labelup",
+            "location": "belowbar",
+            "color": "color.new(color.aqua, 50)",
+            "size": "small",
+            "text": "PB",
+            "textcolor": "color.white"
+          },
+          "note": "SECTION 3 root. Redefines PB locally (not pulled from hvd-pbj-ppd; uses same Zoo lander architecture but fires independently).",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::BullPBJ",
+          "family": "candle",
+          "aka": [
+            "Pullback-Joyride Buy",
+            "sigBullPBJ"
+          ],
+          "definition": "buy_cross (Zoo VWMA-5 + ATR Supertrend) AND wait_pbj_buy (PB&J filter: low<EMA20*(1-thresh) AND low==25-bar lowest AND volume>SMA20*0.1).",
+          "lines": "225 (buy_cross), 314-317 (wait flag), 340 (fire), 346 (plot)",
+          "fire_var": "sigBullPBJ",
+          "plot": {
+            "title": "Bull PBJ",
+            "shape": "diamond",
+            "location": "belowbar",
+            "color": "color.new(color.yellow, 50)",
+            "size": "normal",
+            "text": "PBJ",
+            "textcolor": "color.black"
+          },
+          "note": "SECTION 3 root. Locally defined PBJ filter + Zoo cross.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::BearPB",
+          "family": "candle",
+          "aka": [
+            "Pullback Sell",
+            "sigBearPB"
+          ],
+          "definition": "sell_cross (Zoo VWMA-5 + ATR Supertrend) AND wait_sell (bear lander box approached) AND NOT wait_pbj_sell.",
+          "lines": "226 (sell_cross), 309-312 (wait flag), 341 (fire), 347 (plot)",
+          "fire_var": "sigBearPB",
+          "plot": {
+            "title": "Bear PB",
+            "shape": "labeldown",
+            "location": "abovebar",
+            "color": "color.new(color.orange, 0)",
+            "size": "small",
+            "text": "PB",
+            "textcolor": "color.white"
+          },
+          "note": "SECTION 3 root. Mirror of BullPB.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-displacement-pbj::BearPBJ",
+          "family": "candle",
+          "aka": [
+            "Pullback-Joyride Sell",
+            "sigBearPBJ"
+          ],
+          "definition": "sell_cross (Zoo) AND wait_pbj_sell (PB&J sell filter: high>EMA20*(1+thresh) AND high==25-bar highest AND volume>SMA20*0.1).",
+          "lines": "226 (sell_cross), 314-317 (wait flag), 342 (fire), 348 (plot)",
+          "fire_var": "sigBearPBJ",
+          "plot": {
+            "title": "Bear PBJ",
+            "shape": "labeldown",
+            "location": "abovebar",
+            "color": "color.new(color.red, 0)",
+            "size": "normal",
+            "text": "PBJ",
+            "textcolor": "color.white"
+          },
+          "note": "SECTION 3 root. Mirror of BullPBJ.",
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 2
+        }
+      ],
+      "composites": [
+        {
+          "id": "yin-yang-displacement-pbj::Combo2SwingDispBull",
+          "tier": 2,
+          "aka": [
+            "2x Bull: Swing+Disp",
+            "c2_swingDisp_bull"
+          ],
+          "definition": "validLow (Swing Low) AND isBullishSignal (Displacement) fired within comboWindow bars of each other.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingLow",
+            "yin-yang-displacement-pbj::BullishDisplacement"
+          ],
+          "lines": "411-415 (def), 535 (plot)",
+          "fire_var": "c2_swingDisp_bull",
+          "plot": {
+            "title": "2x Bull: Swing+Disp",
+            "shape": "flag",
+            "location": "belowbar",
+            "color": "color.lime",
+            "size": "small",
+            "text": "Sw+Di",
+            "textcolor": "color.lime"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo2SwingPBBull",
+          "tier": 2,
+          "aka": [
+            "2x Bull: Swing+PB",
+            "c2_swingPB_bull"
+          ],
+          "definition": "validLow AND sigBullPB fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingLow",
+            "yin-yang-displacement-pbj::BullPB"
+          ],
+          "lines": "425-429 (def), 536 (plot)",
+          "fire_var": "c2_swingPB_bull",
+          "plot": {
+            "title": "2x Bull: Swing+PB",
+            "shape": "flag",
+            "location": "belowbar",
+            "color": "color.lime",
+            "size": "small",
+            "text": "Sw+PB"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo2SwingPBJBull",
+          "tier": 2,
+          "aka": [
+            "2x Bull: Swing+PBJ",
+            "c2_swingPBJ_bull"
+          ],
+          "definition": "validLow AND sigBullPBJ fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingLow",
+            "yin-yang-displacement-pbj::BullPBJ"
+          ],
+          "lines": "432-436 (def), 537 (plot)",
+          "fire_var": "c2_swingPBJ_bull",
+          "plot": {
+            "title": "2x Bull: Swing+PBJ",
+            "shape": "flag",
+            "location": "belowbar",
+            "color": "color.lime",
+            "size": "small",
+            "text": "Sw+PBJ"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo2DispPBBull",
+          "tier": 2,
+          "aka": [
+            "2x Bull: Disp+PB",
+            "c2_dispPB_bull"
+          ],
+          "definition": "isBullishSignal AND sigBullPB fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::BullishDisplacement",
+            "yin-yang-displacement-pbj::BullPB"
+          ],
+          "lines": "453-457 (def), 538 (plot)",
+          "fire_var": "c2_dispPB_bull",
+          "plot": {
+            "title": "2x Bull: Disp+PB",
+            "shape": "flag",
+            "location": "belowbar",
+            "color": "color.lime",
+            "size": "small",
+            "text": "Di+PB"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo2DispPBJBull",
+          "tier": 2,
+          "aka": [
+            "2x Bull: Disp+PBJ",
+            "c2_dispPBJ_bull"
+          ],
+          "definition": "isBullishSignal AND sigBullPBJ fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::BullishDisplacement",
+            "yin-yang-displacement-pbj::BullPBJ"
+          ],
+          "lines": "460-464 (def), 539 (plot)",
+          "fire_var": "c2_dispPBJ_bull",
+          "plot": {
+            "title": "2x Bull: Disp+PBJ",
+            "shape": "flag",
+            "location": "belowbar",
+            "color": "color.lime",
+            "size": "small",
+            "text": "Di+PBJ"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo2SwingDispBear",
+          "tier": 2,
+          "aka": [
+            "2x Bear: Swing+Disp",
+            "c2_swingDisp_bear"
+          ],
+          "definition": "validHigh AND isBearishSignal fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingHigh",
+            "yin-yang-displacement-pbj::BearishDisplacement"
+          ],
+          "lines": "418-422 (def), 542 (plot)",
+          "fire_var": "c2_swingDisp_bear",
+          "plot": {
+            "title": "2x Bear: Swing+Disp",
+            "shape": "flag",
+            "location": "abovebar",
+            "color": "color.fuchsia",
+            "size": "small",
+            "text": "Sw+Di"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo2SwingPBBear",
+          "tier": 2,
+          "aka": [
+            "2x Bear: Swing+PB",
+            "c2_swingPB_bear"
+          ],
+          "definition": "validHigh AND sigBearPB fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingHigh",
+            "yin-yang-displacement-pbj::BearPB"
+          ],
+          "lines": "439-443 (def), 543 (plot)",
+          "fire_var": "c2_swingPB_bear",
+          "plot": {
+            "title": "2x Bear: Swing+PB",
+            "shape": "flag",
+            "location": "abovebar",
+            "color": "color.fuchsia",
+            "size": "small",
+            "text": "Sw+PB"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo2SwingPBJBear",
+          "tier": 2,
+          "aka": [
+            "2x Bear: Swing+PBJ",
+            "c2_swingPBJ_bear"
+          ],
+          "definition": "validHigh AND sigBearPBJ fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingHigh",
+            "yin-yang-displacement-pbj::BearPBJ"
+          ],
+          "lines": "446-450 (def), 544 (plot)",
+          "fire_var": "c2_swingPBJ_bear",
+          "plot": {
+            "title": "2x Bear: Swing+PBJ",
+            "shape": "flag",
+            "location": "abovebar",
+            "color": "color.fuchsia",
+            "size": "small",
+            "text": "Sw+PBJ"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo2DispPBBear",
+          "tier": 2,
+          "aka": [
+            "2x Bear: Disp+PB",
+            "c2_dispPB_bear"
+          ],
+          "definition": "isBearishSignal AND sigBearPB fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::BearishDisplacement",
+            "yin-yang-displacement-pbj::BearPB"
+          ],
+          "lines": "467-471 (def), 545 (plot)",
+          "fire_var": "c2_dispPB_bear",
+          "plot": {
+            "title": "2x Bear: Disp+PB",
+            "shape": "flag",
+            "location": "abovebar",
+            "color": "color.fuchsia",
+            "size": "small",
+            "text": "Di+PB"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo2DispPBJBear",
+          "tier": 2,
+          "aka": [
+            "2x Bear: Disp+PBJ",
+            "c2_dispPBJ_bear"
+          ],
+          "definition": "isBearishSignal AND sigBearPBJ fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::BearishDisplacement",
+            "yin-yang-displacement-pbj::BearPBJ"
+          ],
+          "lines": "474-478 (def), 546 (plot)",
+          "fire_var": "c2_dispPBJ_bear",
+          "plot": {
+            "title": "2x Bear: Disp+PBJ",
+            "shape": "flag",
+            "location": "abovebar",
+            "color": "color.fuchsia",
+            "size": "small",
+            "text": "Di+PBJ"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo3PBBull",
+          "tier": 3,
+          "aka": [
+            "3x Bull: Swing+Disp+PB",
+            "c3_pb_bull"
+          ],
+          "definition": "validLow AND isBullishSignal AND sigBullPB all fired within comboWindow bars of each other (f_trio gate).",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingLow",
+            "yin-yang-displacement-pbj::BullishDisplacement",
+            "yin-yang-displacement-pbj::BullPB"
+          ],
+          "lines": "488-494 (def), 549 (plot)",
+          "fire_var": "c3_pb_bull",
+          "plot": {
+            "title": "3x Bull: Swing+Disp+PB",
+            "shape": "circle",
+            "location": "belowbar",
+            "color": "color.yellow",
+            "size": "normal",
+            "text": "3x Sw+Di+PB",
+            "textcolor": "color.yellow"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo3PBJBull",
+          "tier": 3,
+          "aka": [
+            "3x Bull: Swing+Disp+PBJ",
+            "c3_pbj_bull"
+          ],
+          "definition": "validLow AND isBullishSignal AND sigBullPBJ all fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingLow",
+            "yin-yang-displacement-pbj::BullishDisplacement",
+            "yin-yang-displacement-pbj::BullPBJ"
+          ],
+          "lines": "497-503 (def), 550 (plot)",
+          "fire_var": "c3_pbj_bull",
+          "plot": {
+            "title": "3x Bull: Swing+Disp+PBJ",
+            "shape": "circle",
+            "location": "belowbar",
+            "color": "color.yellow",
+            "size": "normal",
+            "text": "3x Sw+Di+PBJ"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo3PBBear",
+          "tier": 3,
+          "aka": [
+            "3x Bear: Swing+Disp+PB",
+            "c3_pb_bear"
+          ],
+          "definition": "validHigh AND isBearishSignal AND sigBearPB all fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingHigh",
+            "yin-yang-displacement-pbj::BearishDisplacement",
+            "yin-yang-displacement-pbj::BearPB"
+          ],
+          "lines": "506-512 (def), 553 (plot)",
+          "fire_var": "c3_pb_bear",
+          "plot": {
+            "title": "3x Bear: Swing+Disp+PB",
+            "shape": "circle",
+            "location": "abovebar",
+            "color": "color.orange",
+            "size": "normal",
+            "text": "3x Sw+Di+PB",
+            "textcolor": "color.orange"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        },
+        {
+          "id": "yin-yang-displacement-pbj::Combo3PBJBear",
+          "tier": 3,
+          "aka": [
+            "3x Bear: Swing+Disp+PBJ",
+            "c3_pbj_bear"
+          ],
+          "definition": "validHigh AND isBearishSignal AND sigBearPBJ all fired within comboWindow bars.",
+          "depends_on": [
+            "yin-yang-displacement-pbj::SwingHigh",
+            "yin-yang-displacement-pbj::BearishDisplacement",
+            "yin-yang-displacement-pbj::BearPBJ"
+          ],
+          "lines": "515-521 (def), 554 (plot)",
+          "fire_var": "c3_pbj_bear",
+          "plot": {
+            "title": "3x Bear: Swing+Disp+PBJ",
+            "shape": "circle",
+            "location": "abovebar",
+            "color": "color.orange",
+            "size": "normal",
+            "text": "3x Sw+Di+PBJ"
+          },
+          "in_indicator": "yin-yang-displacement-pbj",
+          "lifecycle_stage": 5
+        }
+      ],
+      "cross_indicator_dependencies": [
+        "PB (Pullback) and PBJ (Pullback-Joyride) are locally redefined in SECTION 3 (L622-761) using the OKEH Zoo Supertrend + lander array system. This is NOT pulled from hvd-pbj-ppd; the architecture is self-contained here.",
+        "Displacement in SECTION 2 (L124-152, isBullishFVG/isBearishFVG + stdev range) is a local interpretation using standard FVG geometry. It is distinct from Pipeline-A HVD in hvd-pbj-ppd (which uses rank-tier volume filtering). This DISP is a simpler 'large range + FVG' detector.",
+        "SwingHigh/SwingLow/Breakout/Breakdown/Rejection are locally copied from YIN_YANG_OG_MOFO (SECTION 1, L4-120) with identical logic.",
+        "No explicit import or cross-indicator reference to hvd-pbj-ppd or pb-pbj in this file. PB and PBJ roots are fully self-defined."
+      ],
+      "uncertain_or_questions": [
+        "No mentions of 'floor', 'roof', 'rooftop', 'penthouse', '2nd floor', 'ping pong', or related named concepts found in this file.",
+        "Displacement offset=-1 vs PBJ offset=0: Displacement fires on bar N to signal bar N-1's displaced range (offset=-1 plotshape). PB/PBJ fire on bar N describing bar N (offset=0, no plot offset). This asymmetry may lead to plotting position misalignment; verify this is intentional.",
+        "2-way and 3-way combo event tracking: evtSwingLow, evtSwingHigh, evtBullDisp, evtBullPBJ, evtBullPB (L366-390) are never reset. Over a multi-month backtest, old event bars can remain in scope and falsely trigger combos if they fall within comboWindow. Consider adding time-decay or explicit reset logic to event vars.",
+        "Catch-all alerts (L578-579) fire on any_bull or any_bear (aggregate of all 2-way + 3-way combos). These are convenient for macro-alerts but may create alert fatigue if multiple combos fire near each other."
+      ]
+    },
+    {
+      "id": "yin-yang-og-mofo",
+      "file": "yin-yang/versions/YIN_YANG_OG_MOFO_v1.pine",
+      "pine_version": 6,
+      "line_count": 148,
+      "overlay": true,
+      "one_line_purpose": "Pivot-based support/resistance swing detection with ATR distance filter; emits S/R lines, breakouts, breakdowns, and rejection patterns",
+      "non_repainting": true,
+      "_extract_file": "bible-input/extract-yin-yang-og-mofo.yaml",
+      "internal_helpers": [
+        {
+          "id": "yin-yang-og-mofo::srLine_udt",
+          "description": "User-defined type holding line id, price, and isResistance boolean. Core state container for all S/R level management.",
+          "lines": "24-27"
+        },
+        {
+          "id": "yin-yang-og-mofo::srLines_array",
+          "description": "var array of srLine UDT instances; accumulates all valid swing highs (resistance) and swing lows (support) with their associated line objects.",
+          "lines": "30"
+        },
+        {
+          "id": "yin-yang-og-mofo::pivot_detection",
+          "description": "ta.pivothigh and ta.pivotlow calls detecting raw swings; rawHigh/rawLow store the specific High or Low price of each pivot bar.",
+          "lines": "41-42"
+        },
+        {
+          "id": "yin-yang-og-mofo::atr_calculation",
+          "description": "14-period ATR used as distance threshold multiplier. Stored in atrValue.",
+          "lines": "37"
+        },
+        {
+          "id": "yin-yang-og-mofo::sufficient_distance_check",
+          "description": "isSufficientDistance function (L45-46): returns true if currentPrice and lastPrice are at least threshold apart, or if lastPrice is na. Gates swing validity.",
+          "lines": "45-46"
+        },
+        {
+          "id": "yin-yang-og-mofo::line_lifecycle_management",
+          "description": "Array iteration loop (L90-122): extends active S/R lines each bar; removes crossed lines; checks for breakout/breakdown/rejection on each line in the array.",
+          "lines": "90-122"
+        },
+        {
+          "id": "yin-yang-og-mofo::lastValidLevel_tracking",
+          "description": "var float tracking the previous swing level to enforce ATR distance gate on the next new swing.",
+          "lines": "31"
+        },
+        {
+          "id": "yin-yang-og-mofo::lastSwingType_tracking",
+          "description": "var string tracking 'high' or 'low' (for alternation logic, though not enforced in this version).",
+          "lines": "32"
+        }
+      ],
+      "roots": [
+        {
+          "id": "yin-yang-og-mofo::SwingHigh",
+          "family": "swing-pivot",
+          "aka": [
+            "Resistance Swing",
+            "validHigh"
+          ],
+          "definition": "ta.pivothigh(high, leftBars, rightBars) that passes isSufficientDistance(rawHigh, lastValidLevel, threshold) gate; emits line.new at resistance price and appends to srLines array.",
+          "lines": "41, 50-67 (def+fire), 127 (plot)",
+          "fire_var": "validHigh",
+          "plot": {
+            "title": "Swing High",
+            "shape": "triangledown",
+            "location": "abovebar",
+            "color": "input.color(color.red, ...)",
+            "size": "normal",
+            "offset": "-rightBars"
+          },
+          "note": "Pivot at bar N detected at bar N+rightBars; line drawn from that bar to current bar and extended each bar thereafter. Does NOT alternate with swing lows \u2014 both can fire same bar if both pivots exist.",
+          "in_indicator": "yin-yang-og-mofo",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-og-mofo::SwingLow",
+          "family": "swing-pivot",
+          "aka": [
+            "Support Swing",
+            "validLow"
+          ],
+          "definition": "ta.pivotlow(low, leftBars, rightBars) that passes isSufficientDistance(rawLow, lastValidLevel, threshold) gate; emits line.new at support price and appends to srLines array.",
+          "lines": "42, 59-81 (def+fire), 128 (plot)",
+          "fire_var": "validLow",
+          "plot": {
+            "title": "Swing Low",
+            "shape": "triangleup",
+            "location": "belowbar",
+            "color": "input.color(color.green, ...)",
+            "size": "normal",
+            "offset": "-rightBars"
+          },
+          "note": "Mirror of SwingHigh. Both are independent primitives (not alternating).",
+          "in_indicator": "yin-yang-og-mofo",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-og-mofo::Breakout",
+          "family": "line-cross",
+          "aka": [
+            "Resistance Breakout"
+          ],
+          "definition": "close > currentLine.price AND close[1] <= currentLine.price on any resistance line (isResistance=true) in the srLines array. Fires bar-by-bar as price crosses above.",
+          "lines": "98, 131 (def+fire+plot)",
+          "fire_var": "breakoutDetected",
+          "plot": {
+            "title": "Breakout",
+            "shape": "diamond",
+            "location": "belowbar",
+            "color": "color.green",
+            "size": "small",
+            "text": "BO",
+            "textcolor": "color.green"
+          },
+          "note": "Signals price penetration above a resistance line. Line is stopped and removed from array on this bar.",
+          "in_indicator": "yin-yang-og-mofo",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-og-mofo::Breakdown",
+          "family": "line-cross",
+          "aka": [
+            "Support Breakdown"
+          ],
+          "definition": "close < currentLine.price AND close[1] >= currentLine.price on any support line (isResistance=false) in the srLines array. Fires bar-by-bar as price crosses below.",
+          "lines": "107, 132 (def+fire+plot)",
+          "fire_var": "breakdownDetected",
+          "plot": {
+            "title": "Breakdown",
+            "shape": "diamond",
+            "location": "abovebar",
+            "color": "color.red",
+            "size": "small",
+            "text": "BD",
+            "textcolor": "color.red"
+          },
+          "note": "Mirror of Breakout. Line is stopped and removed on this bar.",
+          "in_indicator": "yin-yang-og-mofo",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-og-mofo::ResistanceRejection",
+          "family": "line-test",
+          "aka": [
+            "Resistance Rejection",
+            "resRejectionDetected"
+          ],
+          "definition": "high >= currentLine.price AND close < currentLine.price on a resistance line; price tests but closes below, signaling rejection.",
+          "lines": "103-105, 135 (def+fire+plot)",
+          "fire_var": "resRejectionDetected",
+          "plot": {
+            "title": "Resistance Rejection",
+            "shape": "xcross",
+            "location": "abovebar",
+            "color": "color.aqua",
+            "size": "small",
+            "text": "Rej",
+            "textcolor": "color.blue"
+          },
+          "note": "Fired same bar as plotshape condition (which also excludes breakdownDetected to avoid redundancy). Tests resistance level without closing above it.",
+          "in_indicator": "yin-yang-og-mofo",
+          "lifecycle_stage": 2
+        },
+        {
+          "id": "yin-yang-og-mofo::SupportRejection",
+          "family": "line-test",
+          "aka": [
+            "Support Rejection",
+            "supRejectionDetected"
+          ],
+          "definition": "low <= currentLine.price AND close > currentLine.price on a support line; price tests but closes above, signaling rejection.",
+          "lines": "112-114, 136 (def+fire+plot)",
+          "fire_var": "supRejectionDetected",
+          "plot": {
+            "title": "Support Rejection",
+            "shape": "xcross",
+            "location": "belowbar",
+            "color": "color.purple",
+            "size": "small",
+            "text": "Rej",
+            "textcolor": "color.red"
+          },
+          "note": "Mirror of ResistanceRejection. Excludes breakoutDetected in plotshape condition for clarity.",
+          "in_indicator": "yin-yang-og-mofo",
+          "lifecycle_stage": 2
+        }
+      ],
+      "composites": [],
+      "cross_indicator_dependencies": [],
+      "uncertain_or_questions": [
+        "PINE v6 VIOLATION: Anish's hard rule is 'Pine v5 only \u2014 never v6'. This file declares //@version=6 at line 1. The file is otherwise functionally equivalent to its v5 counterpart (YIN_YANG_DISPLACEMENT_PBJ_v8.pine SECTION 1 is a v5 copy). Recommend reviewing and migrating to v5 syntax.",
+        "Line alternation logic: lastSwingType var is set ('high' or 'low') but is never checked to enforce alternation. Both SwingHigh and SwingLow can fire on the same bar if both pivot conditions are met. This may be intentional (overlapping swings at different scales); confirm with Anish.",
+        "ATR-distance gate is applied per swing. If useAtrFilter=false, threshold=0, so every new pivot (regardless of price distance from lastValidLevel) is accepted. Appears to be working-as-designed.",
+        "No 'floor', 'roof', 'rooftop', 'penthouse', 'ping pong', or related named concepts found in this file."
+      ]
     }
   ],
   "roots": [
@@ -20830,6 +22247,108 @@
       "pine_source_line_range": "L114",
       "lifecycle_stage": 2,
       "in_indicator": "disp-4x"
+    },
+    {
+      "id": "e3-f2-cluster::bull_MB",
+      "family": "session-bar-classifier",
+      "aka": [
+        "bull_MB",
+        "Marubozu Bull",
+        "MB Bull Atom"
+      ],
+      "definition": "bodyUp AND bodySize > 1.6*ATR14 AND bodyRatio > 0.7 AND volume > 1.8*avgVol20",
+      "lines": "67 (def)",
+      "fire_var": "bull_MB",
+      "plot": null,
+      "alert": null,
+      "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by all S1/S2/S3 composites",
+      "note": "Core bar classifier: large upward body with high close ratio and elevated volume. Feeds FC/E3/F2 via indirect references.",
+      "in_indicator": "e3-f2-cluster"
+    },
+    {
+      "id": "e3-f2-cluster::bull_RE",
+      "family": "session-bar-classifier",
+      "aka": [
+        "bull_RE",
+        "Range Expansion Bull",
+        "RE Bull Atom"
+      ],
+      "definition": "bodyUp AND wide (rng > 2.2*ATR14) AND (high - close) < 0.15*rng AND volume > 1.8*avgVol20",
+      "lines": "68 (def)",
+      "fire_var": "bull_RE",
+      "plot": null,
+      "alert": null,
+      "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S1/S2/S3 composites",
+      "note": "Wide range with close near high; expansion bar. (high-close) < 0.15*rng ensures close-to-high proximity.",
+      "in_indicator": "e3-f2-cluster"
+    },
+    {
+      "id": "e3-f2-cluster::bull_TA",
+      "family": "session-bar-classifier",
+      "aka": [
+        "bull_TA",
+        "Trend Acceleration Bull",
+        "TA Bull Atom"
+      ],
+      "definition": "upTrend (trendMA > trendMA[1]) AND (close - close[1]) > 1.6*avgDelta AND bodyUp AND volume > 1.8*avgVol20",
+      "lines": "69 (def)",
+      "fire_var": "bull_TA",
+      "plot": null,
+      "alert": null,
+      "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S1/S2/S3 composites",
+      "note": "Trend acceleration: SMA(50)-based uptrend, bar delta > 1.6x average, bullish body, volume gate.",
+      "in_indicator": "e3-f2-cluster"
+    },
+    {
+      "id": "e3-f2-cluster::bear_MB",
+      "family": "session-bar-classifier",
+      "aka": [
+        "bear_MB",
+        "Marubozu Bear",
+        "MB Bear Atom"
+      ],
+      "definition": "bodyDn AND bodySize > 1.6*ATR14 AND bodyRatio > 0.7 AND volume > 1.8*avgVol20",
+      "lines": "72 (def)",
+      "fire_var": "bear_MB",
+      "plot": null,
+      "alert": null,
+      "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S4/S5/S6 composites",
+      "note": "Mirror of bull_MB: large downward body with low close ratio and elevated volume.",
+      "in_indicator": "e3-f2-cluster"
+    },
+    {
+      "id": "e3-f2-cluster::bear_RE",
+      "family": "session-bar-classifier",
+      "aka": [
+        "bear_RE",
+        "Range Expansion Bear",
+        "RE Bear Atom"
+      ],
+      "definition": "bodyDn AND wide (rng > 2.2*ATR14) AND (close - low) < 0.15*rng AND volume > 1.8*avgVol20",
+      "lines": "73 (def)",
+      "fire_var": "bear_RE",
+      "plot": null,
+      "alert": null,
+      "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S4/S5/S6 composites",
+      "note": "Mirror of bull_RE: wide range with close near low. (close-low) < 0.15*rng ensures close-to-low proximity (INCONSISTENT FLIP from bull logic).",
+      "in_indicator": "e3-f2-cluster"
+    },
+    {
+      "id": "e3-f2-cluster::bear_TA",
+      "family": "session-bar-classifier",
+      "aka": [
+        "bear_TA",
+        "Trend Acceleration Bear",
+        "TA Bear Atom"
+      ],
+      "definition": "dnTrend (trendMA < trendMA[1]) AND (close[1] - close) > 1.6*avgDelta AND bodyDn AND volume > 1.8*avgVol20",
+      "lines": "74 (def)",
+      "fire_var": "bear_TA",
+      "plot": null,
+      "alert": null,
+      "lifecycle_stage": "atomic \u2014 named primitive, no plotshape, consumed by S4/S5/S6 composites",
+      "note": "Mirror of bull_TA: downtrend, backward close delta (close[1]-close), bearish body, volume gate.",
+      "in_indicator": "e3-f2-cluster"
     },
     {
       "id": "fauna-shifu::FAUNA_BULL",
@@ -28230,6 +29749,390 @@
       ],
       "in_indicator": "vob-single-sens-with-tables",
       "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::SwingHigh",
+      "family": "swing-pivot",
+      "aka": [
+        "Resistance Swing",
+        "validHigh"
+      ],
+      "definition": "ta.pivothigh(high, leftBars, rightBars) with ATR-distance gate; emits triangledown plotshape.",
+      "lines": "38-57 (def+fire), 105 (plot)",
+      "fire_var": "validHigh",
+      "plot": {
+        "title": "Swing High",
+        "shape": "triangledown",
+        "location": "abovebar",
+        "color": "color.red",
+        "size": "normal",
+        "offset": "-rightBars"
+      },
+      "note": "Yin Yang SECTION 1 root.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::SwingLow",
+      "family": "swing-pivot",
+      "aka": [
+        "Support Swing",
+        "validLow"
+      ],
+      "definition": "ta.pivotlow(low, leftBars, rightBars) with ATR-distance gate; emits triangleup plotshape.",
+      "lines": "39-69 (def+fire), 106 (plot)",
+      "fire_var": "validLow",
+      "plot": {
+        "title": "Swing Low",
+        "shape": "triangleup",
+        "location": "belowbar",
+        "color": "color.green",
+        "size": "normal",
+        "offset": "-rightBars"
+      },
+      "note": "Yin Yang SECTION 1 root.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Breakout",
+      "family": "line-cross",
+      "definition": "close > resistance line AND close[1] <= resistance line.",
+      "lines": "82-84, 108 (plot)",
+      "fire_var": "breakoutDetected",
+      "plot": {
+        "title": "Breakout",
+        "shape": "diamond",
+        "location": "belowbar",
+        "color": "color.green",
+        "size": "small",
+        "text": "BO"
+      },
+      "note": "Yin Yang SECTION 1 root.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Breakdown",
+      "family": "line-cross",
+      "definition": "close < support line AND close[1] >= support line.",
+      "lines": "90-92, 109 (plot)",
+      "fire_var": "breakdownDetected",
+      "plot": {
+        "title": "Breakdown",
+        "shape": "diamond",
+        "location": "abovebar",
+        "color": "color.red",
+        "size": "small",
+        "text": "BD"
+      },
+      "note": "Yin Yang SECTION 1 root.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::ResistanceRejection",
+      "family": "line-test",
+      "definition": "high >= resistance line AND close < resistance line.",
+      "lines": "86-87, 111 (plot)",
+      "fire_var": "resRejectionDetected",
+      "plot": {
+        "title": "Resistance Rejection",
+        "shape": "xcross",
+        "location": "abovebar",
+        "color": "color.aqua",
+        "size": "small",
+        "text": "Rej"
+      },
+      "note": "Yin Yang SECTION 1 root.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::SupportRejection",
+      "family": "line-test",
+      "definition": "low <= support line AND close > support line.",
+      "lines": "94-95, 112 (plot)",
+      "fire_var": "supRejectionDetected",
+      "plot": {
+        "title": "Support Rejection",
+        "shape": "xcross",
+        "location": "belowbar",
+        "color": "color.purple",
+        "size": "small",
+        "text": "Rej"
+      },
+      "note": "Yin Yang SECTION 1 root.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::BullishDisplacement",
+      "family": "displacement",
+      "aka": [
+        "isBullishSignal"
+      ],
+      "definition": "isBullishFVG (low > high[2] AND open[1] < close[1]) AND isPreviousBarRangeDisplaced (candle_range[1] > displacement_threshold[1]).",
+      "lines": "134-144 (def), 147 (plot)",
+      "fire_var": "isBullishSignal",
+      "plot": {
+        "title": "Bullish Displacement",
+        "shape": "triangleup",
+        "location": "belowbar",
+        "color": "color.green",
+        "size": "small",
+        "offset": -1
+      },
+      "note": "Fires on bar N to signal bar N-1 displaced + bullish FVG on bar N. Plotted with offset=-1.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::BearishDisplacement",
+      "family": "displacement",
+      "aka": [
+        "isBearishSignal"
+      ],
+      "definition": "isBearishFVG (high < low[2] AND open[1] > close[1]) AND isPreviousBarRangeDisplaced (candle_range[1] > displacement_threshold[1]).",
+      "lines": "135, 144, 148 (plot)",
+      "fire_var": "isBearishSignal",
+      "plot": {
+        "title": "Bearish Displacement",
+        "shape": "triangledown",
+        "location": "abovebar",
+        "color": "color.red",
+        "size": "small",
+        "offset": -1
+      },
+      "note": "Mirror of BullishDisplacement.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::BullPB",
+      "family": "candle",
+      "aka": [
+        "Pullback Buy",
+        "sigBullPB"
+      ],
+      "definition": "buy_cross (Zoo VWMA-5 + ATR Supertrend) AND wait_buy (lander box approached) AND NOT wait_pbj_buy (excludes PBJ coincidence).",
+      "lines": "225 (buy_cross), 309-312 (wait flag), 339 (fire), 345 (plot)",
+      "fire_var": "sigBullPB",
+      "plot": {
+        "title": "Bull PB",
+        "shape": "labelup",
+        "location": "belowbar",
+        "color": "color.new(color.aqua, 50)",
+        "size": "small",
+        "text": "PB",
+        "textcolor": "color.white"
+      },
+      "note": "SECTION 3 root. Redefines PB locally (not pulled from hvd-pbj-ppd; uses same Zoo lander architecture but fires independently).",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::BullPBJ",
+      "family": "candle",
+      "aka": [
+        "Pullback-Joyride Buy",
+        "sigBullPBJ"
+      ],
+      "definition": "buy_cross (Zoo VWMA-5 + ATR Supertrend) AND wait_pbj_buy (PB&J filter: low<EMA20*(1-thresh) AND low==25-bar lowest AND volume>SMA20*0.1).",
+      "lines": "225 (buy_cross), 314-317 (wait flag), 340 (fire), 346 (plot)",
+      "fire_var": "sigBullPBJ",
+      "plot": {
+        "title": "Bull PBJ",
+        "shape": "diamond",
+        "location": "belowbar",
+        "color": "color.new(color.yellow, 50)",
+        "size": "normal",
+        "text": "PBJ",
+        "textcolor": "color.black"
+      },
+      "note": "SECTION 3 root. Locally defined PBJ filter + Zoo cross.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::BearPB",
+      "family": "candle",
+      "aka": [
+        "Pullback Sell",
+        "sigBearPB"
+      ],
+      "definition": "sell_cross (Zoo VWMA-5 + ATR Supertrend) AND wait_sell (bear lander box approached) AND NOT wait_pbj_sell.",
+      "lines": "226 (sell_cross), 309-312 (wait flag), 341 (fire), 347 (plot)",
+      "fire_var": "sigBearPB",
+      "plot": {
+        "title": "Bear PB",
+        "shape": "labeldown",
+        "location": "abovebar",
+        "color": "color.new(color.orange, 0)",
+        "size": "small",
+        "text": "PB",
+        "textcolor": "color.white"
+      },
+      "note": "SECTION 3 root. Mirror of BullPB.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-displacement-pbj::BearPBJ",
+      "family": "candle",
+      "aka": [
+        "Pullback-Joyride Sell",
+        "sigBearPBJ"
+      ],
+      "definition": "sell_cross (Zoo) AND wait_pbj_sell (PB&J sell filter: high>EMA20*(1+thresh) AND high==25-bar highest AND volume>SMA20*0.1).",
+      "lines": "226 (sell_cross), 314-317 (wait flag), 342 (fire), 348 (plot)",
+      "fire_var": "sigBearPBJ",
+      "plot": {
+        "title": "Bear PBJ",
+        "shape": "labeldown",
+        "location": "abovebar",
+        "color": "color.new(color.red, 0)",
+        "size": "normal",
+        "text": "PBJ",
+        "textcolor": "color.white"
+      },
+      "note": "SECTION 3 root. Mirror of BullPBJ.",
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-og-mofo::SwingHigh",
+      "family": "swing-pivot",
+      "aka": [
+        "Resistance Swing",
+        "validHigh"
+      ],
+      "definition": "ta.pivothigh(high, leftBars, rightBars) that passes isSufficientDistance(rawHigh, lastValidLevel, threshold) gate; emits line.new at resistance price and appends to srLines array.",
+      "lines": "41, 50-67 (def+fire), 127 (plot)",
+      "fire_var": "validHigh",
+      "plot": {
+        "title": "Swing High",
+        "shape": "triangledown",
+        "location": "abovebar",
+        "color": "input.color(color.red, ...)",
+        "size": "normal",
+        "offset": "-rightBars"
+      },
+      "note": "Pivot at bar N detected at bar N+rightBars; line drawn from that bar to current bar and extended each bar thereafter. Does NOT alternate with swing lows \u2014 both can fire same bar if both pivots exist.",
+      "in_indicator": "yin-yang-og-mofo",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-og-mofo::SwingLow",
+      "family": "swing-pivot",
+      "aka": [
+        "Support Swing",
+        "validLow"
+      ],
+      "definition": "ta.pivotlow(low, leftBars, rightBars) that passes isSufficientDistance(rawLow, lastValidLevel, threshold) gate; emits line.new at support price and appends to srLines array.",
+      "lines": "42, 59-81 (def+fire), 128 (plot)",
+      "fire_var": "validLow",
+      "plot": {
+        "title": "Swing Low",
+        "shape": "triangleup",
+        "location": "belowbar",
+        "color": "input.color(color.green, ...)",
+        "size": "normal",
+        "offset": "-rightBars"
+      },
+      "note": "Mirror of SwingHigh. Both are independent primitives (not alternating).",
+      "in_indicator": "yin-yang-og-mofo",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-og-mofo::Breakout",
+      "family": "line-cross",
+      "aka": [
+        "Resistance Breakout"
+      ],
+      "definition": "close > currentLine.price AND close[1] <= currentLine.price on any resistance line (isResistance=true) in the srLines array. Fires bar-by-bar as price crosses above.",
+      "lines": "98, 131 (def+fire+plot)",
+      "fire_var": "breakoutDetected",
+      "plot": {
+        "title": "Breakout",
+        "shape": "diamond",
+        "location": "belowbar",
+        "color": "color.green",
+        "size": "small",
+        "text": "BO",
+        "textcolor": "color.green"
+      },
+      "note": "Signals price penetration above a resistance line. Line is stopped and removed from array on this bar.",
+      "in_indicator": "yin-yang-og-mofo",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-og-mofo::Breakdown",
+      "family": "line-cross",
+      "aka": [
+        "Support Breakdown"
+      ],
+      "definition": "close < currentLine.price AND close[1] >= currentLine.price on any support line (isResistance=false) in the srLines array. Fires bar-by-bar as price crosses below.",
+      "lines": "107, 132 (def+fire+plot)",
+      "fire_var": "breakdownDetected",
+      "plot": {
+        "title": "Breakdown",
+        "shape": "diamond",
+        "location": "abovebar",
+        "color": "color.red",
+        "size": "small",
+        "text": "BD",
+        "textcolor": "color.red"
+      },
+      "note": "Mirror of Breakout. Line is stopped and removed on this bar.",
+      "in_indicator": "yin-yang-og-mofo",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-og-mofo::ResistanceRejection",
+      "family": "line-test",
+      "aka": [
+        "Resistance Rejection",
+        "resRejectionDetected"
+      ],
+      "definition": "high >= currentLine.price AND close < currentLine.price on a resistance line; price tests but closes below, signaling rejection.",
+      "lines": "103-105, 135 (def+fire+plot)",
+      "fire_var": "resRejectionDetected",
+      "plot": {
+        "title": "Resistance Rejection",
+        "shape": "xcross",
+        "location": "abovebar",
+        "color": "color.aqua",
+        "size": "small",
+        "text": "Rej",
+        "textcolor": "color.blue"
+      },
+      "note": "Fired same bar as plotshape condition (which also excludes breakdownDetected to avoid redundancy). Tests resistance level without closing above it.",
+      "in_indicator": "yin-yang-og-mofo",
+      "lifecycle_stage": 2
+    },
+    {
+      "id": "yin-yang-og-mofo::SupportRejection",
+      "family": "line-test",
+      "aka": [
+        "Support Rejection",
+        "supRejectionDetected"
+      ],
+      "definition": "low <= currentLine.price AND close > currentLine.price on a support line; price tests but closes above, signaling rejection.",
+      "lines": "112-114, 136 (def+fire+plot)",
+      "fire_var": "supRejectionDetected",
+      "plot": {
+        "title": "Support Rejection",
+        "shape": "xcross",
+        "location": "belowbar",
+        "color": "color.purple",
+        "size": "small",
+        "text": "Rej",
+        "textcolor": "color.red"
+      },
+      "note": "Mirror of ResistanceRejection. Excludes breakoutDetected in plotshape condition for clarity.",
+      "in_indicator": "yin-yang-og-mofo",
+      "lifecycle_stage": 2
     }
   ],
   "composites": [
@@ -29382,6 +31285,264 @@
       "notes": "Defaults: fmu_min_hits=2, fmu_window=2. Renamed from Plot B in v4.31.",
       "in_indicator": "b2b-pup",
       "plot_offset": -1,
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "e3-f2-cluster::BullFC",
+      "tier": 1,
+      "aka": [
+        "Bull FC Cluster",
+        "sBullFC",
+        "Bullish First Cluster"
+      ],
+      "definition": "b1_2of3 (MB streak >= 2 OR MBRETA streak >= 2 OR MB+RE session streak >= 2, any 2 true) AND b1_ovlp (price-spike window overlaps volume-spike window within 20-bar lookback)",
+      "depends_on": [
+        "e3-f2-cluster::bull_MB",
+        "e3-f2-cluster::bull_RE",
+        "e3-f2-cluster::bull_TA"
+      ],
+      "lines": "93-177 (full logic), 177 (signal definition)",
+      "fire_var": "sBullFC",
+      "plot": {
+        "title": "Bull FC Cluster",
+        "shape": "labeldown",
+        "location": "belowbar",
+        "color": "yellow (60% transparency)",
+        "size": "huge",
+        "text": "CLUSTER"
+      },
+      "alert": {
+        "title": "Bull FC Cluster",
+        "message": "[ticker]: Bullish FC Cluster",
+        "conditional": "alert_bull_fc"
+      },
+      "note": "Fires on overlap detection when 2+ of 3 sequence conditions are met. Complex state machine accumulating RVOL values (b1_sum >= 0.1).",
+      "in_indicator": "e3-f2-cluster",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "e3-f2-cluster::BullE3",
+      "tier": 1,
+      "aka": [
+        "Bull E3",
+        "sBullE3",
+        "Bullish 3-Bar Session"
+      ],
+      "definition": "sessBar == 3 AND (bull_MB OR bull_RE OR bull_TA) on bar[0] AND bar[1] AND bar[2]",
+      "depends_on": [
+        "e3-f2-cluster::bull_MB",
+        "e3-f2-cluster::bull_RE",
+        "e3-f2-cluster::bull_TA"
+      ],
+      "lines": "182-183 (def), 301 (plot)",
+      "fire_var": "sBullE3",
+      "plot": {
+        "title": "Bull E3",
+        "shape": "circle",
+        "location": "top",
+        "color": "white (60% transparency)",
+        "size": "huge",
+        "text": "E3"
+      },
+      "alert": {
+        "title": "Bull E3",
+        "message": "[ticker]: Bullish E3",
+        "conditional": "alert_bull_e3"
+      },
+      "note": "E3 = 'Entry on 3rd bar of session': fires on bar 3 if any of (MB/RE/TA) fired on bars 0, 1, 2. Simple recency check, no state machine.",
+      "in_indicator": "e3-f2-cluster",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "e3-f2-cluster::BullF2",
+      "tier": 1,
+      "aka": [
+        "Bull F2",
+        "sBullF2",
+        "Bullish First Two MB"
+      ],
+      "definition": "sessBar == 2 AND bull_MB AND bull_MB[1]",
+      "depends_on": [
+        "e3-f2-cluster::bull_MB"
+      ],
+      "lines": "188 (def), 302 (plot)",
+      "fire_var": "sBullF2",
+      "plot": {
+        "title": "Bull First Two",
+        "shape": "triangleup",
+        "location": "top",
+        "color": "aqua (0% transparency)",
+        "size": "huge",
+        "text": "F2"
+      },
+      "alert": {
+        "title": "Bull First Two",
+        "message": "[ticker]: Bullish First Two MB",
+        "conditional": "alert_bull_f2"
+      },
+      "note": "F2 = 'First Two': fires on bar 2 of session if MB fired on bars 0 and 1 (back-to-back). Simplest composite.",
+      "in_indicator": "e3-f2-cluster",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "e3-f2-cluster::BearFC",
+      "tier": 1,
+      "aka": [
+        "Bear FC Cluster",
+        "sBearFC",
+        "Bearish First Cluster"
+      ],
+      "definition": "b4_2of3 (MB streak >= 2 OR MBRETA streak >= 2 OR MB+RE session streak >= 2, any 2 true) AND b4_ovlp (price-spike window overlaps volume-spike window within 20-bar lookback)",
+      "depends_on": [
+        "e3-f2-cluster::bear_MB",
+        "e3-f2-cluster::bear_RE",
+        "e3-f2-cluster::bear_TA"
+      ],
+      "lines": "194-278 (full logic), 278 (signal definition)",
+      "fire_var": "sBearFC",
+      "plot": {
+        "title": "Bear FC Cluster",
+        "shape": "labelup",
+        "location": "abovebar",
+        "color": "red (60% transparency)",
+        "size": "huge",
+        "text": "BEAR\nCLUSTER"
+      },
+      "alert": {
+        "title": "Bear FC Cluster",
+        "message": "[ticker]: Bearish FC Cluster",
+        "conditional": "alert_bear_fc"
+      },
+      "note": "Mirror of BullFC. CRITICAL: uses b4_sum >= 0.5 threshold (vs bull 0.1), creating asymmetry.",
+      "in_indicator": "e3-f2-cluster",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "e3-f2-cluster::BearE3",
+      "tier": 1,
+      "aka": [
+        "Bear E3",
+        "sBearE3",
+        "Bearish 3-Bar Session"
+      ],
+      "definition": "sessBar == 3 AND (bear_MB OR bear_RE OR bear_TA) on bar[0] AND bar[1] AND bar[2]",
+      "depends_on": [
+        "e3-f2-cluster::bear_MB",
+        "e3-f2-cluster::bear_RE",
+        "e3-f2-cluster::bear_TA"
+      ],
+      "lines": "283-284 (def), 304 (plot)",
+      "fire_var": "sBearE3",
+      "plot": {
+        "title": "Bear E3",
+        "shape": "circle",
+        "location": "top",
+        "color": "red (60% transparency)",
+        "size": "huge",
+        "text": "Bear E3"
+      },
+      "alert": {
+        "title": "Bear E3",
+        "message": "[ticker]: Bearish E3",
+        "conditional": "alert_bear_e3"
+      },
+      "note": "Mirror of BullE3: fires on bar 3 if any of (MB/RE/TA) fired on bars 0, 1, 2.",
+      "in_indicator": "e3-f2-cluster",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "e3-f2-cluster::BearF2",
+      "tier": 1,
+      "aka": [
+        "Bear F2",
+        "sBearF2",
+        "Bearish First Two MB"
+      ],
+      "definition": "sessBar == 2 AND bear_MB AND bear_MB[1]",
+      "depends_on": [
+        "e3-f2-cluster::bear_MB"
+      ],
+      "lines": "289 (def), 305 (plot)",
+      "fire_var": "sBearF2",
+      "plot": {
+        "title": "Bear First Two",
+        "shape": "triangledown",
+        "location": "top",
+        "color": "red (0% transparency)",
+        "size": "huge",
+        "text": "Bear F2"
+      },
+      "alert": {
+        "title": "Bear First Two",
+        "message": "[ticker]: Bearish First Two MB",
+        "conditional": "alert_bear_f2"
+      },
+      "note": "Mirror of BullF2: fires on bar 2 if MB fired on bars 0 and 1.",
+      "in_indicator": "e3-f2-cluster",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "e3-f2-cluster::AnyBull",
+      "tier": 2,
+      "aka": [
+        "Any Bull",
+        "sAnyBull"
+      ],
+      "definition": "sBullFC OR sBullE3 OR sBullF2",
+      "depends_on": [
+        "e3-f2-cluster::BullFC",
+        "e3-f2-cluster::BullE3",
+        "e3-f2-cluster::BullF2"
+      ],
+      "lines": "294 (def), 306 (plot)",
+      "fire_var": "sAnyBull",
+      "plot": {
+        "title": "Any Bull",
+        "shape": "diamond",
+        "location": "belowbar",
+        "color": "lime (0% transparency)",
+        "size": "huge",
+        "text": "ANY\nBULL"
+      },
+      "alert": {
+        "title": "Any Bull",
+        "message": "[ticker]: Any Bull Signal",
+        "conditional": "alert_any_bull"
+      },
+      "note": "Simple OR aggregator of all three bullish signals.",
+      "in_indicator": "e3-f2-cluster",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "e3-f2-cluster::AnyBear",
+      "tier": 2,
+      "aka": [
+        "Any Bear",
+        "sAnyBear"
+      ],
+      "definition": "sBearFC OR sBearE3 OR sBearF2",
+      "depends_on": [
+        "e3-f2-cluster::BearFC",
+        "e3-f2-cluster::BearE3",
+        "e3-f2-cluster::BearF2"
+      ],
+      "lines": "295 (def), 307 (plot)",
+      "fire_var": "sAnyBear",
+      "plot": {
+        "title": "Any Bear",
+        "shape": "diamond",
+        "location": "abovebar",
+        "color": "fuchsia (0% transparency)",
+        "size": "huge",
+        "text": "ANY\nBEAR"
+      },
+      "alert": {
+        "title": "Any Bear",
+        "message": "[ticker]: Any Bear Signal",
+        "conditional": "alert_any_bear"
+      },
+      "note": "Simple OR aggregator of all three bearish signals.",
+      "in_indicator": "e3-f2-cluster",
       "lifecycle_stage": 5
     },
     {
@@ -36036,6 +38197,363 @@
       "lines": "46-68",
       "description": "Two hidden EMAs (length1, length1+13) with gradient fill between. Gradient driven by (ema2 - ema1) diff: bullish diff -> col1 gradient, bearish -> col2 gradient. Visual context only, does not drive signals.",
       "in_indicator": "vob-single-sens-with-tables",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2SwingDispBull",
+      "tier": 2,
+      "aka": [
+        "2x Bull: Swing+Disp",
+        "c2_swingDisp_bull"
+      ],
+      "definition": "validLow (Swing Low) AND isBullishSignal (Displacement) fired within comboWindow bars of each other.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingLow",
+        "yin-yang-displacement-pbj::BullishDisplacement"
+      ],
+      "lines": "411-415 (def), 535 (plot)",
+      "fire_var": "c2_swingDisp_bull",
+      "plot": {
+        "title": "2x Bull: Swing+Disp",
+        "shape": "flag",
+        "location": "belowbar",
+        "color": "color.lime",
+        "size": "small",
+        "text": "Sw+Di",
+        "textcolor": "color.lime"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2SwingPBBull",
+      "tier": 2,
+      "aka": [
+        "2x Bull: Swing+PB",
+        "c2_swingPB_bull"
+      ],
+      "definition": "validLow AND sigBullPB fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingLow",
+        "yin-yang-displacement-pbj::BullPB"
+      ],
+      "lines": "425-429 (def), 536 (plot)",
+      "fire_var": "c2_swingPB_bull",
+      "plot": {
+        "title": "2x Bull: Swing+PB",
+        "shape": "flag",
+        "location": "belowbar",
+        "color": "color.lime",
+        "size": "small",
+        "text": "Sw+PB"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2SwingPBJBull",
+      "tier": 2,
+      "aka": [
+        "2x Bull: Swing+PBJ",
+        "c2_swingPBJ_bull"
+      ],
+      "definition": "validLow AND sigBullPBJ fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingLow",
+        "yin-yang-displacement-pbj::BullPBJ"
+      ],
+      "lines": "432-436 (def), 537 (plot)",
+      "fire_var": "c2_swingPBJ_bull",
+      "plot": {
+        "title": "2x Bull: Swing+PBJ",
+        "shape": "flag",
+        "location": "belowbar",
+        "color": "color.lime",
+        "size": "small",
+        "text": "Sw+PBJ"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2DispPBBull",
+      "tier": 2,
+      "aka": [
+        "2x Bull: Disp+PB",
+        "c2_dispPB_bull"
+      ],
+      "definition": "isBullishSignal AND sigBullPB fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::BullishDisplacement",
+        "yin-yang-displacement-pbj::BullPB"
+      ],
+      "lines": "453-457 (def), 538 (plot)",
+      "fire_var": "c2_dispPB_bull",
+      "plot": {
+        "title": "2x Bull: Disp+PB",
+        "shape": "flag",
+        "location": "belowbar",
+        "color": "color.lime",
+        "size": "small",
+        "text": "Di+PB"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2DispPBJBull",
+      "tier": 2,
+      "aka": [
+        "2x Bull: Disp+PBJ",
+        "c2_dispPBJ_bull"
+      ],
+      "definition": "isBullishSignal AND sigBullPBJ fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::BullishDisplacement",
+        "yin-yang-displacement-pbj::BullPBJ"
+      ],
+      "lines": "460-464 (def), 539 (plot)",
+      "fire_var": "c2_dispPBJ_bull",
+      "plot": {
+        "title": "2x Bull: Disp+PBJ",
+        "shape": "flag",
+        "location": "belowbar",
+        "color": "color.lime",
+        "size": "small",
+        "text": "Di+PBJ"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2SwingDispBear",
+      "tier": 2,
+      "aka": [
+        "2x Bear: Swing+Disp",
+        "c2_swingDisp_bear"
+      ],
+      "definition": "validHigh AND isBearishSignal fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingHigh",
+        "yin-yang-displacement-pbj::BearishDisplacement"
+      ],
+      "lines": "418-422 (def), 542 (plot)",
+      "fire_var": "c2_swingDisp_bear",
+      "plot": {
+        "title": "2x Bear: Swing+Disp",
+        "shape": "flag",
+        "location": "abovebar",
+        "color": "color.fuchsia",
+        "size": "small",
+        "text": "Sw+Di"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2SwingPBBear",
+      "tier": 2,
+      "aka": [
+        "2x Bear: Swing+PB",
+        "c2_swingPB_bear"
+      ],
+      "definition": "validHigh AND sigBearPB fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingHigh",
+        "yin-yang-displacement-pbj::BearPB"
+      ],
+      "lines": "439-443 (def), 543 (plot)",
+      "fire_var": "c2_swingPB_bear",
+      "plot": {
+        "title": "2x Bear: Swing+PB",
+        "shape": "flag",
+        "location": "abovebar",
+        "color": "color.fuchsia",
+        "size": "small",
+        "text": "Sw+PB"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2SwingPBJBear",
+      "tier": 2,
+      "aka": [
+        "2x Bear: Swing+PBJ",
+        "c2_swingPBJ_bear"
+      ],
+      "definition": "validHigh AND sigBearPBJ fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingHigh",
+        "yin-yang-displacement-pbj::BearPBJ"
+      ],
+      "lines": "446-450 (def), 544 (plot)",
+      "fire_var": "c2_swingPBJ_bear",
+      "plot": {
+        "title": "2x Bear: Swing+PBJ",
+        "shape": "flag",
+        "location": "abovebar",
+        "color": "color.fuchsia",
+        "size": "small",
+        "text": "Sw+PBJ"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2DispPBBear",
+      "tier": 2,
+      "aka": [
+        "2x Bear: Disp+PB",
+        "c2_dispPB_bear"
+      ],
+      "definition": "isBearishSignal AND sigBearPB fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::BearishDisplacement",
+        "yin-yang-displacement-pbj::BearPB"
+      ],
+      "lines": "467-471 (def), 545 (plot)",
+      "fire_var": "c2_dispPB_bear",
+      "plot": {
+        "title": "2x Bear: Disp+PB",
+        "shape": "flag",
+        "location": "abovebar",
+        "color": "color.fuchsia",
+        "size": "small",
+        "text": "Di+PB"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo2DispPBJBear",
+      "tier": 2,
+      "aka": [
+        "2x Bear: Disp+PBJ",
+        "c2_dispPBJ_bear"
+      ],
+      "definition": "isBearishSignal AND sigBearPBJ fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::BearishDisplacement",
+        "yin-yang-displacement-pbj::BearPBJ"
+      ],
+      "lines": "474-478 (def), 546 (plot)",
+      "fire_var": "c2_dispPBJ_bear",
+      "plot": {
+        "title": "2x Bear: Disp+PBJ",
+        "shape": "flag",
+        "location": "abovebar",
+        "color": "color.fuchsia",
+        "size": "small",
+        "text": "Di+PBJ"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo3PBBull",
+      "tier": 3,
+      "aka": [
+        "3x Bull: Swing+Disp+PB",
+        "c3_pb_bull"
+      ],
+      "definition": "validLow AND isBullishSignal AND sigBullPB all fired within comboWindow bars of each other (f_trio gate).",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingLow",
+        "yin-yang-displacement-pbj::BullishDisplacement",
+        "yin-yang-displacement-pbj::BullPB"
+      ],
+      "lines": "488-494 (def), 549 (plot)",
+      "fire_var": "c3_pb_bull",
+      "plot": {
+        "title": "3x Bull: Swing+Disp+PB",
+        "shape": "circle",
+        "location": "belowbar",
+        "color": "color.yellow",
+        "size": "normal",
+        "text": "3x Sw+Di+PB",
+        "textcolor": "color.yellow"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo3PBJBull",
+      "tier": 3,
+      "aka": [
+        "3x Bull: Swing+Disp+PBJ",
+        "c3_pbj_bull"
+      ],
+      "definition": "validLow AND isBullishSignal AND sigBullPBJ all fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingLow",
+        "yin-yang-displacement-pbj::BullishDisplacement",
+        "yin-yang-displacement-pbj::BullPBJ"
+      ],
+      "lines": "497-503 (def), 550 (plot)",
+      "fire_var": "c3_pbj_bull",
+      "plot": {
+        "title": "3x Bull: Swing+Disp+PBJ",
+        "shape": "circle",
+        "location": "belowbar",
+        "color": "color.yellow",
+        "size": "normal",
+        "text": "3x Sw+Di+PBJ"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo3PBBear",
+      "tier": 3,
+      "aka": [
+        "3x Bear: Swing+Disp+PB",
+        "c3_pb_bear"
+      ],
+      "definition": "validHigh AND isBearishSignal AND sigBearPB all fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingHigh",
+        "yin-yang-displacement-pbj::BearishDisplacement",
+        "yin-yang-displacement-pbj::BearPB"
+      ],
+      "lines": "506-512 (def), 553 (plot)",
+      "fire_var": "c3_pb_bear",
+      "plot": {
+        "title": "3x Bear: Swing+Disp+PB",
+        "shape": "circle",
+        "location": "abovebar",
+        "color": "color.orange",
+        "size": "normal",
+        "text": "3x Sw+Di+PB",
+        "textcolor": "color.orange"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
+      "lifecycle_stage": 5
+    },
+    {
+      "id": "yin-yang-displacement-pbj::Combo3PBJBear",
+      "tier": 3,
+      "aka": [
+        "3x Bear: Swing+Disp+PBJ",
+        "c3_pbj_bear"
+      ],
+      "definition": "validHigh AND isBearishSignal AND sigBearPBJ all fired within comboWindow bars.",
+      "depends_on": [
+        "yin-yang-displacement-pbj::SwingHigh",
+        "yin-yang-displacement-pbj::BearishDisplacement",
+        "yin-yang-displacement-pbj::BearPBJ"
+      ],
+      "lines": "515-521 (def), 554 (plot)",
+      "fire_var": "c3_pbj_bear",
+      "plot": {
+        "title": "3x Bear: Swing+Disp+PBJ",
+        "shape": "circle",
+        "location": "abovebar",
+        "color": "color.orange",
+        "size": "normal",
+        "text": "3x Sw+Di+PBJ"
+      },
+      "in_indicator": "yin-yang-displacement-pbj",
       "lifecycle_stage": 5
     }
   ]

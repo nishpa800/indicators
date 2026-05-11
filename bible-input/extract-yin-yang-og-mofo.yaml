@@ -1,0 +1,150 @@
+indicator:
+  id: yin-yang-og-mofo
+  file: yin-yang/versions/YIN_YANG_OG_MOFO_v1.pine
+  pine_version: 6
+  line_count: 148
+  overlay: true
+  one_line_purpose: "Pivot-based support/resistance swing detection with ATR distance filter; emits S/R lines, breakouts, breakdowns, and rejection patterns"
+  non_repainting: true
+
+inputs:
+  - "Left Bars — int, default 75, minval 1 (line 7): minimum bars to the left to confirm a pivot"
+  - "Right Bars — int, default 2, minval 1 (line 8): minimum bars to the right to confirm a pivot"
+  - "Use ATR Distance Filter? — bool, default true (line 12)"
+  - "ATR Length — int, default 50, minval 1 (line 13)"
+  - "ATR Multiplier — float, default 3.0, step 0.1 (line 14): new swing must be at least this many ATRs away from previous valid swing level"
+  - "Resistance Color — color, default color.red (line 18)"
+  - "Support Color — color, default color.green (line 19)"
+  - "Line Width — int, default 1, minval 1 (line 20)"
+
+internal_helpers:
+  - id: yin-yang-og-mofo::srLine_udt
+    description: "User-defined type holding line id, price, and isResistance boolean. Core state container for all S/R level management."
+    lines: "24-27"
+  - id: yin-yang-og-mofo::srLines_array
+    description: "var array of srLine UDT instances; accumulates all valid swing highs (resistance) and swing lows (support) with their associated line objects."
+    lines: "30"
+  - id: yin-yang-og-mofo::pivot_detection
+    description: "ta.pivothigh and ta.pivotlow calls detecting raw swings; rawHigh/rawLow store the specific High or Low price of each pivot bar."
+    lines: "41-42"
+  - id: yin-yang-og-mofo::atr_calculation
+    description: "14-period ATR used as distance threshold multiplier. Stored in atrValue."
+    lines: "37"
+  - id: yin-yang-og-mofo::sufficient_distance_check
+    description: "isSufficientDistance function (L45-46): returns true if currentPrice and lastPrice are at least threshold apart, or if lastPrice is na. Gates swing validity."
+    lines: "45-46"
+  - id: yin-yang-og-mofo::line_lifecycle_management
+    description: "Array iteration loop (L90-122): extends active S/R lines each bar; removes crossed lines; checks for breakout/breakdown/rejection on each line in the array."
+    lines: "90-122"
+  - id: yin-yang-og-mofo::lastValidLevel_tracking
+    description: "var float tracking the previous swing level to enforce ATR distance gate on the next new swing."
+    lines: "31"
+  - id: yin-yang-og-mofo::lastSwingType_tracking
+    description: "var string tracking 'high' or 'low' (for alternation logic, though not enforced in this version)."
+    lines: "32"
+
+roots:
+  - id: yin-yang-og-mofo::SwingHigh
+    family: swing-pivot
+    aka: ["Resistance Swing", "validHigh"]
+    definition: "ta.pivothigh(high, leftBars, rightBars) that passes isSufficientDistance(rawHigh, lastValidLevel, threshold) gate; emits line.new at resistance price and appends to srLines array."
+    lines: "41, 50-67 (def+fire), 127 (plot)"
+    fire_var: validHigh
+    plot:
+      title: "Swing High"
+      shape: triangledown
+      location: abovebar
+      color: "input.color(color.red, ...)"
+      size: normal
+      offset: -rightBars
+    note: "Pivot at bar N detected at bar N+rightBars; line drawn from that bar to current bar and extended each bar thereafter. Does NOT alternate with swing lows — both can fire same bar if both pivots exist."
+
+  - id: yin-yang-og-mofo::SwingLow
+    family: swing-pivot
+    aka: ["Support Swing", "validLow"]
+    definition: "ta.pivotlow(low, leftBars, rightBars) that passes isSufficientDistance(rawLow, lastValidLevel, threshold) gate; emits line.new at support price and appends to srLines array."
+    lines: "42, 59-81 (def+fire), 128 (plot)"
+    fire_var: validLow
+    plot:
+      title: "Swing Low"
+      shape: triangleup
+      location: belowbar
+      color: "input.color(color.green, ...)"
+      size: normal
+      offset: -rightBars
+    note: "Mirror of SwingHigh. Both are independent primitives (not alternating)."
+
+  - id: yin-yang-og-mofo::Breakout
+    family: line-cross
+    aka: ["Resistance Breakout"]
+    definition: "close > currentLine.price AND close[1] <= currentLine.price on any resistance line (isResistance=true) in the srLines array. Fires bar-by-bar as price crosses above."
+    lines: "98, 131 (def+fire+plot)"
+    fire_var: breakoutDetected
+    plot:
+      title: "Breakout"
+      shape: diamond
+      location: belowbar
+      color: color.green
+      size: small
+      text: "BO"
+      textcolor: color.green
+    note: "Signals price penetration above a resistance line. Line is stopped and removed from array on this bar."
+
+  - id: yin-yang-og-mofo::Breakdown
+    family: line-cross
+    aka: ["Support Breakdown"]
+    definition: "close < currentLine.price AND close[1] >= currentLine.price on any support line (isResistance=false) in the srLines array. Fires bar-by-bar as price crosses below."
+    lines: "107, 132 (def+fire+plot)"
+    fire_var: breakdownDetected
+    plot:
+      title: "Breakdown"
+      shape: diamond
+      location: abovebar
+      color: color.red
+      size: small
+      text: "BD"
+      textcolor: color.red
+    note: "Mirror of Breakout. Line is stopped and removed on this bar."
+
+  - id: yin-yang-og-mofo::ResistanceRejection
+    family: line-test
+    aka: ["Resistance Rejection", "resRejectionDetected"]
+    definition: "high >= currentLine.price AND close < currentLine.price on a resistance line; price tests but closes below, signaling rejection."
+    lines: "103-105, 135 (def+fire+plot)"
+    fire_var: resRejectionDetected
+    plot:
+      title: "Resistance Rejection"
+      shape: xcross
+      location: abovebar
+      color: color.aqua
+      size: small
+      text: "Rej"
+      textcolor: color.blue
+    note: "Fired same bar as plotshape condition (which also excludes breakdownDetected to avoid redundancy). Tests resistance level without closing above it."
+
+  - id: yin-yang-og-mofo::SupportRejection
+    family: line-test
+    aka: ["Support Rejection", "supRejectionDetected"]
+    definition: "low <= currentLine.price AND close > currentLine.price on a support line; price tests but closes above, signaling rejection."
+    lines: "112-114, 136 (def+fire+plot)"
+    fire_var: supRejectionDetected
+    plot:
+      title: "Support Rejection"
+      shape: xcross
+      location: belowbar
+      color: color.purple
+      size: small
+      text: "Rej"
+      textcolor: color.red
+    note: "Mirror of ResistanceRejection. Excludes breakoutDetected in plotshape condition for clarity."
+
+composites: []
+
+cross_indicator_dependencies: []
+
+uncertain_or_questions:
+  - "PINE v6 VIOLATION: Anish's hard rule is 'Pine v5 only — never v6'. This file declares //@version=6 at line 1. The file is otherwise functionally equivalent to its v5 counterpart (YIN_YANG_DISPLACEMENT_PBJ_v8.pine SECTION 1 is a v5 copy). Recommend reviewing and migrating to v5 syntax."
+  - "Line alternation logic: lastSwingType var is set ('high' or 'low') but is never checked to enforce alternation. Both SwingHigh and SwingLow can fire on the same bar if both pivot conditions are met. This may be intentional (overlapping swings at different scales); confirm with Anish."
+  - "ATR-distance gate is applied per swing. If useAtrFilter=false, threshold=0, so every new pivot (regardless of price distance from lastValidLevel) is accepted. Appears to be working-as-designed."
+  - "No 'floor', 'roof', 'rooftop', 'penthouse', 'ping pong', or related named concepts found in this file."
+
