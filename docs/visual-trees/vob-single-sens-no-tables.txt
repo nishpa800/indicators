@@ -1,0 +1,52 @@
+VISUAL TREE — vob-single-sens-no-tables
+========================================
+File: vob-single-sens/versions/VOB_SINGLE_SENS_NO_TABLES_NO_EMISSION_v1.pine
+Pine v6  ·  415 lines  ·  overlay=True
+Purpose: Volume Order Blocks + Asymmetric Signals - single sensitivity tier with 3 buy/3 sell signals (T1 Asym, T2 Pure, T3 Super) and on-chart zone/signal visualization
+
+ROOTS
+-----
+  ◆ vob-single-sens::T1-buy    [structural · offset=?]
+      
+  ◆ vob-single-sens::T1-sell    [structural · offset=?]
+      
+  ◆ vob-single-sens::T2-buy    [structural · offset=?]
+      
+  ◆ vob-single-sens::T2-sell    [structural · offset=?]
+      
+  ◆ vob-single-sens::T3-buy    [structural · offset=?]
+      
+  ◆ vob-single-sens::T3-sell    [structural · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● vob-single-sens::bull_pool_total    [offset=? · ?]
+    ● vob-single-sens::bear_pool_total    [offset=? · ?]
+    ● vob-single-sens::dom_bull_vol / dom_bull_pct    [offset=? · ?]
+    ● vob-single-sens::dom_bear_vol / dom_bear_pct    [offset=? · ?]
+    ● vob-single-sens::bull_count / bear_count    [offset=? · ?]
+    ● vob-single-sens::price_at_bull / price_at_bear    [offset=? · ?]
+
+  Tier 2:
+    ● vob-single-sens::raw_tier_flags    [offset=? · ?]
+    ● vob-single-sens::alert_tier1_buy_payload    [offset=? · ?]
+    ● vob-single-sens::alert_tier1_sell_payload    [offset=? · ?]
+    ● vob-single-sens::alert_tier2_buy_payload    [offset=? · ?]
+    ● vob-single-sens::alert_tier2_sell_payload    [offset=? · ?]
+    ● vob-single-sens::alert_tier3_buy_payload    [offset=? · ?]
+    ● vob-single-sens::alert_tier3_sell_payload    [offset=? · ?]
+
+  Tier 3:
+    ● vob-single-sens::zone_drawing_bull    [offset=? · ?]
+    ● vob-single-sens::zone_drawing_bear    [offset=? · ?]
+    ● vob-single-sens::ema_trend_shadow    [offset=? · ?]
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → {'target': 'vob-asym', 'relationship': 'sibling_reduced_sensitivity', 'notes': 'vob-single-sens shares the same f_vob core engine concept (EMA crossover -> push zone) but eliminates the 6-tier sensitivity ladder and mutually-exclusive zone-drawing priority system. Where vob-asym runs 6 parallel f_vob instances (one per tier A..F) and applies MutEx priority, vob-single-sens uses a single sensitivity (5/18 EMA pair by default) and evaluates all three signal tiers against the same zone array. Both files originally derived from the same VOB development lineage but have diverged in scope.'}
+  → {'target': 'external (TradingView alert engine)', 'relationship': 'alert_consumer', 'notes': 'Six alert() calls (lines 301-317), one per signal tier-direction pair. Each fires with volume-comparison payloads on bar close.'}
+  → {'target': 'chart drawing layer', 'relationship': 'zone_visualization_consumer', 'notes': 'Lines + linefills are drawn via array of draw UDTs, cleared + redrawn each confirmed bar.'}
+

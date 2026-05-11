@@ -1,0 +1,114 @@
+VISUAL TREE — hvd-pbj-ppd-1939-masterdir
+=========================================
+File: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+Pine v5  ·  1939 lines  ·  overlay=True
+Purpose: HV+D ↔ PBJ ↔ USE ALARM — TRIPLE CO-OCCURRENCE (Master Directory variant, 1939 lines)
+
+ROOTS
+-----
+  ◆ hvd-pbj-ppd-1939::HVD_BULL    [hv · offset=-1]
+      
+  ◆ hvd-pbj-ppd-1939::HVD_BEAR    [hv · offset=-1]
+      
+  ◆ hvd-pbj-ppd-1939::PBJ_BULL    [candle · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::PBJ_BEAR    [candle · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::PB_BULL    [candle · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::PB_BEAR    [candle · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::PUP    [push · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::PPD    [push · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Bull UUUU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Bear UUUU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Bull UUU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Bear UUU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Bull UU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Bear UU    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Bull U-Sub    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Bear U-Sub    [multi-bar-trend · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Alpha Strike Bull    [session-composite · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Alpha Strike Bear    [session-composite · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Foxtrot Bull    [fauna-based · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Foxtrot Bear    [fauna-based · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Omega Long    [omega-based · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::OD Bull    [opening-drive · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::OD Bear    [opening-drive · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Disp Bull 2+    [displacement · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Disp Bear 2+    [displacement · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Disp Bull 3+    [displacement · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Disp Bear 3+    [displacement · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Golf Bull    [confluence · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::Golf Bear    [confluence · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::PAF PUP B2B    [back-to-back · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::PAF PPD B2B    [back-to-back · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::CS1 FVG Bull    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::CS1 FVG Bear    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::CS2 MAT Bull    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::CS2 MAT Bear    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::CS3 Unified Bull    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::CS3 Unified Bear    [combo-set · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::CC Bull    [chain · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::CC Bear    [chain · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::LSC Bull    [chain · offset=0]
+      
+  ◆ hvd-pbj-ppd-1939::LSC Bear    [chain · offset=0]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 0:
+    ● hvd-pbj-ppd-1939::SUPER Bull    [offset=? · ?]
+    ● hvd-pbj-ppd-1939::SUPER Bear    [offset=? · ?]
+    ● hvd-pbj-ppd-1939::SD Bull    [offset=? · ?]
+    ● hvd-pbj-ppd-1939::SD Bear    [offset=? · ?]
+
+  Tier 2:
+    ● hvd-pbj-ppd-1939::Floor    [offset=? · ?]
+    ● hvd-pbj-ppd-1939::2nd Floor    [offset=? · ?]
+    ● hvd-pbj-ppd-1939::Rooftop    [offset=? · ?]
+    ● hvd-pbj-ppd-1939::Penthouse    [offset=? · ?]
+
+  Tier 3:
+    ● hvd-pbj-ppd-1939::HW Bull    [offset=? · ?]
+    ● hvd-pbj-ppd-1939::HW Bear    [offset=? · ?]
+
+  Tier 4:
+    ● hvd-pbj-ppd-1939::Triple AND (Pipeline D)    [offset=? · ?]
+    ● hvd-pbj-ppd-1939::Aggregated Alert    [offset=? · ?]
+
+

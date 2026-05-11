@@ -1,0 +1,56 @@
+VISUAL TREE — anish-tb-foster
+==============================
+File: anish-tb-foster/versions/ANISH_TB_FOSTER_AIRBUD_LEPROSY_ENHANCED_v1.pine
+Pine v5  ·  704 lines  ·  overlay=True
+Purpose: PUP/PPD + Anish Stage 2/4 EMA stack + Gap Up/Down + Super PUP/PPD + TB/Foster transitions + PB&J engine + Air Bud/Leprosy reversals + 1st Pass logic + RVOL confluence
+
+ROOTS
+-----
+  ◆ anish-tb-foster::PPBull    [pocket-pivot · offset=?]
+      
+  ◆ anish-tb-foster::PPBear    [pocket-pivot · offset=?]
+      
+  ◆ anish-tb-foster::AnishBull    [stage-trend · offset=?]
+      
+  ◆ anish-tb-foster::AnishBear    [stage-trend · offset=?]
+      
+  ◆ anish-tb-foster::RVOLBull    [relative-volume · offset=?]
+      
+  ◆ anish-tb-foster::RVOLBear    [relative-volume · offset=?]
+      
+  ◆ anish-tb-foster::BullPB    [pnj-primitive · offset=?]
+      
+  ◆ anish-tb-foster::BullPBJ    [pnj-primitive · offset=?]
+      
+  ◆ anish-tb-foster::BearPB    [pnj-primitive · offset=?]
+      
+  ◆ anish-tb-foster::BearPBJ    [pnj-primitive · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 2:
+    ● anish-tb-foster::SuperPup    [offset=? · ?]
+    ● anish-tb-foster::SuperPPD    [offset=? · ?]
+    ● anish-tb-foster::B2BPUP    [offset=? · ?]
+    ● anish-tb-foster::B2BPPD    [offset=? · ?]
+    ● anish-tb-foster::AirBud    [offset=? · ?]
+    ● anish-tb-foster::Leprosy    [offset=? · ?]
+    ● anish-tb-foster::FirstPUPPass    [offset=? · ?]
+    ● anish-tb-foster::FirstPPDPass    [offset=? · ?]
+
+  Tier 3:
+    ● anish-tb-foster::TB    [offset=? · ?]
+    ● anish-tb-foster::TBPBJSignal    [offset=? · ?]
+    ● anish-tb-foster::TBPBSignal    [offset=? · ?]
+    ● anish-tb-foster::Foster    [offset=? · ?]
+    ● anish-tb-foster::FosterPBJSignal    [offset=? · ?]
+    ● anish-tb-foster::FosterPBSignal    [offset=? · ?]
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → PPBull (sPPBull) — locally redefined; also a known cross-indicator primitive (e.g., b2b-pup::PUP)
+  → PPBear (sPPBear) — locally redefined; also a known cross-indicator primitive (e.g., hvd-pbj-ppd::PPD)
+  → RVOL primitives (sRVOLBull/sRVOLBear) — new metric based on range and volume velocity; internally calculated
+

@@ -1,0 +1,262 @@
+VISUAL TREE — fauna-shifu
+==========================
+File: fauna-shifu/versions/FAUNA_SHIFU_JUMBO_CIA_1ST_PUP_v1.pine
+Pine v5  ·  2338 lines  ·  overlay=True
+Purpose: Session-first PUP gating + FAUNA core + SHIFU KC/pivot/Q3 filters + 20+ named roots + 16 composites (Jumbo CIA with Master Filter)
+
+ROOTS
+-----
+  ◆ fauna-shifu::FAUNA_BULL    [bar-strength-composite · offset=?]
+      Bullish FAUNA: up-bar satisfying MB (body≥1.6×ATR, body/range≥0.70, v…
+  ◆ fauna-shifu::FAUNA_BEAR    [bar-strength-composite · offset=?]
+      Mirror FAUNA_BULL on bear side.
+  ◆ fauna-shifu::DISPLACEMENT_BULL    [displacement · offset=?]
+      Bullish 3-bar FVG: prior bar range > std_dev*mult (default 5.0), low …
+  ◆ fauna-shifu::DISPLACEMENT_BEAR    [displacement · offset=?]
+      Mirror DISPLACEMENT_BULL on bear side.
+  ◆ fauna-shifu::RVOL1x_BULL    [rvol-tier · offset=?]
+      RVOL band 1×: normalized price in [th_1x, th_gs_moab).
+  ◆ fauna-shifu::RVOL1x_BEAR    [rvol-tier · offset=?]
+      Mirror RVOL1x_BULL on bear side.
+  ◆ fauna-shifu::GrandSlam    [rvol-tier · offset=?]
+      RVOL Grand Slam: normalized price >= th_gs_moab (default 35–114 depen…
+  ◆ fauna-shifu::MOAB    [rvol-tier · offset=?]
+      Mirror Grand Slam on bear side.
+  ◆ fauna-shifu::SAAB    [rvol-tier · offset=?]
+      RVOL SAAB (internal only): normalized price in [th_saab_kratos, th_1x…
+  ◆ fauna-shifu::Kratos    [rvol-tier · offset=?]
+      Mirror SAAB on bear side.
+  ◆ fauna-shifu::PUP    [pocket-pivot · offset=?]
+      Bullish Pocket Pivot: (close-open)/open*100 > pp_barSize (default 3.0…
+  ◆ fauna-shifu::PPD    [pocket-pivot · offset=?]
+      Mirror PUP on bear side (PPD).
+  ◆ fauna-shifu::AnishBull    [stage-trend · offset=?]
+      Anish Stage 2 Uptrend: close>EMA50 AND EMA50>EMA150 AND close>52w_low…
+  ◆ fauna-shifu::AnishBear    [stage-trend · offset=?]
+      Mirror AnishBull Stage 4 Downtrend.
+  ◆ fauna-shifu::PB_BULL    [pbj · offset=?]
+      PB bull: Supertrend cross-up at armed PB level (gated by enable_PB in…
+  ◆ fauna-shifu::PB_BEAR    [pbj · offset=?]
+      Mirror PB_BULL on bear side.
+  ◆ fauna-shifu::PBJ_BULL    [pbj · offset=?]
+      PBJ bull: Supertrend cross-up at armed PBJ level (high quality, low <…
+  ◆ fauna-shifu::PBJ_BEAR    [pbj · offset=?]
+      Mirror PBJ_BULL on bear side.
+  ◆ fauna-shifu::HV_MILESTONE    [hv-rank · offset=?]
+      HV Milestone: volume == 5000-bar all-time high OR == 252-bar annual h…
+  ◆ fauna-shifu::NAGASAKI    [hv-rank · offset=?]
+      Nagasaki: volume sets new all-time running maximum (ever-HV).
+  ◆ fauna-shifu::GZ1_BULL_FVG    [fvg-hv · offset=?]
+      GZ1 bull FVG: low > high[2], close[1] > high[2], FVG gap > threshold;…
+  ◆ fauna-shifu::GZ1_BEAR_FVG    [fvg-hv · offset=?]
+      Mirror GZ1_BULL_FVG on bear side.
+  ◆ fauna-shifu::DANTES_PEAK    [shifu-oscillator · offset=?]
+      Dante's Peak (SHIFU): Q3 < sh_threshold (oversold) exit with close > …
+  ◆ fauna-shifu::AVALANCHE    [shifu-oscillator · offset=?]
+      Avalanche (SHIFU): mirror Dante's Peak on bear side (Q3 > sh_ob_thres…
+  ◆ fauna-shifu::C7_PIVOT_BULL    [shifu-pivot · offset=?]
+      C7 (SHIFU): Swingin pivot bull detected (sh_raw_sig_piv_bull fires) A…
+  ◆ fauna-shifu::C8_PIVOT_BEAR    [shifu-pivot · offset=?]
+      Mirror C7 on bear side.
+  ◆ fauna-shifu::C9_KC_PIVOT_BULL    [shifu-combo · offset=?]
+      C9: C7 pivot bull AND any KC signal (basis reentry / breakout vol / s…
+  ◆ fauna-shifu::C10_KC_PIVOT_BEAR    [shifu-combo · offset=?]
+      Mirror C9 on bear side.
+  ◆ fauna-shifu::KC_CROSS_ABOVE_BASIS    [shifu-kc · offset=?]
+      KC Basis Reentry (bull variant): price crosses above KC basis after p…
+  ◆ fauna-shifu::KC_CROSS_BELOW_BASIS    [shifu-kc · offset=?]
+      Mirror KC basis reentry on bear side.
+  ◆ fauna-shifu::KC_BREAKOUT_UPPER    [shifu-kc · offset=?]
+      KC breakout above upper band with volatility expansion.
+  ◆ fauna-shifu::KC_BREAKDOWN_LOWER    [shifu-kc · offset=?]
+      Mirror KC breakdown on bear side.
+  ◆ fauna-shifu::YY_VALIDLOW_SWING    [pivot · offset=?]
+      Yin Yang swing low: pivot low with ATR distance threshold from prior …
+  ◆ fauna-shifu::YY_VALIDHIGH_SWING    [pivot · offset=?]
+      Mirror YY_VALIDLOW on bear side.
+  ◆ fauna-shifu::YY_BREAKOUT    [pivot · offset=?]
+      Yin Yang breakout: close crosses above recorded resistance level.
+  ◆ fauna-shifu::YY_BREAKDOWN    [pivot · offset=?]
+      Mirror YY_BREAKOUT on bear side.
+  ◆ fauna-shifu::WHALE_BULL    [whale · offset=?]
+      Whale bull: HV milestone + Pivot bull (green bar, low <= SMA, volume …
+  ◆ fauna-shifu::WHALE_BEAR    [whale · offset=?]
+      Mirror WHALE_BULL on bear side.
+  ◆ fauna-shifu::MOMENTUM1_LONG    [rvol-momentum · offset=?]
+      Momentum 1 (Long 1) / LONG 1: close>open AND body/range >= 0.65 AND r…
+  ◆ fauna-shifu::MOMENTUM1_SHORT    [rvol-momentum · offset=?]
+      Mirror MOMENTUM1_LONG on bear side (SHORT 1).
+
+COMPOSITES (by tier)
+-----
+  Tier 2:
+    ● fauna-shifu::DOUBLE_DISP_BULL    [offset=? · AND_LAGGED]
+        Double Disp bull: DISP fires on bar[0] AND bar[1], FAUNA fires on bar…
+        ├── DISPLACEMENT_BULL
+        ├── DISPLACEMENT_BULL[-1]
+        ├── FAUNA_BULL
+        └── FAUNA_BULL[-1]
+    ● fauna-shifu::DOUBLE_DISP_BEAR    [offset=? · AND_LAGGED]
+        Mirror DOUBLE_DISP_BULL on bear side.
+        ├── DISPLACEMENT_BEAR
+        ├── DISPLACEMENT_BEAR[-1]
+        ├── FAUNA_BEAR
+        └── FAUNA_BEAR[-1]
+    ● fauna-shifu::PUP_COMBO_BULL    [offset=? · AND_LAGGED]
+        PUP Combo bull: (DISP_pup OR FAUNA OR YY_Breakout) fires on bar[0] AN…
+        ├── (DISP_pup OR FAUNA_BULL OR YY_Breakout)
+        ├── (DISP_pup OR FAUNA_BULL OR YY_Breakout)[-1]
+        ├── PUP
+        └── PUP[-1]
+    ● fauna-shifu::PPD_COMBO_BEAR    [offset=? · AND_LAGGED]
+        Mirror PUP_COMBO_BULL on bear side.
+        ├── (DISP_pup OR FAUNA_BEAR OR YY_Breakdown)
+        ├── (DISP_pup OR FAUNA_BEAR OR YY_Breakdown)[-1]
+        ├── PPD
+        └── PPD[-1]
+    ● fauna-shifu::FULL_STACK_BULL    [offset=? · AND]
+        Full Stack bull: (RVOL1x OR GrandSlam) AND (FAUNA OR DISP) AND (PBJ O…
+        ├── anyBullRVOL
+        ├── dirConfBull
+        └── anyBullPBJ
+    ● fauna-shifu::FULL_STACK_BEAR    [offset=? · ?]
+        Mirror FULL_STACK_BULL on bear side.
+    ● fauna-shifu::FVG_STACK_BULL    [offset=? · AND]
+        FVG Stack bull: (RVOL1x OR GrandSlam) AND (FAUNA OR DISP) AND (HV_FVG…
+        ├── anyBullRVOL
+        ├── dirConfBull
+        ├── gz_bullHV
+        └── gz_bullGZI
+    ● fauna-shifu::FVG_STACK_BEAR    [offset=? · ?]
+        Mirror FVG_STACK_BULL on bear side.
+    ● fauna-shifu::SUPER_COMBO_BULL    [offset=? · AND]
+        Super Combo bull: (FAUNA OR DISP) AND (PBJ OR SHIFU-qualified) AND (R…
+        ├── dirConfBull
+        ├── anyBullPBJ
+        └── anyBullRVOL
+    ● fauna-shifu::SUPER_COMBO_BEAR    [offset=? · ?]
+        Mirror SUPER_COMBO_BULL on bear side.
+    ● fauna-shifu::PAF_BULL    [offset=? · AND_LAGGED]
+        PAF (PUP+Fauna B2B) bull: PUP fires on bar[0] AND bar[1], FAUNA fires…
+        ├── PUP
+        ├── PUP[-1]
+        ├── FAUNA_BULL
+        └── FAUNA_BULL[-1]
+    ● fauna-shifu::PAF_BEAR    [offset=? · ?]
+        Mirror PAF_BULL on bear side.
+    ● fauna-shifu::ALPHA_BULL    [offset=? · COUNT_GE]
+        Alpha (FAUNA+ Density Set 1): N displacement hits within M bars, opti…
+        └── DISP_BULL or Momentum1
+    ● fauna-shifu::ALPHA_BEAR    [offset=? · ?]
+        Mirror ALPHA_BULL on bear side.
+    ● fauna-shifu::BRAVO_BULL    [offset=? · COUNT_GE]
+        Bravo (FAUNA+ Density Set 2): 3 hits in 3 bars, optional gates.
+        └── DISP_BULL or Momentum1
+    ● fauna-shifu::BRAVO_BEAR    [offset=? · ?]
+        Mirror BRAVO_BULL on bear side.
+    ● fauna-shifu::CHARLIE_BULL    [offset=? · COUNT_GE]
+        Charlie (FAUNA+ Density Set 3): 3 hits in 4 bars, optional gates.
+        └── DISP_BULL or Momentum1
+    ● fauna-shifu::CHARLIE_BEAR    [offset=? · ?]
+        Mirror CHARLIE_BULL on bear side.
+    ● fauna-shifu::DELTA_BULL    [offset=? · COUNT_GE]
+        Delta (FAUNA+ Density Set 4): 2 hits in 3 bars, optional gates.
+        └── DISP_BULL or Momentum1
+    ● fauna-shifu::DELTA_BEAR    [offset=? · ?]
+        Mirror DELTA_BULL on bear side.
+    ● fauna-shifu::ECHO_BULL    [offset=? · COUNT_GE]
+        Echo (FAUNA+ Density Set 5): 2 hits in 4 bars, optional gates.
+        └── DISP_BULL or Momentum1
+    ● fauna-shifu::ECHO_BEAR    [offset=? · ?]
+        Mirror ECHO_BULL on bear side.
+    ● fauna-shifu::FOXTROT_BULL    [offset=? · AND_LAGGED]
+        Foxtrot (Fauna 4-in-4): FAUNA fires on 4 consecutive bars (bar[0], [1…
+        ├── FAUNA_BULL
+        ├── FAUNA_BULL[-1]
+        ├── FAUNA_BULL[-2]
+        └── FAUNA_BULL[-3]
+    ● fauna-shifu::FOXTROT_BEAR    [offset=? · ?]
+        Mirror FOXTROT_BULL on bear side.
+    ● fauna-shifu::OPENING_DRIVE_BULL    [offset=? · AND]
+        Opening Drive (OD) bull: within first N bars of session, DISP+FVG on …
+        ├── sessionBarCount <= od_max
+        ├── DISP_bull_FVG
+        ├── (DISP OR Momentum1)[−1]
+        ├── PUP
+        └── pp_volBull
+    ● fauna-shifu::OPENING_DRIVE_BEAR    [offset=? · ?]
+        Mirror OPENING_DRIVE_BULL on bear side.
+    ● fauna-shifu::NAGASAKI_BULL    [offset=? · AND_OR]
+        Nagasaki bull: HEV (all-time volume max) + any directional signal (RV…
+        ├── NAGASAKI
+        └── any_bull_directional
+    ● fauna-shifu::NAGASAKI_BEAR    [offset=? · ?]
+        Mirror NAGASAKI_BULL on bear side.
+
+  Tier 3:
+    ● fauna-shifu::GRIPEN_BULL    [offset=? · AND]
+        Gripen bull: YY swing low + new session + (SAAB OR 1x OR GrandSlam) +…
+        ├── yy_validLow
+        ├── is_new_sess[offset]
+        ├── RVOL-tier[offset]
+        ├── (FAUNA_BULL OR DISP_BULL)[offset]
+        └── (anyBullPB OR anyBullPBJ)[offset]
+    ● fauna-shifu::GRIPEN_BEAR    [offset=? · ?]
+        Mirror GRIPEN_BULL on bear side.
+    ● fauna-shifu::SAAB_SQUARED_BULL    [offset=? · AND_LAGGED]
+        SAAB² bull: (SAAB OR 1x OR GrandSlam) fires on bar[0] AND bar[1], qua…
+        ├── (SAAB OR RVOL1x OR GrandSlam)
+        └── (SAAB OR RVOL1x OR GrandSlam)[-1]
+    ● fauna-shifu::KRATOS_SQUARED_BEAR    [offset=? · ?]
+        Mirror SAAB_SQUARED_BULL on bear side (KRATOS²).
+    ● fauna-shifu::TYPHOON_BULL    [offset=? · AND]
+        Typhoon bull: YY swing low + new session + (FAUNA OR DISP) + (PUP OR …
+        ├── yy_validLow[offset]
+        ├── is_new_sess[offset]
+        ├── (FAUNA_BULL OR DISP_BULL)[offset]
+        └── (PUP[offset] OR (sigWhaleBull[offset] AND anyBullPBJ[offset]))
+    ● fauna-shifu::TYPHOON_BEAR    [offset=? · ?]
+        Mirror TYPHOON_BULL on bear side.
+    ● fauna-shifu::TOMCAT_BULL    [offset=? · AND_THRESHOLD]
+        Tomcat bull: 1st bar of session + (FAUNA OR DISP) + at least 2 of {PU…
+        ├── is_new_sess
+        ├── dirConfBullRaw
+        └── count(PUP, Whale, anyPBJ)
+    ● fauna-shifu::TOMCAT_BEAR    [offset=? · ?]
+        Mirror TOMCAT_BULL on bear side.
+    ● fauna-shifu::GOLF_BULL    [offset=? · AND_LAGGED]
+        Golf (PUP2/PPD2): any Alpha–Echo raw DISP fires on bar[0] AND [1], FA…
+        ├── (Alpha OR Bravo OR Charlie OR Delta OR Echo) raw DISP
+        ├── (...)[−1]
+        ├── FAUNA_BULL
+        ├── FAUNA_BULL[-1]
+        ├── PUP
+        └── PUP[-1]
+    ● fauna-shifu::GOLF_BEAR    [offset=? · ?]
+        Mirror GOLF_BULL on bear side.
+    ● fauna-shifu::KATANA_BULL    [offset=? · AND_SESSION]
+        Katana bull (session-level): fires on new session bar[1], requires ye…
+        ├── is_new_sess[1]
+        ├── kat_yest_bull_hv OR (kat_yest_bull_gzi AND (kat_yest_bull_hv OR kat_yest_bull_bo))
+        ├── gz_bullHV AND gz_bullGZI
+        ├── sigFAUNABull[yy_rightBars] OR sigDISPBull[yy_rightBars]
+        └── kat_dir_bull
+    ● fauna-shifu::KATANA_BEAR    [offset=? · ?]
+        Mirror KATANA_BULL on bear side.
+    ● fauna-shifu::MUSASHI_BULL    [offset=? · AND]
+        Musashi bull: (GZ1_FVG OR HV_FVG) AND PUP AND Whale_bull AND anyBullP…
+        ├── (gz_bullGZI OR gz_bullHV)
+        ├── PUP
+        ├── WHALE_BULL
+        └── anyBullPBJ
+    ● fauna-shifu::MUSASHI_BEAR    [offset=? · ?]
+        Mirror MUSASHI_BULL on bear side.
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → {'target': 'b2b-pup', 'relationship': 'root-level duplication', 'notes': 'FAUNA_BULL/BEAR, PUP/PPD, RVOL tiers (SAAB/Kratos/1x/GrandSlam/MOAB), GZ1_FVG/HV, PBJ engine all defined identically in both files. fauna-shifu extends b2b-pup with SHIFU layer.'}
+  → {'target': 'anish-50-1st-combo', 'relationship': 'methodology alignment', 'notes': "Both use 'first bar only' gating concept. fauna-shifu generalizes to 'Jumbo CIA' master gate; anish-50-1st uses explicit 1st-combo. AnishBull/AnishBear EMA stacks defined in both."}
+  → {'target': 'hvd-pbj-ppd', 'relationship': 'probable overlap', 'notes': 'PUP/PPD, Whale, PBJ engine likely overlap; not yet confirmed. PB vs PBJ distinction controlled via enable_PB toggle.'}
+  → {'target': 'heavy-pentagon', 'relationship': 'RVOL ladder potential overlap', 'notes': 'SAAB/Kratos/1x/GrandSlam/MOAB/Pentagon/WTC/Hiroshima naming convention similar; heavy-pentagon may be the canonical RVOL source.'}
+

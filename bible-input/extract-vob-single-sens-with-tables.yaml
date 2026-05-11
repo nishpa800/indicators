@@ -1,0 +1,352 @@
+indicator:
+  id: vob-single-sens-with-tables
+  file: vob-single-sens/versions/VOB_SINGLE_SENS_WITH_TABLES_v1.pine
+  branch: both
+  pine_version: 6
+  line_count: 415
+  overlay: true
+  one_line_purpose: "Volume Order Blocks + Asymmetric Signals - single sensitivity tier with 3 buy/3 sell signals (T1 Asym, T2 Pure, T3 Super) and on-chart zone/signal visualization"
+  notes: >-
+    vob-single-sens is a reduced-complexity sibling of vob-asym. Where vob-asym provides
+    6 sensitivity tiers (A..F) with mutually-exclusive zone drawing and comprehensive
+    emission tables, vob-single-sens collapses to a single sensitivity (length1/length2 pair,
+    default 5/18) driving three signal tiers. Zone state (lower_lvl, upper_lvl) is still
+    maintained but not tiered; single dominant zone per direction is used for all three
+    signal evaluations. This variant includes the original zone-drawing code (lines 384-414)
+    which renders OB rectangles + volume labels on the chart.
+
+internal_helpers:
+  - name: level
+    kind: udt
+    lines: "9-14"
+    fields: [indx, upper, lower, mid, vol]
+    purpose: "Per-zone record (origin bar time, upper/lower/mid prices, accumulated volume)."
+  - name: draw
+    kind: udt
+    lines: "16-21"
+    fields: [upper, lower, mid, fill, vol]
+    purpose: "Drawing container for rendered zone lines, fills, and volume labels."
+  - name: f_clear_previous_lines
+    kind: function
+    lines: "73-81"
+    signature: "f_clear_previous_lines(draw__) => void"
+    purpose: "Cleanup helper - deletes all line, linefill, and label objects in a draw array before next render."
+
+roots:
+  - id: vob-single-sens::T1-buy
+    family: structural
+    name_in_pine: "sig_t1_buy"
+    tier_number: 1
+    tier_name: "Asymmetric"
+    direction: bull
+    lines:
+      input_threshold: "35"
+      condition_lines: "238-241"
+      global_reset: "160"
+      signal_assignment: "287"
+      cooldown_gate: "287, 278"
+      plotshape: "324-331"
+      alert: "301-302"
+    description: >-
+      Tier 1 Asymmetric BUY - fires when the dominant bull OB volume exceeds
+      asym_threshold % of the total bull pool AND dominates the bear pool AND
+      price is inside the zone. Requires cooldown_bars silence before next fire.
+      Plotshape: small diamond below bar in col1 (#26ba9f) with text 'T1'.
+    output:
+      kind: bool_event
+      symbol: sig_t1_buy
+      visual: { shape: diamond, location: belowbar, color_hex: "#26ba9f", size: small, text: "T1" }
+    uses_helpers: [level, f_clear_previous_lines]
+
+  - id: vob-single-sens::T1-sell
+    family: structural
+    name_in_pine: "sig_t1_sell"
+    tier_number: 1
+    tier_name: "Asymmetric"
+    direction: bear
+    lines:
+      input_threshold: "35"
+      condition_lines: "246-249"
+      global_reset: "161"
+      signal_assignment: "288"
+      cooldown_gate: "288, 278"
+      plotshape: "333-340"
+      alert: "304-305"
+    description: "Tier 1 Asymmetric SELL - mirror of T1-buy on the bear side."
+    output:
+      kind: bool_event
+      symbol: sig_t1_sell
+      visual: { shape: diamond, location: abovebar, color_hex: "#6626ba", size: small, text: "T1" }
+    uses_helpers: [level, f_clear_previous_lines]
+
+  - id: vob-single-sens::T2-buy
+    family: structural
+    name_in_pine: "sig_t2_buy"
+    tier_number: 2
+    tier_name: "Pure 100%"
+    direction: bull
+    lines:
+      condition_lines: "254"
+      global_reset: "162"
+      signal_assignment: "289"
+      cooldown_gate: "289, 278"
+      plotshape: "343-350"
+      alert: "307-308"
+    description: >-
+      Tier 2 Pure BUY - fires when there is exactly ONE valid bull OB and price
+      is inside it. No dominant volume comparison. Plotshape: medium triangle up.
+    output:
+      kind: bool_event
+      symbol: sig_t2_buy
+      visual: { shape: triangleup, location: belowbar, color_hex: "#00e5ff", size: normal, text: "T2" }
+    uses_helpers: [level, f_clear_previous_lines]
+
+  - id: vob-single-sens::T2-sell
+    family: structural
+    name_in_pine: "sig_t2_sell"
+    tier_number: 2
+    tier_name: "Pure 100%"
+    direction: bear
+    lines:
+      condition_lines: "259"
+      global_reset: "163"
+      signal_assignment: "290"
+      cooldown_gate: "290, 278"
+      plotshape: "352-359"
+      alert: "310-311"
+    description: "Tier 2 Pure SELL - mirror of T2-buy on the bear side."
+    output:
+      kind: bool_event
+      symbol: sig_t2_sell
+      visual: { shape: triangledown, location: abovebar, color_hex: "#ff00e5", size: normal, text: "T2" }
+    uses_helpers: [level, f_clear_previous_lines]
+
+  - id: vob-single-sens::T3-buy
+    family: structural
+    name_in_pine: "sig_t3_buy"
+    tier_number: 3
+    tier_name: "Super 100%"
+    direction: bull
+    lines:
+      input_multiplier: "37"
+      condition_lines: "264-267"
+      global_reset: "164"
+      signal_assignment: "291"
+      cooldown_gate: "291, 278"
+      plotshape: "362-369"
+      alert: "313-314"
+    description: >-
+      Tier 3 SUPER BUY - fires when there is exactly ONE bull OB AND its raw
+      volume exceeds the entire opposing (bear) pool total × super_mult
+      (default 1.0) AND price is inside. The highest conviction signal.
+      Plotshape: large circle below bar in yellow (#ffff00).
+    output:
+      kind: bool_event
+      symbol: sig_t3_buy
+      visual: { shape: circle, location: belowbar, color_hex: "#ffff00", size: large, text: "T3" }
+    uses_helpers: [level, f_clear_previous_lines]
+
+  - id: vob-single-sens::T3-sell
+    family: structural
+    name_in_pine: "sig_t3_sell"
+    tier_number: 3
+    tier_name: "Super 100%"
+    direction: bear
+    lines:
+      input_multiplier: "37"
+      condition_lines: "272-275"
+      global_reset: "165"
+      signal_assignment: "292"
+      cooldown_gate: "292, 278"
+      plotshape: "371-378"
+      alert: "316-317"
+    description: "Tier 3 SUPER SELL - mirror of T3-buy on the bear side."
+    output:
+      kind: bool_event
+      symbol: sig_t3_sell
+      visual: { shape: circle, location: abovebar, color_hex: "#ff4400", size: large, text: "T3" }
+    uses_helpers: [level, f_clear_previous_lines]
+
+composites:
+  - id: vob-single-sens::bull_pool_total
+    tier: 1
+    kind: derived_scalar
+    lines: "196"
+    depends_on_roots: [T1-buy, T2-buy, T3-buy]
+    description: "Sum of all valid bull OB volumes. Used as denominator in dominance tests and % calculations."
+
+  - id: vob-single-sens::bear_pool_total
+    tier: 1
+    kind: derived_scalar
+    lines: "197"
+    depends_on_roots: [T1-sell, T2-sell, T3-sell]
+    description: "Sum of all valid bear OB volumes. Used as denominator in dominance tests and % calculations."
+
+  - id: vob-single-sens::dom_bull_vol / dom_bull_pct
+    tier: 1
+    kind: derived_scalar_pair
+    lines: "200-213"
+    depends_on_roots: [T1-buy, T2-buy, T3-buy]
+    description: "Dominant bull OB volume and its percentage of bull_pool_total. Feeds T1/T2/T3 buy conditions."
+
+  - id: vob-single-sens::dom_bear_vol / dom_bear_pct
+    tier: 1
+    kind: derived_scalar_pair
+    lines: "216-229"
+    depends_on_roots: [T1-sell, T2-sell, T3-sell]
+    description: "Dominant bear OB volume and its percentage of bear_pool_total. Feeds T1/T2/T3 sell conditions."
+
+  - id: vob-single-sens::bull_count / bear_count
+    tier: 1
+    kind: derived_scalar_pair
+    lines: "204, 220"
+    depends_on_roots: [T1-buy, T2-buy, T3-buy, T1-sell, T2-sell, T3-sell]
+    description: "Number of active (non-invalidated) bull/bear zones. bull_count==1 required for T2/T3 buy."
+
+  - id: vob-single-sens::price_at_bull / price_at_bear
+    tier: 1
+    kind: derived_flag_pair
+    lines: "232-233"
+    depends_on_roots: [T1-buy, T2-buy, T3-buy, T1-sell, T2-sell, T3-sell]
+    description: "Boolean flags - true when close is inside the dominant bull/bear zone. Required by all three tiers."
+
+  - id: vob-single-sens::raw_tier_flags
+    tier: 2
+    kind: derived_flags
+    lines: "280-285"
+    depends_on_roots: [T1-buy, T1-sell, T2-buy, T2-sell, T3-buy, T3-sell]
+    description: >-
+      raw_t1_*/raw_t2_*/raw_t3_* flags - isolate exclusive tiers by AND-ing
+      negations. raw_t1_buy = T1 & ~T2 & ~T3 (priority: T3 > T2 > T1).
+
+  - id: vob-single-sens::alert_tier1_buy_payload
+    tier: 2
+    kind: alert_payload
+    lines: "301-302"
+    depends_on_roots: [T1-buy]
+    depends_on_composites: [dom_bull_vol, dom_bear_vol]
+    description: "Alert on T1-buy fire with pipe-delimited payload: dominant volumes formatted."
+
+  - id: vob-single-sens::alert_tier1_sell_payload
+    tier: 2
+    kind: alert_payload
+    lines: "304-305"
+    depends_on_roots: [T1-sell]
+    depends_on_composites: [dom_bear_vol, dom_bull_vol]
+    description: "Alert on T1-sell fire."
+
+  - id: vob-single-sens::alert_tier2_buy_payload
+    tier: 2
+    kind: alert_payload
+    lines: "307-308"
+    depends_on_roots: [T2-buy]
+    depends_on_composites: [dom_bull_vol]
+    description: "Alert on T2-buy fire."
+
+  - id: vob-single-sens::alert_tier2_sell_payload
+    tier: 2
+    kind: alert_payload
+    lines: "310-311"
+    depends_on_roots: [T2-sell]
+    depends_on_composites: [dom_bear_vol]
+    description: "Alert on T2-sell fire."
+
+  - id: vob-single-sens::alert_tier3_buy_payload
+    tier: 2
+    kind: alert_payload
+    lines: "313-314"
+    depends_on_roots: [T3-buy]
+    depends_on_composites: [dom_bull_vol, bear_pool_total]
+    description: "Alert on T3-buy fire."
+
+  - id: vob-single-sens::alert_tier3_sell_payload
+    tier: 2
+    kind: alert_payload
+    lines: "316-317"
+    depends_on_roots: [T3-sell]
+    depends_on_composites: [dom_bear_vol, bull_pool_total]
+    description: "Alert on T3-sell fire."
+
+  - id: vob-single-sens::zone_drawing_bull
+    tier: 3
+    kind: zone_drawing
+    lines: "384-398"
+    depends_on_roots: [T2-buy, T3-buy]
+    description: >-
+      On barstate.islast, clears lower_draw and redraws all bull zones with
+      lines (upper, lower, mid) + linefill + volume labels. Text shows vol % of pool
+      and absolute volume. Rendered continuously, not event-driven.
+
+  - id: vob-single-sens::zone_drawing_bear
+    tier: 3
+    kind: zone_drawing
+    lines: "400-414"
+    depends_on_roots: [T2-sell, T3-sell]
+    description: >-
+      On barstate.islast, clears upper_draw and redraws all bear zones with
+      lines + fills + labels. Mirrors bull logic.
+
+  - id: vob-single-sens::ema_trend_shadow
+    tier: 3
+    kind: visual_trend_context
+    lines: "46-68"
+    description: >-
+      Two hidden EMAs (length1, length1+13) with gradient fill between.
+      Gradient driven by (ema2 - ema1) diff: bullish diff -> col1 gradient,
+      bearish -> col2 gradient. Visual context only, does not drive signals.
+
+cross_indicator_dependencies:
+  - target: vob-asym
+    relationship: sibling_reduced_sensitivity
+    notes: >-
+      vob-single-sens shares the same f_vob core engine concept (EMA
+      crossover -> push zone) but eliminates the 6-tier sensitivity ladder
+      and mutually-exclusive zone-drawing priority system. Where vob-asym runs
+      6 parallel f_vob instances (one per tier A..F) and applies MutEx priority,
+      vob-single-sens uses a single sensitivity (5/18 EMA pair by default) and
+      evaluates all three signal tiers against the same zone array. Both
+      files originally derived from the same VOB development lineage but have
+      diverged in scope.
+  - target: external (TradingView alert engine)
+    relationship: alert_consumer
+    notes: >-
+      Six alert() calls (lines 301-317), one per signal tier-direction pair.
+      Each fires with volume-comparison payloads on bar close.
+  - target: chart drawing layer
+    relationship: zone_visualization_consumer
+    notes: >-
+      Lines + linefills are drawn via array of draw UDTs, cleared + redrawn
+      each confirmed bar.
+
+uncertain_or_questions:
+  - q: >-
+      The filename says "WITH_TABLES_v1" but the code contains no table.new()
+      calls - only zone drawing (lines, linefills, labels). The "tables" in the
+      filename may refer to the planned structured emission (not yet implemented),
+      or it is a vestigial label. Compare against NO_TABLES_NO_EMISSION_v1 to confirm.
+    severity: high
+  - q: >-
+      Both files are reported as 414/415 lines with no diff except trailing
+      newline. If truly identical, the filenames are misleading. Verify intent
+      with the author (Anish): should they differ?
+    severity: high
+  - q: >-
+      Tier 1 fires when dom_bull_pct >= asym_threshold (50% default) AND
+      dom_bull_vol > dom_bear_vol. If a single bull OB contains exactly 51% of
+      the pool but the bear pool is empty (bear_pool_total == 0), T1 condition
+      is technically satisfied (50 > 0). Edge case: empty opposing pool. Does
+      this trigger as intended or is it a false positive?
+    severity: medium
+  - q: >-
+      Signal hierarchy (line 280-285) uses AND-NOT to enforce T3 > T2 > T1 priority
+      (one signal per bar max). This is different from vob-asym, which allows
+      multiple tiers to fire per bar and gates them independently by cooldown.
+      Confirm if this priority design is intentional.
+    severity: info
+  - q: >-
+      Invalidation logic (lines 115-144) dedupes zones by overwriting with
+      level.new(na, na, na, na, na) when adjacent mids are within atr, or when
+      close breaches the zone. The arr.shift() size cap at 15 could in theory
+      evict zones if 15 mostly-na slots accumulate. Inherited from the original
+      code.
+    severity: low

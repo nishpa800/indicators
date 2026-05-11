@@ -1,0 +1,216 @@
+indicator:
+  id: hv-ladder-50-to-1k
+  file: hv-ladder/versions/HV_LADDER_50_TO_1K_v1.pine
+  pine_version: 5
+  line_count: 196
+  overlay: true
+  one_line_purpose: "Volume ladder: 50/150/250/500/1000-bar high volume + all-time high volume (HEV) + calendar-based hot spots (OpEx, Q-end, Russell, tax-loss, Jan effect, HF redemption)"
+  non_repainting: true
+  inputs:
+    - "Show 50-Bar High Vol — bool, default true (line 32)"
+    - "Show 150-Bar High Vol — bool, default true (line 33)"
+    - "Show 250-Bar High Vol — bool, default true (line 34)"
+    - "Show 500-Bar High Vol — bool, default true (line 35)"
+    - "Show 1000-Bar High Vol — bool, default true (line 36)"
+    - "Show All-Time High Vol (HEV) — bool, default true (line 37)"
+    - "Show Hot Spot Signals — bool, default true (line 38)"
+
+internal_helpers:
+  - id: hv-ladder-50-to-1k::vol_confirmed_bar_architecture
+    description: "All volume comparisons use [1] (prior confirmed bar) to prevent live-bar repainting. ta.highest(volume, N)[1] and volume[1] guarantee condition never changes once bar closes."
+    lines: "41-50 (architecture comment), 53-65 (volume[1] == ta.highest(volume, N)[1])"
+  - id: hv-ladder-50-to-1k::hev_state_tracking
+    description: "Tracks all-time maximum volume across only confirmed bars. var maxVolEver updated only with volume[1], isHEV set to true only when new max found."
+    lines: "72-76 (var maxVolEver, isHEV logic)"
+  - id: hv-ladder-50-to-1k::calendar_opex_window
+    description: "Monthly Options Expiration detection: 3rd Friday window (dayofmonth 15-21) fired 3-5 days before (Mon–Wed of that week)."
+    lines: "100"
+  - id: hv-ladder-50-to-1k::calendar_quarter_end
+    description: "Quarter-end rebalancing window: last 5 trading days of Mar/Jun/Sep/Dec (dayofmonth 23-27)."
+    lines: "103"
+  - id: hv-ladder-50-to-1k::calendar_russell
+    description: "Russell Reconstitution: last Friday of June (dayofmonth 19-24)."
+    lines: "106"
+  - id: hv-ladder-50-to-1k::calendar_tax_loss
+    description: "Tax-loss selling peak: last days of December (dayofmonth 21-26)."
+    lines: "109"
+  - id: hv-ladder-50-to-1k::calendar_january_effect
+    description: "January Effect: early-January buying surge, flagged late December (dayofmonth 27-30 of month 12)."
+    lines: "112"
+  - id: hv-ladder-50-to-1k::calendar_hf_redemption
+    description: "Hedge Fund 45-day redemption notices (~May 15 & Nov 15, window dayofmonth 10-13)."
+    lines: "115"
+  - id: hv-ladder-50-to-1k::plot_priority_logic
+    description: "Multi-level priority filtering: above bar HEV > 1000 > 500 > 250; below bar 150 > 50. Hot Spot independent. Each plot_* is single source of truth for both plotshape and alertcondition."
+    lines: "127-137 (priority logic)"
+  - id: hv-ladder-50-to-1k::signal_aggregation
+    description: "Integer counter of active volume signals and array collection of all signal states for downstream composite studies."
+    lines: "178-187 (activeVolSignals int, signalStates array<bool>)"
+
+roots:
+  - id: hv-ladder-50-to-1k::HV50
+    family: volume-ladder
+    aka: ["50-Bar High", "is50Bar"]
+    definition: "volume[1] == ta.highest(volume, 50)[1] (50-bar high-volume detection on confirmed bar)"
+    lines: "53 (def), 136 (plot_50 gated), 158 (plot), 172 (alert)"
+    fire_var: plot_50
+    plot:
+      title: "50-Bar High"
+      shape: triangledown
+      location: belowbar
+      color: purple
+      size: small
+      text: "50"
+      textcolor: yellow
+      offset: -1
+    alert:
+      title: "Vol: 50-Bar"
+      message: "50-Bar High Volume Detected (confirmed)"
+    note: "Lowest bar-count bin; plotted only if no higher-count bin (150/250/500/1000) and not HEV"
+
+  - id: hv-ladder-50-to-1k::HV150
+    family: volume-ladder
+    aka: ["150-Bar High", "is150Bar"]
+    definition: "volume[1] == ta.highest(volume, 150)[1] (150-bar high-volume detection on confirmed bar)"
+    lines: "56 (def), 135 (plot_150 gated), 156 (plot), 171 (alert)"
+    fire_var: plot_150
+    plot:
+      title: "150-Bar High"
+      shape: triangledown
+      location: belowbar
+      color: aqua
+      size: small
+      text: "150"
+      textcolor: orange
+      offset: -1
+    alert:
+      title: "Vol: 150-Bar"
+      message: "150-Bar High Volume Detected (confirmed)"
+    note: "Below-bar tier; plotted only if no higher bins (250/500/1000) and not HEV"
+
+  - id: hv-ladder-50-to-1k::HV250
+    family: volume-ladder
+    aka: ["250-Bar High", "is250Bar"]
+    definition: "volume[1] == ta.highest(volume, 250)[1] (250-bar high-volume detection on confirmed bar)"
+    lines: "59 (def), 134 (plot_250 gated), 153 (plot), 170 (alert)"
+    fire_var: plot_250
+    plot:
+      title: "250-Bar High"
+      shape: circle
+      location: top
+      color: yellow
+      size: small
+      text: "250"
+      textcolor: teal
+      offset: -1
+    alert:
+      title: "Vol: 250-Bar"
+      message: "250-Bar High Volume Detected (confirmed)"
+    note: "Above-bar tier; plotted only if no higher bins (500/1000) and not HEV"
+
+  - id: hv-ladder-50-to-1k::HV500
+    family: volume-ladder
+    aka: ["500-Bar High", "is500Bar"]
+    definition: "volume[1] == ta.highest(volume, 500)[1] (500-bar high-volume detection on confirmed bar)"
+    lines: "62 (def), 133 (plot_500 gated), 150 (plot), 169 (alert)"
+    fire_var: plot_500
+    plot:
+      title: "500-Bar High"
+      shape: circle
+      location: top
+      color: red
+      size: normal
+      text: "500"
+      textcolor: silver
+      offset: -1
+    alert:
+      title: "Vol: 500-Bar"
+      message: "500-Bar High Volume Detected (confirmed)"
+    note: "Higher tier; plotted only if no 1000-bar or HEV active"
+
+  - id: hv-ladder-50-to-1k::HV1000
+    family: volume-ladder
+    aka: ["1000-Bar High", "is1000Bar"]
+    definition: "volume[1] == ta.highest(volume, 1000)[1] (1000-bar high-volume detection on confirmed bar)"
+    lines: "65 (def), 132 (plot_1000 gated), 147 (plot), 168 (alert)"
+    fire_var: plot_1000
+    plot:
+      title: "1000-Bar High"
+      shape: circle
+      location: top
+      color: blue
+      size: normal
+      text: "1K"
+      textcolor: yellow
+      offset: -1
+    alert:
+      title: "Vol: 1000-Bar"
+      message: "1000-Bar High Volume Detected (confirmed)"
+    note: "Highest bar-count tier below all-time; plotted only if not HEV"
+
+  - id: hv-ladder-50-to-1k::HEV
+    family: volume-ladder
+    aka: ["All-Time High Volume", "isHEV", "Highest-Ever Volume"]
+    definition: "volume[1] > maxVolEver (all-time maximum volume across only confirmed bars; state tracked via var maxVolEver)"
+    lines: "72-76 (def and state), 131 (plot_HEV gated), 144 (plot), 167 (alert)"
+    fire_var: plot_HEV
+    plot:
+      title: "HEV"
+      shape: diamond
+      location: top
+      color: purple
+      size: normal
+      text: "HEV"
+      textcolor: purple
+      offset: -1
+    alert:
+      title: "Vol: HEV"
+      message: "All-Time High Volume Detected (confirmed)"
+    note: "Highest priority signal; suppresses all volume ladder bins (50/150/250/500/1000) when active"
+
+  - id: hv-ladder-50-to-1k::HotSpot
+    family: calendar
+    aka: ["HS", "isHotSpot", "Calendar Hot Spot"]
+    definition: "opExWindow OR qtrEndWindow OR russellWindow OR taxLossWindow OR janEffectWindow OR hfRedemptionWindow (calendar-based multi-event detector)"
+    lines: "100-118 (def), 137 (plot_HS gated), 162 (plot), 173 (alert)"
+    fire_var: plot_HS
+    plot:
+      title: "Hot Spot"
+      shape: cross
+      location: belowbar
+      color: red
+      size: tiny
+      offset: -1
+    alert:
+      title: "Hot Spot"
+      message: "Approaching Known High-Volume Date (confirmed)"
+    note: "Independent of volume ladder; always plotted when any calendar event window is active. Covers ~20 recurring high-volume date windows per year (OpEx, Q-ends, Russell, tax-loss, Jan effect, HF redemptions)."
+
+composites:
+  - id: hv-ladder-50-to-1k::VolumeHierarchy
+    tier: 2
+    aka: ["Priority Volume Ladder", "Highest Active Signal Only"]
+    definition: "Only ONE signal fires per bar: HEV if true (suppresses all others); else 1000 if true (suppresses 500/250/150/50); else 500 if true (suppresses 250/150/50); else 250 if true (suppresses 150/50); else 150 if true (suppresses 50); else 50 if true. Hot Spot is independent overlay, always shown."
+    depends_on:
+      - hv-ladder-50-to-1k::HV50
+      - hv-ladder-50-to-1k::HV150
+      - hv-ladder-50-to-1k::HV250
+      - hv-ladder-50-to-1k::HV500
+      - hv-ladder-50-to-1k::HV1000
+      - hv-ladder-50-to-1k::HEV
+      - hv-ladder-50-to-1k::HotSpot
+    lines: "131-137 (plot_* priority logic), 144-173 (plotshapes and alerts using gated plot_* variables)"
+    fire_var: "plot_HEV, plot_1000, plot_500, plot_250, plot_150, plot_50 (per bar, only one fires; plot_HS independent)"
+    plot:
+      multi_tier: true
+      description: "Tier 1 (top): HEV > 1000 > 500 > 250. Tier 2 (bottom): 150 > 50. HS always shows."
+    alert: "Each signal has corresponding alert; desync prevented by using same plot_* variable for both plot and alert."
+    note: "This is implicit composition through priority filtering, not an explicit AND/OR. The effect is a multi-tiered hierarchy where only the strongest signal per location is visible, reducing clutter. HotSpot operates independently."
+
+cross_indicator_dependencies: []
+
+uncertain_or_questions:
+  - "HotSpot composite: The calendar windows (opExWindow, qtrEndWindow, etc.) are intermediate booleans combined via OR into isHotSpot. They are helper expressions, not named roots. HotSpot (isHotSpot) is the root. The calendar windows themselves are internal_helpers (lines 100-115). Interpretation confirmed."
+  - "VolumeHierarchy composite: The gating logic on lines 131-137 uses negative conditionals (and not isHEV, and not is1000Bar, etc.) to enforce priority. This is a multi-level exclusion pattern, not a pure AND/OR composition. Documented as a tier-2 composite because it is a systematic rule about signal emissions, but it is implicit (achieved through plotshape gating variables) rather than explicit (no single 'fire_' variable). The architecture guarantees each bar emits at most one volume signal per location, reducing visual clutter."
+  - "Offset=-1 on all plotshape calls lands each marker on the [1] bar (the confirmed bar being measured), not the current forming bar. This is a non-repainting architectural choice, not a root or composite behavior."
+  - "Signal aggregation (activeVolSignals, signalStates array) on lines 178-187 are exported for downstream composite studies but are not themselves roots or composites in this indicator."

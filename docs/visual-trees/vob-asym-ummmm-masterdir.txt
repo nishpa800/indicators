@@ -1,0 +1,79 @@
+VISUAL TREE — vob-asym-ummmm-masterdir
+=======================================
+File: vob-asym/versions/VOB_Asym_T3x6_FROM_MASTERDIR_ummmm_2026-05-10.pine
+Pine v6  ·  1473 lines  ·  overlay=True
+Purpose: VOB Asym T3 ×6 + MutEx Lines + Claude ummmm (Master Directory variant with plotshape layout changes; same line count as v8)
+
+ROOTS
+-----
+  ◆ vob-asym-ummmm::zA-bull    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zA-bear    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zB-bull    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zB-bear    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zC-bull    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zC-bear    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zD-bull    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zD-bear    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zE-bull    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zE-bear    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zF-bull    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::zF-bear    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3a-buy    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3a-sell    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3b-buy    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3b-sell    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3c-buy    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3c-sell    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3d-buy    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3d-sell    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3e-buy    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3e-sell    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3f-buy    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::T3f-sell    [structural · offset=?]
+      
+  ◆ vob-asym-ummmm::Nagasaki    [structural · offset=?]
+      
+
+COMPOSITES (by tier)
+-----
+  Tier 1:
+    ● vob-asym-ummmm::any_t3    [offset=? · ?]
+    ● vob-asym-ummmm::any_zone    [offset=? · ?]
+
+  Tier 2:
+    ● vob-asym-ummmm::mutex_zone_lines    [offset=? · ?]
+    ● vob-asym-ummmm::bull_pool / bear_pool    [offset=? · ?]
+
+  Tier 3:
+    ● vob-asym-ummmm::any_t3_alert    [offset=? · ?]
+    ● vob-asym-ummmm::any_zone_alert    [offset=? · ?]
+    ● vob-asym-ummmm::T3_bloomberg_alert    [offset=? · ?]
+    ● vob-asym-ummmm::ZONE_FORMATION_bloomberg_alert    [offset=? · ?]
+
+  Tier 4:
+    ● vob-asym-ummmm::comprehensive_emission_table    [offset=? · ?]
+
+

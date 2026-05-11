@@ -1,0 +1,630 @@
+indicator:
+  id: anish-tb-foster
+  file: anish-tb-foster/versions/ANISH_TB_FOSTER_AIRBUD_LEPROSY_ENHANCED_v1.pine
+  pine_version: 5
+  line_count: 704
+  overlay: true
+  one_line_purpose: "PUP/PPD + Anish Stage 2/4 EMA stack + Gap Up/Down + Super PUP/PPD + TB/Foster transitions + PB&J engine + Air Bud/Leprosy reversals + 1st Pass logic + RVOL confluence"
+  non_repainting: true
+  inputs:
+    - "% Change (Barsize) — float, default 3.0, minval 0.1 (line 10)"
+    - "Lookback Days — int, default 10, minval 1 (line 11)"
+    - "Gap-Up Required — bool, default false (line 12)"
+    - "Gap-Down Required — bool, default false (line 13)"
+    - "Gap Value % — float, default 0.5, minval 0.1 (line 14)"
+    - "Min Anish Bars (X) — int, default 5, minval 1 (line 18)"
+    - "Window Bars (Y) — int, default 1, minval 1 (line 19)"
+    - "Neutral Bars Required — int, default 5, minval 1 (line 23)"
+    - "Air Bud Window — int, default 1, minval 1 (line 27)"
+    - "Leprosy Window — int, default 1, minval 1 (line 28)"
+    - "Base MA Type — string, default VWMA, options [VWMA, EMA, SMA, WMA, HMA] (line 32)"
+    - "Base MA Length — int, default 5, minval 1 (line 33)"
+    - "Price Source — float source, default close (line 34)"
+    - "PBJ MA Period — int, default 20, minval 1 (line 35)"
+    - "PBJ ATR Period — int, default 14, minval 1 (line 36)"
+    - "HH/LL Lookback — int, default 25, minval 1 (line 37)"
+    - "ATR Multiplier — float, default 3.0, step 0.1 (line 38)"
+    - "Volume MA Period — int, default 20, minval 1 (line 39)"
+    - "Volume Multiplier — float, default 0.1, step 0.1 (line 40)"
+    - "Apply ATR Supertrend — bool, default true (line 41)"
+    - "ST ATR Period — int, default 10 (line 42)"
+    - "ST Multiplier — float, default 2.0 (line 43)"
+    - "RVOL Bull Thresh — float, default 20.0, step 0.1 (line 47)"
+    - "RVOL Bear Thresh — float, default 20.0, step 0.1 (line 48)"
+
+internal_helpers:
+  - id: anish-tb-foster::ema_stack
+    description: "EMA(50)/EMA(150)/EMA(200) plus 21-bar lagged EMA200 (ema200_1m); used by Anish Stage 2/4 logic"
+    lines: "109-112"
+
+  - id: anish-tb-foster::w52_range
+    description: "52-week (252-bar) high/low (w52Hi/w52Lo) used by Anish Stage 2/4 distance gates"
+    lines: "113-114"
+
+  - id: anish-tb-foster::pp_volume_calcs
+    description: "Red/green volume series (redVol/greenVol) and lookback highs (hiRedVol/hiGreenVol) used by PUP/PPD price+volume tests"
+    lines: "123-126"
+
+  - id: anish-tb-foster::priceUp_priceDn
+    description: "Bar % change above/below barSize threshold; price leg of PUP/PPD"
+    lines: "128-129"
+
+  - id: anish-tb-foster::volBull_volBear
+    description: "Current volume exceeds prior N-day opposing-color volume max; volume leg of PUP/PPD"
+    lines: "130-131"
+
+  - id: anish-tb-foster::gapUp_gapDn_raw
+    description: "Raw open-vs-prior-close gap detection (unconditional)"
+    lines: "137-138"
+
+  - id: anish-tb-foster::rvol_calculation
+    description: "RVOL (Relative Volume) with bull/bear candle tests. Components: rv_s (abs range), rv_p (range ratio), rv_v (volume ratio), rv_d (difference), rv_m (difference MA)"
+    lines: "142-155"
+
+  - id: anish-tb-foster::pbj_engine
+    description: "Peanut Butter & Jelly level management system: tracks bull/bear price levels using MA crossovers, ATR supertrend, and volume. Manages level arrays (up to 30 per side), approach detection, and reaccel conditions."
+    lines: "158-320"
+
+  - id: anish-tb-foster::pbj_lander_logic
+    description: "Tracks when price crosses MA (buy_cross/sell_cross) to arm level landers; waits for approach confirmation"
+    lines: "200-201, 274-290"
+
+  - id: anish-tb-foster::pbj_reaccel_logic
+    description: "Detects bullish/bearish reaccel when MA flattens after movement and re-accelerates"
+    lines: "204-205"
+
+  - id: anish-tb-foster::tb_state_machine
+    description: "var-state counters tracking consecutive AnishBull bars (consecAnishBull) and window timing (tbWindowOpen/tbWindowCount); fires once when PPD/sBearPBJ/sBearPB appear after X-bar bull run"
+    lines: "333-371"
+
+  - id: anish-tb-foster::foster_state_machine
+    description: "var-state counters tracking consecutive AnishBear bars (consecAnishBear) and window timing (fosterWindowOpen/fosterWindowCount); fires once when PUP/sBullPBJ/sBullPB appear after X-bar bear run"
+    lines: "377-415"
+
+  - id: anish-tb-foster::airbud_state_machine
+    description: "var-state armed flag (airBudArmed/airBudCount); fires when PPD OR RVOL Bear occurs, then detects PUP OR RVOL Bull within window"
+    lines: "428-446"
+
+  - id: anish-tb-foster::leprosy_state_machine
+    description: "var-state armed flag (leprosyArmed/leprosyCount); fires when PUP OR RVOL Bull occurs, then detects PPD OR RVOL Bear within window"
+    lines: "452-470"
+
+  - id: anish-tb-foster::first_pass_logic
+    description: "Tracks neutral bars (not bullPass AND not bearPass), arms PUP/PPD after X neutral bars and Anish signal, fires on Anish entry"
+    lines: "476-506"
+
+roots:
+  - id: anish-tb-foster::PPBull
+    family: pocket-pivot
+    aka: ["PUP", "Pocket Pivot Bull", "sPPBull"]
+    definition: "priceUp (bar % up > barSize) AND volBull (volume > N-day max red volume)"
+    lines: "133 (def), 513 (plot), 670 (alert)"
+    fire_var: sPPBull
+    plot:
+      title: "PUP"
+      shape: square
+      location: belowbar
+      color: blue
+      size: tiny
+      text: "PUP"
+    alert:
+      title: "PUP"
+      message: "Pocket Pivot Up"
+    note: "Identical to anish-50-1st-combo::PPBull"
+
+  - id: anish-tb-foster::PPBear
+    family: pocket-pivot
+    aka: ["PPD", "Pocket Pivot Bear", "sPPBear"]
+    definition: "priceDn (bar % down > barSize) AND volBear (volume > N-day max green volume)"
+    lines: "134 (def), 514 (plot), 671 (alert)"
+    fire_var: sPPBear
+    plot:
+      title: "PPD"
+      shape: square
+      location: abovebar
+      color: red
+      size: tiny
+      text: "PPD"
+    alert:
+      title: "PPD"
+      message: "Pocket Pivot Down"
+    note: "Identical to anish-50-1st-combo::PPBear"
+
+  - id: anish-tb-foster::AnishBull
+    family: stage-trend
+    aka: ["Anish Bull", "bullPass", "Stage 2 Uptrend"]
+    definition: "close>EMA50 AND close>=EMA150 AND close>=EMA200 AND EMA50>EMA150 AND EMA50>EMA200 AND EMA150>=EMA200 AND EMA200>EMA200[21] AND close>52wLow*1.30 AND close>=52wHigh*0.75"
+    lines: "117 (def)"
+    fire_var: bullPass
+    plot: null
+    alert: null
+    note: "Not plotted as root in this indicator; used internally by TB/Foster state machines and Super PUP composite. Identical to anish-50-1st-combo::AnishBull. Only named internal signal, no plotshape."
+
+  - id: anish-tb-foster::AnishBear
+    family: stage-trend
+    aka: ["Anish Bear", "bearPass", "Stage 4 Downtrend"]
+    definition: "close<EMA50 AND close<=EMA150 AND close<=EMA200 AND EMA50<EMA150 AND EMA50<EMA200 AND EMA150<=EMA200 AND EMA200<EMA200[1] AND close<52wHigh*0.70 AND close<=52wLow*1.25"
+    lines: "120 (def)"
+    fire_var: bearPass
+    plot: null
+    alert: null
+    note: "Not plotted as root in this indicator; used internally by Foster/TB state machines and Super PPD composite. Identical to anish-50-1st-combo::AnishBear. Only named internal signal, no plotshape."
+
+  - id: anish-tb-foster::RVOLBull
+    family: relative-volume
+    aka: ["sRVOLBull", "RVOL Bull"]
+    definition: "bull_candle (close > open) AND rv_d > rv_m AND rv_p >= i_rv_b_th (range velocity diff exceeds MA, price velocity >= threshold)"
+    lines: "154 (def), 549 (plot), 690 (alert)"
+    fire_var: sRVOLBull
+    plot:
+      title: "RVOL Bull"
+      shape: arrowup
+      location: belowbar
+      color: cyan
+      size: small
+      text: "RV+"
+    alert:
+      title: "RVOL Bull"
+      message: "RVOL 1x Bullish"
+    note: "New to this indicator. RVOL is relative volume metric comparing range + volume velocity against recent MA. Used in Air Bud and Leprosy composites as alternative trigger to PUP/PPD."
+
+  - id: anish-tb-foster::RVOLBear
+    family: relative-volume
+    aka: ["sRVOLBear", "RVOL Bear"]
+    definition: "bear_candle (close < open) AND rv_d > rv_m AND rv_p >= i_rv_r_th (range velocity diff exceeds MA, price velocity >= threshold)"
+    lines: "155 (def), 550 (plot), 691 (alert)"
+    fire_var: sRVOLBear
+    plot:
+      title: "RVOL Bear"
+      shape: arrowdown
+      location: abovebar
+      color: orange
+      size: small
+      text: "RV-"
+    alert:
+      title: "RVOL Bear"
+      message: "RVOL 1x Bearish"
+    note: "New to this indicator. Used in Air Bud and Leprosy composites as alternative trigger to PPD/PUP."
+
+  - id: anish-tb-foster::BullPB
+    family: pnj-primitive
+    aka: ["sBullPB", "Bull PB"]
+    definition: "sig_pb_buy (buy_cross AND wait_buy) where buy_cross is price crossing above MA sig_line and wait_buy is true after level approach confirmed"
+    lines: "303, 317 (def), 543 (plot), 686 (alert)"
+    fire_var: sBullPB
+    plot:
+      title: "Bull PB"
+      shape: labelup
+      location: belowbar
+      color: aqua (alpha 50)
+      size: tiny
+      text: "PB"
+    alert:
+      title: "Bull PB"
+      message: "Bull PB"
+    note: "New to this indicator. Part of PB&J engine: fires when price crosses above sig_line AND a previously approached level is in play (no concurrent PBJ condition)."
+
+  - id: anish-tb-foster::BullPBJ
+    family: pnj-primitive
+    aka: ["sBullPBJ", "Bull PBJ"]
+    definition: "sig_pbj_buy (buy_cross AND wait_pbj_buy) where buy_cross is price crossing above MA sig_line and wait_pbj_buy is true after pbj_buy condition fired"
+    lines: "304, 318 (def), 544 (plot), 687 (alert)"
+    fire_var: sBullPBJ
+    plot:
+      title: "Bull PBJ"
+      shape: diamond
+      location: belowbar
+      color: yellow (alpha 50)
+      size: small
+      text: "PB+J"
+    alert:
+      title: "Bull PBJ"
+      message: "Bull PBJ"
+    note: "New to this indicator. Part of PB&J engine: fires when price crosses above sig_line AND a PBJ condition (low touch MA * (1 - thresh) + HH + high volume) was met."
+
+  - id: anish-tb-foster::BearPB
+    family: pnj-primitive
+    aka: ["sBearPB", "Bear PB"]
+    definition: "sig_pb_sell (sell_cross AND wait_sell) where sell_cross is price crossing below MA sig_line and wait_sell is true after level approach confirmed"
+    lines: "305, 319 (def), 545 (plot), 688 (alert)"
+    fire_var: sBearPB
+    plot:
+      title: "Bear PB"
+      shape: labeldown
+      location: abovebar
+      color: orange
+      size: tiny
+      text: "PB"
+    alert:
+      title: "Bear PB"
+      message: "Bear PB"
+    note: "New to this indicator. Part of PB&J engine: fires when price crosses below sig_line AND a previously approached level is in play (no concurrent PBJ condition)."
+
+  - id: anish-tb-foster::BearPBJ
+    family: pnj-primitive
+    aka: ["sBearPBJ", "Bear PBJ"]
+    definition: "sig_pbj_sell (sell_cross AND wait_pbj_sell) where sell_cross is price crossing below MA sig_line and wait_pbj_sell is true after pbj_sell condition fired"
+    lines: "306, 320 (def), 546 (plot), 689 (alert)"
+    fire_var: sBearPBJ
+    plot:
+      title: "Bear PBJ"
+      shape: labeldown
+      location: abovebar
+      color: red
+      size: small
+      text: "PBJ"
+    alert:
+      title: "Bear PBJ"
+      message: "Bear PBJ Signal"
+    note: "New to this indicator. Part of PB&J engine: fires when price crosses below sig_line AND a PBJ condition (high touch MA * (1 + thresh) + LL + high volume) was met."
+
+composites:
+  - id: anish-tb-foster::SuperPup
+    tier: 2
+    aka: ["Super Pup", "S-PUP", "superPup"]
+    definition: "sPPBull AND bullPass (same-bar PUP + AnishBull confluence)"
+    depends_on:
+      - anish-tb-foster::PPBull
+      - anish-tb-foster::AnishBull
+    lines: "326 (def), 517 (plot), 672 (alert)"
+    fire_var: superPup
+    plot:
+      title: "Super PUP"
+      shape: labelup
+      location: belowbar
+      color: lime
+      size: normal
+      text: "S-PUP"
+      textcolor: black
+    alert:
+      title: "Super PUP"
+      message: "Super PUP"
+    note: "Identical to anish-50-1st-combo::SuperPup"
+
+  - id: anish-tb-foster::SuperPPD
+    tier: 2
+    aka: ["Super PPD", "S-PPD", "superPPD"]
+    definition: "sPPBear AND bearPass (same-bar PPD + AnishBear confluence)"
+    depends_on:
+      - anish-tb-foster::PPBear
+      - anish-tb-foster::AnishBear
+    lines: "327 (def), 518 (plot), 673 (alert)"
+    fire_var: superPPD
+    plot:
+      title: "Super PPD"
+      shape: labeldown
+      location: abovebar
+      color: maroon
+      size: large
+      text: "S-PPD"
+      textcolor: white
+    alert:
+      title: "Super PPD"
+      message: "Super PPD"
+    note: "Identical to anish-50-1st-combo::SuperPPD"
+
+  - id: anish-tb-foster::TB
+    tier: 3
+    aka: ["TB Sell", "tbSignal", "Topping Break"]
+    definition: "After X consecutive AnishBull bars (when bullPass fires minAnishBars times), window opens when bullPass turns false. Window waits followUpBars for sPPBear OR sBearPBJ OR sBearPB to fire; fires once when any trigger met, then closes."
+    depends_on:
+      - anish-tb-foster::AnishBull
+      - anish-tb-foster::PPBear
+      - anish-tb-foster::BearPBJ
+      - anish-tb-foster::BearPB
+    lines: "333-371 (state machine), 522 (plot), 675 (alert)"
+    fire_var: tbSignal
+    plot:
+      title: "TB"
+      shape: labeldown
+      location: abovebar
+      color: purple
+      size: normal
+      text: "TB"
+      textcolor: white
+    alert:
+      title: "TB"
+      message: "TB Sell Signal"
+    parameters:
+      X: minAnishBars
+      Y: followUpBars
+    note: "Expanded from anish-50-1st-combo::TB. Now accepts three triggers: sPPBear (original), sBearPBJ (new), or sBearPB (new). State machine simplified: tracks tbWindowOpen/tbWindowCount instead of four counters."
+
+  - id: anish-tb-foster::TBPBJSignal
+    tier: 3
+    aka: ["TB PBJ", "tbPBJSignal"]
+    definition: "TB transition (after minAnishBars bull run) fires specifically when sBearPBJ signal triggers"
+    depends_on:
+      - anish-tb-foster::AnishBull
+      - anish-tb-foster::BearPBJ
+    lines: "349-364 (nested in TB state), 527 (plot), 678 (alert)"
+    fire_var: tbPBJSignal
+    plot:
+      title: "TB PBJ"
+      shape: labeldown
+      location: top
+      color: "rgb(128, 0, 128)"
+      size: large
+      text: "TB-PBJ"
+      textcolor: white
+    alert:
+      title: "TB PBJ"
+      message: "TB & PBJ"
+    note: "New to this indicator. Variant of TB composite: fires when sBearPBJ (PBJ engine sell) occurs within TB window. Subset of TB logic."
+
+  - id: anish-tb-foster::TBPBSignal
+    tier: 3
+    aka: ["TB PB", "tbPBSignal"]
+    definition: "TB transition (after minAnishBars bull run) fires specifically when sBearPB signal triggers"
+    depends_on:
+      - anish-tb-foster::AnishBull
+      - anish-tb-foster::BearPB
+    lines: "365-368 (nested in TB state), 528 (plot), 679 (alert)"
+    fire_var: tbPBSignal
+    plot:
+      title: "TB PB"
+      shape: labeldown
+      location: abovebar
+      color: "rgb(180, 0, 180)"
+      size: large
+      text: "TB-PB"
+      textcolor: white
+    alert:
+      title: "TB PB"
+      message: "TB & PB"
+    note: "New to this indicator. Variant of TB composite: fires when sBearPB (PB engine sell) occurs within TB window. Subset of TB logic."
+
+  - id: anish-tb-foster::Foster
+    tier: 3
+    aka: ["Foster Buy", "fosterSignal", "Foster Rescue"]
+    definition: "After X consecutive AnishBear bars (when bearPass fires minAnishBars times), window opens when bearPass turns false. Window waits followUpBars for sPPBull OR sBullPBJ OR sBullPB to fire; fires once when any trigger met, then closes."
+    depends_on:
+      - anish-tb-foster::AnishBear
+      - anish-tb-foster::PPBull
+      - anish-tb-foster::BullPBJ
+      - anish-tb-foster::BullPB
+    lines: "377-415 (state machine), 521 (plot), 674 (alert)"
+    fire_var: fosterSignal
+    plot:
+      title: "Foster"
+      shape: labelup
+      location: belowbar
+      color: aqua
+      size: normal
+      text: "FOSTER"
+      textcolor: black
+    alert:
+      title: "Foster"
+      message: "Foster"
+    parameters:
+      X: minAnishBars
+      Y: followUpBars
+    note: "Expanded from anish-50-1st-combo::Foster. Now accepts three triggers: sPPBull (original), sBullPBJ (new), or sBullPB (new). State machine simplified: tracks fosterWindowOpen/fosterWindowCount instead of four counters."
+
+  - id: anish-tb-foster::FosterPBJSignal
+    tier: 3
+    aka: ["Foster PBJ", "fosterPBJSignal"]
+    definition: "Foster transition (after minAnishBars bear run) fires specifically when sBullPBJ signal triggers"
+    depends_on:
+      - anish-tb-foster::AnishBear
+      - anish-tb-foster::BullPBJ
+    lines: "405-408 (nested in Foster state), 525 (plot), 676 (alert)"
+    fire_var: fosterPBJSignal
+    plot:
+      title: "Foster PBJ"
+      shape: labelup
+      location: belowbar
+      color: "rgb(0, 255, 200)"
+      size: large
+      text: "FOSTER-PBJ"
+      textcolor: black
+    alert:
+      title: "Foster PBJ"
+      message: "Foster & PBJ"
+    note: "New to this indicator. Variant of Foster composite: fires when sBullPBJ (PBJ engine buy) occurs within Foster window. Subset of Foster logic."
+
+  - id: anish-tb-foster::FosterPBSignal
+    tier: 3
+    aka: ["Foster PB", "fosterPBSignal"]
+    definition: "Foster transition (after minAnishBars bear run) fires specifically when sBullPB signal triggers"
+    depends_on:
+      - anish-tb-foster::AnishBear
+      - anish-tb-foster::BullPB
+    lines: "409-412 (nested in Foster state), 526 (plot), 677 (alert)"
+    fire_var: fosterPBSignal
+    plot:
+      title: "Foster PB"
+      shape: labelup
+      location: bottom
+      color: "rgb(100, 255, 200)"
+      size: large
+      text: "FOSTER-PB"
+      textcolor: black
+    alert:
+      title: "Foster PB"
+      message: "Foster & PB"
+    note: "New to this indicator. Variant of Foster composite: fires when sBullPB (PB engine buy) occurs within Foster window. Subset of Foster logic."
+
+  - id: anish-tb-foster::B2BPUP
+    tier: 2
+    aka: ["B2B PUP", "b2bPUP", "Back-to-Back Pocket Pivot Bull"]
+    definition: "sPPBull AND sPPBull[1] (PUP fires on consecutive bars)"
+    depends_on:
+      - anish-tb-foster::PPBull
+    lines: "421 (def), 531 (plot), 680 (alert)"
+    fire_var: b2bPUP
+    plot:
+      title: "B2B PUP"
+      shape: labelup
+      location: bottom
+      color: teal
+      size: large
+      text: "B2B PUP"
+      textcolor: white
+    alert:
+      title: "B2B PUP"
+      message: "B2B PUP"
+    note: "New to this indicator. Detects back-to-back PUP signals on consecutive bars, indicating sustained bullish momentum."
+
+  - id: anish-tb-foster::B2BPPD
+    tier: 2
+    aka: ["B2B PPD", "b2bPPD", "Back-to-Back Pocket Pivot Bear"]
+    definition: "sPPBear AND sPPBear[1] (PPD fires on consecutive bars)"
+    depends_on:
+      - anish-tb-foster::PPBear
+    lines: "422 (def), 532 (plot), 681 (alert)"
+    fire_var: b2bPPD
+    plot:
+      title: "B2B PPD"
+      shape: labeldown
+      location: top
+      color: orange
+      size: large
+      text: "B2B PPD"
+      textcolor: black
+    alert:
+      title: "B2B PPD"
+      message: "B2B PPD"
+    note: "New to this indicator. Detects back-to-back PPD signals on consecutive bars, indicating sustained bearish momentum."
+
+  - id: anish-tb-foster::AirBud
+    tier: 2
+    aka: ["Air Bud", "airBudSignal", "Bullish Reversal Catch"]
+    definition: "When airBudArmed (armed by sPPBear OR sRVOLBear), detect sPPBull OR sRVOLBull within airBudWindow bars. Fires once on the bar when the bullish trigger fires."
+    depends_on:
+      - anish-tb-foster::PPBear
+      - anish-tb-foster::RVOLBear
+      - anish-tb-foster::PPBull
+      - anish-tb-foster::RVOLBull
+    lines: "428-446 (state machine), 539 (plot), 684 (alert)"
+    fire_var: airBudSignal
+    plot:
+      title: "Air Bud"
+      shape: labelup
+      location: top
+      color: "rgb(255, 215, 0)"
+      size: normal
+      text: "AIR BUD"
+      textcolor: black
+    alert:
+      title: "Air Bud"
+      message: "Air Bud"
+    note: "NEW PRIMITIVE to this indicator family. Plain English: fires when a bearish signal (PPD or RVOL Bear) occurs, followed within a short window by a bullish signal (PUP or RVOL Bull), catching the reversal bottom. Represents a quick bullish reversal after brief bearish pressure."
+
+  - id: anish-tb-foster::Leprosy
+    tier: 2
+    aka: ["Leprosy", "leprosySignal", "Bearish Reversal Catch"]
+    definition: "When leprosyArmed (armed by sPPBull OR sRVOLBull), detect sPPBear OR sRVOLBear within leprosyWindow bars. Fires once on the bar when the bearish trigger fires."
+    depends_on:
+      - anish-tb-foster::PPBull
+      - anish-tb-foster::RVOLBull
+      - anish-tb-foster::PPBear
+      - anish-tb-foster::RVOLBear
+    lines: "452-470 (state machine), 540 (plot), 685 (alert)"
+    fire_var: leprosySignal
+    plot:
+      title: "Leprosy"
+      shape: labeldown
+      location: bottom
+      color: "rgb(139, 0, 139)"
+      size: normal
+      text: "LEPROSY"
+      textcolor: white
+    alert:
+      title: "Leprosy"
+      message: "Leprosy"
+    note: "NEW PRIMITIVE to this indicator family. Plain English: fires when a bullish signal (PUP or RVOL Bull) occurs, followed within a short window by a bearish signal (PPD or RVOL Bear), catching the reversal top. Represents a quick bearish reversal after brief bullish pressure."
+
+  - id: anish-tb-foster::FirstPUPPass
+    tier: 2
+    aka: ["1st PUP Pass", "firstPUPPass"]
+    definition: "After neutralBarsRequired consecutive bars without Anish signal (not bullPass AND not bearPass), a PUP fires (pupArmed set true by neutralPhaseComplete + sPPBull). Fires on the bar when Anish Bull first enters (bullPass AND not bullPass[1]) with pupArmed active."
+    depends_on:
+      - anish-tb-foster::AnishBull
+      - anish-tb-foster::PPBull
+    lines: "476-494 (state machine), 535 (plot), 682 (alert)"
+    fire_var: firstPUPPass
+    plot:
+      title: "1st PUP Pass"
+      shape: labeldown
+      location: top
+      color: "rgb(0, 255, 127)"
+      size: large
+      text: "1st PUP"
+      textcolor: black
+    alert:
+      title: "1st PUP Pass"
+      message: "First PUP Pass"
+    note: "NEW PRIMITIVE to this indicator family. Detects PUP appearing in neutral (no Anish) conditions, followed by Anish Bull entry. Signals entry into Stage 2 uptrend from neutral after pocket pivot confirmation."
+
+  - id: anish-tb-foster::FirstPPDPass
+    tier: 2
+    aka: ["1st PPD Pass", "firstPPDPass"]
+    definition: "After neutralBarsRequired consecutive bars without Anish signal (not bullPass AND not bearPass), a PPD fires (ppdArmed set true by neutralPhaseComplete + sPPBear). Fires on the bar when Anish Bear first enters (bearPass AND not bearPass[1]) with ppdArmed active."
+    depends_on:
+      - anish-tb-foster::AnishBear
+      - anish-tb-foster::PPBear
+    lines: "496-506 (state machine), 536 (plot), 683 (alert)"
+    fire_var: firstPPDPass
+    plot:
+      title: "1st PPD Pass"
+      shape: labelup
+      location: bottom
+      color: "rgb(255, 69, 0)"
+      size: large
+      text: "1st PPD"
+      textcolor: white
+    alert:
+      title: "1st PPD Pass"
+      message: "First PPD Pass"
+    note: "NEW PRIMITIVE to this indicator family. Detects PPD appearing in neutral (no Anish) conditions, followed by Anish Bear entry. Signals entry into Stage 4 downtrend from neutral after pocket pivot confirmation."
+
+cross_indicator_dependencies:
+  - "PPBull (sPPBull) — locally redefined; also a known cross-indicator primitive (e.g., b2b-pup::PUP)"
+  - "PPBear (sPPBear) — locally redefined; also a known cross-indicator primitive (e.g., hvd-pbj-ppd::PPD)"
+  - "RVOL primitives (sRVOLBull/sRVOLBear) — new metric based on range and volume velocity; internally calculated"
+
+comparison_to_anish_50_1st_combo:
+  shared_roots:
+    - "PPBull (sPPBull): identical definition and behavior"
+    - "PPBear (sPPBear): identical definition and behavior"
+    - "AnishBull (bullPass): identical definition, but not plotted as standalone in this variant"
+    - "AnishBear (bearPass): identical definition, but not plotted as standalone in this variant"
+
+  shared_composites:
+    - "SuperPup: identical definition (sPPBull AND bullPass)"
+    - "SuperPPD: identical definition (sPPBear AND bearPass)"
+    - "TB (Topping Break): expanded to accept three triggers (PPBear, BearPBJ, BearPB) instead of one; state machine simplified"
+    - "Foster (Foster Rescue): expanded to accept three triggers (PPBull, BullPBJ, BullPB) instead of one; state machine simplified"
+
+  new_roots:
+    - "RVOLBull: relative volume indicator combining range and volume velocity"
+    - "RVOLBear: relative volume indicator combining range and volume velocity"
+    - "BullPB: PB&J engine primitive — price cross above MA with level approach"
+    - "BullPBJ: PB&J engine primitive — price cross above MA with PBJ condition (jelly touch)"
+    - "BearPB: PB&J engine primitive — price cross below MA with level approach"
+    - "BearPBJ: PB&J engine primitive — price cross below MA with PBJ condition (jelly touch)"
+
+  new_composites:
+    - "TBPBJSignal: TB variant firing on sBearPBJ trigger within window"
+    - "TBPBSignal: TB variant firing on sBearPB trigger within window"
+    - "FosterPBJSignal: Foster variant firing on sBullPBJ trigger within window"
+    - "FosterPBSignal: Foster variant firing on sBullPB trigger within window"
+    - "B2BPUP: back-to-back PUP (consecutive bars)"
+    - "B2BPPD: back-to-back PPD (consecutive bars)"
+    - "AirBud: bullish reversal catch (PPD/RVOL Bear armed, then PUP/RVOL Bull fires)"
+    - "Leprosy: bearish reversal catch (PUP/RVOL Bull armed, then PPD/RVOL Bear fires)"
+    - "FirstPUPPass: PUP in neutral, then Anish Bull entry"
+    - "FirstPPDPass: PPD in neutral, then Anish Bear entry"
+
+  size_delta:
+    original_lines: 181
+    enhanced_lines: 704
+    notes: "3.9x expansion. Additions: PB&J engine with level management (160+ lines), RVOL calculations, Air Bud and Leprosy state machines, 1st Pass logic, TradingView alert dialog support, expanded plot toggles and alert toggles."
+
+uncertainty_or_questions:
+  - "Air Bud and Leprosy window defaults (airBudWindow/leprosyWindow) are both 1 bar by default, making them very tight reversals. This may be intentional for catching intrabar reversals, but could be a design choice to tighten or loosen via input."
+  - "RVOL thresholds (i_rv_b_th, i_rv_r_th) use rv_p (price velocity ratio) >= threshold, not > threshold. Confirm if equality (==) is intentional for edge cases."
+  - "B2B signals (b2bPUP, b2bPPD) are tier-2 composites but only depend on a single root each (2-bar same signal). Could be classified as roots if definition is 'two consecutive X bars', but listed as composites per schema guidance."
+  - "First Pass logic resets neutralPhaseComplete only on specific conditions (bearPass entered for pupArmed, bullPass entered for ppdArmed, or firstPUPPass/firstPPDPass fired). Confirm this persistent-until-reset behavior is intended."
+  - "TB and Foster state machines now fire on three different root/composite signals (PPD/PBJ/PB for TB; PUP/PBJ/PB for Foster). These are extracted as three separate composites (TB, TBPBJSignal, TBPBSignal) rather than one variant composite. Confirm this is the preferred schema structure."

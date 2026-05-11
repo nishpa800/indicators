@@ -1,0 +1,306 @@
+indicator:
+  id: vob-asym-ummmm-masterdir
+  file: vob-asym/versions/VOB_Asym_T3x6_FROM_MASTERDIR_ummmm_2026-05-10.pine
+  branch: unknown
+  pine_version: 6
+  line_count: 1473
+  overlay: true
+  one_line_purpose: "VOB Asym T3 ×6 + MutEx Lines + Claude ummmm (Master Directory variant with plotshape layout changes; same line count as v8)"
+  notes: >-
+    This variant (1473 lines) has IDENTICAL line count to VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02 but differs 
+    in plotshape() locations and shapes for T3 buy/sell signals. Key differences:
+    (1) v8 uses mixed locations (top/abovebar/belowbar/bottom) with mixed shapes (circle/arrowdown/arrowup/cross/xcross).
+    (2) ummmm uses UNIFORM locations and shapes: all T3 buy signals use circle+belowbar, all T3 sell signals use circle+abovebar.
+    (3) Simplification suggests the ummmm variant is either (a) a UI/UX improvement for visual consistency, or (b) a development branch that fell back from advanced plotshape layout to simpler uniform shapes.
+    (4) Title includes "Claude ummmm" suffix — likely a development label meaning "to be clarified" or "placeholder naming".
+    Status: Same engine as v8 but with flattened visual hierarchy; unclear if this is a regression or deliberate simplification.
+
+internal_helpers:
+  - name: level
+    kind: udt
+    lines: "74-79"
+    fields: [indx, upper, lower, mid, vol]
+    purpose: "Per-zone record (origin bar time, upper/lower/mid prices, accumulated volume). na fields == invalidated."
+  - name: hist_entry
+    kind: udt
+    lines: "82-86"
+    fields: [t, vol, pct, date_s]
+    purpose: "Historical event record for audit/T3 tables"
+  - name: f_vob (core engine)
+    kind: function
+    lines: "562-679"
+    signature: "f_vob(int len1, array<level> up_lvl, array<level> lo_lvl, float atr_prox, float atr_adj, float sup_mult) -> [bool t3_buy, bool t3_sell, float bp, float sp]"
+    purpose: "Core zone-creation and T3 signal engine (preserved identically from v8)"
+  - name: f_process_zones (MutEx engine)
+    kind: function
+    lines: "1039-1086"
+    purpose: "Mutually-exclusive priority-line drawing (preserved identically from v8)"
+  - name: f_emit_label
+    kind: function
+    lines: "1109-1115"
+    purpose: "Emits label.new at zone mid with pipe-delimited metadata"
+
+roots_count: 25
+composites_count: 9
+
+roots:
+  - id: vob-asym-ummmm::zA-bull
+    family: structural
+    tier_letter: A
+    direction: bull
+    sensitivity_default: 2500
+    description: "Highest-sensitivity bullish zone-creation marker"
+  - id: vob-asym-ummmm::zA-bear
+    family: structural
+    tier_letter: A
+    direction: bear
+    sensitivity_default: 2500
+    description: "Highest-sensitivity bearish zone-creation marker"
+  - id: vob-asym-ummmm::zB-bull
+    family: structural
+    tier_letter: B
+    direction: bull
+    sensitivity_default: 2250
+    description: "Tier-B bull zone-creation marker"
+  - id: vob-asym-ummmm::zB-bear
+    family: structural
+    tier_letter: B
+    direction: bear
+    sensitivity_default: 2250
+    description: "Tier-B bear zone-creation marker"
+  - id: vob-asym-ummmm::zC-bull
+    family: structural
+    tier_letter: C
+    direction: bull
+    sensitivity_default: 2000
+    description: "Tier-C bull zone-creation marker"
+  - id: vob-asym-ummmm::zC-bear
+    family: structural
+    tier_letter: C
+    direction: bear
+    sensitivity_default: 2000
+    description: "Tier-C bear zone-creation marker"
+  - id: vob-asym-ummmm::zD-bull
+    family: structural
+    tier_letter: D
+    direction: bull
+    sensitivity_default: 1500
+    description: "Tier-D bull zone-creation marker"
+  - id: vob-asym-ummmm::zD-bear
+    family: structural
+    tier_letter: D
+    direction: bear
+    sensitivity_default: 1500
+    description: "Tier-D bear zone-creation marker"
+  - id: vob-asym-ummmm::zE-bull
+    family: structural
+    tier_letter: E
+    direction: bull
+    sensitivity_default: 1250
+    description: "Tier-E bull zone-creation marker"
+  - id: vob-asym-ummmm::zE-bear
+    family: structural
+    tier_letter: E
+    direction: bear
+    sensitivity_default: 1250
+    description: "Tier-E bear zone-creation marker"
+  - id: vob-asym-ummmm::zF-bull
+    family: structural
+    tier_letter: F
+    direction: bull
+    sensitivity_default: 1000
+    description: "Lowest-sensitivity bull zone-creation marker"
+  - id: vob-asym-ummmm::zF-bear
+    family: structural
+    tier_letter: F
+    direction: bear
+    sensitivity_default: 1000
+    description: "Lowest-sensitivity bear zone-creation marker"
+  - id: vob-asym-ummmm::T3a-buy
+    family: structural
+    tier_letter: A
+    direction: bull
+    description: "T3 SUPER BUY tier A (single-zone dominance test)"
+    plotshape: { shape: circle, location: belowbar }
+  - id: vob-asym-ummmm::T3a-sell
+    family: structural
+    tier_letter: A
+    direction: bear
+    description: "T3 SUPER SELL tier A"
+    plotshape: { shape: circle, location: abovebar }
+  - id: vob-asym-ummmm::T3b-buy
+    family: structural
+    tier_letter: B
+    direction: bull
+    description: "T3 SUPER BUY tier B"
+    plotshape: { shape: circle, location: belowbar }
+  - id: vob-asym-ummmm::T3b-sell
+    family: structural
+    tier_letter: B
+    direction: bear
+    description: "T3 SUPER SELL tier B"
+    plotshape: { shape: circle, location: abovebar }
+  - id: vob-asym-ummmm::T3c-buy
+    family: structural
+    tier_letter: C
+    direction: bull
+    description: "T3 SUPER BUY tier C"
+    plotshape: { shape: circle, location: belowbar }
+  - id: vob-asym-ummmm::T3c-sell
+    family: structural
+    tier_letter: C
+    direction: bear
+    description: "T3 SUPER SELL tier C"
+    plotshape: { shape: circle, location: abovebar }
+  - id: vob-asym-ummmm::T3d-buy
+    family: structural
+    tier_letter: D
+    direction: bull
+    description: "T3 SUPER BUY tier D"
+    plotshape: { shape: circle, location: belowbar }
+  - id: vob-asym-ummmm::T3d-sell
+    family: structural
+    tier_letter: D
+    direction: bear
+    description: "T3 SUPER SELL tier D"
+    plotshape: { shape: circle, location: abovebar }
+  - id: vob-asym-ummmm::T3e-buy
+    family: structural
+    tier_letter: E
+    direction: bull
+    description: "T3 SUPER BUY tier E"
+    plotshape: { shape: circle, location: belowbar }
+  - id: vob-asym-ummmm::T3e-sell
+    family: structural
+    tier_letter: E
+    direction: bear
+    description: "T3 SUPER SELL tier E"
+    plotshape: { shape: circle, location: abovebar }
+  - id: vob-asym-ummmm::T3f-buy
+    family: structural
+    tier_letter: F
+    direction: bull
+    description: "T3 SUPER BUY tier F"
+    plotshape: { shape: circle, location: belowbar }
+  - id: vob-asym-ummmm::T3f-sell
+    family: structural
+    tier_letter: F
+    direction: bear
+    description: "T3 SUPER SELL tier F"
+    plotshape: { shape: circle, location: abovebar }
+  - id: vob-asym-ummmm::Nagasaki
+    family: structural
+    direction: neutral
+    description: "All-time-high-volume event (fires bar after new ATH)"
+
+composites:
+  - id: vob-asym-ummmm::any_t3
+    tier: 1
+    kind: derived_flag
+    description: "OR of all 12 T3 signals + Nagasaki"
+  - id: vob-asym-ummmm::any_zone
+    tier: 1
+    kind: derived_flag
+    description: "OR of all 12 zone-creation flags"
+  - id: vob-asym-ummmm::mutex_zone_lines
+    tier: 2
+    kind: zone_drawing
+    description: "Mutually-exclusive overlap engine (preserved from v8)"
+  - id: vob-asym-ummmm::bull_pool / bear_pool
+    tier: 2
+    kind: derived_scalar_set
+    description: "Per-tier sums of volume across active zones"
+  - id: vob-asym-ummmm::any_t3_alert
+    tier: 3
+    kind: alertcondition
+    description: "Single alertcondition consolidating all T3+Nagasaki"
+  - id: vob-asym-ummmm::any_zone_alert
+    tier: 3
+    kind: alertcondition
+    description: "Single alertcondition for any zone-formation"
+  - id: vob-asym-ummmm::T3_bloomberg_alert
+    tier: 3
+    kind: alert_payload
+    description: "Per-T3-fire alert with Bloomberg-format payload"
+  - id: vob-asym-ummmm::ZONE_FORMATION_bloomberg_alert
+    tier: 3
+    kind: alert_payload
+    description: "Zone formation alert with all metrics"
+  - id: vob-asym-ummmm::comprehensive_emission_table
+    tier: 4
+    kind: dashboard
+    description: "Top-left table showing all tiers, volumes, metrics"
+
+plotshape_deltas:
+  - signal: T3a-buy
+    v8: { shape: circle, location: top }
+    ummmm: { shape: circle, location: belowbar }
+    delta: "Location changed from top to belowbar"
+  - signal: T3b-buy
+    v8: { shape: circle, location: abovebar }
+    ummmm: { shape: circle, location: belowbar }
+    delta: "Location changed from abovebar to belowbar (unified with tier B)"
+  - signal: T3c-buy
+    v8: { shape: circle, location: belowbar }
+    ummmm: { shape: circle, location: belowbar }
+    delta: "No change (already belowbar in v8)"
+  - signal: T3d-buy
+    v8: { shape: circle, location: bottom }
+    ummmm: { shape: circle, location: belowbar }
+    delta: "Location changed from bottom to belowbar"
+  - signal: T3e-buy
+    v8: { shape: arrowdown, location: abovebar, size: huge }
+    ummmm: { shape: circle, location: belowbar, size: large }
+    delta: "Shape changed from arrowdown to circle; location changed from abovebar to belowbar; size reduced from huge to large"
+  - signal: T3f-buy
+    v8: { shape: arrowup, location: belowbar, size: huge }
+    ummmm: { shape: circle, location: belowbar, size: large }
+    delta: "Shape changed from arrowup to circle; size reduced from huge to large; location unchanged"
+  - signal: T3a-sell
+    v8: { shape: xcross, location: top }
+    ummmm: { shape: circle, location: abovebar }
+    delta: "Shape changed from xcross to circle; location changed from top to abovebar"
+  - signal: T3b-sell
+    v8: { shape: xcross, location: abovebar }
+    ummmm: { shape: circle, location: abovebar }
+    delta: "Shape changed from xcross to circle; location unchanged"
+  - signal: T3c-sell
+    v8: { shape: xcross, location: belowbar }
+    ummmm: { shape: circle, location: abovebar }
+    delta: "Shape changed from xcross to circle; location changed from belowbar to abovebar"
+  - signal: T3d-sell
+    v8: { shape: xcross, location: bottom }
+    ummmm: { shape: circle, location: abovebar }
+    delta: "Shape changed from xcross to circle; location changed from bottom to abovebar"
+  - signal: T3e-sell
+    v8: { shape: cross, location: abovebar, size: large }
+    ummmm: { shape: circle, location: abovebar, size: large }
+    delta: "Shape changed from cross to circle; location and size unchanged"
+  - signal: T3f-sell
+    v8: { shape: cross, location: belowbar, size: large }
+    ummmm: { shape: circle, location: abovebar, size: large }
+    delta: "Shape changed from cross to circle; location changed from belowbar to abovebar; size unchanged"
+
+summary_of_plotshape_changes:
+  shapes_affected: "11 of 12 T3 signals changed shape or location or both"
+  unified_shape: "v8 used mixed shapes (circle/arrowdown/arrowup/cross/xcross); ummmm flattened all to circle"
+  unified_location_bull: "All T3 buy signals now use location.belowbar (formerly mixed top/abovebar/bottom)"
+  unified_location_bear: "All T3 sell signals now use location.abovebar (formerly mixed top/abovebar/belowbar/bottom)"
+  size_changes: "T3e and T3f buy signals reduced from size.huge to size.large; all others unchanged"
+  interpretation: "Ummmm variant simplifies visual hierarchy by unifying all T3 buy signals to circle+belowbar and all sell signals to circle+abovebar. This is a UI improvement (cleaner chart) but may reduce signal-specific visual differentiation. The 'ummmm' title suggests this was a work-in-progress variant or a placeholder awaiting final design review."
+
+uncertain_or_questions:
+  - q: "Is the 'ummmm' suffix in the title ('Claude ummmm') a development label, version placeholder, or user-facing indicator name? If placeholder, confirm final naming convention."
+    severity: medium
+  - q: "The flattening of T3 plotshapes from mixed (tier-specific) to uniform (bull/bear) suggests either (1) intentional UI improvement, or (2) a revert from experimental tier-specific visualization. Which design direction is correct?"
+    severity: medium
+  - q: "All T3 buy signals now use circle instead of tier-specific shapes (e.g., arrowdown for T3e, arrowup for T3f in v8). This removes signal-specific visual cues that traders may rely on. Is this an improvement or a loss of information density?"
+    severity: low
+
+cross_variant_notes: >-
+  The vob-asym ummmm variant is identical to v8 in all internal logic (line count, roots, composites, engines, 
+  alerting). The ONLY difference is the visual presentation layer: T3 buy/sell plotshape definitions. 
+  The ummmm variant unifies all shapes to circle and aligns all buy signals to belowbar + all sell signals to abovebar, 
+  whereas v8 used tier-specific shapes and locations for visual differentiation. This suggests ummmm is either 
+  (1) a UI/UX refinement pass, or (2) a development checkpoint that fell back to simpler shapes. 
+  No signal logic changes — this is purely cosmetic. The 'ummmm' title label suggests work-in-progress status.

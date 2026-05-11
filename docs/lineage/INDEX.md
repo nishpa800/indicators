@@ -13,6 +13,20 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 | [`anish-50-1st-combo::SuperPPD`](anish-50-1st-combo__SuperPPD.md) | 2 | anish-50-1st-combo | ? |  |
 | [`anish-50-1st-combo::TB`](anish-50-1st-combo__TB.md) | 3 | anish-50-1st-combo | ? |  |
 | [`anish-50-1st-combo::Foster`](anish-50-1st-combo__Foster.md) | 3 | anish-50-1st-combo | ? |  |
+| [`anish-tb-foster::SuperPup`](anish-tb-foster__SuperPup.md) | 2 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::SuperPPD`](anish-tb-foster__SuperPPD.md) | 2 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::TB`](anish-tb-foster__TB.md) | 3 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::TBPBJSignal`](anish-tb-foster__TBPBJSignal.md) | 3 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::TBPBSignal`](anish-tb-foster__TBPBSignal.md) | 3 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::Foster`](anish-tb-foster__Foster.md) | 3 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::FosterPBJSignal`](anish-tb-foster__FosterPBJSignal.md) | 3 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::FosterPBSignal`](anish-tb-foster__FosterPBSignal.md) | 3 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::B2BPUP`](anish-tb-foster__B2BPUP.md) | 2 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::B2BPPD`](anish-tb-foster__B2BPPD.md) | 2 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::AirBud`](anish-tb-foster__AirBud.md) | 2 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::Leprosy`](anish-tb-foster__Leprosy.md) | 2 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::FirstPUPPass`](anish-tb-foster__FirstPUPPass.md) | 2 | anish-tb-foster | ? |  |
+| [`anish-tb-foster::FirstPPDPass`](anish-tb-foster__FirstPPDPass.md) | 2 | anish-tb-foster | ? |  |
 | [`b2b-pup::B2B_PUP`](b2b-pup__B2B_PUP.md) | 1 | b2b-pup | 0 | Back-to-back PUP: PUP fires on bar[0] AND PUP fired on bar[1]. |
 | [`b2b-pup::B2B_PPD`](b2b-pup__B2B_PPD.md) | 1 | b2b-pup | 0 | Back-to-back PPD. |
 | [`b2b-pup::B2B_NAPALM_BULL`](b2b-pup__B2B_NAPALM_BULL.md) | 2 | b2b-pup | 0 | Back-to-back consolidated Napalm bull (Napalm OR Charge fires on this bar AND on |
@@ -34,6 +48,16 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 | [`heavy-pentagon::NEUTRAL_HEAVY_X2_BULL`](heavy-pentagon__NEUTRAL_HEAVY_X2_BULL.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires bullish: at least two of the three Reg@Time tiers (Pentag |
 | [`heavy-pentagon::NEUTRAL_HEAVY_X2_BEAR`](heavy-pentagon__NEUTRAL_HEAVY_X2_BEAR.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires bearish: two-of-three P2 tier co-occurrence, gated bearis |
 | [`heavy-pentagon::NEUTRAL_HEAVY_X2_NEUTRAL`](heavy-pentagon__NEUTRAL_HEAVY_X2_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Neutral Heavy x2 fires neutral: two-of-three P2 tier co-occurrence, no displacem |
+| [`heavy-weapons-8fvg-matrix::COMBO_SET_1_BULL`](heavy-weapons-8fvg-matrix__COMBO_SET_1_BULL.md) | 2 | heavy-weapons-8fvg-matrix | -1 | Bullish GZI/HV FVG combo: bar[1] has valid body (>= 0.85 candle range) AND (bull |
+| [`heavy-weapons-8fvg-matrix::COMBO_SET_1_BEAR`](heavy-weapons-8fvg-matrix__COMBO_SET_1_BEAR.md) | 2 | heavy-weapons-8fvg-matrix | -1 | Bearish GZI/HV FVG combo: bar[1] has valid body AND (bearGZI OR bearHV) AND (Kra |
+| [`heavy-weapons-8fvg-matrix::COMBO_SET_2_BULL`](heavy-weapons-8fvg-matrix__COMBO_SET_2_BULL.md) | 2 | heavy-weapons-8fvg-matrix | -1 | Bullish GZI/HV FVG combo with time-regularized volume gate: bar[1] valid body AN |
+| [`heavy-weapons-8fvg-matrix::COMBO_SET_2_BEAR`](heavy-weapons-8fvg-matrix__COMBO_SET_2_BEAR.md) | 2 | heavy-weapons-8fvg-matrix | -1 | Bearish GZI/HV FVG combo with time-regularized volume gate: bar[1] valid body AN |
+| [`heavy-weapons-8fvg-matrix::COMBO_SET_3_BULL`](heavy-weapons-8fvg-matrix__COMBO_SET_3_BULL.md) | 2 | heavy-weapons-8fvg-matrix | 0 | Bullish Matrix combo with Standard RVOL: current bar valid body (>= 0.85 candle  |
+| [`heavy-weapons-8fvg-matrix::COMBO_SET_3_BEAR`](heavy-weapons-8fvg-matrix__COMBO_SET_3_BEAR.md) | 2 | heavy-weapons-8fvg-matrix | 0 | Bearish Matrix combo with Standard RVOL: current bar valid body AND (neo_bear OR |
+| [`heavy-weapons-8fvg-matrix::COMBO_SET_4_BULL`](heavy-weapons-8fvg-matrix__COMBO_SET_4_BULL.md) | 2 | heavy-weapons-8fvg-matrix | 0 | Bullish Matrix combo with time-regularized volume gate: current bar valid body A |
+| [`heavy-weapons-8fvg-matrix::COMBO_SET_4_BEAR`](heavy-weapons-8fvg-matrix__COMBO_SET_4_BEAR.md) | 2 | heavy-weapons-8fvg-matrix | 0 | Bearish Matrix combo with time-regularized volume gate: current bar valid body A |
+| [`hv-ladder-100-to-1k::VolumeHierarchy`](hv-ladder-100-to-1k__VolumeHierarchy.md) | 2 | hv-ladder-100-to-1k | ? |  |
+| [`hv-ladder-50-to-1k::VolumeHierarchy`](hv-ladder-50-to-1k__VolumeHierarchy.md) | 2 | hv-ladder-50-to-1k | ? |  |
 | [`hvd-pbj-ppd::SUPER_BULL`](hvd-pbj-ppd__SUPER_BULL.md) | 0 | hvd-pbj-ppd | 0 | Tier-0 priority bull: PBJ + DISP + (FAUNA bull or LSLong1) + HW-volume slot + (( |
 | [`hvd-pbj-ppd::SDUPER_BULL`](hvd-pbj-ppd__SDUPER_BULL.md) | 0 | hvd-pbj-ppd | 0 | 'Super Duper' priority: Floor/2F + PBJ + HW-volume slot + Combo-set + PUP + DISP |
 | [`hvd-pbj-ppd::SDUPER_BEAR`](hvd-pbj-ppd__SDUPER_BEAR.md) | 0 | hvd-pbj-ppd | 0 | Bear mirror of SDUPER_BULL. |

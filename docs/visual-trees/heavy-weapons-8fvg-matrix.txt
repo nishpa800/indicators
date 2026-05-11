@@ -1,0 +1,135 @@
+VISUAL TREE — heavy-weapons-8fvg-matrix
+========================================
+File: heavy-weapons/versions/HEAVY_WEAPONS_8FVG_MATRIX_COMBOS_NO_PENTAGON_v1.pine
+Pine v5  ·  489 lines  ·  overlay=True
+Purpose: Lifts RVOL engine (10 roots) from heavy-pentagon; adds GZI/HV FVG detection, Fauna/Matrix pattern recognition, and Hybrid Momentum; combines into 4 Matrix Combos + 2 FVG Combos (4 directional variants each)
+
+ROOTS
+-----
+  ◆ heavy-weapons-8fvg-matrix::SAAB    [rvol · offset=0]
+      Bullish bar with normalized price spike in the SAAB/Kratos band (0.56…
+  ◆ heavy-weapons-8fvg-matrix::KRATOS    [rvol · offset=0]
+      Bearish bar with normalized price spike in the SAAB/Kratos band. LIFT…
+  ◆ heavy-weapons-8fvg-matrix::RVOL_1X_BULL    [rvol · offset=0]
+      Bullish bar with normalized price spike in the RVOL-1x band (1× to Gr…
+  ◆ heavy-weapons-8fvg-matrix::RVOL_1X_BEAR    [rvol · offset=0]
+      Bearish bar with normalized price spike in the RVOL-1x band. LIFTED V…
+  ◆ heavy-weapons-8fvg-matrix::GRAND_SLAM    [rvol · offset=0]
+      Bullish bar with normalized price spike at or above the Grand Slam th…
+  ◆ heavy-weapons-8fvg-matrix::MOAB    [rvol · offset=0]
+      Bearish bar with normalized price spike at or above the MOAB threshol…
+  ◆ heavy-weapons-8fvg-matrix::PENTAGON    [rvol · offset=0]
+      Time-regularized relative volume ratio in the Pentagon band (1× to 2×…
+  ◆ heavy-weapons-8fvg-matrix::WTC    [rvol · offset=0]
+      Time-regularized relative volume ratio in the WTC band (2× to Hiroshi…
+  ◆ heavy-weapons-8fvg-matrix::HIROSHIMA    [rvol · offset=0]
+      Time-regularized relative volume ratio exceeds the Hiroshima threshol…
+  ◆ heavy-weapons-8fvg-matrix::NAGASAKI    [rvol · offset=0]
+      All-time high volume bar — current bar volume exceeds the running max…
+  ◆ heavy-weapons-8fvg-matrix::BULL_GZI    [fvg · offset=0]
+      Bullish FVG (low > high[2], close[1] > high[2], vertical gap > thresh…
+  ◆ heavy-weapons-8fvg-matrix::BEAR_GZI    [fvg · offset=0]
+      Bearish FVG (high < low[2], close[1] < low[2], vertical gap > thresho…
+  ◆ heavy-weapons-8fvg-matrix::BULL_HV    [fvg · offset=0]
+      Bullish FVG where prior bar volume is an all-time high (5000-bar / 25…
+  ◆ heavy-weapons-8fvg-matrix::BEAR_HV    [fvg · offset=0]
+      Bearish FVG where prior bar volume is an all-time high (5000-bar / 25…
+  ◆ heavy-weapons-8fvg-matrix::FAUNA_BULL    [fauna · offset=0]
+      Bullish fauna pattern: (MB_bull OR RE_bull OR TA_bull) AND NOT exclud…
+  ◆ heavy-weapons-8fvg-matrix::FAUNA_BEAR    [fauna · offset=0]
+      Bearish fauna pattern (mirror of FAUNA_BULL). NEW to this indicator.
+  ◆ heavy-weapons-8fvg-matrix::NEO_BULL    [matrix · offset=0]
+      Matrix number (volume == ta.highest(volume, 67)) AND fauna bull (is_f…
+  ◆ heavy-weapons-8fvg-matrix::NEO_BEAR    [matrix · offset=0]
+      Matrix number AND fauna bear (is_fauna_bear == true). Conf-gated. NEW…
+  ◆ heavy-weapons-8fvg-matrix::TRINITY_BULL    [matrix · offset=0]
+      Matrix number AND NOT fauna bull AND bullish body (close > open). A n…
+  ◆ heavy-weapons-8fvg-matrix::TRINITY_BEAR    [matrix · offset=0]
+      Matrix number AND NOT fauna bear AND bearish body (close < open). A n…
+  ◆ heavy-weapons-8fvg-matrix::LONG_1    [hybrid-momentum · offset=0]
+      Hybrid Momentum 1 for bullish confluence: body ratio >= hyb_bodyRat1 …
+  ◆ heavy-weapons-8fvg-matrix::LONG_2    [hybrid-momentum · offset=0]
+      Hybrid Momentum 2 for bullish confluence: body ratio >= hyb_bodyRat2 …
+  ◆ heavy-weapons-8fvg-matrix::SHORT_1    [hybrid-momentum · offset=0]
+      Hybrid Momentum 1 for bearish confluence: body ratio >= hyb_bodyRat1 …
+  ◆ heavy-weapons-8fvg-matrix::SHORT_2    [hybrid-momentum · offset=0]
+      Hybrid Momentum 2 for bearish confluence: body ratio >= hyb_bodyRat2 …
+
+COMPOSITES (by tier)
+-----
+  Tier 2:
+    ● heavy-weapons-8fvg-matrix::COMBO_SET_1_BULL    [offset=-1 · AND]
+        Bullish GZI/HV FVG combo: bar[1] has valid body (>= 0.85 candle range…
+        ├── heavy-weapons-8fvg-matrix::BULL_GZI
+        ├── heavy-weapons-8fvg-matrix::BULL_HV
+        ├── heavy-weapons-8fvg-matrix::SAAB
+        ├── heavy-weapons-8fvg-matrix::RVOL_1X_BULL
+        └── heavy-weapons-8fvg-matrix::GRAND_SLAM
+    ● heavy-weapons-8fvg-matrix::COMBO_SET_1_BEAR    [offset=-1 · AND]
+        Bearish GZI/HV FVG combo: bar[1] has valid body AND (bearGZI OR bearH…
+        ├── heavy-weapons-8fvg-matrix::BEAR_GZI
+        ├── heavy-weapons-8fvg-matrix::BEAR_HV
+        ├── heavy-weapons-8fvg-matrix::KRATOS
+        ├── heavy-weapons-8fvg-matrix::RVOL_1X_BEAR
+        └── heavy-weapons-8fvg-matrix::MOAB
+    ● heavy-weapons-8fvg-matrix::COMBO_SET_2_BULL    [offset=-1 · AND]
+        Bullish GZI/HV FVG combo with time-regularized volume gate: bar[1] va…
+        ├── heavy-weapons-8fvg-matrix::BULL_GZI
+        ├── heavy-weapons-8fvg-matrix::BULL_HV
+        ├── heavy-weapons-8fvg-matrix::PENTAGON
+        ├── heavy-weapons-8fvg-matrix::WTC
+        ├── heavy-weapons-8fvg-matrix::HIROSHIMA
+        └── heavy-weapons-8fvg-matrix::NAGASAKI
+    ● heavy-weapons-8fvg-matrix::COMBO_SET_2_BEAR    [offset=-1 · AND]
+        Bearish GZI/HV FVG combo with time-regularized volume gate: bar[1] va…
+        ├── heavy-weapons-8fvg-matrix::BEAR_GZI
+        ├── heavy-weapons-8fvg-matrix::BEAR_HV
+        ├── heavy-weapons-8fvg-matrix::PENTAGON
+        ├── heavy-weapons-8fvg-matrix::WTC
+        ├── heavy-weapons-8fvg-matrix::HIROSHIMA
+        └── heavy-weapons-8fvg-matrix::NAGASAKI
+    ● heavy-weapons-8fvg-matrix::COMBO_SET_3_BULL    [offset=0 · AND]
+        Bullish Matrix combo with Standard RVOL: current bar valid body (>= 0…
+        ├── heavy-weapons-8fvg-matrix::NEO_BULL
+        ├── heavy-weapons-8fvg-matrix::TRINITY_BULL
+        ├── heavy-weapons-8fvg-matrix::SAAB
+        ├── heavy-weapons-8fvg-matrix::RVOL_1X_BULL
+        └── heavy-weapons-8fvg-matrix::GRAND_SLAM
+    ● heavy-weapons-8fvg-matrix::COMBO_SET_3_BEAR    [offset=0 · AND]
+        Bearish Matrix combo with Standard RVOL: current bar valid body AND (…
+        ├── heavy-weapons-8fvg-matrix::NEO_BEAR
+        ├── heavy-weapons-8fvg-matrix::TRINITY_BEAR
+        ├── heavy-weapons-8fvg-matrix::KRATOS
+        ├── heavy-weapons-8fvg-matrix::RVOL_1X_BEAR
+        └── heavy-weapons-8fvg-matrix::MOAB
+    ● heavy-weapons-8fvg-matrix::COMBO_SET_4_BULL    [offset=0 · AND]
+        Bullish Matrix combo with time-regularized volume gate: current bar v…
+        ├── heavy-weapons-8fvg-matrix::NEO_BULL
+        ├── heavy-weapons-8fvg-matrix::TRINITY_BULL
+        ├── heavy-weapons-8fvg-matrix::PENTAGON
+        ├── heavy-weapons-8fvg-matrix::WTC
+        ├── heavy-weapons-8fvg-matrix::HIROSHIMA
+        └── heavy-weapons-8fvg-matrix::NAGASAKI
+    ● heavy-weapons-8fvg-matrix::COMBO_SET_4_BEAR    [offset=0 · AND]
+        Bearish Matrix combo with time-regularized volume gate: current bar v…
+        ├── heavy-weapons-8fvg-matrix::NEO_BEAR
+        ├── heavy-weapons-8fvg-matrix::TRINITY_BEAR
+        ├── heavy-weapons-8fvg-matrix::PENTAGON
+        ├── heavy-weapons-8fvg-matrix::WTC
+        ├── heavy-weapons-8fvg-matrix::HIROSHIMA
+        └── heavy-weapons-8fvg-matrix::NAGASAKI
+
+
+CROSS-INDICATOR DEPENDENCIES
+-----
+  → heavy-pentagon::SAAB
+  → heavy-pentagon::KRATOS
+  → heavy-pentagon::RVOL_1X_BULL
+  → heavy-pentagon::RVOL_1X_BEAR
+  → heavy-pentagon::GRAND_SLAM
+  → heavy-pentagon::MOAB
+  → heavy-pentagon::PENTAGON
+  → heavy-pentagon::WTC
+  → heavy-pentagon::HIROSHIMA
+  → heavy-pentagon::NAGASAKI
+

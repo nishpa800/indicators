@@ -1,0 +1,262 @@
+indicator:
+  id: hvd-pbj-ppd-1939-masterdir
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_1939_FROM_MASTERDIR_2026-05-10.pine
+  branch: unknown
+  pine_version: 5
+  line_count: 1939
+  overlay: true
+  one_line_purpose: "HV+D ↔ PBJ ↔ USE ALARM — TRIPLE CO-OCCURRENCE (Master Directory variant, 1939 lines)"
+  notes: >-
+    This variant (1939 lines) differs from THE_ONLY_ONE (1767 lines) in:
+    (1) Input defaults for d2_mult (4.0 vs 2.5),
+    (2) HTF Profile 1 defaults flipped: h1On=true (vs false), uh1_5=false, uh1_10=false (vs both true),
+    (3) HTF Profile 2 defaults flipped: h2On=true (vs false), h2From changed from "3 Hour" to "2 Hour",
+    (4) Tier-1 inputs include show_BullUSub and show_BearUSub (vs show_OmegaLongA in 2246),
+    (5) An additional 172 lines of body code (likely new composites or expanded logic).
+    Status: intermediate variant — not THE_ONLY_ONE, but simpler than 2246.
+
+internal_helpers:
+  - name: Supertrend (Zoo ST)
+    purpose: "Trend direction used inside Pipeline B (PBJ/PB engine) — zoo_st_period=10, zoo_st_mult=2.0"
+  - name: Zoo MA (VWMA)
+    purpose: "Base MA for PBJ/PB lander system (zoo_ma_type=VWMA, zoo_ma_len=5)"
+  - name: PB&J filter
+    purpose: "ATR-pullback gate on lowest-low/highest-high over 25 bars + volume>SMA*0.1"
+  - name: PB lander (lvl array)
+    purpose: "Maintains array of boxes from buy/sell crosses + reaccel events"
+  - name: ATR (atr14)
+    purpose: "Shared 14-period ATR for displacement, PB lander sizing, PBJ threshold"
+  - name: Stdev range
+    purpose: "Volatility yardstick for displacement primitives"
+  - name: BB normalized price/volume
+    purpose: "Spike size and volume normalized vs 30-bar SMA"
+  - name: Ping Pong SR engine
+    purpose: "Support/resistance levels; emits bull_pp/bear_pp state booleans"
+  - name: FAUNA NRA core
+    purpose: "ATR/body/range/volume hybrid emitting sigFAUNABull/Bear"
+
+roots_count: 42
+composites_count: 23
+
+roots:
+  - id: hvd-pbj-ppd-1939::HVD_BULL
+    family: hv
+    description: "Pipeline-A bullish HV+D: prior bar high-volume rank ∧ prior bar displacement ∧ bullish FVG"
+    offset: -1
+  - id: hvd-pbj-ppd-1939::HVD_BEAR
+    family: hv
+    description: "Pipeline-A bearish HV+D: prior bar high-volume rank ∧ prior bar displacement ∧ bearish FVG"
+    offset: -1
+  - id: hvd-pbj-ppd-1939::PBJ_BULL
+    family: candle
+    description: "Pipeline-B bullish PBJ: Supertrend buy_cross + PB&J filter"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::PBJ_BEAR
+    family: candle
+    description: "Pipeline-B bearish PBJ"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::PB_BULL
+    family: candle
+    description: "Pipeline-B plain Pullback: Supertrend buy_cross + lander box approach, excluding PBJ"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::PB_BEAR
+    family: candle
+    description: "Pipeline-B plain Pullback bear"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::PUP
+    family: push
+    description: "Push-Up Day: bar % body (close-open)/open*100 > 3% AND volume > 10-bar highest red-bar volume"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::PPD
+    family: push
+    description: "Push-Down Day: bar % body (open-close)/open*100 > 3% AND volume > 10-bar highest green-bar volume"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Bull UUUU
+    family: multi-bar-trend
+    description: "4 consecutive bullish bars with first-bar-of-day + PBJ + displacement"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Bear UUUU
+    family: multi-bar-trend
+    description: "4 consecutive bearish bars — Bear mirror of Bull UUUU"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Bull UUU
+    family: multi-bar-trend
+    description: "3 consecutive bullish bars each >1x normalized price + first bar of day + PBJ + displacement"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Bear UUU
+    family: multi-bar-trend
+    description: "3 consecutive bearish bars — Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Bull UU
+    family: multi-bar-trend
+    description: "2 consecutive bullish bars each ≥2x + cumulative ≥ RVOL 1x + PBJ + displacement"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Bear UU
+    family: multi-bar-trend
+    description: "2 consecutive bearish bars — Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Bull U-Sub
+    family: multi-bar-trend
+    description: "3+ consecutive bullish bars each ≥2x + RVOL 1x + PBJ + displacement (USE Engine variant)"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Bear U-Sub
+    family: multi-bar-trend
+    description: "3+ consecutive bearish bars — Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Alpha Strike Bull
+    family: session-composite
+    description: "First signal of session + PP bull + (GS or RVOL1x) + (PBJ or PB) + expanded FAUNA slot"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Alpha Strike Bear
+    family: session-composite
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Foxtrot Bull
+    family: fauna-based
+    description: "4 consecutive FAUNA-confirmed bullish bars"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Foxtrot Bear
+    family: fauna-based
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Omega Long
+    family: omega-based
+    description: "Boom Hunter omega + bull cosignal + NOT MOAB + NOT bearish displacement"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::OD Bull
+    family: opening-drive
+    description: "Opening Drive Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::OD Bear
+    family: opening-drive
+    description: "Opening Drive Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Disp Bull 2+
+    family: displacement
+    description: "2+ consecutive displacement bars + FAUNA bull each bar"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Disp Bear 2+
+    family: displacement
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Disp Bull 3+
+    family: displacement
+    description: "3+ consecutive displacement bars + FAUNA bull each bar"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Disp Bear 3+
+    family: displacement
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Golf Bull
+    family: confluence
+    description: "3-bar confirmed bull sequence with displacement + FAUNA + PUP"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::Golf Bear
+    family: confluence
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::PAF PUP B2B
+    family: back-to-back
+    description: "Back-to-back PUP + FAUNA bull"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::PAF PPD B2B
+    family: back-to-back
+    description: "Back-to-back PPD + FAUNA bear"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::CS1 FVG Bull
+    family: combo-set
+    description: "FVG Combo Set Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::CS1 FVG Bear
+    family: combo-set
+    description: "FVG Combo Set Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::CS2 MAT Bull
+    family: combo-set
+    description: "Matrix Combo Set Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::CS2 MAT Bear
+    family: combo-set
+    description: "Matrix Combo Set Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::CS3 Unified Bull
+    family: combo-set
+    description: "Unified Combo (CS1 FVG AND CS2 MAT both present) Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::CS3 Unified Bear
+    family: combo-set
+    description: "Unified Combo Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::CC Bull
+    family: chain
+    description: "Combo Chain Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::CC Bear
+    family: chain
+    description: "Combo Chain Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::LSC Bull
+    family: chain
+    description: "Long/Short Chain Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-1939::LSC Bear
+    family: chain
+    description: "Long/Short Chain Bear"
+    offset: 0
+
+composites:
+  - id: hvd-pbj-ppd-1939::Floor
+    tier: 2
+    description: "PP bull + PBJ + (RVOL1x or GS or WTC or Hiro or dir Nag)"
+  - id: hvd-pbj-ppd-1939::2nd Floor
+    tier: 2
+    description: "PP bull + PB + volume"
+  - id: hvd-pbj-ppd-1939::Rooftop
+    tier: 2
+    description: "PP bear + PBJ + volume"
+  - id: hvd-pbj-ppd-1939::Penthouse
+    tier: 2
+    description: "PP bear + PB + volume"
+  - id: hvd-pbj-ppd-1939::HW Bull
+    tier: 3
+    description: "Green + 5x Disp + PBJ + HW volume + platform"
+  - id: hvd-pbj-ppd-1939::HW Bear
+    tier: 3
+    description: "Bear mirror"
+  - id: hvd-pbj-ppd-1939::SUPER Bull
+    tier: 0
+    description: "PBJ + disp + (FAUNA or L1) + volume + (combo+PUP or platform)"
+  - id: hvd-pbj-ppd-1939::SUPER Bear
+    tier: 0
+    description: "Bear mirror"
+  - id: hvd-pbj-ppd-1939::SD Bull
+    tier: 0
+    description: "Super Duper Bull — Platform + PBJ + volume + combo + PUP + disp + (FAUNA or L1)"
+  - id: hvd-pbj-ppd-1939::SD Bear
+    tier: 0
+    description: "Super Duper Bear"
+  - id: hvd-pbj-ppd-1939::Triple AND (Pipeline D)
+    tier: 4
+    description: "AND gate of HVD_fire_bull[0] + sigBullPBJ[1] + use_any_bull[1], aligned to bar N-1"
+  - id: hvd-pbj-ppd-1939::Aggregated Alert
+    tier: 4
+    description: "Per-bar-close consolidated alert of all active signals with priority-based payload"
+
+uncertain_or_questions:
+  - q: "The 1939 file shows inputs d2_mult=4.0 but THE_ONLY_ONE has 2.5. This is a Tier-1 default flip — which is correct for this variant's calibration is unclear without user confirmation."
+    severity: medium
+  - q: "HTF Profile 1 is enabled by default in 1939 (h1On=true, line 203) but disabled in THE_ONLY_ONE (h1On=false, line 177). This changes which tiers are active for HTF volume rank detection. Is 1939 the 'improved' version or is THE_ONLY_ONE canonical?"
+    severity: medium
+  - q: "HTF Profile 2 starts at 2 Hour in 1939 vs 3 Hour in THE_ONLY_ONE. Same question: which is the user's preferred calibration?"
+    severity: medium
+  - q: "The 1939 file exposes show_BullUSub and show_BearUSub but THE_ONLY_ONE exposes show_OmegaLongA — these are mutually exclusive signal groupings. Need clarification on which roots belong to this variant's scope."
+    severity: high
+  - q: "Total extra lines in 1939 (172 = 1939-1767) suggests new composite logic or expanded engine, but body changes are not immediately apparent without deeper line-by-line diff. Likely includes additional Pipeline C signal detections or emission logic."
+    severity: info
+
+cross_variant_notes: >-
+  The 1939 variant appears to be an intermediate step between THE_ONLY_ONE (1767) and 2246 (2246). 
+  It shares the same Tier-1 composite roots (Bull UUUU, UUU, UU, Alpha Strike, Foxtrot, OD, Disp, Golf, PAF, Combos, Chains) 
+  but flips several Tier-1 input defaults (d2_mult, h1On, h2On, h2From). The presence of show_BullUSub vs show_OmegaLongA 
+  suggests a different signal detection philosophy. Recommend deep diff against THE_ONLY_ONE to identify which new roots/composites 
+  consume those 172 extra lines.

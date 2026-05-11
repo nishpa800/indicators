@@ -1,0 +1,265 @@
+indicator:
+  id: hvd-pbj-ppd-2246-masterdir
+  file: hvd-pbj-ppd/versions/HVDPBJPPD_2246_FROM_MASTERDIR_2026-05-10.pine
+  branch: unknown
+  pine_version: 5
+  line_count: 2246
+  overlay: true
+  one_line_purpose: "HV+D ↔ PBJ ↔ USE ALARM — TRIPLE CO-OCCURRENCE (Master Directory variant, 2246 lines, largest — 479 extra vs THE_ONLY_ONE)"
+  notes: >-
+    This is the LARGEST variant (2246 lines, 133 KB file). Compared to THE_ONLY_ONE (1767 lines):
+    (1) Extra 479 lines of body code — likely new Pipeline C detections or expanded composites.
+    (2) Input defaults: d2_mult matches THE_ONLY_ONE (2.5, not 4.0 like 1939).
+    (3) HTF Profile 1: h1On=true (enabled), h2From="15 Min", h2To="2 Hour" — same as 1939, different from THE_ONLY_ONE.
+    (4) HTF Profile 2: h2On=true (enabled, different from THE_ONLY_ONE false), h2From="2 Hour" (vs 3 Hour), h2To="3 Month" (same).
+    (5) Tier-1 inputs: includes show_OmegaLongA (vs show_BullUSub in 1939), suggesting alignment with THE_ONLY_ONE concept but different implementation.
+    (6) New composite logic and expanded engine: inferred from 479-line delta, likely covers new Pipeline C channels or emission streaming.
+    Status: 'evolved' or 'expanded' variant — intended production engine with full feature set.
+
+internal_helpers:
+  - name: Supertrend (Zoo ST)
+    purpose: "Trend direction used inside Pipeline B (PBJ/PB engine) — zoo_st_period=10, zoo_st_mult=2.0"
+  - name: Zoo MA (VWMA)
+    purpose: "Base MA for PBJ/PB lander system (zoo_ma_type=VWMA, zoo_ma_len=5)"
+  - name: PB&J filter
+    purpose: "ATR-pullback gate on lowest-low/highest-high over 25 bars + volume>SMA*0.1"
+  - name: PB lander (lvl array)
+    purpose: "Maintains array of boxes from buy/sell crosses + reaccel events"
+  - name: ATR (atr14)
+    purpose: "Shared 14-period ATR for displacement, PB lander sizing, PBJ threshold"
+  - name: Stdev range
+    purpose: "Volatility yardstick for displacement primitives"
+  - name: BB normalized price/volume
+    purpose: "Spike size and volume normalized vs 30-bar SMA"
+  - name: Ping Pong SR engine
+    purpose: "Support/resistance levels; emits bull_pp/bear_pp state booleans"
+  - name: FAUNA NRA core
+    purpose: "ATR/body/range/volume hybrid emitting sigFAUNABull/Bear"
+  - new_in_2246: "Expanded Pipeline C logic — likely includes new detection engines (RVOL thresholds, emission streaming, alerting channels)"
+  - new_in_2246: "Likely new composite logic and state machines for advanced signal aggregation"
+
+roots_count: 42
+composites_count: 23
+estimated_new_elements: "5-10 new Pipeline C detections or composites (estimated from 479-line delta)"
+
+roots:
+  - id: hvd-pbj-ppd-2246::HVD_BULL
+    family: hv
+    description: "Pipeline-A bullish HV+D: prior bar high-volume rank ∧ prior bar displacement ∧ bullish FVG"
+    offset: -1
+  - id: hvd-pbj-ppd-2246::HVD_BEAR
+    family: hv
+    description: "Pipeline-A bearish HV+D: prior bar high-volume rank ∧ prior bar displacement ∧ bearish FVG"
+    offset: -1
+  - id: hvd-pbj-ppd-2246::PBJ_BULL
+    family: candle
+    description: "Pipeline-B bullish PBJ: Supertrend buy_cross + PB&J filter"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::PBJ_BEAR
+    family: candle
+    description: "Pipeline-B bearish PBJ"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::PB_BULL
+    family: candle
+    description: "Pipeline-B plain Pullback: Supertrend buy_cross + lander box approach, excluding PBJ"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::PB_BEAR
+    family: candle
+    description: "Pipeline-B plain Pullback bear"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::PUP
+    family: push
+    description: "Push-Up Day: bar % body (close-open)/open*100 > 3% AND volume > 10-bar highest red-bar volume"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::PPD
+    family: push
+    description: "Push-Down Day: bar % body (open-close)/open*100 > 3% AND volume > 10-bar highest green-bar volume"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Bull UUUU
+    family: multi-bar-trend
+    description: "4 consecutive bullish bars with first-bar-of-day + PBJ + displacement"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Bear UUUU
+    family: multi-bar-trend
+    description: "4 consecutive bearish bars — Bear mirror of Bull UUUU"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Bull UUU
+    family: multi-bar-trend
+    description: "3 consecutive bullish bars each >1x normalized price + first bar of day + PBJ + displacement"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Bear UUU
+    family: multi-bar-trend
+    description: "3 consecutive bearish bars — Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Bull UU
+    family: multi-bar-trend
+    description: "2 consecutive bullish bars each ≥2x + cumulative ≥ RVOL 1x + PBJ + displacement"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Bear UU
+    family: multi-bar-trend
+    description: "2 consecutive bearish bars — Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Omega-A
+    family: omega-advanced
+    description: "Boom Hunter omega + high-confidence cosignal (variant of Omega Long)"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Alpha Strike Bull
+    family: session-composite
+    description: "First signal of session + PP bull + (GS or RVOL1x) + (PBJ or PB) + expanded FAUNA slot"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Alpha Strike Bear
+    family: session-composite
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Foxtrot Bull
+    family: fauna-based
+    description: "4 consecutive FAUNA-confirmed bullish bars"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Foxtrot Bear
+    family: fauna-based
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Omega Long
+    family: omega-based
+    description: "Boom Hunter omega + bull cosignal + NOT MOAB + NOT bearish displacement"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::OD Bull
+    family: opening-drive
+    description: "Opening Drive Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::OD Bear
+    family: opening-drive
+    description: "Opening Drive Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Disp Bull 2+
+    family: displacement
+    description: "2+ consecutive displacement bars + FAUNA bull each bar"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Disp Bear 2+
+    family: displacement
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Disp Bull 3+
+    family: displacement
+    description: "3+ consecutive displacement bars + FAUNA bull each bar"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Disp Bear 3+
+    family: displacement
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Golf Bull
+    family: confluence
+    description: "3-bar confirmed bull sequence with displacement + FAUNA + PUP"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::Golf Bear
+    family: confluence
+    description: "Bear mirror"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::PAF PUP B2B
+    family: back-to-back
+    description: "Back-to-back PUP + FAUNA bull"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::PAF PPD B2B
+    family: back-to-back
+    description: "Back-to-back PPD + FAUNA bear"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::CS1 FVG Bull
+    family: combo-set
+    description: "FVG Combo Set Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::CS1 FVG Bear
+    family: combo-set
+    description: "FVG Combo Set Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::CS2 MAT Bull
+    family: combo-set
+    description: "Matrix Combo Set Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::CS2 MAT Bear
+    family: combo-set
+    description: "Matrix Combo Set Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::CS3 Unified Bull
+    family: combo-set
+    description: "Unified Combo (CS1 FVG AND CS2 MAT both present) Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::CS3 Unified Bear
+    family: combo-set
+    description: "Unified Combo Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::CC Bull
+    family: chain
+    description: "Combo Chain Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::CC Bear
+    family: chain
+    description: "Combo Chain Bear"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::LSC Bull
+    family: chain
+    description: "Long/Short Chain Bull"
+    offset: 0
+  - id: hvd-pbj-ppd-2246::LSC Bear
+    family: chain
+    description: "Long/Short Chain Bear"
+    offset: 0
+
+composites:
+  - id: hvd-pbj-ppd-2246::Floor
+    tier: 2
+    description: "PP bull + PBJ + (RVOL1x or GS or WTC or Hiro or dir Nag)"
+  - id: hvd-pbj-ppd-2246::2nd Floor
+    tier: 2
+    description: "PP bull + PB + volume"
+  - id: hvd-pbj-ppd-2246::Rooftop
+    tier: 2
+    description: "PP bear + PBJ + volume"
+  - id: hvd-pbj-ppd-2246::Penthouse
+    tier: 2
+    description: "PP bear + PB + volume"
+  - id: hvd-pbj-ppd-2246::HW Bull
+    tier: 3
+    description: "Green + 5x Disp + PBJ + HW volume + platform"
+  - id: hvd-pbj-ppd-2246::HW Bear
+    tier: 3
+    description: "Bear mirror"
+  - id: hvd-pbj-ppd-2246::SUPER Bull
+    tier: 0
+    description: "PBJ + disp + (FAUNA or L1) + volume + (combo+PUP or platform)"
+  - id: hvd-pbj-ppd-2246::SUPER Bear
+    tier: 0
+    description: "Bear mirror"
+  - id: hvd-pbj-ppd-2246::SD Bull
+    tier: 0
+    description: "Super Duper Bull — Platform + PBJ + volume + combo + PUP + disp + (FAUNA or L1)"
+  - id: hvd-pbj-ppd-2246::SD Bear
+    tier: 0
+    description: "Super Duper Bear"
+  - id: hvd-pbj-ppd-2246::Triple AND (Pipeline D)
+    tier: 4
+    description: "AND gate of HVD_fire_bull[0] + sigBullPBJ[1] + use_any_bull[1], aligned to bar N-1"
+  - id: hvd-pbj-ppd-2246::Aggregated Alert
+    tier: 4
+    description: "Per-bar-close consolidated alert of all active signals with priority-based payload"
+
+estimated_new_roots_composites:
+  - note: "The 479-line delta (2246-1767) likely represents expansion in Pipeline C or emission layers. Without line-by-line diff, cannot enumerate NEW roots/composites definitively. Candidates include: (1) Additional RVOL tier detections, (2) Expanded emission table or logging, (3) New state machine logic for advanced confluences, (4) Additional MCP reader channels (data_get_pine_labels, log.info streams, etc.)."
+  - recommendation: "Run diff against THE_ONLY_ONE to identify body changes in range [1767, 2246]."
+
+uncertain_or_questions:
+  - q: "The 2246 file contains 479 extra lines compared to THE_ONLY_ONE. The function/root/composite count appears to match THE_ONLY_ONE (42 roots, 23 composites visible), suggesting the extra lines are in helper functions, state machine logic, emission tables, or alerting logic rather than new named primitives. Confirm whether new roots/composites exist or if extra lines are entirely in 'plumbing'."
+    severity: high
+  - q: "Introduces show_OmegaLongA (vs show_BullUSub in 1939, vs show_OmegaLong in THE_ONLY_ONE). This may be a structural signal variant or just a renamed toggle. Clarify the relationship between Omega-A, Omega Long, and Bull U-Sub across variants."
+    severity: high
+  - q: "HTF Profile settings differ from THE_ONLY_ONE (h1On=true, h2On=true in 2246 vs both false in THE_ONLY_ONE). Is this the 'improved' calibration or a divergent fork?"
+    severity: medium
+  - q: "File is 133 KB (largest of four variants). This size suggests significant body code beyond THE_ONLY_ONE. Is this intentional feature expansion, or is it a 'development in progress' version?"
+    severity: medium
+
+cross_variant_notes: >-
+  The 2246 variant is the largest and most feature-complete. It appears to be an evolved version of THE_ONLY_ONE 
+  with all inputs and the same core roots/composites, but with 479 extra lines of expansion. This expansion likely 
+  addresses: (1) additional Pipeline C signal detections, (2) expanded emission and alerting channels, (3) new state 
+  machine logic for advanced confluences, or (4) performance optimizations. The introduction of show_OmegaLongA and 
+  the enablement of HTF Profiles 1 & 2 suggest that 2246 is positioned as a 'full-featured production version' 
+  ready for live trading, while THE_ONLY_ONE may be a streamlined reference build.
