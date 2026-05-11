@@ -449,6 +449,10 @@ composites:
     tier: 2
     aka: ["B2B PUP", "b2bPUP", "Back-to-Back Pocket Pivot Bull"]
     definition: "sPPBull AND sPPBull[1] (PUP fires on consecutive bars)"
+    variant_of: b2b-pup::B2B_PUP
+    drift_kind: semantic-drift
+    drift_note: "MISSING conf (barstate.isconfirmed) gate. anish-tb-foster::PPBull (sPPBull) is defined as 'priceUp AND volBull' without conf; b2b-pup::PUP includes conf as first operand. anish-tb-foster::B2BPUP can therefore fire on non-confirmed intrabar updates; b2b-pup::B2B_PUP cannot. See docs/validation/2026-05-10-b2b-pup-drift-1.md. User decision required: confirm if missing conf is intentional (intrabar use) or a bug."
+    validation_run: "docs/validation/2026-05-10-b2b-pup.md"
     depends_on:
       - anish-tb-foster::PPBull
     lines: "421 (def), 531 (plot), 680 (alert)"
