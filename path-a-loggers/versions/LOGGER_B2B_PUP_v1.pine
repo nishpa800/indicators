@@ -1,0 +1,110 @@
+//@version=5
+// =============================================================================
+// LOGGER — B2B PUP Combined (37 numbered S-plots)
+// =============================================================================
+// PURPOSE: emit one label.new() per fire of each B2B PUP composite plot so
+// data_get_pine_labels can pull full history in one call.
+//
+// SETUP: load AFTER "B2B PUP Combined 5.4.439am". Point each "Source: ..."
+// input at the corresponding plot.
+//
+// PER-FIRE LABEL TEXT: short tag (e.g. "B2BBull", "UniBull", "S19", "UCx2")
+// so we can bucket by composite when reading the labels back.
+// =============================================================================
+
+indicator("LOGGER B2B PUP", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+// === SOURCE INPUTS (all 37 numbered B2B PUP plots) ===
+grp = "★ Source Plots — point at B2B PUP Combined ★"
+s_B2B_bull     = input.source(close, "B2B Bull",       group=grp)
+s_B2B_bear     = input.source(close, "B2B Bear",       group=grp)
+s_B2BFAU_bull  = input.source(close, "B2B+FAU Bull",   group=grp)
+s_B2BFAU_bear  = input.source(close, "B2B+FAU Bear",   group=grp)
+s_B2BDISP_bull = input.source(close, "B2B+DISP Bull",  group=grp)
+s_B2BDISP_bear = input.source(close, "B2B+DISP Bear",  group=grp)
+s_B2BFD_bull   = input.source(close, "B2B+F+D Bull",   group=grp)
+s_B2BFD_bear   = input.source(close, "B2B+F+D Bear",   group=grp)
+s_B2BSAAB_bull = input.source(close, "B2B+SAAB Bull",  group=grp)
+s_B2BKRAT_bear = input.source(close, "B2B+KRAT Bear",  group=grp)
+s_B2BPBJ_bull  = input.source(close, "B2B+PBJ Bull",   group=grp)
+s_B2BPBJ_bear  = input.source(close, "B2B+PBJ Bear",   group=grp)
+s_UC_B2B_bull  = input.source(close, "UC+B2B Bull",    group=grp)
+s_UC_B2B_bear  = input.source(close, "UC+B2B Bear",    group=grp)
+s_Uni_B2B_bull = input.source(close, "Uni+B2B Bull",   group=grp)
+s_Uni_B2B_bear = input.source(close, "Uni+B2B Bear",   group=grp)
+s_L1B2B_bull   = input.source(close, "L1B2B Bull",     group=grp)
+s_S1B2B_bear   = input.source(close, "S1B2B Bear",     group=grp)
+s_FVGL1_bull   = input.source(close, "FVG/L1 Bull",    group=grp)
+s_FVGS1_bear   = input.source(close, "FVG/S1 Bear",    group=grp)
+s_UU_B2B_bull  = input.source(close, "UU+B2B Bull",    group=grp)
+s_DD_B2B_bear  = input.source(close, "DD+B2B Bear",    group=grp)
+s_B2BNPM_bull  = input.source(close, "B2BNPM Bull",    group=grp)
+s_B2BNPM_bear  = input.source(close, "B2BNPM Bear",    group=grp)
+s_CONT_bull    = input.source(close, "CONT Bull",      group=grp)
+s_CONT_bear    = input.source(close, "CONT Bear",      group=grp)
+s_TNT_B2B_bull = input.source(close, "TNT+B2B Bull",   group=grp)
+s_TNT_B2B_bear = input.source(close, "TNT+B2B Bear",   group=grp)
+s_NPM_bull     = input.source(close, "NPM Bull",       group=grp)
+s_NPM_bear     = input.source(close, "NPM Bear",       group=grp)
+s_HVD_B2B_bull = input.source(close, "HVD+B2B Bull",   group=grp)
+s_HVD_B2B_bear = input.source(close, "HVD+B2B Bear",   group=grp)
+s_HVDPBJ_bull  = input.source(close, "HVDPBJ Bull",    group=grp)
+s_HVDPBJ_bear  = input.source(close, "HVDPBJ Bear",    group=grp)
+s_S19UC_bull   = input.source(close, "S19 UC×2 Bull",  group=grp)
+s_S19UC_bear   = input.source(close, "S19 UC×2 Bear",  group=grp)
+s_S20FMU_bull  = input.source(close, "S20 FMU×2 Bull", group=grp)
+s_S20FMU_bear  = input.source(close, "S20 FMU×2 Bear", group=grp)
+
+// Helper — non-zero, non-na, on confirmed bar
+f_fire(s) => not na(s) and s != 0 and barstate.isconfirmed
+
+// Label helper
+f_log(cond, tag, isBull) =>
+    if cond
+        if isBull
+            label.new(bar_index, low,  tag, color=color.new(color.lime, 90),    style=label.style_label_up,   textcolor=color.lime,    size=size.tiny, yloc=yloc.belowbar)
+        else
+            label.new(bar_index, high, tag, color=color.new(color.fuchsia, 90), style=label.style_label_down, textcolor=color.fuchsia, size=size.tiny, yloc=yloc.abovebar)
+
+// === FIRE → LABEL ===
+f_log(f_fire(s_B2B_bull),     "B2BBull",   true)
+f_log(f_fire(s_B2B_bear),     "B2BBear",   false)
+f_log(f_fire(s_B2BFAU_bull),  "B2BFAU+",   true)
+f_log(f_fire(s_B2BFAU_bear),  "B2BFAU-",   false)
+f_log(f_fire(s_B2BDISP_bull), "B2BD+",     true)
+f_log(f_fire(s_B2BDISP_bear), "B2BD-",     false)
+f_log(f_fire(s_B2BFD_bull),   "B2BFD+",    true)
+f_log(f_fire(s_B2BFD_bear),   "B2BFD-",    false)
+f_log(f_fire(s_B2BSAAB_bull), "B2BSAAB",   true)
+f_log(f_fire(s_B2BKRAT_bear), "B2BKRAT",   false)
+f_log(f_fire(s_B2BPBJ_bull),  "B2BPBJ+",   true)
+f_log(f_fire(s_B2BPBJ_bear),  "B2BPBJ-",   false)
+f_log(f_fire(s_UC_B2B_bull),  "UCB2B+",    true)
+f_log(f_fire(s_UC_B2B_bear),  "UCB2B-",    false)
+f_log(f_fire(s_Uni_B2B_bull), "UniB2B+",   true)
+f_log(f_fire(s_Uni_B2B_bear), "UniB2B-",   false)
+f_log(f_fire(s_L1B2B_bull),   "L1B2B",     true)
+f_log(f_fire(s_S1B2B_bear),   "S1B2B",     false)
+f_log(f_fire(s_FVGL1_bull),   "FVGL1+",    true)
+f_log(f_fire(s_FVGS1_bear),   "FVGS1-",    false)
+f_log(f_fire(s_UU_B2B_bull),  "UUB2B+",    true)
+f_log(f_fire(s_DD_B2B_bear),  "DDB2B-",    false)
+f_log(f_fire(s_B2BNPM_bull),  "B2BNPM+",   true)
+f_log(f_fire(s_B2BNPM_bear),  "B2BNPM-",   false)
+f_log(f_fire(s_CONT_bull),    "CONT+",     true)
+f_log(f_fire(s_CONT_bear),    "CONT-",     false)
+f_log(f_fire(s_TNT_B2B_bull), "TNTB2B+",   true)
+f_log(f_fire(s_TNT_B2B_bear), "TNTB2B-",   false)
+f_log(f_fire(s_NPM_bull),     "NPM+",      true)
+f_log(f_fire(s_NPM_bear),     "NPM-",      false)
+f_log(f_fire(s_HVD_B2B_bull), "HVDB2B+",   true)
+f_log(f_fire(s_HVD_B2B_bear), "HVDB2B-",   false)
+f_log(f_fire(s_HVDPBJ_bull),  "HVDPBJ+",   true)
+f_log(f_fire(s_HVDPBJ_bear),  "HVDPBJ-",   false)
+f_log(f_fire(s_S19UC_bull),   "S19+",      true)
+f_log(f_fire(s_S19UC_bear),   "S19-",      false)
+f_log(f_fire(s_S20FMU_bull),  "S20+",      true)
+f_log(f_fire(s_S20FMU_bear),  "S20-",      false)
+
+// Data-window plot so the study renders
+plot(0, display=display.data_window)
