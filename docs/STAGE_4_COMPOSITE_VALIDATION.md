@@ -9,6 +9,37 @@ for a composite. Earlier stages (1–3) ingested, catalogued, and verified
 roots. Stage 4 turns the Phase M / Phase A outputs into a verdict per
 composite.
 
+## ⭐ CANONICAL PROCEDURE: use the `detection-plot-validation` skill ⭐
+
+As of 2026-05-10, the Stage 4 procedure is **codified as a Claude Code skill** at
+`.claude/skills/detection-plot-validation/`. The skill enforces:
+
+- The 4-phase procedure (ENUMERATE → STATIC-DIFF → TV-FIRING → RECONCILE)
+- Multi-agent orchestration (one subagent per Pine file / diff pair / TV-firing location)
+- Fixed output shape (`docs/validation/<date>-<target>.md`)
+- Hard guardrails (no Pine modification without approval, no version deletion, never bypass extract-*.yaml, never commit without YAML==JSON)
+- Standing approval embedded (`STANDING_APPROVAL.md` in the skill dir)
+
+Phase 3 (TV firing chart-side) is the spinout skill at `.claude/skills/detection-plot-tv-firing/` — only invoke when Anish is at his desk with the Path A loggers loaded. The main skill flags `BLOCKED-NEEDS-TV-FIRING-SKILL` and continues; never blocks on Anish.
+
+**Run the skill** (any agent reading this can do it):
+
+```
+Validate <target>
+```
+
+Where `<target>` is any detection plot's canonical name (e.g. `UNIFIED_COMBO_BULL`, `csNew3_Bull`, `superBull`). The skill loads its own context, runs all 4 phases, produces the report.
+
+Or via the harness directly for Phase 1 only:
+
+```bash
+python3 tools/validate_detection_plot.py --target=<canonical> --aliases=<comma-list>
+```
+
+The methodology below is the LEGACY pre-skill description, retained for posterity.
+
+---
+
 ## Inputs
 
 1. **Path B static audit** — `docs/static-audit-2026-05-10/*.md`. Tells
