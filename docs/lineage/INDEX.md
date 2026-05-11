@@ -41,6 +41,9 @@ Per-card sections: dependency expansion, root inventory, offset ledger, decoupli
 | [`e3-f2-cluster::BearF2`](e3-f2-cluster__BearF2.md) | 1 | e3-f2-cluster | ? |  |
 | [`e3-f2-cluster::AnyBull`](e3-f2-cluster__AnyBull.md) | 2 | e3-f2-cluster | ? |  |
 | [`e3-f2-cluster::AnyBear`](e3-f2-cluster__AnyBear.md) | 2 | e3-f2-cluster | ? |  |
+| [`heavy-combo-toggles::HEAVY_COMBO_BULL`](heavy-combo-toggles__HEAVY_COMBO_BULL.md) | 4 | heavy-combo-toggles | -1 | Master Bull OR-gate: fires on bar[1] when ANY enabled Bull combo (Heavy Yin-Yang |
+| [`heavy-combo-toggles::HEAVY_COMBO_BEAR`](heavy-combo-toggles__HEAVY_COMBO_BEAR.md) | 4 | heavy-combo-toggles | -1 | Master Bear OR-gate: fires on bar[1] when ANY enabled Bear combo (Heavy Yin-Yang |
+| [`heavy-combo-toggles::HEAVY_COMBO_NEUTRAL`](heavy-combo-toggles__HEAVY_COMBO_NEUTRAL.md) | 4 | heavy-combo-toggles | 0 | Master Neutral OR-gate: fires on bar[0] when ANY enabled Neutral combo (Heavy Yi |
 | [`heavy-pentagon::HEAVY_YIN_YANG_BULL`](heavy-pentagon__HEAVY_YIN_YANG_BULL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bullish: any P1 directional spike (groupA: Bull RVOL 1x OR  |
 | [`heavy-pentagon::HEAVY_YIN_YANG_BEAR`](heavy-pentagon__HEAVY_YIN_YANG_BEAR.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires bearish: same (groupA OR groupB) AND structure as Bull vari |
 | [`heavy-pentagon::HEAVY_YIN_YANG_NEUTRAL`](heavy-pentagon__HEAVY_YIN_YANG_NEUTRAL.md) | 1 | heavy-pentagon | 0 | Heavy Yin-Yang fires neutral: same (groupA OR groupB) AND structure, but displac |

@@ -4219,6 +4219,8 @@ indicators:
   - &id554
     id: heavy-combo-toggles::HEAVY_COMBO_BULL
     tier: 4
+    has_alertcondition: true
+    alertcondition_id: 'S1: Heavy Combo Bull'
     plain_english: 'Master Bull OR-gate: fires on bar[1] when ANY enabled Bull combo (Heavy Yin-Yang Bull, Heavy Nagasaki
       Bull, Heavy Nagasaki Vol Bull, Heavy Trident Bull, Neutral Heavy x2 Bull) co-occurs with displacement+FVG (dispBull).
       Eligibility checkboxes gate which of the 5 Bull combos may contribute.'
@@ -4248,6 +4250,8 @@ indicators:
   - &id555
     id: heavy-combo-toggles::HEAVY_COMBO_BEAR
     tier: 4
+    has_alertcondition: true
+    alertcondition_id: 'S2: Heavy Combo Bear'
     plain_english: 'Master Bear OR-gate: fires on bar[1] when ANY enabled Bear combo (Heavy Yin-Yang Bear, Heavy Nagasaki
       Bear, Heavy Nagasaki Vol Bear, Heavy Trident Bear, Neutral Heavy x2 Bear) co-occurs with displacement+FVG (dispBear).
       Eligibility checkboxes gate which of the 5 Bear combos may contribute.'
@@ -4277,6 +4281,8 @@ indicators:
   - &id556
     id: heavy-combo-toggles::HEAVY_COMBO_NEUTRAL
     tier: 4
+    has_alertcondition: true
+    alertcondition_id: 'S3: Heavy Combo Neutral'
     plain_english: 'Master Neutral OR-gate: fires on bar[0] when ANY enabled Neutral combo (Heavy Yin-Yang Neutral, Heavy
       Nagasaki Neutral, Heavy Nagasaki Vol Neutral, Heavy Trident Neutral, Neutral Heavy x2 Neutral) occurs while there is
       NO displacement (noDisp = NOT dispBull AND NOT dispBear). Eligibility checkboxes gate which of the 5 Neutral combos
