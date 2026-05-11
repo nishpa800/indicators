@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Agentic OS — GPS Satellite Hand-off Prompt</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 980px; margin: 2em auto; padding: 0 1.5em; color: #1a1a1a; line-height: 1.55; }
+  h1 { border-bottom: 3px solid #1a1a1a; padding-bottom: 0.3em; }
+  h2 { color: #003366; border-left: 5px solid #003366; padding-left: 0.6em; margin-top: 2em; }
+  h3 { color: #4a4a4a; margin-top: 1.5em; }
+  .callout { background: #fff8e7; border-left: 5px solid #d18800; padding: 0.8em 1em; margin: 1em 0; }
+  .critical { background: #ffe7e7; border-left: 5px solid #cc0000; padding: 0.8em 1em; margin: 1em 0; }
+  .ok { background: #e7f8ee; border-left: 5px solid #1f7a3f; padding: 0.8em 1em; margin: 1em 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.94em; }
+  th, td { border: 1px solid #ccc; padding: 0.45em 0.7em; vertical-align: top; }
+  th { background: #f0f0f0; text-align: left; }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-family: "SF Mono", Menlo, monospace; font-size: 0.92em; }
+  pre { background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; padding: 0.8em 1em; overflow-x: auto; font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; }
+  pre.ascii { background: #fff; border: 1px dashed #999; font-size: 0.85em; }
+  .matrix { display: inline-block; margin: 0.5em 0; }
+  .matrix td { width: 13em; text-align: center; }
+  .magical { background: #fff3a8; font-weight: 600; }
+  .compliant { background: #e7f8ee; }
+  svg { margin: 1em auto; display: block; }
+  .role { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 0.88em; font-weight: 600; }
+  .role-grunt { background: #d0e8ff; color: #003366; }
+  .role-knowledge { background: #ffd9b3; color: #663300; }
+  .role-owner { background: #d9c2ff; color: #330066; }
+  .footer { color: #888; font-size: 0.85em; margin-top: 3em; border-top: 1px solid #ccc; padding-top: 1em; }
+</style>
+</head>
+<body>
+
+<h1>GPS Satellite Hand-off — Agentic Operating System Best Practices</h1>
+
+<p><em>Authored 2026-05-11 by the upstream agentic-OS chat. Hand-off target: the chat dedicated to building out the 4 GPS satellites (HV+FVG+GZ1, vob-single-sens, vob-asym at two sensitivity thresholds). This document onboards you with full context, locks in standing decisions, and defines your scope.</em></p>
+
+<div class="critical">
+<strong>Read this whole document before writing a single line of Pine or Python.</strong> The framing is everything. If you skip to the deliverables and miss the dialectic correction in SD-010 or the worker-tier contract, you will rebuild the same mistake we just spent two days un-doing.
+</div>
+
+<h2>1. Mission</h2>
+
+<p>Anish is running a trading-fund pipeline that will ingest 200–500 TB of historical and real-time market data. The goal is to maximize alpha by externalizing his trading cognition into a multi-agent system. Every agent we build is a node of his thinking; every skill is a recurring mental act he performs when deciding whether to take a position.</p>
+
+<p>The system has two intertwined responsibilities. First, <strong>detection</strong>: identify when a tradable setup forms, with timing aligned to the true nature of the signal — no over-firing, no under-firing. Second, <strong>adjudication</strong>: given a confirmed setup, predict whether the market will FOLLOW the setup direction or DEFY it. Both responsibilities must be modular, replayable, and continuously learning.</p>
+
+<div class="callout">
+<h3>1.1 Scope guardrails — what we are NOT building</h3>
+<p>This is a <strong>hyper-aggressive growth, alpha-maximization</strong> system. Anish 2026-05-11: <em>"We don't deal with anything risk management. We don't deal with the typical hedge fund organizational stuff. That's not our style. We're hyper-aggressive growth. We're maximizing alpha. We don't deal with the bullshit of calculating beta and take profit and blah, blah, blah."</em></p>
+<p>Concrete exclusions:</p>
+<ul>
+<li><strong>No portfolio risk management.</strong> No beta, no Sharpe, no VaR, no Kelly sizing, no stop-loss heuristics, no take-profit ladders. Not because they don't exist — because they're not Anish's edge.</li>
+<li><strong>No hedge-fund organizational ceremony.</strong> No compliance agents, no committee approvals, no audit-trail-as-control-layer. The audit trail comes from append-only logs (SD-002 / SD-004), not from a separate role.</li>
+<li><strong>No social media, no Chinese platforms, no WeChat/Weibo/Douyin integrations.</strong> Some open-source frameworks bundle these — strip them. We are not a social-media product.</li>
+<li><strong>No "general-purpose AI agent" framing.</strong> We are a single-purpose system: read market microstructure, decide trades. Every component justifies its existence relative to that purpose.</li>
+</ul>
+<p>When you read DeerFlow / AIOS / CrewAI / LangGraph for patterns, take the orchestration / memory / message-bus / sub-agent-spawning patterns. Discard their default-included risk-management, social-media, customer-support, or generic-research modules.</p>
+</div>
+
+<h2>2. The Brain Analogy Is Not an Analogy</h2>
+
+<p>Anish: <em>"If we're not recreating my simplistic brain, what are we really doing here?"</em> The agentic OS literally externalizes his cognition. The bull-case ↔ bear-case dialectic is the atomic unit — not a feature, not a layer, the unit. Build to mirror his thinking, or you are building something else.</p>
+
+<p>The framing for the dialectic is <strong>balance</strong>, not morality. Krishna preserves; Shiva destroys; both are necessary because creation requires destruction. Bull and bear outcomes are equally valid possibilities at any setup. The dialectic produces a probability distribution, not a verdict.</p>
+
+<h2>3. Worker Tiers — The Class Hierarchy</h2>
+
+<p>Three classes. Clear contract between them. Grunt workers don't opine; knowledge workers don't tabulate; owners don't do either — they assemble.</p>
+
+<table>
+<tr><th>Tier</th><th>Role</th><th>What they do</th><th>What they DON'T do</th></tr>
+<tr><td><span class="role role-grunt">Tier 0 — Grunt</span></td><td>Calculation, tabulation, diagnosis</td><td>Turn raw data into structured facts. Mechanical, verifiable, deterministic. Apply offset semantics. Count concurrent fires on a single bar. Compute operand values via the canonical Python port.</td><td>Opine, score confidence, debate direction, judge "good" vs "bad."</td></tr>
+<tr><td><span class="role role-knowledge">Tier 1 — Knowledge</span></td><td>Strategic reasoning, dialectic</td><td>Consume grunt-worker output. Reason over situational context. Produce confidence scores via the bull-case ↔ bear-case dialectic. Project market outcomes.</td><td>Re-tabulate (trust the grunt output). Make execution decisions (that's Owner territory).</td></tr>
+<tr><td><span class="role role-owner">Tier 2 — Owner</span></td><td>Orchestration</td><td>Persistent chat thread per indicator family (bull + bear) or per special detection plot. Receive events. Dispatch the right grunt + knowledge workers. Accumulate cross-day memory.</td><td>Tabulate or reason directly. Always delegates.</td></tr>
+</table>
+
+<p>The class hierarchy is enforced by skill composition: <code>detection-plot-diagnosis</code> (grunt) → <code>bull-bear-dialectic</code> (knowledge) → <code>four-square-matrix</code> (output). Each skill does one thing. If a grunt finds itself opining, it has become a knowledge worker; promote it explicitly or split the work.</p>
+
+<h3>3.1 Grunt skills you will need</h3>
+<ul>
+<li><code>detection-plot-diagnosis</code> — produces a diagnosis card describing what fired, what operands were active, what concurrent fires occurred. <strong>EXISTS.</strong></li>
+<li><code>offset-application</code> — applies a declared offset to a boolean stream. Pine offset of −1 = visual plots back one bar but alert fires on present bar. <strong>TBD.</strong></li>
+<li><code>candle-confluence-counter</code> — counts how many named plots fired on the same (symbol, TF, bar). <strong>TBD.</strong></li>
+<li><code>four-satellite-triangulator</code> — your responsibility. Given fire states from the 4 GPS satellites at a bar, emit a "level" context payload. <strong>TBD — YOU BUILD THIS.</strong></li>
+</ul>
+
+<h3>3.2 Knowledge skills already authored</h3>
+<ul>
+<li><code>bull-bear-dialectic</code> — runs the post-setup outcome dialectic per SD-010. Both sides accept the diagnosis; they argue compliance vs defiance.</li>
+<li><code>four-square-matrix</code> — collapses the dialectic into a 2x2 outcome-probability matrix, applies long-run prior calibration.</li>
+<li><code>situational-context-share</code> — your responsibility. Distributes the triangulated level + cross-axis context to every knowledge worker in the system. <strong>TBD — YOU BUILD THIS.</strong></li>
+</ul>
+
+<h2>4. Standing Decisions You Inherit (SD-001 through SD-010)</h2>
+
+<p>These are append-only canonical rules. Source: <code>docs/agentic-os/STANDING_DECISIONS.md</code>. The full text is the source of truth; this is the executive summary.</p>
+
+<table>
+<tr><th>SD</th><th>Decision (one-liner)</th><th>Effect on your work</th></tr>
+<tr><td>SD-001</td><td>Always include Pentagon</td><td>The Pentagon IPSF gate flag in csNew2 / csNew3 / FVG / Matrix is REMOVED in canonical ports. Pentagon is an unconditional operand. Your triangulator does NOT need a Pentagon-gated branch — Pentagon is always-on context.</td></tr>
+<tr><td>SD-002</td><td>Never modify, always new-version</td><td>Every Pine, Python, YAML edit becomes a new file with a clear suffix. Old files stay. You will add new files; you will never overwrite.</td></tr>
+<tr><td>SD-003</td><td>IPSF defaults are not drift</td><td><code>input.int/float/bool/string</code> default differences across files are NOT drift. They are user-tunable. Mirror them in <code>DEFAULTS = {…}</code> per port; never flag as a finding.</td></tr>
+<tr><td>SD-004</td><td>No file deletion ever</td><td>No <code>rm</code>, no <code>git rm</code>, no <code>mv</code>-overwrite, no truncate. The ONLY hard restriction in the standing approval block.</td></tr>
+<tr><td>SD-005</td><td>Bull and bear are separate Indicator Owners</td><td>Tier-A owners are split — bull owner and bear owner are distinct chat threads. Structural separation guarantees the devil's advocate isn't a self-rubber-stamp.</td></tr>
+<tr><td>SD-006</td><td>Plot Owners hold both bull and bear in one context</td><td>Tier-B Plot Owners (Unified Combo, B2B PUP, etc.) own BOTH sides in one chat thread. The dialectic happens inside one context for speed.</td></tr>
+<tr><td>SD-007</td><td>4-square confidence matrix is the per-fire output</td><td>Every fire of an owned plot emits a 2x2. <strong>Cell labels superseded by SD-010 below — read SD-010 carefully.</strong></td></tr>
+<tr><td>SD-008</td><td>Balance, not good vs evil</td><td>Neutral language in formal artifacts. <code>bull-case</code>, <code>bear-case</code>, <code>dialectic</code>. Krishna/Shiva permitted as cultural shorthand; the operational identifiers are neutral.</td></tr>
+<tr><td>SD-009</td><td>Every external data source gets a bull+bear agent pair</td><td>Benzinga news, Benzinga earnings, 13F, options historical, ETF rotation, vol footprint, vol session, TPO — each gets two agents. They feed situational context into knowledge-worker dialectics.</td></tr>
+<tr><td>SD-010</td><td><strong>The dialectic is POST-SETUP outcome prediction, not setup validation</strong></td><td>This is the framing correction that triggered this hand-off. Read in full below.</td></tr>
+</table>
+
+<div class="critical">
+<h3>SD-010 in detail — read this twice</h3>
+<p>The bull-case ↔ bear-case dialectic runs <strong>only after</strong> the diagnosis card is finalized. Both sides ACCEPT the diagnosed setup direction as truth. They do NOT debate whether the operands really fired — the canonical Python port computes that deterministically.</p>
+<p>They debate <strong>whether the market will FOLLOW the setup or DEFY it</strong> over the outcome window (next N bars, next session, etc.). A bearish setup that the market defies (price rips up) is the "order block / divine reversal" cell — Anish's <em>"most magical trait you'll ever have in your life."</em></p>
+</div>
+
+<table class="matrix">
+<tr><th></th><th>MARKET MOVES BULL</th><th>MARKET MOVES BEAR</th></tr>
+<tr><td><strong>BULL SETUP FIRED</strong></td><td class="compliant">P_bull_compliant<br><em>setup followed</em></td><td class="magical">P_bull_defied<br><em>magical reversal</em></td></tr>
+<tr><td><strong>BEAR SETUP FIRED</strong></td><td class="magical">P_bear_defied<br><em>magical reversal</em></td><td class="compliant">P_bear_compliant<br><em>setup followed</em></td></tr>
+</table>
+
+<h2>5. Layered Context — Central Distribution to Peripheral Agents</h2>
+
+<p>Context is king. The 4 GPS satellites are the <strong>central power</strong> of the agentic OS — their triangulated read of "what level are we at right now" is the context every knowledge worker in the system consumes before reasoning. Grunt workers do NOT consume this context (they just tabulate); knowledge workers and Plot Owners DO.</p>
+
+<p>The distribution topology is hub-and-spoke:</p>
+
+<pre class="ascii">
+    GPS Triangulator (hub)
+   /          |          \
+  /           |           \
+ v            v            v
+Plot      Indicator     Data-Source
+Owners    Owners        Pairs (bull/bear)
+(Tier-B)  (Tier-A)      (Tier-1B)
+  |           |             |
+  v           v             v
+[per-fire dialectic consumes triangulated level + cross-axis indicator context]
+</pre>
+
+<p>The hub publishes a <strong>level packet</strong> per bar: which satellites are firing, in which directions, with what magnitude, and the triangulation verdict (high-conviction zone / mixed / no-fire). Subscribers pull this packet on demand when they need to reason. The packet is also written to an append-only log per bar so the knowledge workers can audit historical context.</p>
+
+<p>Cross-axis context flows <strong>bidirectionally</strong>. Forward: GPS triangulation → Plot Owner dialectics. Reverse: concurrent indicator fires on a Plot Owner's bar (e.g. PPD + MOAB + Nagasaki + FAUNA + DISP all firing) → data-source knowledge workers so the Benzinga earnings interpreter knows "while this earnings event was being interpreted, every indicator in the suite was lit up bearish." That context conditions the earnings agent's bull-case and bear-case interpretations.</p>
+
+<h2>6. The 4 GPS Satellites — Your Build Target</h2>
+
+<p>Each satellite is one of Anish's structurally-independent zone-emitting indicators. The triangulation rule: when satellites agree, the agreement is informative because the satellites have NO SHARED ERROR SOURCES.</p>
+
+<table>
+<tr><th>Sat</th><th>Indicator</th><th>What it emits</th><th>Form / function</th><th>Pine source</th></tr>
+<tr><td>1</td><td><code>hv-fvg-gz1-og</code></td><td>"Amazingness" zones (HV + FVG + GZI confluence)</td><td>Looks at <strong>price gaps</strong> and high-volume confluence. Different question from VOB — not asymmetry/velocity. Pure structural-gap detection. Offset = −1 confirmed in CHANGELOG.</td><td><code>hv-fvg-gz1-og/versions/HV_FVG_GZ1_OG_v1.pine</code></td></tr>
+<tr><td>2</td><td><code>vob-single-sens</code></td><td>One VOB zone + 3 buy + 3 sell companions</td><td>One sensitivity dial, 6 companion detection plots. Volume-imbalance asymmetry.</td><td><code>vob-single-sens/versions/...</code></td></tr>
+<tr><td>3</td><td><code>vob-asym</code> at sensitivity A</td><td>6-layer VOB at threshold A</td><td>Asymmetry + velocity + volume. Wraps PBJ engine + TNT-OD per current bible.</td><td><code>vob-asym/versions/...</code></td></tr>
+<tr><td>4</td><td><code>vob-asym</code> at sensitivity B</td><td>6-layer VOB at threshold B</td><td>Same engine as Sat 3 at a different sensitivity. The (A, B) pair is the "magic ratio" Anish wants empirically tuned.</td><td><code>vob-asym/versions/...</code></td></tr>
+</table>
+
+<p>HV+FVG+GZ1 has not yet been touched. You start by understanding its form and function from the Pine source, then port to Python emitting a bar-tagged boolean stream (NOT just a visual zone). The two VOBs already have Pine source; their emission spec needs writing.</p>
+
+<p>The KPI for each satellite is not bull/bear — it is <strong>timing and authenticity</strong>. Emit as soon as the zone is truly detectable. Don't over-fire (false positives). Don't under-fire (false negatives). Anish: <em>"we will know what it means to have a GZ1 or HVFVG or a VOB zone-3 that is really who it says it is. Or is it a pretender?"</em> The per-zone permanent record is the ground truth for the agentic OS — every other agent reasons over satellite emissions, so satellite quality is upstream of everything.</p>
+
+<h2>7. Triangulation — What "High Conviction" Means</h2>
+
+<p>The triangulator subscribes to all 4 satellites and emits a level verdict per bar. v1 is <strong>strict</strong>: 4 of 4 satellites must agree on direction at the same bar → high-conviction zone. 3 of 4 or fewer → no high-conviction emission (the dissenting satellite is logged for later analysis).</p>
+
+<div class="ok">
+<strong>Why 4 of 4 for v1.</strong> Anish: <em>"super strict simple rules now, sophisticate later."</em> The strict rule keeps the v1 triangulation auditable, simple to log, and high-quality. The weighted continuous version comes in v2 once we have enough historical data to score per-satellite reliability priors.
+</div>
+
+<p>Worked example from Anish: <em>"a bearish B2B Napalm + HV+FVG GZ1 zone-on-zone bearish + PPD + RVOL 1x + PBJ bearish + Zone-F on both VOBs bearish — dude, that's a fucking buy-a-put-call, like, tomorrow."</em> Decode: Sat 1 bear zone, Sat 2 + 3 + 4 Zone-F bear, plus two primary detection plot stacks bear. Triangulation = 4/4 bear; primary plots = 2/2 bear. Conviction maxed.</p>
+
+<h2>8. Your Scope — What to Build</h2>
+
+<ol>
+<li><strong>HV+FVG+GZ1 OG emission spec.</strong> Read <code>hv-fvg-gz1-og/versions/HV_FVG_GZ1_OG_v1.pine</code>. Document: form, function, zone-emission boolean conditions, current offset, IPSF parameters. Output: <code>docs/agentic-os/satellites/sat1-hv-fvg-gz1.md</code>.</li>
+<li><strong>VOB single-sensitivity emission spec.</strong> Read <code>vob-single-sens/versions/*.pine</code>. Same shape doc. Output: <code>docs/agentic-os/satellites/sat2-vob-single-sens.md</code>.</li>
+<li><strong>VOB asymmetric pair specs.</strong> Read <code>vob-asym/versions/*.pine</code>. Document the 6 sensitivity layers, the 6 zones, and propose the v1 (A, B) sensitivity pair. Output: <code>docs/agentic-os/satellites/sat3-4-vob-asym-pair.md</code>.</li>
+<li><strong>Canonical Python ports for each satellite.</strong> One file per satellite. Path convention: <code>python_ports/&lt;family&gt;/canonical.py</code>. Follow the conventions in <code>python_ports/hvd_pbj_ppd/the_only_one.py</code> exactly — <code>DEFAULTS</code>, <code>DETECTIONS</code>, <code>STATE_MACHINES</code>, <code>STUBBED</code>.</li>
+<li><strong>Path-A logger Pines per satellite.</strong> Each emits <code>label.new()</code> per zone fire. Convention: <code>path-a-loggers/versions/LOGGER_&lt;NAME&gt;_v1.pine</code>. Anish loads these into TV Pine editor to verify against history.</li>
+<li><strong>The triangulator grunt skill.</strong> <code>.claude/skills/four-satellite-triangulator/</code>. Inputs: 4 boolean fire streams. Output: level packet per bar (high-conviction yes/no, direction, contributing satellites, dissenting satellites).</li>
+<li><strong>The situational-context-share knowledge skill.</strong> <code>.claude/skills/situational-context-share/</code>. Distributes the triangulator's level packet plus cross-axis indicator context to all subscribers (Plot Owners, Indicator Owners, data-source bull/bear pairs).</li>
+</ol>
+
+<h2>9. Don't Start from a Blank File — DeerFlow as Harness Reference</h2>
+
+<p>Anish 2026-05-11 (re-stating the build principle): <em>"You wire up the model, you wire up the tools, you write the prompt loops, and debug the context window when it explodes. Dear Flow would give the assembled product: file system, memory, skills, sub-agents, sandbox, batteries included, working together. We wouldn't run it as is. We would tear it apart, and we would replace the pieces we don't like. This way, we don't start from a blank file."</em></p>
+
+<p>DeerFlow 2.0 stats at hand-off time: <strong>2,050 commits</strong>, <strong>448 open issues</strong>, LangGraph foundation, ByteDance-backed. It is mature enough that the orchestration scaffolding (file system + memory + skills + message gateway + sandbox + sub-agent spawn) is worth lifting verbatim before customizing.</p>
+
+<p>Where DeerFlow's harness maps to our build:</p>
+
+<table>
+<tr><th>DeerFlow primitive</th><th>Our use</th><th>What we keep / replace</th></tr>
+<tr><td>Message gateway</td><td>Routes GPS triangulation packets from the hub to subscribers (Plot Owners, Indicator Owners, data-source pairs). Routes per-fire dialectic outputs to the matrix skill and the calibration store.</td><td><strong>KEEP</strong> the routing primitives + topic/subscriber model. Replace the default content-routing rules with our level-packet schema.</td></tr>
+<tr><td>Sub-agent spawn with scoped context, parallel execution, structured reply</td><td>Triangulator dispatches one "satellite-read" worker per satellite. Plot Owner dispatches one diagnosis + one dialectic per fire.</td><td><strong>KEEP</strong> the spawn-and-aggregate pattern + per-child context scoping + termination conditions. Replace child agent prompts with our skills.</td></tr>
+<tr><td>Persistent memory (JSON, cross-session, with LLM compaction)</td><td>Indicator Owner memory files; Plot Owner debate logs; long-run calibration tables.</td><td><strong>KEEP</strong> the JSON-backed persistent-memory pattern + LLM-compaction for old context. Per SD-002, never overwrite — append + compact.</td></tr>
+<tr><td>Sandbox execution</td><td>Running Python ports on synthetic OHLCV; running TV-MCP queries for Path-A labels.</td><td><strong>KEEP</strong> the sandbox boundary. Replace default tools with our toolset (tradingview-mcp, massive-mcp, python_ports).</td></tr>
+<tr><td>WebSocket integration</td><td>Real-time fires from Massive.com WebSocket, WhaleWisdom feeds, asset.com WebSockets, and the realtime-indicators Path-M pipeline.</td><td><strong>KEEP</strong> the WS wiring patterns (connection management, reconnect logic, backpressure). Per-source schemas are ours.</td></tr>
+<tr><td>BytePlus InfoQuest search / report generation / slide deck output</td><td>—</td><td><strong>STRIP.</strong> Not a research-paper or slide-deck system. Hyper-aggressive growth alpha-max — that's it.</td></tr>
+</table>
+
+<p>Practical guidance: read the DeerFlow source structure, identify the orchestration kernel (the lean ~10–20% that handles message routing, sub-agent lifecycle, memory writeback), and re-implement that kernel for our purposes. Do NOT pull the whole repo as a dependency — the surface area (and the social-media / research modules) is too large. Treat DeerFlow as a <strong>pattern catalog</strong>, not a runtime.</p>
+
+<h2>10. Verification</h2>
+
+<p>End-to-end checks once your build lands. (a) <code>python3 -c "import python_ports.&lt;sat_family&gt;.canonical as m; print(len(m.DETECTIONS), len(m.STUBBED))"</code> imports cleanly for each satellite. (b) Path-A logger Pines load in TV without compile errors. (c) The triangulator skill, run on a synthetic bar series with all 4 satellites firing bear, emits a single high-conviction-bear level packet. (d) The situational-context-share skill, given a Plot Owner fire query, returns the latest level packet plus the bar-window's concurrent indicator fires. (e) An end-to-end dry run: a Plot Owner runs <code>detection-plot-diagnosis</code> → <code>bull-bear-dialectic</code> with the triangulator's context injected → <code>four-square-matrix</code> produces a per-fire payload with non-empty <code>P_bull_compliant</code> / <code>P_bull_defied</code> (or bear-row equivalents).</p>
+
+<p>If any check fails, do not pause. Standing approval is on; iterate to green and document residuals in <code>docs/agentic-os/satellites/RESIDUALS.md</code>.</p>
+
+<hr>
+
+<h2>P.S. — GitHub Repos for Pattern Library</h2>
+
+<p>Reference these repos for agentic-OS architecture patterns. None of them solve our exact problem (none have built a trading-cognition mirror with bull-vs-bear dialectic on confirmed setups), but each is worth scanning for the specific pattern in column 3.</p>
+
+<table>
+<tr><th>Repo</th><th>What it is</th><th>Pattern to steal</th></tr>
+<tr><td><a href="https://github.com/bytedance/deer-flow">bytedance/deer-flow</a> <em>(v2.0)</em></td><td>ByteDance's open-source SuperAgent harness — went viral on GitHub Trending Feb 2026. v2 is a ground-up rewrite sharing no code with v1. Built on LangGraph + LangChain. Lead agent spawns scoped sub-agents in parallel; each has its own context, tools, termination conditions; lead synthesizes structured results.</td><td>The <strong>spawn-and-synthesize</strong> pattern at production scale. Per-sub-agent scoped-context model maps directly to our Plot Owner ↔ Task Worker dispatches. <strong>Anish's pick.</strong> Note: DeerFlow includes search/crawling via BytePlus InfoQuest and a research-report / slide-deck output stack — STRIP those modules; we are not a research-paper or slide-deck system. Take the harness orchestration; leave the content modules.</td></tr>
+<tr><td><a href="https://github.com/agiresearch/AIOS">agiresearch/AIOS</a></td><td>AI Agent Operating System — embeds LLMs into an OS abstraction layer</td><td>Resource scheduling, context-switching, memory/storage/tool management contracts. The "kernel as abstraction over OS kernel" framing for the triangulator hub.</td></tr>
+<tr><td><a href="https://github.com/crewAIInc/crewAI">crewAIInc/crewAI</a></td><td>Role-playing autonomous agents in collaborative crews</td><td>Layered memory (ChromaDB short-term + SQLite mid + long-term + entity-vector). Use for the level-packet historical log + per-fire payload memory.</td></tr>
+<tr><td><a href="https://github.com/langchain-ai/langgraph">langchain-ai/langgraph</a></td><td>Graph-based agent design — each agent is a node with state, connected via directed graph</td><td>Conditional logic + multi-team coordination + hierarchical control. Our worker tiers map naturally to a 3-level graph; use LangGraph idioms even if not using LangGraph.</td></tr>
+<tr><td><a href="https://github.com/microsoft/autogen">microsoft/autogen</a></td><td>Async multi-agent simulation of expert teams</td><td>Asynchronous communication patterns. Our Plot Owner ↔ data-source-pair message bus should mimic AutoGen's async pattern.</td></tr>
+<tr><td><a href="https://github.com/ComposioHQ/agent-orchestrator">ComposioHQ/agent-orchestrator</a></td><td>Orchestrator for parallel coding agents — plans, spawns, handles CI</td><td>Spawn-and-aggregate pattern. Our triangulator is a 4-satellite aggregator; lift the spawn/aggregate code structure.</td></tr>
+<tr><td><a href="https://github.com/ruvnet/ruflo">ruvnet/ruflo</a></td><td>Claude-native multi-agent orchestrator — swarms, RAG, native Code/Codex integration</td><td>Claude-Code-native idioms. Our entire stack runs in Claude Code; ruflo shows the canonical layout for slash commands, hooks, and persistent agent threads.</td></tr>
+<tr><td><a href="https://github.com/2FastLabs/agent-squad">2FastLabs/agent-squad</a></td><td>Multi-agent conversation framework</td><td>Conversation routing — which agent handles which message. Maps to our Owner-dispatch pattern.</td></tr>
+<tr><td><a href="https://www.openfang.sh/">OpenFang</a></td><td>Agent OS in Rust — SQLite + vector embeddings + cross-channel sessions</td><td>Cross-channel canonical-session model with LLM compaction. Our cross-day Indicator Owner memory needs this exact pattern.</td></tr>
+<tr><td><a href="https://github.com/caramaschiHG/awesome-ai-agents-2026">caramaschiHG/awesome-ai-agents-2026</a></td><td>Curated list — 300+ AI agents / frameworks / tools across 20+ categories, updated monthly</td><td>Use as the entry point for any pattern not in the row above.</td></tr>
+<tr><td><a href="https://github.com/VoltAgent/awesome-ai-agent-papers">VoltAgent/awesome-ai-agent-papers</a></td><td>Curated 2026 agent research papers — engineering, memory, evaluation, workflows</td><td>For when an empirical decision needs literature backup (e.g. "what's the right outcome window for compliance/defiance measurement").</td></tr>
+</table>
+
+<div class="footer">
+Source documents the recipient should also read:
+<code>docs/agentic-os/THESIS.md</code>,
+<code>docs/agentic-os/ARCHITECTURE.md</code>,
+<code>docs/agentic-os/WORKER_TIERS.md</code>,
+<code>docs/agentic-os/DATA_SOURCE_PAIRS.md</code>,
+<code>docs/agentic-os/VOB_GPS_FOUR_SATELLITE.md</code>,
+<code>docs/agentic-os/STANDING_DECISIONS.md</code>,
+<code>docs/agentic-os/canonical/{unified-combo,fvg-combo,matrix-combo}.md</code>,
+<code>python_ports/hvd_pbj_ppd/the_only_one.py</code> (reference implementation for canonical port conventions),
+<code>path-a-loggers/README.md</code> (logger Pine conventions),
+<code>.claude/skills/{detection-plot-diagnosis,bull-bear-dialectic,four-square-matrix}/SKILL.md</code>.
+</div>
+
+</body>
+</html>

@@ -1,9 +1,21 @@
 ---
 name: bull-bear-dialectic
-description: Knowledge-worker skill. Given a diagnosis card from detection-plot-diagnosis, run the bull-case AND bear-case dialectic — each side writes its strongest case with confidence. Output is a dialectic transcript consumed by four-square-matrix. Per SD-008, neutral language only (bull-case / bear-case / dialectic; never good/evil).
+description: Knowledge-worker skill. Runs the POST-SETUP OUTCOME dialectic — given a confirmed diagnosis card, both sides accept the setup direction and debate whether the market will FOLLOW it (compliance) or DEFY it (the "magical" reversal cell per SD-010). Output is a dialectic transcript consumed by four-square-matrix. Neutral language per SD-008.
 ---
 
-# Bull-Bear Dialectic Skill — v1.0.0
+# Bull-Bear Dialectic Skill — v1.1.0 (corrected per SD-010)
+
+> **CRITICAL FRAMING (SD-010)**: The dialectic does NOT debate whether
+> the setup is real. The setup is OBJECTIVELY confirmed by the diagnosis
+> card. Both sides ACCEPT the setup direction. They debate **outcome
+> alignment** — will the market follow the setup, or defy it?
+>
+> Example: a bar closes with all-bearish operands (RVOL bear, PPD, PB,
+> DISP bear, FAUNA bear). Diagnosis card: BEAR SETUP, confirmed. The
+> dialectic asks: over the next N bars, will the market move bear
+> (setup followed) or bull (setup defied — the order-block / divine-
+> reversal case)? Both sides accept the bear setup as truth; they
+> disagree on what the market will do next.
 
 The knowledge-worker skill at the heart of the agentic OS. It runs the
 DIALECTIC: a structured conversation between a bull-case agent and a
@@ -50,53 +62,69 @@ Read the diagnosis card. Verify:
 
 If any check fails, abort and emit a marker for the Plot Owner.
 
-### Step 1 — Bull-case construction
+### Step 1 — Compliance case construction (setup-direction outcome)
 
-The bull-case agent reads the diagnosis card and writes the case that
-the firing direction is the actual market direction. Required structure:
+Read the diagnosis card. Note the SETUP DIRECTION (bull or bear). The
+COMPLIANCE-case agent argues the market WILL FOLLOW the setup direction
+over the outcome window. Required structure:
 
 ```
-BULL-CASE
-  Summary: <one sentence: why this fire predicts the firing direction>
-  Supporting facts (from diagnosis):
-    - <operand X fired with value Y, well above threshold Z>
-    - <concurrent plot ABC fired in the same direction — confluence>
-  Supporting facts (from situational context, if provided):
-    - <context source DEF reports recent X consistent with bull case>
-    - <4-satellite triangulation: 3 of 4 satellites agree bull>
+COMPLIANCE-CASE (setup_direction = <bull|bear>, outcome = same)
+  Summary: <one sentence: why the market will follow the setup direction>
+  Supporting facts (about the setup's strength — diagnosis-derived):
+    - <operand X fired strongly — signal magnitude high>
+    - <concurrent plot ABC fired in same direction — confluence supports compliance>
+  Supporting facts (about market behavior — situational context):
+    - <session position favorable: e.g. mid-session trend continuation>
+    - <historical analogue: same operand mix on this symbol → compliance >70% N times>
+    - <4-satellite triangulation: high-conviction zone agrees with setup>
+    - <regime / data-source context: e.g. ETF rotation aligned with setup>
   Self-confidence: <0.0 - 1.0>
-  Strongest counter-argument (acknowledgment of bear-case):
-    <one sentence — what would have to be true for bull-case to be wrong>
+  Strongest counter-argument (acknowledgment of defiance-case):
+    <one sentence — what condition would make the market defy this setup>
 ```
 
-Hard requirement: the bull-case agent MUST write the
-`Strongest counter-argument` field. It is the one place where
-intellectual honesty is enforced. A bull-case that scores 0.95 and
-says "no plausible counter-argument" is wrong by construction —
-something always could go wrong; identify it.
+Hard requirement: the compliance-case agent MUST write the
+`Strongest counter-argument` field. A compliance-case at 0.95 that says
+"no plausible defiance" is wrong by construction — the market always
+can surprise.
 
-### Step 2 — Bear-case construction
+### Step 2 — Defiance case construction (the magical reversal)
 
-Symmetric. The bear-case agent reads the same diagnosis card AND the
-bull-case's writing (full transparency — the agents see each other's
-work) and writes the case that the firing direction is a TRAP, or that
-the OPPOSITE direction is the actual market direction.
+The DEFIANCE-case agent reads the same diagnosis card AND the compliance
+case's writing (full transparency) and argues the market WILL DEFY the
+setup direction — i.e. move OPPOSITE to what the operands predict.
+
+This is the "order block / divine reversal" case Anish describes: the
+bearish setup that is actually a smart-money accumulation zone; the
+bullish setup that is the distribution top. Per SD-010, this cell is
+where the "magical trait" lives — recognizing when a confirmed bear
+setup is the bullish entry.
 
 ```
-BEAR-CASE
-  Summary: <one sentence: why this fire is a trap or why the opposite is true>
-  Supporting facts (from diagnosis):
-    - <contradicting concurrent plot DEF firing in opposite direction>
-    - <hidden gate G is inactive that would have suppressed this fire>
-  Supporting facts (from situational context, if provided):
-    - <context source HIJ reports recent X consistent with bear case>
-    - <historical analogue: same operand mix on this symbol → reversed>
+DEFIANCE-CASE (setup_direction = <bull|bear>, outcome = opposite)
+  Summary: <one sentence: why the market will move OPPOSITE to the setup>
+  Supporting facts (location / structural reasons setup-direction-defies):
+    - <bar location is at a known OB / supply zone / S-R level → reversal probable>
+    - <volume profile context: this level has been the bottom in N prior touches>
+    - <session position: setup formed at session-open — common fakeout window>
+    - <higher-TF context: setup is bear but daily trend is firmly bull>
+  Supporting facts (situational context — data sources):
+    - <Benzinga: catalyst about to break in opposite direction (earnings T-1)>
+    - <13F: institutional positioning skewed opposite to setup direction>
+    - <historical anti-analogue: same exact operand mix here → reversed N% of last M>
   Self-confidence: <0.0 - 1.0>
-  Strongest counter-argument (acknowledgment of bull-case):
-    <one sentence — what would have to be true for bear-case to be wrong>
+  Strongest counter-argument (acknowledgment of compliance-case):
+    <one sentence — what condition would make the market follow the setup>
 ```
 
-Same hard requirement: bear-case writes the bull-case acknowledgment.
+Same hard requirement: defiance-case writes the compliance acknowledgment.
+
+NOTE: Both agents ACCEPT the diagnosis card as truth. They do NOT debate
+whether the bull/bear operands really fired — that's diagnosis's job and
+the canonical Python port computes it deterministically. They debate
+ONLY market outcome over the configured `outcome_window` (e.g. next 5
+bars, next session, next confirmation cycle).
 
 ### Step 3 — Reconciliation pass
 

@@ -274,3 +274,90 @@ Format:
   - Hiring order in `DATA_SOURCE_PAIRS.md`: earnings calendar first,
     then vol-session, then vol-footprint, then TPO, ETF rotation,
     options, news, 13F.
+
+---
+
+## SD-010 — The dialectic is POST-SETUP outcome prediction, not setup validation (CRITICAL — supersedes SD-007 framing)
+
+- **Date**: 2026-05-11
+- **Source**: Anish (verbatim, correcting an earlier conceptual error):
+  "Krishna and Shiva do not have a conversation until after the visual
+  plot is fucking determined. There are many times… it's a very bearish
+  candle. It's a bearish candle. It has rvol bearish. It has ppd. We're
+  not saying that it has a bullish pup and a bearish rvol 1x. What we
+  are saying is that it's all aligned to be bearish, and yet the actual
+  candle is a bullish event. Vice versa too."
+- **Decision**: The bull-case ↔ bear-case dialectic ONLY runs AFTER the
+  diagnosis card is finalized — i.e. after the setup is OBJECTIVELY
+  CONFIRMED. The dialectic does NOT debate whether the setup is "real."
+  Both sides ACCEPT the setup as diagnosed. They debate **whether the
+  market will FOLLOW the setup direction or DEFY it** — the post-setup
+  outcome.
+- **Scope**: Every skill, every Plot Owner, every per-fire payload.
+  This overrides any text in earlier docs (SD-007, ARCHITECTURE.md,
+  bull-bear-dialectic SKILL.md, four-square-matrix SKILL.md) that
+  framed the dialectic as "is the fire real / is it a trap."
+- **Acknowledgment**: A trap is NOT the same as a fake setup. A fake
+  setup would be a diagnosis error (operands miscomputed). A trap is a
+  GENUINE setup whose direction the market then defies. Diagnosis is
+  certain (per the canonical Python port's computation). Dialectic is
+  probabilistic (predicting outcome alignment vs anti-alignment).
+- **Worked example**: A bar N closes with RVOL bearish, PPD bearish,
+  PB bearish, DISP bearish, FAUNA bearish. Diagnosis confirms: bear
+  setup, all operands aligned. The dialectic then asks: will the
+  market move BEAR over bars N+1..N+M (setup compliant), or BULL
+  (setup defied — the "magical" cell where bearish setup precedes
+  bullish move, often because the setup bar IS the order block /
+  smart-money accumulation point)?
+
+### The 2x2 matrix renamed (supersedes SD-007's cell labels)
+
+|                       | MARKET MOVES BULL (over outcome window) | MARKET MOVES BEAR |
+|-----------------------|---|---|
+| **BULL SETUP FIRED**  | `P_bull_compliant`  (setup followed) | `P_bull_defied`  (the magical reversal) |
+| **BEAR SETUP FIRED**  | `P_bear_defied`  (the magical reversal) | `P_bear_compliant`  (setup followed) |
+
+The off-diagonal cells (`P_bull_defied`, `P_bear_defied`) are where the
+"order block / divine reversal" insight lives. Anish: "Recognizing when
+a bearish unified combo is actually the order block, and it is the
+incarnate from God who came to us to send us higher, is almost the
+most magical trait you'll ever have in your life."
+
+### Operational consequences
+
+- The diagnosis skill (`detection-plot-diagnosis`) is unchanged — it
+  has always been purely descriptive and never opined on outcome.
+- `bull-bear-dialectic` SKILL.md is amended: both sides ACCEPT the
+  diagnosis. They debate outcome alignment, not setup validity. Each
+  side's `Supporting facts (from situational context)` includes
+  evidence about likely market behavior AT THIS LOCATION given the
+  setup (e.g. session position, prior fires of this exact setup, OB
+  context, regime). The strongest counter-argument acknowledges the
+  opposite-outcome case.
+- `four-square-matrix` SKILL.md is amended: cell labels renamed to
+  `P_bull_compliant`, `P_bull_defied`, `P_bear_defied`,
+  `P_bear_compliant`. SD-007's "P_true_angel" naming and the v1
+  monolithic skill's "angel/devil" framing are formally retired here.
+- A new field is required in the per-fire payload: `outcome_window`
+  (e.g. "next 5 bars", "next 10 bars", "session close") — the
+  window over which compliance vs defiance is measured. Plot Owner
+  sets per-plot.
+- `outcome` stamping (the `outcome-stamping` skill, TBD) becomes
+  load-bearing: at fire+M bars, the actual market direction is
+  recorded; the matrix's row is then CALIBRATED.
+
+### Why this matters (re-stating the error)
+
+The earlier framing implicitly treated the dialectic as "did this fire
+correctly identify a bull setup, or was the bull setup wrong?" That
+question has an OBJECTIVE answer — the canonical Python port computes
+the operands; the diagnosis is right or wrong by computation, not by
+debate. There is nothing for Krishna and Shiva to argue about at the
+diagnosis layer.
+
+The CORRECT question — the one that requires a dialectic — is "given
+the bull setup is correctly diagnosed, will the market comply or
+defy?" That has no algorithmic answer. It requires reasoning over
+situational context (data sources, session position, regime,
+historical analogues). Krishna argues compliance; Shiva argues defiance.
+Both consume the diagnosis as truth.

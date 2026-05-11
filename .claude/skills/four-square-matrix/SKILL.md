@@ -1,42 +1,43 @@
 ---
 name: four-square-matrix
-description: Output skill. Given a dialectic transcript from bull-bear-dialectic + the firing direction, collapse to the canonical 2x2 confidence matrix per SD-007, apply long-run prior calibration if available, emit the per-fire payload. Final step in the diagnosis → dialectic → matrix chain.
+description: Output skill. Given a dialectic transcript from bull-bear-dialectic + the firing direction, collapse to the canonical 2x2 POST-SETUP OUTCOME confidence matrix per SD-010 (compliance vs defiance), apply long-run prior calibration if available, emit the per-fire payload. Final step in the diagnosis → dialectic → matrix chain.
 ---
 
-# Four-Square Matrix Skill — v1.0.0
+# Four-Square Matrix Skill — v1.1.0 (corrected per SD-010)
 
 The output skill that produces the canonical per-fire payload. Last in
 the chain.
 
-> Anish 2026-05-11: "Being able to get really good at determining that
-> four box matrix, that's a skill."
+> SD-010 (CRITICAL): the matrix is OUTCOME prediction, not setup
+> validation. Both diagonals represent "setup followed" (compliance);
+> both off-diagonals represent "setup defied" (the magical reversal
+> cell). Cells renamed from the v1.0 angel/devil terminology.
 
 ## What this skill produces
 
-The 2x2 per-fire confidence matrix per SD-007:
+The 2x2 per-fire POST-SETUP OUTCOME matrix per SD-010:
 
-|                   | ACTUAL DIRECTION = BULL | ACTUAL DIRECTION = BEAR |
-|-------------------|---|---|
-| **PLOT FIRED BULL** | `P_true_bull` | `P_bear_in_bull_clothing` |
-| **PLOT FIRED BEAR** | `P_bull_in_bear_clothing` | `P_true_bear` |
+|                       | MARKET MOVES BULL (over outcome window) | MARKET MOVES BEAR |
+|-----------------------|---|---|
+| **BULL SETUP FIRED**  | `P_bull_compliant` (setup followed) | `P_bull_defied` (magical reversal) |
+| **BEAR SETUP FIRED**  | `P_bear_defied` (magical reversal) | `P_bear_compliant` (setup followed) |
 
-For a single fire, only the ROW matching the firing direction is
-populated. The 4-square BUILDS UP across many fires — the off-diagonal
-cells become meaningful when the long-run table aggregates fires of
-both directions.
+For a single fire, only the ROW matching the FIRING SETUP DIRECTION is
+populated. The off-diagonals (`P_bull_defied`, `P_bear_defied`) are
+the "order block / divine reversal" cells per SD-010.
 
-## Naming per SD-008
+## Naming per SD-008 + SD-010
 
-Cell labels use NEUTRAL language:
-- `P_true_bull` (not "P_true_angel")
-- `P_bear_in_bull_clothing` (not "P_devil_dressed_as_angel")
-- `P_bull_in_bear_clothing` (not "P_angel_dressed_as_devil")
-- `P_true_bear` (not "P_true_devil")
+Cell labels use NEUTRAL + OUTCOME-EXPLICIT language:
+- `P_bull_compliant` — bull setup, bull outcome (replaces `P_true_bull` / `P_true_angel`)
+- `P_bull_defied` — bull setup, bear outcome (replaces `P_bear_in_bull_clothing` / `P_devil_dressed_as_angel`)
+- `P_bear_defied` — bear setup, bull outcome (replaces `P_bull_in_bear_clothing` / `P_angel_dressed_as_devil`)
+- `P_bear_compliant` — bear setup, bear outcome (replaces `P_true_bear` / `P_true_devil`)
 
-The "in clothing" framing acknowledges Anish's metaphor (a fire that
-appears one direction but is actually the other) without invoking
-moral language. Both `P_true_*` and `P_*_in_*_clothing` are equally
-informative; one is not "better" than the other.
+The diagonal vs off-diagonal split is the load-bearing distinction.
+Diagonal = setup did its job (market complied). Off-diagonal = the
+setup was the FAKEOUT and the real move was opposite (the "magical"
+cell per Anish's SD-010 framing).
 
 ## Inputs
 
@@ -56,40 +57,47 @@ Load the dialectic transcript. Extract:
 - `bear_case.self_confidence`
 - `reconciliation.calibration_status`
 
-### Step 2 — Normalize confidences
+### Step 2 — Normalize compliance/defiance confidences
 
-If the dialectic flagged `calibration_status: over` or `under`,
-normalize:
+The dialectic transcript provides `compliance_case.self_confidence` and
+`defiance_case.self_confidence`. Normalize:
 
 ```python
-total = bull_conf + bear_conf
+total = compliance_conf + defiance_conf
 if abs(total - 1.0) > 0.05:
-    bull_conf = bull_conf / total
-    bear_conf = bear_conf / total
+    compliance_conf = compliance_conf / total
+    defiance_conf = defiance_conf / total
 ```
 
-Now `bull_conf + bear_conf == 1.0` exactly.
+Now `compliance_conf + defiance_conf == 1.0` exactly.
 
 ### Step 3 — Apply prior calibration (if available)
 
-If a prior 4-square calibration table exists for this plot:
+If a prior 2x2 calibration table exists for this plot at this
+outcome_window:
 
 ```python
-# The prior gives us the historical P(actual_dir | fired_dir) baseline
-prior_p_true_for_dir = prior_calibration[firing_direction]['P_true']
-prior_p_inverted_for_dir = prior_calibration[firing_direction]['P_inverted']
+# Prior gives historical P(compliance | this setup direction)
+prior_p_compliance_for_dir = prior_calibration[firing_setup_direction]['P_compliance']
 
 # Bayesian update: blend dialectic confidence with prior
-# (weight = 0.6 * dialectic + 0.4 * prior, calibration-tunable)
 DIALECTIC_WEIGHT = 0.6
 PRIOR_WEIGHT = 0.4
 
-if firing_direction == 'bull':
-    p_true_bull = DIALECTIC_WEIGHT * bull_conf + PRIOR_WEIGHT * prior_p_true_for_dir
-    p_bear_in_bull_clothing = 1.0 - p_true_bull
-else:
-    p_true_bear = DIALECTIC_WEIGHT * bear_conf + PRIOR_WEIGHT * prior_p_true_for_dir
-    p_bull_in_bear_clothing = 1.0 - p_true_bear
+p_compliance = DIALECTIC_WEIGHT * compliance_conf + PRIOR_WEIGHT * prior_p_compliance_for_dir
+p_defiance = 1.0 - p_compliance
+
+# Map to the correct matrix cells based on firing setup direction
+if firing_setup_direction == 'bull':
+    p_bull_compliant = p_compliance
+    p_bull_defied = p_defiance
+    p_bear_defied = None
+    p_bear_compliant = None
+else:  # bear setup
+    p_bull_compliant = None
+    p_bull_defied = None
+    p_bear_defied = p_defiance      # market moved bull when setup said bear
+    p_bear_compliant = p_compliance  # market moved bear as setup said
 ```
 
 If no prior available (cold start), use dialectic confidences directly.

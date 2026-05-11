@@ -1,0 +1,60 @@
+//@version=5
+// =============================================================================
+// LOGGER — SUPER family (superBull / superBear / sduperBull / sduperBear)
+// =============================================================================
+// PURPOSE: emit one label.new() per fire of each SUPER-family semantic group
+// from BOTH HVDPBJPPD ("S! Bull/Bear" + "SD! Bull/Bear") AND Squarify
+// ("1 SD!" + "2 SUPER"). Per VALIDATE 7 there are 3 semantic groups:
+//   - bare SUPER = csNew3 + det_*NapalmCons   (Squarify "2 SUPER" gates this
+//                  as `superBull and not sduperBull`; HVDPBJPPD plots
+//                  "S! Bull" = superBull regardless of sduper, so the two
+//                  emitters differ)
+//   - bare SDUPER = csNew3 + det_*NapalmCons + prev-bar sigPUP/sigPPD
+//   - the OR-combined "anySuper" not separately plotted
+//
+// SETUP: load AFTER HVDPBJPPD and SQUARIFY 46. Subscribe to all four pairs of
+// plots; logger emits distinguishable tags so we can cross-check that
+// HVDPBJPPD and Squarify agree on the fire bars.
+//
+// LABEL TAGS:
+//   "Sh!B"   = HVDPBJPPD S!  Bull
+//   "Sh!R"   = HVDPBJPPD S!  Bear
+//   "SDh!B"  = HVDPBJPPD SD! Bull
+//   "SDh!R"  = HVDPBJPPD SD! Bear
+//   "Ssq!B"  = Squarify  "2 SUPER" (gated bull; bear gated same plot title?
+//                                   no — Squarify only plots a bull "2 SUPER".
+//                                   Bear side leave at close)
+//   "SDsq!B" = Squarify  "1 SD!"   (bull side)
+// =============================================================================
+
+indicator("LOGGER SUPER Family", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+grp = "★ Source Plots — HVDPBJPPD + Squarify SUPER variants ★"
+
+// HVDPBJPPD side
+s_hvd_super_bull   = input.source(close, "HVD S!  Bull  (plot 'S! Bull')",     group=grp)
+s_hvd_super_bear   = input.source(close, "HVD S!  Bear  (plot 'S! Bear')",     group=grp)
+s_hvd_sduper_bull  = input.source(close, "HVD SD! Bull  (plot 'SD! Bull')",    group=grp)
+s_hvd_sduper_bear  = input.source(close, "HVD SD! Bear  (plot 'SD! Bear')",    group=grp)
+
+// Squarify side
+s_sq_super_bull    = input.source(close, "Squarify 2 SUPER (bull)",            group=grp)
+s_sq_sduper_bull   = input.source(close, "Squarify 1 SD!   (bull)",            group=grp)
+
+f_fire(s) => not na(s) and s != 0 and barstate.isconfirmed
+
+f_log(cond, tag, isBull) =>
+    if cond
+        if isBull
+            label.new(bar_index, low,  tag, color=color.new(color.lime, 90),    style=label.style_label_up,   textcolor=color.lime,    size=size.tiny, yloc=yloc.belowbar)
+        else
+            label.new(bar_index, high, tag, color=color.new(color.fuchsia, 90), style=label.style_label_down, textcolor=color.fuchsia, size=size.tiny, yloc=yloc.abovebar)
+
+f_log(f_fire(s_hvd_super_bull),  "Sh!B",   true)
+f_log(f_fire(s_hvd_super_bear),  "Sh!R",   false)
+f_log(f_fire(s_hvd_sduper_bull), "SDh!B",  true)
+f_log(f_fire(s_hvd_sduper_bear), "SDh!R",  false)
+f_log(f_fire(s_sq_super_bull),   "Ssq!B",  true)
+f_log(f_fire(s_sq_sduper_bull),  "SDsq!B", true)
+
+plot(0, display=display.data_window)
