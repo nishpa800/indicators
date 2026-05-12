@@ -1,6 +1,36 @@
 # VOB Indicator Suite — Changelog
 
-## VOB_Asym_T3x6_MutEx_Claude_v9_2026-05-12.pine — 2026-05-12
+## VOB_Asym_T3x6_MutEx_Claude_v9_2026-05-12.pine — v9.1 patch — 2026-05-12
+
+Adds the "Wrong-Way 3" family + makes every v9 detection non-repainting
+with 1:1 alert parity. Same file as v9, indicator() title bumped to v9.1
+to mark the patch.
+
+New Wrong-Way 3 detection:
+- **Wrong-Way 3 Bear** (`WW↑` yellow xcross below bar) — Three consecutive
+  bear-zone tiers ASCENDING against the expected descent. Slides any
+  window of 3 (F-E-D / E-D-C / D-C-B / C-B-A); if any window shows
+  three bear zones rising in price beyond the tolerance percent,
+  fire. Bears are losing structure → potential reversal.
+- **Wrong-Way 3 Bull** (`WW↓` orange xcross above bar) — Three
+  consecutive bull-zone tiers DESCENDING against the expected ascent.
+  Same window logic. Bulls are losing structure → potential reversal.
+- Tolerance reused from Ladder Tolerance %; deviation must EXCEED
+  tolerance to count, so noise doesn't trigger.
+
+Non-repainting + 1:1 parity:
+- Every v9 plot_* boolean (Ladder, Ladder+Gap, Adjacent, Wrong-Way) is
+  now gated by `barstate.isconfirmed` — visual paint only on confirmed
+  bar close.
+- All `alert()` calls use `alert.freq_once_per_bar_close` — alert fires
+  on the same boundary as the plot.
+- The visual plotshape and the alert fire on the SAME boolean, so what
+  you see on the chart matches what you get in the inbox.
+
+The new "Any Checked Detection" alertcondition is renamed to "Any
+Checked Detection (v9.1)" and now includes plot_ww_bull / plot_ww_bear.
+
+## VOB_Asym_T3x6_MutEx_Claude_v9_2026-05-12.pine — v9 — 2026-05-12
 
 Three new detection plots + one consolidated "any checked detection"
 alertcondition. Defaults rebased to Anish's current per-screenshot

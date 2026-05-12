@@ -1,5 +1,5 @@
 //@version=6
-indicator("VOB Asym T3 ×6 + MutEx Lines + Claude v9", overlay = true
+indicator("VOB Asym T3 ×6 + MutEx Lines + Claude v9.1", overlay = true
              , max_lines_count = 500, max_labels_count = 500, max_bars_back = 5000)
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -184,6 +184,11 @@ bool  show_adjacent        = input.bool(true,  "Adjacent Bull/Bear (same tier wi
 int   adjacent_bars        = input.int(25,    "Adjacent Bull/Bear Bar Window",
      group = "Detection — Adjacent", minval = 1,
      tooltip = "If a same-tier bull zone and bear zone are both formed within this many bars of each other, fire the Adjacent detection on the second one. Default 25.")
+
+bool  show_ww_bear         = input.bool(true,  "Wrong-Way 3 Bear (3 bear zones ASCENDING against expected descent)",
+     group = "Detection — Wrong-Way 3")
+bool  show_ww_bull         = input.bool(true,  "Wrong-Way 3 Bull (3 bull zones DESCENDING against expected ascent)",
+     group = "Detection — Wrong-Way 3")
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INPUTS — Bullish Zone Colors
@@ -1101,18 +1106,44 @@ bool adj_fire_e = (fire_zb_e or fire_zs_e) and not na(cd_zb_e) and not na(cd_zs_
 bool adj_fire_f = (fire_zb_f or fire_zs_f) and not na(cd_zb_f) and not na(cd_zs_f) and math.abs(cd_zb_f - cd_zs_f) <= adjacent_bars
 bool adjacent_any = adj_fire_a or adj_fire_b or adj_fire_c or adj_fire_d or adj_fire_e or adj_fire_f
 
+// Wrong-Way 3: any 3 consecutive tiers (F-E-D / E-D-C / D-C-B / C-B-A) whose
+// zones violate the expected ladder direction. Tolerance is reused: deviation
+// must EXCEED tolerance to count as wrong-way (so noise doesn't trigger it).
+//   Bear zones are expected to DESCEND F→A. Wrong-way bear = 3 in a row
+//   ascending (E > F, D > E, etc.).
+//   Bull zones are expected to ASCEND F→A. Wrong-way bull = 3 in a row
+//   descending (E < F, D < E, etc.).
+bool ww_bear_fed = not na(bear_F) and not na(bear_E) and not na(bear_D) and bear_E > bear_F * (1 + ltol) and bear_D > bear_E * (1 + ltol)
+bool ww_bear_edc = not na(bear_E) and not na(bear_D) and not na(bear_C) and bear_D > bear_E * (1 + ltol) and bear_C > bear_D * (1 + ltol)
+bool ww_bear_dcb = not na(bear_D) and not na(bear_C) and not na(bear_B) and bear_C > bear_D * (1 + ltol) and bear_B > bear_C * (1 + ltol)
+bool ww_bear_cba = not na(bear_C) and not na(bear_B) and not na(bear_A) and bear_B > bear_C * (1 + ltol) and bear_A > bear_B * (1 + ltol)
+bool ww_bear_any = ww_bear_fed or ww_bear_edc or ww_bear_dcb or ww_bear_cba
+
+bool ww_bull_fed = not na(bull_F) and not na(bull_E) and not na(bull_D) and bull_E < bull_F * (1 - ltol) and bull_D < bull_E * (1 - ltol)
+bool ww_bull_edc = not na(bull_E) and not na(bull_D) and not na(bull_C) and bull_D < bull_E * (1 - ltol) and bull_C < bull_D * (1 - ltol)
+bool ww_bull_dcb = not na(bull_D) and not na(bull_C) and not na(bull_B) and bull_C < bull_D * (1 - ltol) and bull_B < bull_C * (1 - ltol)
+bool ww_bull_cba = not na(bull_C) and not na(bull_B) and not na(bull_A) and bull_B < bull_C * (1 - ltol) and bull_A < bull_B * (1 - ltol)
+bool ww_bull_any = ww_bull_fed or ww_bull_edc or ww_bull_dcb or ww_bull_cba
+
 // Cooldown stamps for new detections
 var int last_lb  = na
 var int last_lr  = na
 var int last_lgb = na
 var int last_lgr = na
 var int last_adj = na
+var int last_wwb = na
+var int last_wwr = na
 
-bool plot_ladder_bull     = show_ladder_bull     and ladder_bull     and f_cd_ok(last_lb,  cooldown_bars)
-bool plot_ladder_bear     = show_ladder_bear     and ladder_bear     and f_cd_ok(last_lr,  cooldown_bars)
-bool plot_ladder_gap_bull = show_ladder_gap_bull and ladder_gap_bull and f_cd_ok(last_lgb, cooldown_bars)
-bool plot_ladder_gap_bear = show_ladder_gap_bear and ladder_gap_bear and f_cd_ok(last_lgr, cooldown_bars)
-bool plot_adjacent        = show_adjacent        and adjacent_any    and f_cd_ok(last_adj, cooldown_bars)
+// NON-REPAINTING GATING — barstate.isconfirmed ensures the visual plot only
+// paints on bar close, matching alert.freq_once_per_bar_close exactly. The
+// same boolean drives plotshape AND alert(), giving strict 1:1 parity.
+bool plot_ladder_bull     = show_ladder_bull     and ladder_bull     and barstate.isconfirmed and f_cd_ok(last_lb,  cooldown_bars)
+bool plot_ladder_bear     = show_ladder_bear     and ladder_bear     and barstate.isconfirmed and f_cd_ok(last_lr,  cooldown_bars)
+bool plot_ladder_gap_bull = show_ladder_gap_bull and ladder_gap_bull and barstate.isconfirmed and f_cd_ok(last_lgb, cooldown_bars)
+bool plot_ladder_gap_bear = show_ladder_gap_bear and ladder_gap_bear and barstate.isconfirmed and f_cd_ok(last_lgr, cooldown_bars)
+bool plot_adjacent        = show_adjacent        and adjacent_any    and barstate.isconfirmed and f_cd_ok(last_adj, cooldown_bars)
+bool plot_ww_bull         = show_ww_bull         and ww_bull_any     and barstate.isconfirmed and f_cd_ok(last_wwb, cooldown_bars)
+bool plot_ww_bear         = show_ww_bear         and ww_bear_any     and barstate.isconfirmed and f_cd_ok(last_wwr, cooldown_bars)
 
 if plot_ladder_bull
     last_lb  := bar_index
@@ -1124,25 +1155,33 @@ if plot_ladder_gap_bear
     last_lgr := bar_index
 if plot_adjacent
     last_adj := bar_index
+if plot_ww_bull
+    last_wwb := bar_index
+if plot_ww_bear
+    last_wwr := bar_index
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 3 — NEW DETECTION PLOTSHAPES (5 total)
+// LAYER 3 — NEW DETECTION PLOTSHAPES (7 total)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-plotshape(plot_ladder_bull,     "Bull Ladder",       shape.flag,         location.belowbar, color.new(color.lime, 0),    size = size.normal, text = "L↑",  textcolor = color.lime)
-plotshape(plot_ladder_bear,     "Bear Ladder",       shape.flag,         location.abovebar, color.new(color.red, 0),     size = size.normal, text = "L↓",  textcolor = color.red)
-plotshape(plot_ladder_gap_bull, "Bull Ladder+Gap",   shape.triangleup,   location.belowbar, color.new(color.fuchsia, 0), size = size.large,  text = "LG↑", textcolor = color.fuchsia)
-plotshape(plot_ladder_gap_bear, "Bear Ladder+Gap",   shape.triangledown, location.abovebar, color.new(color.maroon, 0),  size = size.large,  text = "LG↓", textcolor = color.maroon)
+plotshape(plot_ladder_bull,     "Bull Ladder",        shape.flag,         location.belowbar, color.new(color.lime, 0),    size = size.normal, text = "L↑",  textcolor = color.lime)
+plotshape(plot_ladder_bear,     "Bear Ladder",        shape.flag,         location.abovebar, color.new(color.red, 0),     size = size.normal, text = "L↓",  textcolor = color.red)
+plotshape(plot_ladder_gap_bull, "Bull Ladder+Gap",    shape.triangleup,   location.belowbar, color.new(color.fuchsia, 0), size = size.large,  text = "LG↑", textcolor = color.fuchsia)
+plotshape(plot_ladder_gap_bear, "Bear Ladder+Gap",    shape.triangledown, location.abovebar, color.new(color.maroon, 0),  size = size.large,  text = "LG↓", textcolor = color.maroon)
 plotshape(plot_adjacent,        "Adjacent Bull/Bear", shape.diamond,     location.top,      color.new(color.aqua, 0),    size = size.normal, text = "ADJ", textcolor = color.aqua, offset = -1)
+plotshape(plot_ww_bull,         "Wrong-Way 3 Bull",   shape.xcross,      location.abovebar, color.new(color.orange, 0),  size = size.normal, text = "WW↓", textcolor = color.orange)
+plotshape(plot_ww_bear,         "Wrong-Way 3 Bear",   shape.xcross,      location.belowbar, color.new(color.yellow, 0),  size = size.normal, text = "WW↑", textcolor = color.yellow)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 3 — "ANY CHECKED DETECTION" ALERTCONDITION + BLOOMBERG ALERTS
 // ═══════════════════════════════════════════════════════════════════════════════
 // ONE consolidated alert. Only signals whose checkbox is ON contribute, so
-// unchecking a detection in the UI permanently silences it here.
+// unchecking a detection in the UI permanently silences it here. Every plot_*
+// boolean is barstate.isconfirmed-gated and alert() uses freq_once_per_bar_close
+// → strict 1:1 parity between visual and alert.
 
-bool any_checked_detection = plot_t3_buy_a or plot_t3_sell_a or plot_t3_buy_b or plot_t3_sell_b or plot_t3_buy_c or plot_t3_sell_c or plot_t3_buy_d or plot_t3_sell_d or plot_t3_buy_e or plot_t3_sell_e or plot_t3_buy_f or plot_t3_sell_f or plot_nagasaki or plot_ladder_bull or plot_ladder_bear or plot_ladder_gap_bull or plot_ladder_gap_bear or plot_adjacent
-alertcondition(any_checked_detection, "Any Checked Detection (v9)", "VOB v9 detection fired — check alert() payload for type + sensitivity + metadata")
+bool any_checked_detection = plot_t3_buy_a or plot_t3_sell_a or plot_t3_buy_b or plot_t3_sell_b or plot_t3_buy_c or plot_t3_sell_c or plot_t3_buy_d or plot_t3_sell_d or plot_t3_buy_e or plot_t3_sell_e or plot_t3_buy_f or plot_t3_sell_f or plot_nagasaki or plot_ladder_bull or plot_ladder_bear or plot_ladder_gap_bull or plot_ladder_gap_bear or plot_adjacent or plot_ww_bull or plot_ww_bear
+alertcondition(any_checked_detection, "Any Checked Detection (v9.1)", "VOB v9.1 detection fired — check alert() payload for type + sensitivity + metadata")
 
 // Build sensitivity-bundle string used by all ladder/adjacent alerts
 string sens_bundle = "SENS_A:" + str.tostring(sens_a) + "|SENS_B:" + str.tostring(sens_b) + "|SENS_C:" + str.tostring(sens_c) + "|SENS_D:" + str.tostring(sens_d) + "|SENS_E:" + str.tostring(sens_e) + "|SENS_F:" + str.tostring(sens_f)
@@ -1180,6 +1219,30 @@ if plot_adjacent
     int gap_e = na(cd_zb_e) or na(cd_zs_e) ? -1 : math.abs(cd_zb_e - cd_zs_e)
     int gap_f = na(cd_zb_f) or na(cd_zs_f) ? -1 : math.abs(cd_zb_f - cd_zs_f)
     alert("ADJACENT|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|TIERS:" + adj_tiers + "|WINDOW:" + str.tostring(adjacent_bars) + "|" + sens_bundle + "|GAP_A:" + str.tostring(gap_a) + "|GAP_B:" + str.tostring(gap_b) + "|GAP_C:" + str.tostring(gap_c) + "|GAP_D:" + str.tostring(gap_d) + "|GAP_E:" + str.tostring(gap_e) + "|GAP_F:" + str.tostring(gap_f) + "|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|VOLRANK:" + str.tostring(math.round(vol_rank)) + "|SESS:" + str.tostring(sess_bar_count), alert.freq_once_per_bar_close)
+
+if plot_ww_bear
+    string ww_bear_windows = ""
+    if ww_bear_fed
+        ww_bear_windows := ww_bear_windows + "FED,"
+    if ww_bear_edc
+        ww_bear_windows := ww_bear_windows + "EDC,"
+    if ww_bear_dcb
+        ww_bear_windows := ww_bear_windows + "DCB,"
+    if ww_bear_cba
+        ww_bear_windows := ww_bear_windows + "CBA,"
+    alert("WRONG_WAY_BEAR|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|DIR:BEAR_WW|WINDOWS:" + ww_bear_windows + "|TOL_PCT:" + str.tostring(ladder_tol_pct) + "|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|" + sens_bundle + "|ZF_HI:" + str.tostring(bear_F) + "|ZE_HI:" + str.tostring(bear_E) + "|ZD_HI:" + str.tostring(bear_D) + "|ZC_HI:" + str.tostring(bear_C) + "|ZB_HI:" + str.tostring(bear_B) + "|ZA_HI:" + str.tostring(bear_A) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|VOLRANK:" + str.tostring(math.round(vol_rank)) + "|SESS:" + str.tostring(sess_bar_count), alert.freq_once_per_bar_close)
+
+if plot_ww_bull
+    string ww_bull_windows = ""
+    if ww_bull_fed
+        ww_bull_windows := ww_bull_windows + "FED,"
+    if ww_bull_edc
+        ww_bull_windows := ww_bull_windows + "EDC,"
+    if ww_bull_dcb
+        ww_bull_windows := ww_bull_windows + "DCB,"
+    if ww_bull_cba
+        ww_bull_windows := ww_bull_windows + "CBA,"
+    alert("WRONG_WAY_BULL|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|DIR:BULL_WW|WINDOWS:" + ww_bull_windows + "|TOL_PCT:" + str.tostring(ladder_tol_pct) + "|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|" + sens_bundle + "|ZF_LOW:" + str.tostring(bull_F) + "|ZE_LOW:" + str.tostring(bull_E) + "|ZD_LOW:" + str.tostring(bull_D) + "|ZC_LOW:" + str.tostring(bull_C) + "|ZB_LOW:" + str.tostring(bull_B) + "|ZA_LOW:" + str.tostring(bull_A) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|VOLRANK:" + str.tostring(math.round(vol_rank)) + "|SESS:" + str.tostring(sess_bar_count), alert.freq_once_per_bar_close)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 2 — ZONE-CREATION MARKER PLOTSHAPES (12 total — PRESERVED EXACTLY)
