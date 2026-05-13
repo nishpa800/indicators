@@ -1,0 +1,1706 @@
+//@version=6
+indicator("VOB Asym T3 ×6 + TIA v1", overlay = true
+             , max_lines_count = 500, max_labels_count = 500, max_bars_back = 5000)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VOB ASYM T3 ×6 + TIA v1 — IMPLEMENTATION OF TIA FRAMEWORK
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// NEW FILE per SD-002 (never modify, always new-version). The canonical
+// VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine stays untouched. This is the
+// TIA-v1 derivative.
+//
+// REFERENCE: docs/agentic-os/research/2026-05-11-tia-vob-framework-v2.html
+//
+// WHAT THIS FILE DOES (delta from canonical v8):
+//
+//   1. Per-zone TOUCH TRACKING — every active zone records its own history of
+//      touches (price entries), with per-touch volume, penetration depth,
+//      rejected/penetrated outcome, and pool-snapshot at the touch. State
+//      lives in the extended `level` UDT.
+//
+//   2. TIA SCORE COMPUTATION — each bar computes Imperviousness (I),
+//      Tensile (T), Antifragility (A) for the NEAREST bull zone and the
+//      NEAREST bear zone (one zone each direction). Combined into master
+//      probability P = (I × T × A)^(1/3). Variables sourced per the v2 research
+//      doc §8 — 20 variables in Pine + 6 external-data placeholders that
+//      the Python port enriches downstream.
+//
+//   3. SIX NEW DETECTION PLOTS — replacing the 12 zone-formation crosshatches
+//      and 13 T3/Nagasaki plotshapes from canonical. Fire on first crossing
+//      of P thresholds 0.50, 0.625, 0.875 (TIER 1, TIER 2, TIER 3):
+//         • TIA TIER 1 Bull / Bear (P ≥ 0.50)
+//         • TIA TIER 2 Bull / Bear (P ≥ 0.625)
+//         • TIA TIER 3 Bull / Bear (P ≥ 0.875)
+//
+//   4. SINGLE ANY-CALL ALERTCONDITION — `any_tia` fires on ANY TIA detection.
+//      Bloomberg-format alert() carries the full TIA payload (I, T, A, P,
+//      tier crossed, direction, zone metadata).
+//
+// WHAT THIS FILE REMOVED from canonical v8:
+//   - The 12 zone-formation crosshatch plotshapes (ZoneBull/Bear A-F)
+//   - The 13 T3/Nagasaki plotshapes (T3a-f Buy/Sell + Nagasaki)
+//   - The "any_t3" and "any_zone" alertconditions
+//   - The T3 alert() multiplexer (13 alert calls)
+//   - The zone formation alert() emission
+//
+// WHAT THIS FILE PRESERVED from canonical v8:
+//   - The entire zone DRAWING engine (lines + fills + midlines + MutEx overlap)
+//   - The audit table (last N zone events per tier)
+//   - The T3 signal table (last N T3 signals — still computed for history)
+//   - The zone formation labels (data_get_pine_labels — research input)
+//   - The log.info() per-bar streaming (pine_get_console)
+//   - The comprehensive emission table — ENHANCED with TIA score rows
+//   - All supplementary market state (RSI, vol_rank, sess_bar_count,
+//     ATH volume, EMA slopes)
+//
+// TIA SOURCES (per v2 research doc §8):
+//
+//   Imperviousness (I) — 15 vars, 8 implemented in Pine + 7 external
+//     I-VAR-1 R_t (pool × tier × stack)                  [Pine]
+//     I-VAR-2 tier_agreement_count                        [Pine]
+//     I-VAR-3 stack_count_2pct                            [Pine]
+//     I-VAR-4 zone_thickness_atr                          [Pine]
+//     I-VAR-5 obliquity_slope                             [Pine]
+//     I-VAR-6 d_price_norm                                [Pine]
+//     I-VAR-10 vwap_alignment                             [Pine — ta.vwap]
+//     I-VAR-11 adx_strength                               [Pine — ta.adx]
+//     I-VAR-7 plug_consumption                            [Python port]
+//     I-VAR-8 cross_indicator_confluence                  [Python port]
+//     I-VAR-9 htf_alignment                               [Python port — request.security in v2]
+//     I-VAR-12 HVL_volume                                 [Python port]
+//     I-VAR-13 sector_relative_strength                   [Python port]
+//     I-VAR-14 book_depth_imbalance                       [Python port — external MCP]
+//     I-VAR-15 options_strike_density                     [Python port — external MCP]
+//
+//   Tensile (T) — 13 vars, 7 implemented in Pine + 6 external
+//     T-VAR-1 v_pool_norm                                 [Pine]
+//     T-VAR-2 success_rate                                [Pine — touch history]
+//     T-VAR-3 K_discrete (toughness integral)             [Pine — touch history]
+//     T-VAR-4 sigma_c (Griffith critical stress)          [Pine]
+//     T-VAR-8 rsi_snap_back_quality                       [Pine — ta.rsi]
+//     T-VAR-9 cci_extremity                               [Pine — ta.cci]
+//     T-VAR-13 volatility_envelope                        [Pine — ta.kc]
+//     T-VAR-5,6,7,10,11,12                                [Python port v2]
+//
+//   Antifragility (A) — 10 vars, 5 implemented in Pine + 5 external
+//     A-VAR-1 H_taleb                                     [Pine — touch history]
+//     A-VAR-2 S_convexity_c                               [Pine — touch history]
+//     A-VAR-5 wolff_stiffness                             [Pine]
+//     A-VAR-8 hadfield_ratio                              [Pine — touch history]
+//     A-VAR-9 lindy_term                                  [Pine]
+//     A-VAR-3,4,6,7,10                                    [Python port v2]
+//
+// External-data placeholders default to 1.0 (neutral) — the Python port at
+// python_ports/vob_asym/canonical_tia_v1.py enriches them with real values
+// from TradingView MCP, Massive.com options data, Benzinga, WhaleWisdom.
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UDTs — extended `level` with TIA touch tracking
+// ─────────────────────────────────────────────────────────────────────────────
+
+type level
+    int   indx              // Origin bar time (xloc.bar_time)
+    float upper
+    float lower
+    float mid
+    float vol               // Accumulated pool volume at formation
+    // ── TIA touch tracking ──
+    int   formation_bar     // bar_index at formation (for age/Lindy)
+    int   touch_count
+    array<float> touch_vols          // volume on bar that entered the zone
+    array<float> touch_pen_depths    // deepest penetration during visit, normalized to zone width
+    array<int>   touch_rejected      // 1 = rejected (held), 0 = penetrated (broke through)
+    array<float> pool_at_touch       // pool-volume snapshot when this touch began
+    int   currently_touching         // 0 = outside, 1 = inside (touch in progress)
+    int   touch_entry_bar            // bar_index when current visit began
+    float deepest_pen_this_visit     // deepest penetration during current visit
+    float entry_pool                 // pool snapshot when current visit began
+
+type hist_entry
+    int   t
+    float vol
+    float pct
+    string date_s
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Sensitivities (preserved from canonical v8)
+// ─────────────────────────────────────────────────────────────────────────────
+
+int sens_a = input.int(2500, "Sensitivity A (Highest — fewest, strongest zones)",  group = "Sensitivities", minval = 1)
+int sens_b = input.int(2250, "Sensitivity B (second highest)",            group = "Sensitivities", minval = 1)
+int sens_c = input.int(2000, "Sensitivity C (middle-high)",            group = "Sensitivities", minval = 1)
+int sens_d = input.int(1500, "Sensitivity D (middle-low)",            group = "Sensitivities", minval = 1)
+int sens_e = input.int(1250, "Sensitivity E (second lowest)",            group = "Sensitivities", minval = 1)
+int sens_f = input.int(1000, "Sensitivity F (Lowest — most, weakest zones)",   group = "Sensitivities", minval = 1)
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — TIA detection plot toggles (the SIX new alerts)
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool show_tia_t1_bull = input.bool(true, "TIA TIER 1 Bull (P ≥ 0.50)",  group = "TIA Detection Plots")
+bool show_tia_t2_bull = input.bool(true, "TIA TIER 2 Bull (P ≥ 0.625)", group = "TIA Detection Plots")
+bool show_tia_t3_bull = input.bool(true, "TIA TIER 3 Bull (P ≥ 0.875)", group = "TIA Detection Plots")
+bool show_tia_t1_bear = input.bool(true, "TIA TIER 1 Bear (P ≥ 0.50)",  group = "TIA Detection Plots")
+bool show_tia_t2_bear = input.bool(true, "TIA TIER 2 Bear (P ≥ 0.625)", group = "TIA Detection Plots")
+bool show_tia_t3_bear = input.bool(true, "TIA TIER 3 Bear (P ≥ 0.875)", group = "TIA Detection Plots")
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — TIA thresholds (operator can override defaults)
+// ─────────────────────────────────────────────────────────────────────────────
+
+float tia_thresh_t1 = input.float(0.500, "TIER 1 threshold (probability of hold)", minval = 0.0, maxval = 1.0, step = 0.005, group = "TIA Thresholds")
+float tia_thresh_t2 = input.float(0.625, "TIER 2 threshold", minval = 0.0, maxval = 1.0, step = 0.005, group = "TIA Thresholds")
+float tia_thresh_t3 = input.float(0.875, "TIER 3 threshold", minval = 0.0, maxval = 1.0, step = 0.005, group = "TIA Thresholds")
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — TIA component weights (equal default; recalibrate after 90 days)
+// ─────────────────────────────────────────────────────────────────────────────
+
+float w_imp = input.float(1.0, "Weight: Imperviousness",  minval = 0.0, step = 0.1, group = "TIA Weights")
+float w_ten = input.float(1.0, "Weight: Tensile",         minval = 0.0, step = 0.1, group = "TIA Weights")
+float w_ant = input.float(1.0, "Weight: Antifragility",   minval = 0.0, step = 0.1, group = "TIA Weights")
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — TIA touch tracking
+// ─────────────────────────────────────────────────────────────────────────────
+
+int tia_max_touches = input.int(64, "Max touches tracked per zone", minval = 1, step = 8, group = "TIA Touch Tracking")
+int tia_outcome_window = input.int(5, "Bars to confirm rejection vs penetration", minval = 1, step = 1, group = "TIA Touch Tracking")
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — TIA external-data placeholders (Python port enriches; Pine defaults to 1.0)
+// ─────────────────────────────────────────────────────────────────────────────
+
+float tia_ext_cross_ind  = input.float(1.0, "External: cross-indicator confluence factor", minval = 0.0, step = 0.05, group = "TIA External (Python enriches)")
+float tia_ext_htf_align  = input.float(1.0, "External: HTF alignment factor",              minval = 0.0, step = 0.05, group = "TIA External (Python enriches)")
+float tia_ext_sector_rs  = input.float(1.0, "External: sector relative strength factor",   minval = 0.0, step = 0.05, group = "TIA External (Python enriches)")
+float tia_ext_book_depth = input.float(1.0, "External: book depth imbalance factor",       minval = 0.0, step = 0.05, group = "TIA External (Python enriches)")
+float tia_ext_opt_strike = input.float(1.0, "External: options strike density factor",     minval = 0.0, step = 0.05, group = "TIA External (Python enriches)")
+float tia_ext_earnings   = input.float(1.0, "External: earnings-window survival factor",   minval = 0.0, step = 0.05, group = "TIA External (Python enriches)")
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Zone Line + Marker Toggles (preserved from canonical v8)
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool en_zone_a = input.bool(true, "Zone Lines A", group = "Zone Drawing")
+bool en_zone_b = input.bool(true, "Zone Lines B", group = "Zone Drawing")
+bool en_zone_c = input.bool(true, "Zone Lines C", group = "Zone Drawing")
+bool en_zone_d = input.bool(true, "Zone Lines D", group = "Zone Drawing")
+bool en_zone_e = input.bool(true, "Zone Lines E", group = "Zone Drawing")
+bool en_zone_f = input.bool(true, "Zone Lines F", group = "Zone Drawing")
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Legacy signal parameters (preserved; still computed but not plotted)
+// ─────────────────────────────────────────────────────────────────────────────
+
+float super_mult = input.float(1.5, "Tier 3 — Super Volume Multiplier (legacy, no-plot)",
+     minval = 0.1, step = 0.1, group = "Legacy (computed, not plotted)",
+     tooltip = "Used by background T3 computation that feeds the T3 history table. NO longer emits plotshapes or alerts in TIA v1.")
+int cooldown_bars = input.int(100, "Cooldown Bars (for TIA + legacy events)",
+     minval = 0, step = 5, group = "Cooldown")
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Bull Colors (preserved)
+// ─────────────────────────────────────────────────────────────────────────────
+
+color col_bull_a = input.color(#0D47A1, "A Bull — Dark Blue",   group = "Bull Colors")
+color col_bull_b = input.color(#64B5F6, "B Bull — Light Blue",  group = "Bull Colors")
+color col_bull_c = input.color(#1B5E20, "C Bull — Dark Green",  group = "Bull Colors")
+color col_bull_d = input.color(#81C784, "D Bull — Light Green", group = "Bull Colors")
+color col_bull_e = input.color(#00E5FF, "E Bull — Bright Aqua", group = "Bull Colors")
+color col_bull_f = input.color(#FFFFFF, "F Bull — White",       group = "Bull Colors")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Bear Colors (preserved)
+// ─────────────────────────────────────────────────────────────────────────────
+
+color col_bear_a = input.color(#8B0000, "A Bear — Dark Red",      group = "Bear Colors")
+color col_bear_b = input.color(#EF9A9A, "B Bear — Light Red",     group = "Bear Colors")
+color col_bear_c = input.color(#E65100, "C Bear — Dark Orange",   group = "Bear Colors")
+color col_bear_d = input.color(#FFB74D, "D Bear — Light Orange",  group = "Bear Colors")
+color col_bear_e = input.color(#880E4F, "E Bear — Dark Magenta",  group = "Bear Colors")
+color col_bear_f = input.color(#F48FB1, "F Bear — Light Magenta", group = "Bear Colors")
+
+int fill_transp = input.int(85, "Fill Transparency", minval = 0, maxval = 100, group = "Line Drawing")
+int mid_transp  = input.int(30, "Midline Transparency", minval = 0, maxval = 100, group = "Line Drawing")
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Emission Layer + Audit Table (preserved)
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool en_emission_labels = input.bool(true, "Enable Zone Formation Labels", group = "Emission Layer")
+bool en_emission_table  = input.bool(true, "Enable Emission Table",         group = "Emission Layer")
+bool en_emission_logs   = input.bool(true, "Enable Console Logs",           group = "Emission Layer")
+float stack_thresh_pct  = input.float(2.0, "Stacking Threshold Percent",
+     minval = 0.1, step = 0.5, group = "Emission Layer")
+
+string tbl_pos_str = input.string("Bottom Right", "Audit Table Position",
+     options = ["Top Left","Top Center","Top Right","Middle Left","Middle Center","Middle Right","Bottom Left","Bottom Center","Bottom Right"],
+     group = "Audit Table")
+string tbl_size_str = input.string("Small", "Audit Table Font",
+     options = ["Tiny","Small","Normal","Large","Huge"], group = "Audit Table")
+color  tbl_font_col = input.color(#E0E0E0, "Audit Font Color", group = "Audit Table")
+color  tbl_bg_col   = input.color(#1A1A1A, "Audit BG Color", group = "Audit Table")
+int    tbl_bg_tr    = input.int(25, "Audit BG Transp", minval = 0, maxval = 100, group = "Audit Table")
+color  tbl_hdr_col  = input.color(#333333, "Audit Header BG", group = "Audit Table")
+int    tbl_hdr_tr   = input.int(15, "Audit Header Transp", minval = 0, maxval = 100, group = "Audit Table")
+bool   tbl_show     = input.bool(true, "Show Audit Table", group = "Audit Table")
+int    hist_depth   = input.int(50, "Audit History Depth", minval = 1, step = 5, group = "Audit Table")
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE POSITION + SIZE RESOLUTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+var string tbl_pos = switch tbl_pos_str
+    "Top Left"      => position.top_left
+    "Top Center"    => position.top_center
+    "Top Right"     => position.top_right
+    "Middle Left"   => position.middle_left
+    "Middle Center" => position.middle_center
+    "Middle Right"  => position.middle_right
+    "Bottom Left"   => position.bottom_left
+    "Bottom Center" => position.bottom_center
+    => position.bottom_right
+
+var string tbl_sz = switch tbl_size_str
+    "Tiny"   => size.tiny
+    "Small"  => size.small
+    "Normal" => size.normal
+    "Large"  => size.large
+    "Huge"   => size.huge
+    => size.small
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED CALCULATIONS (preserved + TIA additions)
+// ─────────────────────────────────────────────────────────────────────────────
+
+float atr_base      = ta.highest(ta.atr(200), 200)
+float atr_proximity = atr_base * 3
+float atr_adjust    = atr_base * 2
+
+float rsi_14 = ta.rsi(close, 14)
+
+var int sess_bar_count = 0
+bool new_session = ta.change(time("D")) != 0
+if new_session
+    sess_bar_count := 1
+else
+    sess_bar_count += 1
+
+float vol_rank = ta.percentrank(volume, 200)
+
+float ema_a_fast  = ta.ema(close, sens_a)
+float slope_ema_a = nz(ema_a_fast[1]) > 0 ? (ema_a_fast - nz(ema_a_fast[1])) / nz(ema_a_fast[1]) * 100 : 0.0
+float ema_b_fast  = ta.ema(close, sens_b)
+float slope_ema_b = nz(ema_b_fast[1]) > 0 ? (ema_b_fast - nz(ema_b_fast[1])) / nz(ema_b_fast[1]) * 100 : 0.0
+float ema_c_fast  = ta.ema(close, sens_c)
+float slope_ema_c = nz(ema_c_fast[1]) > 0 ? (ema_c_fast - nz(ema_c_fast[1])) / nz(ema_c_fast[1]) * 100 : 0.0
+float ema_d_fast  = ta.ema(close, sens_d)
+float slope_ema_d = nz(ema_d_fast[1]) > 0 ? (ema_d_fast - nz(ema_d_fast[1])) / nz(ema_d_fast[1]) * 100 : 0.0
+float ema_e_fast  = ta.ema(close, sens_e)
+float slope_ema_e = nz(ema_e_fast[1]) > 0 ? (ema_e_fast - nz(ema_e_fast[1])) / nz(ema_e_fast[1]) * 100 : 0.0
+float ema_f_fast  = ta.ema(close, sens_f)
+float slope_ema_f = nz(ema_f_fast[1]) > 0 ? (ema_f_fast - nz(ema_f_fast[1])) / nz(ema_f_fast[1]) * 100 : 0.0
+
+// ── TIA SUPPORTING TV BUILT-INS ──
+float vwap_session    = ta.vwap
+float adx_14          = ta.dmi(14, 14).adx
+float cci_20          = ta.cci(close, 20)
+float kc_basis        = ta.ema(close, 20)
+float kc_range        = ta.atr(20)
+float kc_upper        = kc_basis + 2.0 * kc_range
+float kc_lower        = kc_basis - 2.0 * kc_range
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PER-SENSITIVITY STATE ARRAYS (preserved)
+// ─────────────────────────────────────────────────────────────────────────────
+
+var array<level> upper_a = array.new<level>()
+var array<level> lower_a = array.new<level>()
+var array<level> upper_b = array.new<level>()
+var array<level> lower_b = array.new<level>()
+var array<level> upper_c = array.new<level>()
+var array<level> lower_c = array.new<level>()
+var array<level> upper_d = array.new<level>()
+var array<level> lower_d = array.new<level>()
+var array<level> upper_e = array.new<level>()
+var array<level> lower_e = array.new<level>()
+var array<level> upper_f = array.new<level>()
+var array<level> lower_f = array.new<level>()
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIA COOLDOWN + HISTORY STATE
+// ─────────────────────────────────────────────────────────────────────────────
+
+var int last_tia_t1_bull = na, var int last_tia_t1_bear = na
+var int last_tia_t2_bull = na, var int last_tia_t2_bear = na
+var int last_tia_t3_bull = na, var int last_tia_t3_bear = na
+
+// Track previous P values for crossing detection
+var float prev_p_bull = na
+var float prev_p_bear = na
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LEGACY COOLDOWN STATE (T3 + zone formation — still computed for history, not plotted)
+// ─────────────────────────────────────────────────────────────────────────────
+
+var int last_t3_buy_a  = na, var int last_t3_sell_a = na
+var int last_t3_buy_b  = na, var int last_t3_sell_b = na
+var int last_t3_buy_c  = na, var int last_t3_sell_c = na
+var int last_t3_buy_d  = na, var int last_t3_sell_d = na
+var int last_t3_buy_e  = na, var int last_t3_sell_e = na
+var int last_t3_buy_f  = na, var int last_t3_sell_f = na
+var int last_nagasaki  = na
+
+var int cd_zb_a = na, var int cd_zs_a = na
+var int cd_zb_b = na, var int cd_zs_b = na
+var int cd_zb_c = na, var int cd_zs_c = na
+var int cd_zb_d = na, var int cd_zs_d = na
+var int cd_zb_e = na, var int cd_zs_e = na
+var int cd_zb_f = na, var int cd_zs_f = na
+
+var array<hist_entry> hb_a = array.new<hist_entry>()
+var array<hist_entry> hs_a = array.new<hist_entry>()
+var array<hist_entry> hb_b = array.new<hist_entry>()
+var array<hist_entry> hs_b = array.new<hist_entry>()
+var array<hist_entry> hb_c = array.new<hist_entry>()
+var array<hist_entry> hs_c = array.new<hist_entry>()
+var array<hist_entry> hb_d = array.new<hist_entry>()
+var array<hist_entry> hs_d = array.new<hist_entry>()
+var array<hist_entry> hb_e = array.new<hist_entry>()
+var array<hist_entry> hs_e = array.new<hist_entry>()
+var array<hist_entry> hb_f = array.new<hist_entry>()
+var array<hist_entry> hs_f = array.new<hist_entry>()
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPER FUNCTIONS (preserved + TIA additions)
+// ─────────────────────────────────────────────────────────────────────────────
+
+f_cd_ok(int last_bar, int cd) =>
+    na(last_bar) or (bar_index - last_bar) > cd
+
+f_fmt_vol(float v) =>
+    if v >= 1000000
+        str.tostring(math.round(v / 1000000)) + "M"
+    else if v >= 1000
+        str.tostring(math.round(v / 1000)) + "K"
+    else
+        str.tostring(math.round(v))
+
+f_zones_overlap(float lo1, float hi1, float lo2, float hi2) =>
+    not na(lo1) and not na(hi1) and not na(lo2) and not na(hi2) and lo1 < hi2 and hi1 > lo2
+
+f_push_hist(array<hist_entry> arr, float vol, float pool, int max_depth) =>
+    float pct = pool > 0 ? (vol / pool * 100) : 100.0
+    string full_ds = str.format_time(time, "MM/dd HH:mm", syminfo.timezone)
+    string ds = str.substring(full_ds, 0, str.length(full_ds) - 1)
+    arr.push(hist_entry.new(time, vol, pct, ds))
+    if arr.size() > max_depth
+        arr.shift()
+
+f_evt_cell(array<hist_entry> arr, int idx) =>
+    if idx < arr.size()
+        hist_entry e = arr.get(arr.size() - 1 - idx)
+        e.date_s + "\n" + f_fmt_vol(e.vol) + " " + str.tostring(math.round(e.pct))
+    else
+        "—"
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIA HELPERS — UDT initialization
+// ─────────────────────────────────────────────────────────────────────────────
+
+f_new_level(int idx, float upper, float lower, float mid, float vol) =>
+    level.new(idx, upper, lower, mid, vol, bar_index, 0,
+              array.new<float>(), array.new<float>(), array.new<int>(), array.new<float>(),
+              0, na, 0.0, 0.0)
+
+f_invalid_level() =>
+    level.new(na, na, na, na, na, na, 0,
+              array.new<float>(), array.new<float>(), array.new<int>(), array.new<float>(),
+              0, na, 0.0, 0.0)
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIA HELPERS — zone-level utilities
+// ─────────────────────────────────────────────────────────────────────────────
+
+f_count_active(array<level> arr) =>
+    int c = 0
+    if arr.size() > 0
+        for i = 0 to arr.size() - 1
+            if not na(arr.get(i).vol)
+                c += 1
+    c
+
+f_stack_near(array<level> arr, float price, float thresh_pct) =>
+    int c = 0
+    if arr.size() > 0 and price > 0
+        for i = 0 to arr.size() - 1
+            level l = arr.get(i)
+            if not na(l.mid) and math.abs(price - l.mid) / price * 100 <= thresh_pct
+                c += 1
+    c
+
+f_nearest_above_pct(array<level> arr, float price) =>
+    float best = 100.0
+    if arr.size() > 0 and price > 0
+        for i = 0 to arr.size() - 1
+            level l = arr.get(i)
+            if not na(l.mid) and l.mid > price
+                float d = (l.mid - price) / price * 100
+                if d < best
+                    best := d
+    best
+
+f_nearest_below_pct(array<level> arr, float price) =>
+    float best = 100.0
+    if arr.size() > 0 and price > 0
+        for i = 0 to arr.size() - 1
+            level l = arr.get(i)
+            if not na(l.mid) and l.mid < price
+                float d = (price - l.mid) / price * 100
+                if d < best
+                    best := d
+    best
+
+// Find the index of the nearest active zone in `arr` to `price`. Returns -1 if none.
+f_find_nearest_idx(array<level> arr, float price) =>
+    int best_idx = -1
+    float best_d = 1e18
+    if arr.size() > 0 and price > 0
+        for i = 0 to arr.size() - 1
+            level l = arr.get(i)
+            if not na(l.mid)
+                float d = math.abs(price - l.mid)
+                if d < best_d
+                    best_d  := d
+                    best_idx := i
+    best_idx
+
+// Median pool volume across active zones in an array (for normalization).
+f_median_pool(array<level> arr) =>
+    array<float> vols = array.new<float>()
+    if arr.size() > 0
+        for i = 0 to arr.size() - 1
+            level l = arr.get(i)
+            if not na(l.vol)
+                vols.push(l.vol)
+    vols.size() > 0 ? array.median(vols) : 0.0
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIA HELPERS — Touch tracking per zone per bar
+// ─────────────────────────────────────────────────────────────────────────────
+// Tracks the close-in-zone state transition (outside → inside = touch entry;
+// inside → outside = touch exit). On exit, classifies rejected vs penetrated
+// based on which boundary price crossed.
+
+// is_bull: true if this is a bull zone (defends from below, penetrated = exit DOWN)
+//          false if bear zone (defends from above, penetrated = exit UP)
+f_update_touches(array<level> arr, bool is_bull, int max_touches) =>
+    if arr.size() > 0
+        for i = 0 to arr.size() - 1
+            level l = arr.get(i)
+            if not na(l.upper) and not na(l.lower) and not na(l.mid)
+                bool inside_now = close >= l.lower and close <= l.upper
+                int was_touching = l.currently_touching
+                if inside_now and was_touching == 0
+                    // TOUCH ENTRY
+                    l.currently_touching := 1
+                    l.touch_entry_bar    := bar_index
+                    l.deepest_pen_this_visit := 0.0
+                    // entry_pool snapshot: store the volume of THIS bar as the "stress"
+                    l.entry_pool := volume
+                if inside_now and was_touching == 1
+                    // CONTINUING TOUCH — update deepest pen
+                    float pen = is_bull ? (l.upper - low) : (high - l.lower)
+                    float zone_width = l.upper - l.lower
+                    float pen_norm = zone_width > 0 ? math.max(0.0, math.min(1.0, pen / zone_width)) : 0.0
+                    if pen_norm > l.deepest_pen_this_visit
+                        l.deepest_pen_this_visit := pen_norm
+                if not inside_now and was_touching == 1
+                    // TOUCH EXIT — classify and record
+                    l.currently_touching := 0
+                    bool rejected = is_bull ? (close > l.upper) : (close < l.lower)
+                    l.touch_vols.push(l.entry_pool)
+                    l.touch_pen_depths.push(l.deepest_pen_this_visit)
+                    l.touch_rejected.push(rejected ? 1 : 0)
+                    l.pool_at_touch.push(l.vol)
+                    l.touch_count := l.touch_count + 1
+                    // Cap arrays at max_touches
+                    if l.touch_vols.size() > max_touches
+                        l.touch_vols.shift()
+                        l.touch_pen_depths.shift()
+                        l.touch_rejected.shift()
+                        l.pool_at_touch.shift()
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TIA HELPERS — Compute I, T, A, P for a single zone
+// ─────────────────────────────────────────────────────────────────────────────
+// All inputs to I/T/A are normalized to [0, 1]. Final I, T, A are arithmetic
+// means (simpler v1 form; calibration can replace with logistic regression in
+// v2 once 90 days of outcome data exists). P = (I × T × A)^(1/3).
+
+// is_bull governs penetration sign + nearest_above/below interpretation.
+// Returns [I, T, A, P] as a tuple.
+f_compute_tia(level zone, float price, int tier_agree, int stack, float pool_median,
+              float atr_local, float slope_tier, float opp_gap_pct, bool is_bull) =>
+
+    // ── IMPERVIOUSNESS (I) ───────────────────────────────────────────────────
+    // i1 — I-VAR-1 R_t (Tate-Alekseevskii target resistance)
+    float pool_norm = pool_median > 0 ? zone.vol / pool_median : 1.0
+    float i1 = math.min(1.0, pool_norm / 2.0)  // saturates at 2x median
+    // i2 — I-VAR-2 tier agreement
+    float i2 = math.min(1.0, tier_agree / 6.0)
+    // i3 — I-VAR-3 stack count (capped at 8)
+    float i3 = math.min(1.0, math.sqrt(stack / 8.0))
+    // i4 — I-VAR-4 zone thinness (thinner = harder; Walker-Anderson h/d)
+    float thickness = zone.upper - zone.lower
+    float i4 = atr_local > 0 ? math.min(1.0, 1.0 / (1.0 + (thickness / atr_local))) : 0.5
+    // i5 — I-VAR-5 obliquity (Walker-Anderson cos²θ proxy via slope sign alignment)
+    float i5 = is_bull ? (slope_tier > 0 ? 1.0 : 0.5) : (slope_tier < 0 ? 1.0 : 0.5)
+    // i6 — I-VAR-6 d_price proximity (Gao-Tian bond length analogue)
+    float d_price = price > 0 ? math.abs(price - zone.mid) / price : 0.5
+    float i6 = 1.0 / (1.0 + d_price * 50.0)  // strong proximity weighting
+    // i7 — I-VAR-10 VWAP alignment
+    float vwap_dist = price > 0 ? math.abs(vwap_session - zone.mid) / price : 1.0
+    float i7 = 1.0 / (1.0 + vwap_dist * 20.0)
+    // i8 — I-VAR-11 ADX strength (≥25 = trending)
+    float i8 = math.min(1.0, adx_14 / 50.0)
+    // External factors (Python enriches; default 1.0 = neutral)
+    float i_ext = tia_ext_cross_ind * tia_ext_htf_align * tia_ext_sector_rs * tia_ext_book_depth * tia_ext_opt_strike
+    // Imperviousness = weighted arithmetic mean × external multiplier (capped at 1)
+    float i_internal = (i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8) / 8.0
+    float I_score = math.min(1.0, i_internal * math.pow(i_ext, 0.2))  // external is moderate boost
+
+    // ── TENSILE (T) ──────────────────────────────────────────────────────────
+    // t1 — T-VAR-1 v_pool_norm (UTS analogue)
+    float t1 = math.min(1.0, pool_norm / 2.0)
+    // t2 — T-VAR-2 success_rate (touch history); bootstrap to 0.5 if no touches
+    int n_touches = zone.touch_count
+    int n_rejected = 0
+    if n_touches > 0
+        for j = 0 to zone.touch_rejected.size() - 1
+            if zone.touch_rejected.get(j) == 1
+                n_rejected += 1
+    float t2 = n_touches > 0 ? float(n_rejected) / n_touches : 0.5
+    // t3 — T-VAR-3 K_discrete (toughness integral)
+    float K_disc = 0.0
+    if n_touches > 0
+        for j = 0 to zone.touch_vols.size() - 1
+            float vj = zone.touch_vols.get(j)
+            float pj = zone.touch_pen_depths.get(j)
+            int rj = zone.touch_rejected.get(j)
+            K_disc += vj * pj * rj  // only rejected touches contribute toughness
+    float K_threshold = pool_median > 0 ? pool_median * 0.5 : 1.0
+    float t3 = math.min(1.0, K_disc / (K_threshold * math.max(1, n_touches)))
+    // t4 — T-VAR-4 sigma_c Griffith critical stress (analogue)
+    float max_pen = 0.0
+    if n_touches > 0
+        for j = 0 to zone.touch_pen_depths.size() - 1
+            float pj = zone.touch_pen_depths.get(j)
+            if pj > max_pen
+                max_pen := pj
+    float sigma_c = max_pen > 0 ? math.sqrt(2.0 * zone.vol / max_pen) : math.sqrt(2.0 * zone.vol)
+    float t4 = math.min(1.0, sigma_c / math.max(1.0, pool_median))
+    // t5 — T-VAR-8 RSI snap-back quality (mid-range = elastic; extremes = setup but rest follows)
+    float t5 = math.min(1.0, math.abs(rsi_14 - 50.0) / 50.0)
+    // t6 — T-VAR-9 CCI extremity
+    float t6 = math.min(1.0, math.abs(cci_20) / 200.0)
+    // t7 — T-VAR-13 KC envelope position
+    float kc_position = (price - kc_lower) / math.max(1e-6, (kc_upper - kc_lower))
+    float t7 = math.min(1.0, math.abs(kc_position - 0.5) * 2.0)
+    // Tensile = arithmetic mean
+    float T_score = (t1 + t2 + t3 + t4 + t5 + t6 + t7) / 7.0
+
+    // ── ANTIFRAGILITY (A) ────────────────────────────────────────────────────
+    // a1 — A-VAR-1 H_taleb (touch hold rates bucketed by volume)
+    // Bucket touches into low / med / high volume; compute hold rate per bucket;
+    // antifragile if (low + high)/2 > medium hold rate.
+    float H_taleb = 0.0
+    if n_touches >= 6
+        // Find volume terciles
+        array<float> sorted_v = array.new<float>()
+        for j = 0 to zone.touch_vols.size() - 1
+            sorted_v.push(zone.touch_vols.get(j))
+        sorted_v.sort(order.ascending)
+        float v_lo_thresh = sorted_v.get(int(sorted_v.size() / 3))
+        float v_hi_thresh = sorted_v.get(int(2 * sorted_v.size() / 3))
+        int lo_hold = 0, int lo_total = 0
+        int md_hold = 0, int md_total = 0
+        int hi_hold = 0, int hi_total = 0
+        for j = 0 to zone.touch_vols.size() - 1
+            float vj = zone.touch_vols.get(j)
+            int rj = zone.touch_rejected.get(j)
+            if vj <= v_lo_thresh
+                lo_total += 1
+                lo_hold += rj
+            else if vj >= v_hi_thresh
+                hi_total += 1
+                hi_hold += rj
+            else
+                md_total += 1
+                md_hold += rj
+        float lo_rate = lo_total > 0 ? float(lo_hold) / lo_total : 0.5
+        float md_rate = md_total > 0 ? float(md_hold) / md_total : 0.5
+        float hi_rate = hi_total > 0 ? float(hi_hold) / hi_total : 0.5
+        H_taleb := (lo_rate + hi_rate) / 2.0 - md_rate
+    float a1 = math.min(1.0, math.max(0.0, (H_taleb + 0.5) / 1.0))  // map [-0.5, 0.5] → [0, 1]
+    // a2 — A-VAR-2 convexity sign (cumulative pool growth across touches)
+    float S_convex = 0.0
+    if n_touches >= 3
+        int last_idx = zone.pool_at_touch.size() - 1
+        float s_first = zone.pool_at_touch.get(0)
+        float s_mid   = zone.pool_at_touch.get(int(last_idx / 2))
+        float s_last  = zone.pool_at_touch.get(last_idx)
+        // Discrete second difference; positive = convex up = antifragile
+        S_convex := (s_first + s_last) / 2.0 - s_mid
+    float a2 = S_convex > 0 ? 1.0 : (S_convex < 0 ? 0.0 : 0.5)
+    // a3 — A-VAR-5 Wolff stiffness (Carter-Hayes cube law)
+    float wolff = thickness > 0 ? math.pow(zone.vol / math.max(1.0, thickness), 0.5) : 0.0  // sqrt instead of cube — Pine safer
+    float wolff_threshold = math.sqrt(pool_median)
+    float a3 = wolff_threshold > 0 ? math.min(1.0, wolff / (wolff_threshold * 2.0)) : 0.5
+    // a4 — A-VAR-8 Hadfield ratio: E[v|rejected] / E[v|penetrated]
+    float v_rejected_sum = 0.0, int v_rejected_n = 0
+    float v_penetrated_sum = 0.0, int v_penetrated_n = 0
+    if n_touches > 0
+        for j = 0 to zone.touch_vols.size() - 1
+            float vj = zone.touch_vols.get(j)
+            int rj = zone.touch_rejected.get(j)
+            if rj == 1
+                v_rejected_sum += vj
+                v_rejected_n += 1
+            else
+                v_penetrated_sum += vj
+                v_penetrated_n += 1
+    float v_rej_avg = v_rejected_n > 0 ? v_rejected_sum / v_rejected_n : 0.0
+    float v_pen_avg = v_penetrated_n > 0 ? v_penetrated_sum / v_penetrated_n : 0.0
+    float hadfield = v_pen_avg > 0 ? v_rej_avg / v_pen_avg : (v_rejected_n > 0 ? 2.0 : 1.0)
+    float a4 = math.min(1.0, hadfield / 2.0)
+    // a5 — A-VAR-9 Lindy term (age × touch_count, normalized)
+    int age_bars = bar_index - zone.formation_bar
+    float lindy = (zone.touch_count + 1.0) / (math.max(1.0, age_bars / 100.0) + 1.0)
+    float a5 = math.min(1.0, lindy / 3.0)
+    // External: earnings-window survival (Python enriches)
+    float a_ext = tia_ext_earnings
+    // Antifragility = arithmetic mean × earnings external boost
+    float a_internal = (a1 + a2 + a3 + a4 + a5) / 5.0
+    float A_score = math.min(1.0, a_internal * math.pow(a_ext, 0.3))
+
+    // ── MASTER P (geometric mean) ────────────────────────────────────────────
+    float wt_sum = w_imp + w_ten + w_ant
+    float P = wt_sum > 0
+              ? math.pow(math.pow(math.max(0.001, I_score), w_imp)
+                       * math.pow(math.max(0.001, T_score), w_ten)
+                       * math.pow(math.max(0.001, A_score), w_ant), 1.0 / wt_sum)
+              : 0.0
+
+    [I_score, T_score, A_score, P]
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CORE VOB FUNCTION — PRESERVED from canonical v8 (zone creation, invalidation,
+// T3 signals, pool volumes). Modified ONLY to use f_new_level / f_invalid_level
+// helpers for the extended UDT.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+f_vob(int len1, array<level> up_lvl, array<level> lo_lvl, float atr_prox, float atr_adj, float sup_mult) =>
+    int   len2    = len1 + 13
+    float ema1    = ta.ema(close, len1)
+    float ema2    = ta.ema(close, len2)
+    bool  cup     = ta.crossover(ema1, ema2)  and barstate.isconfirmed
+    bool  cdn     = ta.crossunder(ema1, ema2) and barstate.isconfirmed
+    float lowest  = ta.lowest(len2)
+    float highest = ta.highest(len2)
+
+    if cup
+        float vol = 0.0
+        for i = 1 to len2
+            if low[i] == lowest
+                int index = time[i]
+                for k = 0 to i
+                    vol += volume[k]
+                float src = math.min(open[i], close[i])
+                src := (src - lowest) < atr_adj * 0.5 ? lowest + atr_adj * 0.5 : src
+                float mid = math.avg(src, lowest)
+                lo_lvl.push(f_new_level(index, src, lowest, mid, vol))
+
+    if cdn
+        float vol = 0.0
+        for i = 1 to len2
+            if high[i] == highest
+                int index = time[i]
+                for k = 0 to i
+                    vol += volume[k]
+                float src = math.max(open[i], close[i])
+                src := (highest - src) < atr_adj * 0.5 ? highest - atr_adj * 0.5 : src
+                float mid = math.avg(src, highest)
+                up_lvl.push(f_new_level(index, highest, src, mid, vol))
+
+    if lo_lvl.size() > 0
+        for i = 0 to lo_lvl.size() - 1
+            level l  = lo_lvl.get(i)
+            level l1 = lo_lvl.get(i - 1)
+            float mid  = l.mid
+            float mid1 = l1.mid
+            if math.abs(mid - mid1) < atr_prox
+                lo_lvl.set(i - 1, f_invalid_level())
+            if close < l.lower
+                lo_lvl.set(i, f_invalid_level())
+        if lo_lvl.size() > 15
+            lo_lvl.shift()
+
+    if up_lvl.size() > 0
+        for i = 0 to up_lvl.size() - 1
+            level l     = up_lvl.get(i)
+            level l1    = up_lvl.get(i - 1)
+            float upper = l.upper
+            float mid   = l.mid
+            float mid1  = l1.mid
+            if math.abs(mid - mid1) < atr_prox
+                up_lvl.set(i - 1, f_invalid_level())
+            if close > upper
+                up_lvl.set(i, f_invalid_level())
+        if up_lvl.size() > 15
+            up_lvl.shift()
+
+    bool  t3_buy  = false
+    bool  t3_sell = false
+    float bp      = 0.0
+    float sp      = 0.0
+
+    if barstate.isconfirmed
+        array<float> vbv = array.new<float>()
+        array<float> vbl = array.new<float>()
+        array<float> vbh = array.new<float>()
+        if lo_lvl.size() > 0
+            for i = 0 to lo_lvl.size() - 1
+                level l = lo_lvl.get(i)
+                if not na(l.vol)
+                    vbv.push(l.vol)
+                    vbl.push(l.lower)
+                    vbh.push(l.upper)
+
+        array<float> vav  = array.new<float>()
+        array<float> val2 = array.new<float>()
+        array<float> vah  = array.new<float>()
+        if up_lvl.size() > 0
+            for i = 0 to up_lvl.size() - 1
+                level l = up_lvl.get(i)
+                if not na(l.vol)
+                    vav.push(l.vol)
+                    val2.push(l.lower)
+                    vah.push(l.upper)
+
+        bp := vbv.size() > 0 ? vbv.sum() : 0.0
+        sp := vav.size() > 0 ? vav.sum() : 0.0
+
+        float db_vol = 0.0, float db_low = 0.0, float db_high = 0.0
+        int bc = vbv.size()
+        if bc > 0
+            for i = 0 to bc - 1
+                float v = vbv.get(i)
+                if v > db_vol
+                    db_vol  := v
+                    db_low  := vbl.get(i)
+                    db_high := vbh.get(i)
+
+        float da_vol = 0.0, float da_low = 0.0, float da_high = 0.0
+        int ac = vav.size()
+        if ac > 0
+            for i = 0 to ac - 1
+                float v = vav.get(i)
+                if v > da_vol
+                    da_vol  := v
+                    da_low  := val2.get(i)
+                    da_high := vah.get(i)
+
+        bool pat_bull = close >= db_low and close <= db_high
+        bool pat_bear = close >= da_low and close <= da_high
+
+        t3_buy  := bc == 1 and sp > 0 and db_vol > sp * sup_mult and pat_bull
+        t3_sell := ac == 1 and bp > 0 and da_vol > bp * sup_mult and pat_bear
+
+    [t3_buy, t3_sell, bp, sp]
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FUNCTION CALLS — capture array sizes BEFORE for zone-creation detection
+// ─────────────────────────────────────────────────────────────────────────────
+
+int sz_la = lower_a.size(), int sz_ua = upper_a.size()
+int sz_lb = lower_b.size(), int sz_ub = upper_b.size()
+int sz_lc = lower_c.size(), int sz_uc = upper_c.size()
+int sz_ld = lower_d.size(), int sz_ud = upper_d.size()
+int sz_le = lower_e.size(), int sz_ue = upper_e.size()
+int sz_lf = lower_f.size(), int sz_uf = upper_f.size()
+
+[t3_buy_a, t3_sell_a, bpa, spa] = f_vob(sens_a, upper_a, lower_a, atr_proximity, atr_adjust, super_mult)
+[t3_buy_b, t3_sell_b, bpb, spb] = f_vob(sens_b, upper_b, lower_b, atr_proximity, atr_adjust, super_mult)
+[t3_buy_c, t3_sell_c, bpc, spc] = f_vob(sens_c, upper_c, lower_c, atr_proximity, atr_adjust, super_mult)
+[t3_buy_d, t3_sell_d, bpd, spd] = f_vob(sens_d, upper_d, lower_d, atr_proximity, atr_adjust, super_mult)
+[t3_buy_e, t3_sell_e, bpe, spe] = f_vob(sens_e, upper_e, lower_e, atr_proximity, atr_adjust, super_mult)
+[t3_buy_f, t3_sell_f, bpf, spf] = f_vob(sens_f, upper_f, lower_f, atr_proximity, atr_adjust, super_mult)
+
+// Zone-creation booleans (array grew = new zone pushed)
+bool nzb_a = lower_a.size() > sz_la, bool nzs_a = upper_a.size() > sz_ua
+bool nzb_b = lower_b.size() > sz_lb, bool nzs_b = upper_b.size() > sz_ub
+bool nzb_c = lower_c.size() > sz_lc, bool nzs_c = upper_c.size() > sz_uc
+bool nzb_d = lower_d.size() > sz_ld, bool nzs_d = upper_d.size() > sz_ud
+bool nzb_e = lower_e.size() > sz_le, bool nzs_e = upper_e.size() > sz_ue
+bool nzb_f = lower_f.size() > sz_lf, bool nzs_f = upper_f.size() > sz_uf
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIA TOUCH TRACKING — update every active zone per bar
+// ═══════════════════════════════════════════════════════════════════════════════
+
+if barstate.isconfirmed
+    f_update_touches(lower_a, true,  tia_max_touches)
+    f_update_touches(lower_b, true,  tia_max_touches)
+    f_update_touches(lower_c, true,  tia_max_touches)
+    f_update_touches(lower_d, true,  tia_max_touches)
+    f_update_touches(lower_e, true,  tia_max_touches)
+    f_update_touches(lower_f, true,  tia_max_touches)
+    f_update_touches(upper_a, false, tia_max_touches)
+    f_update_touches(upper_b, false, tia_max_touches)
+    f_update_touches(upper_c, false, tia_max_touches)
+    f_update_touches(upper_d, false, tia_max_touches)
+    f_update_touches(upper_e, false, tia_max_touches)
+    f_update_touches(upper_f, false, tia_max_touches)
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ZONE METRICS (preserved — used by TIA computation + emission table)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+int cnt_ba = f_count_active(lower_a), int cnt_sa = f_count_active(upper_a)
+int cnt_bb = f_count_active(lower_b), int cnt_sb = f_count_active(upper_b)
+int cnt_bc = f_count_active(lower_c), int cnt_sc = f_count_active(upper_c)
+int cnt_bd = f_count_active(lower_d), int cnt_sd = f_count_active(upper_d)
+int cnt_be = f_count_active(lower_e), int cnt_se = f_count_active(upper_e)
+int cnt_bf = f_count_active(lower_f), int cnt_sf = f_count_active(upper_f)
+int cnt_bull_all = cnt_ba + cnt_bb + cnt_bc + cnt_bd + cnt_be + cnt_bf
+int cnt_bear_all = cnt_sa + cnt_sb + cnt_sc + cnt_sd + cnt_se + cnt_sf
+
+int stk_bull = f_stack_near(lower_a, close, stack_thresh_pct) + f_stack_near(lower_b, close, stack_thresh_pct) + f_stack_near(lower_c, close, stack_thresh_pct) + f_stack_near(lower_d, close, stack_thresh_pct) + f_stack_near(lower_e, close, stack_thresh_pct) + f_stack_near(lower_f, close, stack_thresh_pct)
+int stk_bear = f_stack_near(upper_a, close, stack_thresh_pct) + f_stack_near(upper_b, close, stack_thresh_pct) + f_stack_near(upper_c, close, stack_thresh_pct) + f_stack_near(upper_d, close, stack_thresh_pct) + f_stack_near(upper_e, close, stack_thresh_pct) + f_stack_near(upper_f, close, stack_thresh_pct)
+
+float opp_a = f_nearest_above_pct(upper_a, close), float opp_b = f_nearest_above_pct(upper_b, close)
+float opp_c = f_nearest_above_pct(upper_c, close), float opp_d = f_nearest_above_pct(upper_d, close)
+float opp_e = f_nearest_above_pct(upper_e, close), float opp_f = f_nearest_above_pct(upper_f, close)
+float bull_gap = math.min(opp_a, opp_b, opp_c, opp_d, opp_e, opp_f)
+float opp_ba = f_nearest_below_pct(lower_a, close), float opp_bb = f_nearest_below_pct(lower_b, close)
+float opp_bc = f_nearest_below_pct(lower_c, close), float opp_bd = f_nearest_below_pct(lower_d, close)
+float opp_be = f_nearest_below_pct(lower_e, close), float opp_bf = f_nearest_below_pct(lower_f, close)
+float bear_gap = math.min(opp_ba, opp_bb, opp_bc, opp_bd, opp_be, opp_bf)
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIA — Find nearest bull / bear zone across all tiers, compute I/T/A/P
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Helper: across multiple per-tier arrays, find the (array, index, distance) of the nearest active zone.
+// Returns tier letter (A-F) for diagnostics and a reference into the chosen array.
+
+// Find nearest BULL zone overall — track which tier it's in
+var int   bull_zone_tier_n = -1   // 0=A, 1=B, ..., 5=F; -1 = none
+var int   bull_zone_idx    = -1
+var float bull_zone_pool   = na
+
+bull_zone_tier_n := -1
+bull_zone_idx    := -1
+bull_zone_pool   := na
+
+float best_bull_d = 1e18
+
+int idx_la_n = f_find_nearest_idx(lower_a, close)
+if idx_la_n >= 0
+    float d = math.abs(close - lower_a.get(idx_la_n).mid)
+    if d < best_bull_d
+        best_bull_d := d
+        bull_zone_tier_n := 0
+        bull_zone_idx := idx_la_n
+
+int idx_lb_n = f_find_nearest_idx(lower_b, close)
+if idx_lb_n >= 0
+    float d = math.abs(close - lower_b.get(idx_lb_n).mid)
+    if d < best_bull_d
+        best_bull_d := d
+        bull_zone_tier_n := 1
+        bull_zone_idx := idx_lb_n
+
+int idx_lc_n = f_find_nearest_idx(lower_c, close)
+if idx_lc_n >= 0
+    float d = math.abs(close - lower_c.get(idx_lc_n).mid)
+    if d < best_bull_d
+        best_bull_d := d
+        bull_zone_tier_n := 2
+        bull_zone_idx := idx_lc_n
+
+int idx_ld_n = f_find_nearest_idx(lower_d, close)
+if idx_ld_n >= 0
+    float d = math.abs(close - lower_d.get(idx_ld_n).mid)
+    if d < best_bull_d
+        best_bull_d := d
+        bull_zone_tier_n := 3
+        bull_zone_idx := idx_ld_n
+
+int idx_le_n = f_find_nearest_idx(lower_e, close)
+if idx_le_n >= 0
+    float d = math.abs(close - lower_e.get(idx_le_n).mid)
+    if d < best_bull_d
+        best_bull_d := d
+        bull_zone_tier_n := 4
+        bull_zone_idx := idx_le_n
+
+int idx_lf_n = f_find_nearest_idx(lower_f, close)
+if idx_lf_n >= 0
+    float d = math.abs(close - lower_f.get(idx_lf_n).mid)
+    if d < best_bull_d
+        best_bull_d := d
+        bull_zone_tier_n := 5
+        bull_zone_idx := idx_lf_n
+
+// Find nearest BEAR zone
+var int bear_zone_tier_n = -1
+var int bear_zone_idx    = -1
+
+bear_zone_tier_n := -1
+bear_zone_idx    := -1
+
+float best_bear_d = 1e18
+
+int idx_ua_n = f_find_nearest_idx(upper_a, close)
+if idx_ua_n >= 0
+    float d = math.abs(close - upper_a.get(idx_ua_n).mid)
+    if d < best_bear_d
+        best_bear_d := d
+        bear_zone_tier_n := 0
+        bear_zone_idx := idx_ua_n
+
+int idx_ub_n = f_find_nearest_idx(upper_b, close)
+if idx_ub_n >= 0
+    float d = math.abs(close - upper_b.get(idx_ub_n).mid)
+    if d < best_bear_d
+        best_bear_d := d
+        bear_zone_tier_n := 1
+        bear_zone_idx := idx_ub_n
+
+int idx_uc_n = f_find_nearest_idx(upper_c, close)
+if idx_uc_n >= 0
+    float d = math.abs(close - upper_c.get(idx_uc_n).mid)
+    if d < best_bear_d
+        best_bear_d := d
+        bear_zone_tier_n := 2
+        bear_zone_idx := idx_uc_n
+
+int idx_ud_n = f_find_nearest_idx(upper_d, close)
+if idx_ud_n >= 0
+    float d = math.abs(close - upper_d.get(idx_ud_n).mid)
+    if d < best_bear_d
+        best_bear_d := d
+        bear_zone_tier_n := 3
+        bear_zone_idx := idx_ud_n
+
+int idx_ue_n = f_find_nearest_idx(upper_e, close)
+if idx_ue_n >= 0
+    float d = math.abs(close - upper_e.get(idx_ue_n).mid)
+    if d < best_bear_d
+        best_bear_d := d
+        bear_zone_tier_n := 4
+        bear_zone_idx := idx_ue_n
+
+int idx_uf_n = f_find_nearest_idx(upper_f, close)
+if idx_uf_n >= 0
+    float d = math.abs(close - upper_f.get(idx_uf_n).mid)
+    if d < best_bear_d
+        best_bear_d := d
+        bear_zone_tier_n := 5
+        bear_zone_idx := idx_uf_n
+
+
+// Compute median pools per tier for normalization
+float pool_med_lower = math.max(
+   math.max(f_median_pool(lower_a), f_median_pool(lower_b)),
+   math.max(math.max(f_median_pool(lower_c), f_median_pool(lower_d)),
+            math.max(f_median_pool(lower_e), f_median_pool(lower_f))))
+float pool_med_upper = math.max(
+   math.max(f_median_pool(upper_a), f_median_pool(upper_b)),
+   math.max(math.max(f_median_pool(upper_c), f_median_pool(upper_d)),
+            math.max(f_median_pool(upper_e), f_median_pool(upper_f))))
+
+
+// Tier agreement: count tiers that have an active zone within 1% of the nearest zone's mid
+f_tier_agree(float ref_mid, array<level> a, array<level> b, array<level> c, array<level> d, array<level> e, array<level> f, float thresh_pct) =>
+    int agree = 0
+    if not na(ref_mid)
+        bool found_a = false, bool found_b = false, bool found_c = false
+        bool found_d = false, bool found_e = false, bool found_f = false
+        if a.size() > 0
+            for i = 0 to a.size() - 1
+                level lv = a.get(i)
+                if not na(lv.mid) and math.abs(lv.mid - ref_mid) / ref_mid * 100 <= thresh_pct
+                    found_a := true
+        if b.size() > 0
+            for i = 0 to b.size() - 1
+                level lv = b.get(i)
+                if not na(lv.mid) and math.abs(lv.mid - ref_mid) / ref_mid * 100 <= thresh_pct
+                    found_b := true
+        if c.size() > 0
+            for i = 0 to c.size() - 1
+                level lv = c.get(i)
+                if not na(lv.mid) and math.abs(lv.mid - ref_mid) / ref_mid * 100 <= thresh_pct
+                    found_c := true
+        if d.size() > 0
+            for i = 0 to d.size() - 1
+                level lv = d.get(i)
+                if not na(lv.mid) and math.abs(lv.mid - ref_mid) / ref_mid * 100 <= thresh_pct
+                    found_d := true
+        if e.size() > 0
+            for i = 0 to e.size() - 1
+                level lv = e.get(i)
+                if not na(lv.mid) and math.abs(lv.mid - ref_mid) / ref_mid * 100 <= thresh_pct
+                    found_e := true
+        if f.size() > 0
+            for i = 0 to f.size() - 1
+                level lv = f.get(i)
+                if not na(lv.mid) and math.abs(lv.mid - ref_mid) / ref_mid * 100 <= thresh_pct
+                    found_f := true
+        if found_a
+            agree += 1
+        if found_b
+            agree += 1
+        if found_c
+            agree += 1
+        if found_d
+            agree += 1
+        if found_e
+            agree += 1
+        if found_f
+            agree += 1
+    agree
+
+// Compute TIA scores for nearest bull and bear zones
+float I_bull = na, float T_bull = na, float A_bull = na, float P_bull = na
+float I_bear = na, float T_bear = na, float A_bear = na, float P_bear = na
+
+if bull_zone_tier_n >= 0 and bull_zone_idx >= 0
+    level lv_b = bull_zone_tier_n == 0 ? lower_a.get(bull_zone_idx)
+              : bull_zone_tier_n == 1 ? lower_b.get(bull_zone_idx)
+              : bull_zone_tier_n == 2 ? lower_c.get(bull_zone_idx)
+              : bull_zone_tier_n == 3 ? lower_d.get(bull_zone_idx)
+              : bull_zone_tier_n == 4 ? lower_e.get(bull_zone_idx)
+              : lower_f.get(bull_zone_idx)
+    int tier_agree_bull = f_tier_agree(lv_b.mid, lower_a, lower_b, lower_c, lower_d, lower_e, lower_f, 1.0)
+    float slope_for_tier = bull_zone_tier_n == 0 ? slope_ema_a
+                        : bull_zone_tier_n == 1 ? slope_ema_b
+                        : bull_zone_tier_n == 2 ? slope_ema_c
+                        : bull_zone_tier_n == 3 ? slope_ema_d
+                        : bull_zone_tier_n == 4 ? slope_ema_e
+                        : slope_ema_f
+    [I_b_, T_b_, A_b_, P_b_] = f_compute_tia(lv_b, close, tier_agree_bull, stk_bull, pool_med_lower, atr_base, slope_for_tier, bull_gap, true)
+    I_bull := I_b_, T_bull := T_b_, A_bull := A_b_, P_bull := P_b_
+
+if bear_zone_tier_n >= 0 and bear_zone_idx >= 0
+    level lv_s = bear_zone_tier_n == 0 ? upper_a.get(bear_zone_idx)
+              : bear_zone_tier_n == 1 ? upper_b.get(bear_zone_idx)
+              : bear_zone_tier_n == 2 ? upper_c.get(bear_zone_idx)
+              : bear_zone_tier_n == 3 ? upper_d.get(bear_zone_idx)
+              : bear_zone_tier_n == 4 ? upper_e.get(bear_zone_idx)
+              : upper_f.get(bear_zone_idx)
+    int tier_agree_bear = f_tier_agree(lv_s.mid, upper_a, upper_b, upper_c, upper_d, upper_e, upper_f, 1.0)
+    float slope_for_tier = bear_zone_tier_n == 0 ? slope_ema_a
+                        : bear_zone_tier_n == 1 ? slope_ema_b
+                        : bear_zone_tier_n == 2 ? slope_ema_c
+                        : bear_zone_tier_n == 3 ? slope_ema_d
+                        : bear_zone_tier_n == 4 ? slope_ema_e
+                        : slope_ema_f
+    [I_s_, T_s_, A_s_, P_s_] = f_compute_tia(lv_s, close, tier_agree_bear, stk_bear, pool_med_upper, atr_base, slope_for_tier, bear_gap, false)
+    I_bear := I_s_, T_bear := T_s_, A_bear := A_s_, P_bear := P_s_
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIA THRESHOLD CROSSING DETECTION (with cooldown)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+bool cross_t1_bull = not na(P_bull) and not na(prev_p_bull) and prev_p_bull < tia_thresh_t1 and P_bull >= tia_thresh_t1
+bool cross_t2_bull = not na(P_bull) and not na(prev_p_bull) and prev_p_bull < tia_thresh_t2 and P_bull >= tia_thresh_t2
+bool cross_t3_bull = not na(P_bull) and not na(prev_p_bull) and prev_p_bull < tia_thresh_t3 and P_bull >= tia_thresh_t3
+
+bool cross_t1_bear = not na(P_bear) and not na(prev_p_bear) and prev_p_bear < tia_thresh_t1 and P_bear >= tia_thresh_t1
+bool cross_t2_bear = not na(P_bear) and not na(prev_p_bear) and prev_p_bear < tia_thresh_t2 and P_bear >= tia_thresh_t2
+bool cross_t3_bear = not na(P_bear) and not na(prev_p_bear) and prev_p_bear < tia_thresh_t3 and P_bear >= tia_thresh_t3
+
+// Apply cooldown
+bool fire_tia_t1_bull = show_tia_t1_bull and cross_t1_bull and f_cd_ok(last_tia_t1_bull, cooldown_bars)
+bool fire_tia_t2_bull = show_tia_t2_bull and cross_t2_bull and f_cd_ok(last_tia_t2_bull, cooldown_bars)
+bool fire_tia_t3_bull = show_tia_t3_bull and cross_t3_bull and f_cd_ok(last_tia_t3_bull, cooldown_bars)
+bool fire_tia_t1_bear = show_tia_t1_bear and cross_t1_bear and f_cd_ok(last_tia_t1_bear, cooldown_bars)
+bool fire_tia_t2_bear = show_tia_t2_bear and cross_t2_bear and f_cd_ok(last_tia_t2_bear, cooldown_bars)
+bool fire_tia_t3_bear = show_tia_t3_bear and cross_t3_bear and f_cd_ok(last_tia_t3_bear, cooldown_bars)
+
+// Stamp cooldown timestamps
+if fire_tia_t1_bull
+    last_tia_t1_bull := bar_index
+if fire_tia_t2_bull
+    last_tia_t2_bull := bar_index
+if fire_tia_t3_bull
+    last_tia_t3_bull := bar_index
+if fire_tia_t1_bear
+    last_tia_t1_bear := bar_index
+if fire_tia_t2_bear
+    last_tia_t2_bear := bar_index
+if fire_tia_t3_bear
+    last_tia_t3_bear := bar_index
+
+// Update prev_p for next bar
+if barstate.isconfirmed
+    prev_p_bull := P_bull
+    prev_p_bear := P_bear
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIA PLOTSHAPES — six detection plots
+// ═══════════════════════════════════════════════════════════════════════════════
+
+plotshape(fire_tia_t1_bull, "TIA T1 Bull", shape.triangleup,   location.belowbar, color.new(#76FF03, 0), size = size.normal, text = "T1B", textcolor = color.new(#76FF03, 0))
+plotshape(fire_tia_t2_bull, "TIA T2 Bull", shape.triangleup,   location.belowbar, color.new(#00C853, 0), size = size.large,  text = "T2B", textcolor = color.new(#00C853, 0))
+plotshape(fire_tia_t3_bull, "TIA T3 Bull", shape.diamond,      location.belowbar, color.new(#1B5E20, 0), size = size.huge,   text = "T3B\nIRON", textcolor = color.new(#1B5E20, 0))
+
+plotshape(fire_tia_t1_bear, "TIA T1 Bear", shape.triangledown, location.abovebar, color.new(#FF6E40, 0), size = size.normal, text = "T1S", textcolor = color.new(#FF6E40, 0))
+plotshape(fire_tia_t2_bear, "TIA T2 Bear", shape.triangledown, location.abovebar, color.new(#D50000, 0), size = size.large,  text = "T2S", textcolor = color.new(#D50000, 0))
+plotshape(fire_tia_t3_bear, "TIA T3 Bear", shape.diamond,      location.abovebar, color.new(#B71C1C, 0), size = size.huge,   text = "T3S\nIRON", textcolor = color.new(#B71C1C, 0))
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TIA ALERT — single any-call + Bloomberg-format alert()
+// ═══════════════════════════════════════════════════════════════════════════════
+
+bool any_tia = fire_tia_t1_bull or fire_tia_t2_bull or fire_tia_t3_bull or fire_tia_t1_bear or fire_tia_t2_bear or fire_tia_t3_bear
+
+alertcondition(any_tia, "TIA Any Detection",
+     "TIA detection plot fired — Imperviousness/Tensile/Antifragile score crossed a configured threshold. See Bloomberg message for which tier + direction.")
+
+f_tia_alert_msg(string tier, string dir, float I_, float T_, float A_, float P_, int sens_val, level zone) =>
+    "TIA_DETECTION" +
+        "|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix +
+        "|TF:" + timeframe.period +
+        "|TIER:" + tier + "|DIR:" + dir +
+        "|P:" + str.tostring(math.round(P_ * 10000) / 10000) +
+        "|I:" + str.tostring(math.round(I_ * 10000) / 10000) +
+        "|T:" + str.tostring(math.round(T_ * 10000) / 10000) +
+        "|A:" + str.tostring(math.round(A_ * 10000) / 10000) +
+        "|SENS:" + str.tostring(sens_val) +
+        "|CLOSE:" + str.tostring(math.round(close * 100) / 100) +
+        "|VOL:" + str.tostring(math.round(volume)) +
+        "|VOLRANK:" + str.tostring(math.round(vol_rank)) +
+        "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) +
+        "|CCI:" + str.tostring(math.round(cci_20 * 100) / 100) +
+        "|ADX:" + str.tostring(math.round(adx_14 * 100) / 100) +
+        "|SESS:" + str.tostring(sess_bar_count) +
+        "|ZONE_MID:" + str.tostring(math.round(zone.mid * 100) / 100) +
+        "|ZONE_VOL:" + str.tostring(math.round(zone.vol)) +
+        "|ZONE_TOUCHES:" + str.tostring(zone.touch_count) +
+        "|ZONE_AGE_BARS:" + str.tostring(bar_index - zone.formation_bar) +
+        "|BULLZONES:" + str.tostring(cnt_bull_all) +
+        "|BEARZONES:" + str.tostring(cnt_bear_all) +
+        "|BULLSTACK:" + str.tostring(stk_bull) +
+        "|BEARSTACK:" + str.tostring(stk_bear) +
+        "|BULLGAP:" + str.tostring(math.round(bull_gap * 100) / 100) +
+        "|BEARGAP:" + str.tostring(math.round(bear_gap * 100) / 100)
+
+// Get the firing tier's sens value + zone reference for the alert payload
+int sens_for_tier(int tn) =>
+    tn == 0 ? sens_a : tn == 1 ? sens_b : tn == 2 ? sens_c : tn == 3 ? sens_d : tn == 4 ? sens_e : sens_f
+
+if fire_tia_t1_bull and bull_zone_tier_n >= 0
+    level zb = bull_zone_tier_n == 0 ? lower_a.get(bull_zone_idx)
+            : bull_zone_tier_n == 1 ? lower_b.get(bull_zone_idx)
+            : bull_zone_tier_n == 2 ? lower_c.get(bull_zone_idx)
+            : bull_zone_tier_n == 3 ? lower_d.get(bull_zone_idx)
+            : bull_zone_tier_n == 4 ? lower_e.get(bull_zone_idx)
+            : lower_f.get(bull_zone_idx)
+    alert(f_tia_alert_msg("1", "BULL", I_bull, T_bull, A_bull, P_bull, sens_for_tier(bull_zone_tier_n), zb), alert.freq_once_per_bar_close)
+if fire_tia_t2_bull and bull_zone_tier_n >= 0
+    level zb = bull_zone_tier_n == 0 ? lower_a.get(bull_zone_idx)
+            : bull_zone_tier_n == 1 ? lower_b.get(bull_zone_idx)
+            : bull_zone_tier_n == 2 ? lower_c.get(bull_zone_idx)
+            : bull_zone_tier_n == 3 ? lower_d.get(bull_zone_idx)
+            : bull_zone_tier_n == 4 ? lower_e.get(bull_zone_idx)
+            : lower_f.get(bull_zone_idx)
+    alert(f_tia_alert_msg("2", "BULL", I_bull, T_bull, A_bull, P_bull, sens_for_tier(bull_zone_tier_n), zb), alert.freq_once_per_bar_close)
+if fire_tia_t3_bull and bull_zone_tier_n >= 0
+    level zb = bull_zone_tier_n == 0 ? lower_a.get(bull_zone_idx)
+            : bull_zone_tier_n == 1 ? lower_b.get(bull_zone_idx)
+            : bull_zone_tier_n == 2 ? lower_c.get(bull_zone_idx)
+            : bull_zone_tier_n == 3 ? lower_d.get(bull_zone_idx)
+            : bull_zone_tier_n == 4 ? lower_e.get(bull_zone_idx)
+            : lower_f.get(bull_zone_idx)
+    alert(f_tia_alert_msg("3", "BULL", I_bull, T_bull, A_bull, P_bull, sens_for_tier(bull_zone_tier_n), zb), alert.freq_once_per_bar_close)
+if fire_tia_t1_bear and bear_zone_tier_n >= 0
+    level zb = bear_zone_tier_n == 0 ? upper_a.get(bear_zone_idx)
+            : bear_zone_tier_n == 1 ? upper_b.get(bear_zone_idx)
+            : bear_zone_tier_n == 2 ? upper_c.get(bear_zone_idx)
+            : bear_zone_tier_n == 3 ? upper_d.get(bear_zone_idx)
+            : bear_zone_tier_n == 4 ? upper_e.get(bear_zone_idx)
+            : upper_f.get(bear_zone_idx)
+    alert(f_tia_alert_msg("1", "BEAR", I_bear, T_bear, A_bear, P_bear, sens_for_tier(bear_zone_tier_n), zb), alert.freq_once_per_bar_close)
+if fire_tia_t2_bear and bear_zone_tier_n >= 0
+    level zb = bear_zone_tier_n == 0 ? upper_a.get(bear_zone_idx)
+            : bear_zone_tier_n == 1 ? upper_b.get(bear_zone_idx)
+            : bear_zone_tier_n == 2 ? upper_c.get(bear_zone_idx)
+            : bear_zone_tier_n == 3 ? upper_d.get(bear_zone_idx)
+            : bear_zone_tier_n == 4 ? upper_e.get(bear_zone_idx)
+            : upper_f.get(bear_zone_idx)
+    alert(f_tia_alert_msg("2", "BEAR", I_bear, T_bear, A_bear, P_bear, sens_for_tier(bear_zone_tier_n), zb), alert.freq_once_per_bar_close)
+if fire_tia_t3_bear and bear_zone_tier_n >= 0
+    level zb = bear_zone_tier_n == 0 ? upper_a.get(bear_zone_idx)
+            : bear_zone_tier_n == 1 ? upper_b.get(bear_zone_idx)
+            : bear_zone_tier_n == 2 ? upper_c.get(bear_zone_idx)
+            : bear_zone_tier_n == 3 ? upper_d.get(bear_zone_idx)
+            : bear_zone_tier_n == 4 ? upper_e.get(bear_zone_idx)
+            : upper_f.get(bear_zone_idx)
+    alert(f_tia_alert_msg("3", "BEAR", I_bear, T_bear, A_bear, P_bear, sens_for_tier(bear_zone_tier_n), zb), alert.freq_once_per_bar_close)
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NAGASAKI computation preserved (no longer plotted, no longer alerted, still
+// tracked for historical reference + future TIA antifragility input).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var float maxVolEver = 0.0
+bool isNagasaki = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    isNagasaki := true
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LEGACY T3 COMPUTATION (still tracked for history; not plotted, not alerted)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+bool plot_t3_buy_a  = t3_buy_a  and f_cd_ok(last_t3_buy_a,  cooldown_bars)
+bool plot_t3_sell_a = t3_sell_a and f_cd_ok(last_t3_sell_a, cooldown_bars)
+bool plot_t3_buy_b  = t3_buy_b  and f_cd_ok(last_t3_buy_b,  cooldown_bars)
+bool plot_t3_sell_b = t3_sell_b and f_cd_ok(last_t3_sell_b, cooldown_bars)
+bool plot_t3_buy_c  = t3_buy_c  and f_cd_ok(last_t3_buy_c,  cooldown_bars)
+bool plot_t3_sell_c = t3_sell_c and f_cd_ok(last_t3_sell_c, cooldown_bars)
+bool plot_t3_buy_d  = t3_buy_d  and f_cd_ok(last_t3_buy_d,  cooldown_bars)
+bool plot_t3_sell_d = t3_sell_d and f_cd_ok(last_t3_sell_d, cooldown_bars)
+bool plot_t3_buy_e  = t3_buy_e  and f_cd_ok(last_t3_buy_e,  cooldown_bars)
+bool plot_t3_sell_e = t3_sell_e and f_cd_ok(last_t3_sell_e, cooldown_bars)
+bool plot_t3_buy_f  = t3_buy_f  and f_cd_ok(last_t3_buy_f,  cooldown_bars)
+bool plot_t3_sell_f = t3_sell_f and f_cd_ok(last_t3_sell_f, cooldown_bars)
+bool plot_nagasaki  = isNagasaki and f_cd_ok(last_nagasaki, cooldown_bars)
+
+if plot_t3_buy_a
+    last_t3_buy_a := bar_index
+if plot_t3_sell_a
+    last_t3_sell_a := bar_index
+if plot_t3_buy_b
+    last_t3_buy_b := bar_index
+if plot_t3_sell_b
+    last_t3_sell_b := bar_index
+if plot_t3_buy_c
+    last_t3_buy_c := bar_index
+if plot_t3_sell_c
+    last_t3_sell_c := bar_index
+if plot_t3_buy_d
+    last_t3_buy_d := bar_index
+if plot_t3_sell_d
+    last_t3_sell_d := bar_index
+if plot_t3_buy_e
+    last_t3_buy_e := bar_index
+if plot_t3_sell_e
+    last_t3_sell_e := bar_index
+if plot_t3_buy_f
+    last_t3_buy_f := bar_index
+if plot_t3_sell_f
+    last_t3_sell_f := bar_index
+if plot_nagasaki
+    last_nagasaki := bar_index
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ZONE-CREATION FIRE FLAGS (still tracked for legacy history; not plotted)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+bool fire_zb_a = en_zone_a and nzb_a and f_cd_ok(cd_zb_a, cooldown_bars)
+bool fire_zs_a = en_zone_a and nzs_a and f_cd_ok(cd_zs_a, cooldown_bars)
+bool fire_zb_b = en_zone_b and nzb_b and f_cd_ok(cd_zb_b, cooldown_bars)
+bool fire_zs_b = en_zone_b and nzs_b and f_cd_ok(cd_zs_b, cooldown_bars)
+bool fire_zb_c = en_zone_c and nzb_c and f_cd_ok(cd_zb_c, cooldown_bars)
+bool fire_zs_c = en_zone_c and nzs_c and f_cd_ok(cd_zs_c, cooldown_bars)
+bool fire_zb_d = en_zone_d and nzb_d and f_cd_ok(cd_zb_d, cooldown_bars)
+bool fire_zs_d = en_zone_d and nzs_d and f_cd_ok(cd_zs_d, cooldown_bars)
+bool fire_zb_e = en_zone_e and nzb_e and f_cd_ok(cd_zb_e, cooldown_bars)
+bool fire_zs_e = en_zone_e and nzs_e and f_cd_ok(cd_zs_e, cooldown_bars)
+bool fire_zb_f = en_zone_f and nzb_f and f_cd_ok(cd_zb_f, cooldown_bars)
+bool fire_zs_f = en_zone_f and nzs_f and f_cd_ok(cd_zs_f, cooldown_bars)
+
+if fire_zb_a
+    cd_zb_a := bar_index
+if fire_zs_a
+    cd_zs_a := bar_index
+if fire_zb_b
+    cd_zb_b := bar_index
+if fire_zs_b
+    cd_zs_b := bar_index
+if fire_zb_c
+    cd_zb_c := bar_index
+if fire_zs_c
+    cd_zs_c := bar_index
+if fire_zb_d
+    cd_zb_d := bar_index
+if fire_zs_d
+    cd_zs_d := bar_index
+if fire_zb_e
+    cd_zb_e := bar_index
+if fire_zs_e
+    cd_zs_e := bar_index
+if fire_zb_f
+    cd_zb_f := bar_index
+if fire_zs_f
+    cd_zs_f := bar_index
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ZONE DRAWING — MutEx OVERLAP ENGINE (PRESERVED EXACTLY)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+var array<line>     drawn_lines = array.new<line>()
+var array<linefill> drawn_fills = array.new<linefill>()
+
+if drawn_lines.size() > 0
+    for i = 0 to drawn_lines.size() - 1
+        line.delete(drawn_lines.get(i))
+drawn_lines.clear()
+if drawn_fills.size() > 0
+    for i = 0 to drawn_fills.size() - 1
+        linefill.delete(drawn_fills.get(i))
+drawn_fills.clear()
+
+var array<float> ovlp_bull_lo = array.new<float>()
+var array<float> ovlp_bull_hi = array.new<float>()
+var array<float> ovlp_bear_lo = array.new<float>()
+var array<float> ovlp_bear_hi = array.new<float>()
+ovlp_bull_lo.clear(), ovlp_bull_hi.clear()
+ovlp_bear_lo.clear(), ovlp_bear_hi.clear()
+
+f_count_overlaps(array<float> trk_lo, array<float> trk_hi, float zlo, float zhi) =>
+    int count = 0
+    if trk_lo.size() > 0
+        for i = 0 to trk_lo.size() - 1
+            if f_zones_overlap(trk_lo.get(i), trk_hi.get(i), zlo, zhi)
+                count += 1
+    count
+
+f_draw_zone(int origin_time, float z_upper, float z_lower, float z_mid, color col, int priority) =>
+    if priority == 0
+        line lt = line.new(origin_time, z_upper, time, z_upper, xloc.bar_time, extend.right, col, line.style_solid, 1)
+        line lb = line.new(origin_time, z_lower, time, z_lower, xloc.bar_time, extend.right, col, line.style_solid, 1)
+        line lm = line.new(origin_time, z_mid,   time, z_mid,   xloc.bar_time, extend.right, color.new(col, mid_transp), line.style_dashed, 1)
+        linefill lf = linefill.new(lt, lb, color.new(col, fill_transp))
+        drawn_lines.push(lt), drawn_lines.push(lb), drawn_lines.push(lm)
+        drawn_fills.push(lf)
+    else if priority == 1
+        line lm = line.new(origin_time, z_mid, time, z_mid, xloc.bar_time, extend.right, col, line.style_solid, 2)
+        drawn_lines.push(lm)
+    else if priority == 2
+        line lm = line.new(origin_time, z_mid, time, z_mid, xloc.bar_time, extend.right, col, line.style_dotted, 2)
+        drawn_lines.push(lm)
+    else
+        line lm = line.new(origin_time, z_mid, time, z_mid, xloc.bar_time, extend.right, col, line.style_dotted, 1)
+        drawn_lines.push(lm)
+
+f_process_zones(array<level> lvl_arr, array<float> trk_lo, array<float> trk_hi, color col, bool enabled) =>
+    if enabled and lvl_arr.size() > 0
+        for i = 0 to lvl_arr.size() - 1
+            level l = lvl_arr.get(i)
+            if not na(l.vol) and not na(l.upper) and not na(l.lower) and not na(l.indx)
+                int olaps = f_count_overlaps(trk_lo, trk_hi, l.lower, l.upper)
+                f_draw_zone(l.indx, l.upper, l.lower, l.mid, col, olaps)
+                trk_lo.push(l.lower)
+                trk_hi.push(l.upper)
+
+f_process_zones(lower_a, ovlp_bull_lo, ovlp_bull_hi, col_bull_a, en_zone_a)
+f_process_zones(lower_b, ovlp_bull_lo, ovlp_bull_hi, col_bull_b, en_zone_b)
+f_process_zones(lower_c, ovlp_bull_lo, ovlp_bull_hi, col_bull_c, en_zone_c)
+f_process_zones(lower_d, ovlp_bull_lo, ovlp_bull_hi, col_bull_d, en_zone_d)
+f_process_zones(lower_e, ovlp_bull_lo, ovlp_bull_hi, col_bull_e, en_zone_e)
+f_process_zones(lower_f, ovlp_bull_lo, ovlp_bull_hi, col_bull_f, en_zone_f)
+f_process_zones(upper_a, ovlp_bear_lo, ovlp_bear_hi, col_bear_a, en_zone_a)
+f_process_zones(upper_b, ovlp_bear_lo, ovlp_bear_hi, col_bear_b, en_zone_b)
+f_process_zones(upper_c, ovlp_bear_lo, ovlp_bear_hi, col_bear_c, en_zone_c)
+f_process_zones(upper_d, ovlp_bear_lo, ovlp_bear_hi, col_bear_d, en_zone_d)
+f_process_zones(upper_e, ovlp_bear_lo, ovlp_bear_hi, col_bear_e, en_zone_e)
+f_process_zones(upper_f, ovlp_bear_lo, ovlp_bear_hi, col_bear_f, en_zone_f)
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ZONE FORMATION LABELS (preserved — research input via data_get_pine_labels)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+f_emit_label(bool fire, array<level> arr, string dir, string tier, int sens_val, float pool, float rsi_v, int sess_v, float slope_v) =>
+    if en_emission_labels and fire and arr.size() > 0
+        level nz = arr.last()
+        if not na(nz.mid) and not na(nz.vol)
+            string txt = dir + "|" + tier + "|SENS:" + str.tostring(sens_val) + "|VOL:" + f_fmt_vol(nz.vol) + "|POOL:" + f_fmt_vol(pool) + "|RSI:" + str.tostring(math.round(rsi_v)) + "|SESS:" + str.tostring(sess_v) + "|SLOPE:" + str.tostring(math.round(slope_v * 10000) / 10000)
+            color lc = dir == "BULL" ? color.new(color.green, 60) : color.new(color.red, 60)
+            label.new(bar_index, nz.mid, txt, xloc.bar_index, yloc.price, lc, label.style_label_left, color.white, size.tiny)
+
+f_emit_label(nzb_a, lower_a, "BULL", "A", sens_a, bpa, rsi_14, sess_bar_count, slope_ema_a)
+f_emit_label(nzs_a, upper_a, "BEAR", "A", sens_a, spa, rsi_14, sess_bar_count, slope_ema_a)
+f_emit_label(nzb_b, lower_b, "BULL", "B", sens_b, bpb, rsi_14, sess_bar_count, slope_ema_b)
+f_emit_label(nzs_b, upper_b, "BEAR", "B", sens_b, spb, rsi_14, sess_bar_count, slope_ema_b)
+f_emit_label(nzb_c, lower_c, "BULL", "C", sens_c, bpc, rsi_14, sess_bar_count, slope_ema_c)
+f_emit_label(nzs_c, upper_c, "BEAR", "C", sens_c, spc, rsi_14, sess_bar_count, slope_ema_c)
+f_emit_label(nzb_d, lower_d, "BULL", "D", sens_d, bpd, rsi_14, sess_bar_count, slope_ema_d)
+f_emit_label(nzs_d, upper_d, "BEAR", "D", sens_d, spd, rsi_14, sess_bar_count, slope_ema_d)
+f_emit_label(nzb_e, lower_e, "BULL", "E", sens_e, bpe, rsi_14, sess_bar_count, slope_ema_e)
+f_emit_label(nzs_e, upper_e, "BEAR", "E", sens_e, spe, rsi_14, sess_bar_count, slope_ema_e)
+f_emit_label(nzb_f, lower_f, "BULL", "F", sens_f, bpf, rsi_14, sess_bar_count, slope_ema_f)
+f_emit_label(nzs_f, upper_f, "BEAR", "F", sens_f, spf, rsi_14, sess_bar_count, slope_ema_f)
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// log.info STREAMING (preserved — extended with TIA fields)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+if en_emission_logs and barstate.isconfirmed
+    log.info("VOB_TIA|TICKER:{0}|TF:{1}|CLOSE:{2}|RSI:{3}|CCI:{4}|ADX:{5}|SESS:{6}|VOLRANK:{7}|VOL:{8}|ATHVOL:{9}|BULLZONES:{10}|BEARZONES:{11}|STKBULL:{12}|STKBEAR:{13}|GAPBULL:{14}|GAPBEAR:{15}|IBULL:{16}|TBULL:{17}|ABULL:{18}|PBULL:{19}|IBEAR:{20}|TBEAR:{21}|ABEAR:{22}|PBEAR:{23}",
+        syminfo.ticker, timeframe.period,
+        str.tostring(close), str.tostring(math.round(rsi_14 * 100) / 100),
+        str.tostring(math.round(cci_20 * 100) / 100), str.tostring(math.round(adx_14 * 100) / 100),
+        str.tostring(sess_bar_count), str.tostring(math.round(vol_rank)),
+        str.tostring(math.round(volume)), str.tostring(math.round(maxVolEver)),
+        str.tostring(cnt_bull_all), str.tostring(cnt_bear_all),
+        str.tostring(stk_bull), str.tostring(stk_bear),
+        str.tostring(math.round(bull_gap * 100) / 100), str.tostring(math.round(bear_gap * 100) / 100),
+        na(I_bull) ? "na" : str.tostring(math.round(I_bull * 10000) / 10000),
+        na(T_bull) ? "na" : str.tostring(math.round(T_bull * 10000) / 10000),
+        na(A_bull) ? "na" : str.tostring(math.round(A_bull * 10000) / 10000),
+        na(P_bull) ? "na" : str.tostring(math.round(P_bull * 10000) / 10000),
+        na(I_bear) ? "na" : str.tostring(math.round(I_bear * 10000) / 10000),
+        na(T_bear) ? "na" : str.tostring(math.round(T_bear * 10000) / 10000),
+        na(A_bear) ? "na" : str.tostring(math.round(A_bear * 10000) / 10000),
+        na(P_bear) ? "na" : str.tostring(math.round(P_bear * 10000) / 10000))
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EMISSION TABLE — extended with TIA score row
+// ═══════════════════════════════════════════════════════════════════════════════
+
+if en_emission_table and barstate.islast
+    color efc = color.new(#E0E0E0, 0)
+    color ebc = color.new(#1A1A1A, 30)
+    color ehc = color.new(#333333, 15)
+    string esz = size.tiny
+    var table etbl = table.new(position.top_left, 5, 12, border_color=color.new(#444444, 50), border_width=1)
+
+    table.cell(etbl, 0, 0, "TIA SCORES", text_color=color.yellow, bgcolor=ehc, text_size=esz, text_halign=text.align_center)
+    table.cell(etbl, 1, 0, "I",  text_color=efc, bgcolor=ehc, text_size=esz, text_halign=text.align_center)
+    table.cell(etbl, 2, 0, "T",  text_color=efc, bgcolor=ehc, text_size=esz, text_halign=text.align_center)
+    table.cell(etbl, 3, 0, "A",  text_color=efc, bgcolor=ehc, text_size=esz, text_halign=text.align_center)
+    table.cell(etbl, 4, 0, "P",  text_color=efc, bgcolor=ehc, text_size=esz, text_halign=text.align_center)
+
+    color bull_col = color.new(#00C853, 70)
+    color bear_col = color.new(#D50000, 70)
+    table.cell(etbl, 0, 1, "BULL", text_color=color.white, bgcolor=bull_col, text_size=esz, text_halign=text.align_center)
+    table.cell(etbl, 1, 1, na(I_bull) ? "—" : str.tostring(math.round(I_bull * 1000) / 1000), text_color=efc, bgcolor=ebc, text_size=esz, text_halign=text.align_right)
+    table.cell(etbl, 2, 1, na(T_bull) ? "—" : str.tostring(math.round(T_bull * 1000) / 1000), text_color=efc, bgcolor=ebc, text_size=esz, text_halign=text.align_right)
+    table.cell(etbl, 3, 1, na(A_bull) ? "—" : str.tostring(math.round(A_bull * 1000) / 1000), text_color=efc, bgcolor=ebc, text_size=esz, text_halign=text.align_right)
+    color p_bull_col = na(P_bull) ? ebc : (P_bull >= tia_thresh_t3 ? color.new(#1B5E20, 0) : P_bull >= tia_thresh_t2 ? color.new(#00C853, 30) : P_bull >= tia_thresh_t1 ? color.new(#76FF03, 50) : ebc)
+    table.cell(etbl, 4, 1, na(P_bull) ? "—" : str.tostring(math.round(P_bull * 1000) / 1000), text_color=na(P_bull) ? efc : color.white, bgcolor=p_bull_col, text_size=esz, text_halign=text.align_right)
+
+    table.cell(etbl, 0, 2, "BEAR", text_color=color.white, bgcolor=bear_col, text_size=esz, text_halign=text.align_center)
+    table.cell(etbl, 1, 2, na(I_bear) ? "—" : str.tostring(math.round(I_bear * 1000) / 1000), text_color=efc, bgcolor=ebc, text_size=esz, text_halign=text.align_right)
+    table.cell(etbl, 2, 2, na(T_bear) ? "—" : str.tostring(math.round(T_bear * 1000) / 1000), text_color=efc, bgcolor=ebc, text_size=esz, text_halign=text.align_right)
+    table.cell(etbl, 3, 2, na(A_bear) ? "—" : str.tostring(math.round(A_bear * 1000) / 1000), text_color=efc, bgcolor=ebc, text_size=esz, text_halign=text.align_right)
+    color p_bear_col = na(P_bear) ? ebc : (P_bear >= tia_thresh_t3 ? color.new(#B71C1C, 0) : P_bear >= tia_thresh_t2 ? color.new(#D50000, 30) : P_bear >= tia_thresh_t1 ? color.new(#FF6E40, 50) : ebc)
+    table.cell(etbl, 4, 2, na(P_bear) ? "—" : str.tostring(math.round(P_bear * 1000) / 1000), text_color=na(P_bear) ? efc : color.white, bgcolor=p_bear_col, text_size=esz, text_halign=text.align_right)
+
+    table.cell(etbl, 0, 3, "THRESHOLDS", text_color=color.yellow, bgcolor=ehc, text_size=esz, text_halign=text.align_center)
+    table.cell(etbl, 1, 3, "T1=" + str.tostring(tia_thresh_t1), text_color=efc, bgcolor=ebc, text_size=esz)
+    table.cell(etbl, 2, 3, "T2=" + str.tostring(tia_thresh_t2), text_color=efc, bgcolor=ebc, text_size=esz)
+    table.cell(etbl, 3, 3, "T3=" + str.tostring(tia_thresh_t3), text_color=efc, bgcolor=ebc, text_size=esz)
+    table.cell(etbl, 4, 3, "wI/wT/wA=" + str.tostring(w_imp) + "/" + str.tostring(w_ten) + "/" + str.tostring(w_ant), text_color=efc, bgcolor=ebc, text_size=esz)
+
+    table.cell(etbl, 0, 4, "MARKET", text_color=color.yellow, bgcolor=ehc, text_size=esz, text_halign=text.align_center)
+    table.cell(etbl, 1, 4, syminfo.ticker, text_color=efc, bgcolor=ebc, text_size=esz, text_halign=text.align_left)
+    table.cell(etbl, 2, 4, "TF:" + timeframe.period, text_color=efc, bgcolor=ebc, text_size=esz, text_halign=text.align_left)
+    table.cell(etbl, 3, 4, "RSI:" + str.tostring(math.round(rsi_14)), text_color=rsi_14 < 30 ? color.lime : rsi_14 > 70 ? color.red : efc, bgcolor=ebc, text_size=esz)
+    table.cell(etbl, 4, 4, "ADX:" + str.tostring(math.round(adx_14)), text_color=adx_14 >= 25 ? color.lime : efc, bgcolor=ebc, text_size=esz)
+
+    table.cell(etbl, 0, 5, "STACK", text_color=color.yellow, bgcolor=ehc, text_size=esz, text_halign=text.align_center)
+    table.cell(etbl, 1, 5, "BULL:" + str.tostring(stk_bull), text_color=stk_bull >= 3 ? color.lime : efc, bgcolor=ebc, text_size=esz)
+    table.cell(etbl, 2, 5, "BEAR:" + str.tostring(stk_bear), text_color=stk_bear >= 3 ? color.red : efc, bgcolor=ebc, text_size=esz)
+    table.cell(etbl, 3, 5, "GAP_B:" + str.tostring(math.round(bull_gap * 100) / 100) + "%", text_color=bull_gap >= 30 ? color.lime : efc, bgcolor=ebc, text_size=esz)
+    table.cell(etbl, 4, 5, "GAP_S:" + str.tostring(math.round(bear_gap * 100) / 100) + "%", text_color=bear_gap >= 30 ? color.red : efc, bgcolor=ebc, text_size=esz)
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUDIT TABLE — last N zone events per tier (preserved + tracked via f_push_hist)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+if fire_zb_a and lower_a.size() > 0
+    level nz = lower_a.last()
+    if not na(nz.vol)
+        f_push_hist(hb_a, nz.vol, bpa, hist_depth)
+if fire_zs_a and upper_a.size() > 0
+    level nz = upper_a.last()
+    if not na(nz.vol)
+        f_push_hist(hs_a, nz.vol, spa, hist_depth)
+if fire_zb_b and lower_b.size() > 0
+    level nz = lower_b.last()
+    if not na(nz.vol)
+        f_push_hist(hb_b, nz.vol, bpb, hist_depth)
+if fire_zs_b and upper_b.size() > 0
+    level nz = upper_b.last()
+    if not na(nz.vol)
+        f_push_hist(hs_b, nz.vol, spb, hist_depth)
+if fire_zb_c and lower_c.size() > 0
+    level nz = lower_c.last()
+    if not na(nz.vol)
+        f_push_hist(hb_c, nz.vol, bpc, hist_depth)
+if fire_zs_c and upper_c.size() > 0
+    level nz = upper_c.last()
+    if not na(nz.vol)
+        f_push_hist(hs_c, nz.vol, spc, hist_depth)
+if fire_zb_d and lower_d.size() > 0
+    level nz = lower_d.last()
+    if not na(nz.vol)
+        f_push_hist(hb_d, nz.vol, bpd, hist_depth)
+if fire_zs_d and upper_d.size() > 0
+    level nz = upper_d.last()
+    if not na(nz.vol)
+        f_push_hist(hs_d, nz.vol, spd, hist_depth)
+if fire_zb_e and lower_e.size() > 0
+    level nz = lower_e.last()
+    if not na(nz.vol)
+        f_push_hist(hb_e, nz.vol, bpe, hist_depth)
+if fire_zs_e and upper_e.size() > 0
+    level nz = upper_e.last()
+    if not na(nz.vol)
+        f_push_hist(hs_e, nz.vol, spe, hist_depth)
+if fire_zb_f and lower_f.size() > 0
+    level nz = lower_f.last()
+    if not na(nz.vol)
+        f_push_hist(hb_f, nz.vol, bpf, hist_depth)
+if fire_zs_f and upper_f.size() > 0
+    level nz = upper_f.last()
+    if not na(nz.vol)
+        f_push_hist(hs_f, nz.vol, spf, hist_depth)
+
+color tbl_fc = color.new(tbl_font_col, 0)
+color tbl_bc = color.new(tbl_bg_col, tbl_bg_tr)
+color tbl_hc = color.new(tbl_hdr_col, tbl_hdr_tr)
+
+if tbl_show and barstate.islast
+    var table tbl = table.new(tbl_pos, 5, 14, border_color = color.new(#444444, 50), border_width = 1)
+
+    table.cell(tbl, 0, 0, "Sens",   text_color=tbl_fc, bgcolor=tbl_hc, text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 0, "Dir",    text_color=tbl_fc, bgcolor=tbl_hc, text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 0, "Last 1", text_color=tbl_fc, bgcolor=tbl_hc, text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 3, 0, "Last 2", text_color=tbl_fc, bgcolor=tbl_hc, text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 4, 0, "Last 3", text_color=tbl_fc, bgcolor=tbl_hc, text_size=tbl_sz, text_halign=text.align_center)
+
+    string sla = str.tostring(sens_a)
+    table.cell(tbl, 0, 1, sla, text_color=color.new(col_bull_a, 0), bgcolor=color.new(col_bull_a, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 1, "▲", text_color=color.new(col_bull_a, 0), bgcolor=color.new(col_bull_a, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 1, f_evt_cell(hb_a, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 1, f_evt_cell(hb_a, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 1, f_evt_cell(hb_a, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 0, 2, sla, text_color=color.new(col_bear_a, 0), bgcolor=color.new(col_bear_a, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 2, "▼", text_color=color.new(col_bear_a, 0), bgcolor=color.new(col_bear_a, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 2, f_evt_cell(hs_a, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 2, f_evt_cell(hs_a, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 2, f_evt_cell(hs_a, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+
+    string slb = str.tostring(sens_b)
+    table.cell(tbl, 0, 3, slb, text_color=color.new(col_bull_b, 0), bgcolor=color.new(col_bull_b, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 3, "▲", text_color=color.new(col_bull_b, 0), bgcolor=color.new(col_bull_b, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 3, f_evt_cell(hb_b, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 3, f_evt_cell(hb_b, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 3, f_evt_cell(hb_b, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 0, 4, slb, text_color=color.new(col_bear_b, 0), bgcolor=color.new(col_bear_b, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 4, "▼", text_color=color.new(col_bear_b, 0), bgcolor=color.new(col_bear_b, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 4, f_evt_cell(hs_b, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 4, f_evt_cell(hs_b, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 4, f_evt_cell(hs_b, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+
+    string slc = str.tostring(sens_c)
+    table.cell(tbl, 0, 5, slc, text_color=color.new(col_bull_c, 0), bgcolor=color.new(col_bull_c, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 5, "▲", text_color=color.new(col_bull_c, 0), bgcolor=color.new(col_bull_c, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 5, f_evt_cell(hb_c, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 5, f_evt_cell(hb_c, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 5, f_evt_cell(hb_c, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 0, 6, slc, text_color=color.new(col_bear_c, 0), bgcolor=color.new(col_bear_c, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 6, "▼", text_color=color.new(col_bear_c, 0), bgcolor=color.new(col_bear_c, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 6, f_evt_cell(hs_c, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 6, f_evt_cell(hs_c, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 6, f_evt_cell(hs_c, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+
+    string sld = str.tostring(sens_d)
+    table.cell(tbl, 0, 7, sld, text_color=color.new(col_bull_d, 0), bgcolor=color.new(col_bull_d, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 7, "▲", text_color=color.new(col_bull_d, 0), bgcolor=color.new(col_bull_d, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 7, f_evt_cell(hb_d, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 7, f_evt_cell(hb_d, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 7, f_evt_cell(hb_d, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 0, 8, sld, text_color=color.new(col_bear_d, 0), bgcolor=color.new(col_bear_d, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 8, "▼", text_color=color.new(col_bear_d, 0), bgcolor=color.new(col_bear_d, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 8, f_evt_cell(hs_d, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 8, f_evt_cell(hs_d, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 8, f_evt_cell(hs_d, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+
+    string sle = str.tostring(sens_e)
+    table.cell(tbl, 0, 9, sle, text_color=color.new(col_bull_e, 0), bgcolor=color.new(col_bull_e, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 9, "▲", text_color=color.new(col_bull_e, 0), bgcolor=color.new(col_bull_e, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 9, f_evt_cell(hb_e, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 9, f_evt_cell(hb_e, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 9, f_evt_cell(hb_e, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 0, 10, sle, text_color=color.new(col_bear_e, 0), bgcolor=color.new(col_bear_e, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 10, "▼", text_color=color.new(col_bear_e, 0), bgcolor=color.new(col_bear_e, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 10, f_evt_cell(hs_e, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 10, f_evt_cell(hs_e, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 10, f_evt_cell(hs_e, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+
+    string slf = str.tostring(sens_f)
+    table.cell(tbl, 0, 11, slf, text_color=color.new(col_bull_f, 0), bgcolor=color.new(col_bull_f, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 11, "▲", text_color=color.new(col_bull_f, 0), bgcolor=color.new(col_bull_f, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 11, f_evt_cell(hb_f, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 11, f_evt_cell(hb_f, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 11, f_evt_cell(hb_f, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 0, 12, slf, text_color=color.new(col_bear_f, 0), bgcolor=color.new(col_bear_f, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 12, "▼", text_color=color.new(col_bear_f, 0), bgcolor=color.new(col_bear_f, 88), text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 12, f_evt_cell(hs_f, 0), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 12, f_evt_cell(hs_f, 1), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 12, f_evt_cell(hs_f, 2), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+
+    table.cell(tbl, 0, 13, "ATH", text_color=color.purple, bgcolor=tbl_hc, text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 1, 13, "◆",   text_color=color.purple, bgcolor=tbl_hc, text_size=tbl_sz, text_halign=text.align_center)
+    table.cell(tbl, 2, 13, f_fmt_vol(maxVolEver), text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 3, 13, "",   text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
+    table.cell(tbl, 4, 13, "",   text_color=tbl_fc, bgcolor=tbl_bc, text_size=tbl_sz, text_halign=text.align_left)
