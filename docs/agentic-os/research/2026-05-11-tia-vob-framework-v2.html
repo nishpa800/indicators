@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TIA v2 — Tensile-Impervious-Antifragile VOB Framework, Comprehensive Edition (2026-05-11)</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 1160px; margin: 2em auto; padding: 0 1.5em; color: #1a1a1a; line-height: 1.55; }
+  h1 { border-bottom: 3px solid #1a1a1a; padding-bottom: 0.3em; font-size: 1.95em; }
+  h2 { color: #003366; border-left: 5px solid #003366; padding-left: 0.6em; margin-top: 2.2em; font-size: 1.4em; }
+  h3 { color: #4a4a4a; margin-top: 1.5em; font-size: 1.13em; }
+  h4 { color: #5a5a5a; margin-top: 1em; font-size: 1em; }
+  .critical { background: #ffe7e7; border-left: 5px solid #cc0000; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .callout  { background: #fff8e7; border-left: 5px solid #d18800; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .ok       { background: #e7f8ee; border-left: 5px solid #1f7a3f; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .info     { background: #eef4fb; border-left: 5px solid #003366; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .formula  { background: #fafafa; border: 1px solid #ddd; padding: 0.7em 1em; margin: 0.6em 0; font-family: "Cambria Math", Georgia, serif; font-size: 1.04em; border-radius: 4px; }
+  .property { background: #fff5e6; border-left: 5px solid #b85c00; padding: 1em 1.2em; margin: 1.2em 0; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.91em; }
+  th, td { border: 1px solid #ccc; padding: 0.4em 0.65em; vertical-align: top; }
+  th { background: #f0f0f0; text-align: left; }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-family: "SF Mono", Menlo, monospace; font-size: 0.91em; }
+  pre  { background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; padding: 0.8em 1em; overflow-x: auto; font-family: "SF Mono", Menlo, monospace; font-size: 0.86em; line-height: 1.42; }
+  svg { margin: 1em auto; display: block; }
+  .footer { color: #888; font-size: 0.85em; margin-top: 3em; border-top: 1px solid #ccc; padding-top: 1em; }
+  .toc { background: #f8f9fa; border: 1px solid #ddd; padding: 1em 1.5em; margin: 1.5em 0; border-radius: 4px; }
+  .toc ol { margin: 0.5em 0; padding-left: 1.6em; }
+  .toc li { padding: 2px 0; }
+  a { color: #003366; }
+  .panel-imp { background:#cde7ff; color:#003366; padding:3px 10px; border-radius:4px; font-weight:700; font-size:0.85em; }
+  .panel-ten { background:#d8eed4; color:#1f5e1f; padding:3px 10px; border-radius:4px; font-weight:700; font-size:0.85em; }
+  .panel-anti{ background:#ffe7c2; color:#7a3300; padding:3px 10px; border-radius:4px; font-weight:700; font-size:0.85em; }
+  .greek { font-family: "Cambria Math", Georgia, serif; font-style: italic; }
+  .var-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-family: "SF Mono", Menlo, monospace; font-size: 0.85em; }
+  .var-I { background: #cde7ff; color: #003366; }
+  .var-T { background: #d8eed4; color: #1f5e1f; }
+  .var-A { background: #ffe7c2; color: #7a3300; }
+</style>
+</head>
+<body>
+
+<h1>TIA v2 — Tensile-Impervious-Antifragile VOB Framework (Comprehensive Edition)</h1>
+<p><em>Authored 2026-05-11. Supersedes <code>2026-05-11-tia-vob-framework.html</code> (v1) which is preserved for traceability per SD-002. This v2 fixes two specific deficiencies Anish flagged: (1) v1 included vob-ladder-watch in the inventory; v1 was wrong — vob-ladder-watch is dropped from consideration. (2) v1 limited variable hunting to the currently-emitted VOB metadata; v2 expands to the full search space — TradingView built-ins, our entire 22-family indicator library, external MCP data sources, and real first-principles equations from defense, chemicals, and environmental science literature.</em></p>
+
+<div class="critical">
+<strong>Anish 2026-05-11 (v2 directive, verbatim).</strong> "You should not just limit us to the current data that's being emitted. You should be looking for whatever we have access to in the world, but also within TradingView. TradingView has many homegrown indicators. You have our library. You have our entire library of indicators. You should be looking for whatever it is that represents the ethos of an impervious substance, the essence of that thing, the essence of antifragility, the essence of tensile strength. And you need to prove this with real formulas and calculations that define those things and reverse engineer from the studies and the research that's been used. Typically, it's gonna be in probably defense and chemicals and maybe some environmental stuff."
+</div>
+
+<div class="ok">
+<strong>What v2 delivers that v1 did not.</strong>
+<ol>
+<li>The full real-world equation set from defense literature: Tate-Alekseevskii long-rod penetration, Walker-Anderson ceramic armor, Lambert-Jonas / Recht-Ipson residual velocity, Florence ballistic limit, Krieg-Swift-Pinaire.</li>
+<li>The real chemicals/barrier-polymer literature: permeability coefficient P = D × S, EVOH / PVDC barrier polymer formulations, the Salame permachor model.</li>
+<li>The real environmental shielding literature: Beer-Lambert attenuation, half-value layer, mass attenuation coefficient, Schelkunoff EMI shielding.</li>
+<li>The real materials work-hardening literature: Hollomon, Voce, Ludwik, Swift, Krupkowski equations. Hadfield steel quantified.</li>
+<li>The real bone-remodeling literature: Wolff's law quantitative formulation, Frost's mechanostat, Carter-Hayes density-stiffness law.</li>
+<li>The real Taleb-Douady (2013) antifragility detection operator: H(X, f, K, s, n) = (f(X+K) + f(X−K)) / 2 − f(X).</li>
+<li>A full survey of TradingView built-in indicators (Pine <code>ta.*</code> and <code>request.*</code> namespaces) mapped to TIA properties.</li>
+<li>A full survey of our 22 in-repo indicator families with each one's role per property.</li>
+<li>A full survey of external MCP data sources (current + planned).</li>
+<li>A comprehensive 38-variable map with first-principles formula citation per variable.</li>
+<li>vob-ladder-watch REMOVED from the TIA scope per Anish 2026-05-11.</li>
+</ol>
+</div>
+
+<h2>Table of contents</h2>
+<div class="toc">
+<ol>
+<li><a href="#supersession">Supersession notice — what v2 changes from v1</a></li>
+<li><a href="#inventory">VOB indicator inventory (corrected; vob-ladder-watch removed)</a></li>
+<li><a href="#thesis">The thesis — recap from v1</a></li>
+<li><a href="#imp-deep">Imperviousness deep dive — defense ballistics, chemicals barriers, environmental shielding</a></li>
+<li><a href="#ten-deep">Tensile deep dive — toughness, fracture mechanics, hierarchical materials</a></li>
+<li><a href="#anti-deep">Antifragility deep dive — Taleb-Douady, work hardening, Wolff's law, hormesis</a></li>
+<li><a href="#data-survey">Data source survey — TradingView built-ins, our library, external MCPs</a></li>
+<li><a href="#variable-map">Comprehensive 38-variable map</a></li>
+<li><a href="#equations-v2">Updated I/T/A equations using the v2 variable space</a></li>
+<li><a href="#thresholds">Thresholds 50% / 62.5% / 87.5% — same rationale (preserved from v1)</a></li>
+<li><a href="#latency">Latency analysis — updated for new variables</a></li>
+<li><a href="#premortem">Premortem — updated failure modes</a></li>
+<li><a href="#inversion">Inversion — fragility classes and equations</a></li>
+<li><a href="#validation">Validation protocol — updated</a></li>
+<li><a href="#roadmap">Implementation roadmap (deferred to next session)</a></li>
+<li><a href="#open">Open questions for Anish</a></li>
+<li><a href="#refs">References — defense, chemicals, environmental, materials science, Taleb, finance</a></li>
+<li><a href="#glossary">Glossary</a></li>
+<li><a href="#starter">Starter prompt for the implementation session</a></li>
+</ol>
+</div>
+
+<h2 id="supersession">1. Supersession notice — what v2 changes from v1</h2>
+
+<table>
+<tr><th>Change</th><th>v1 (deficient)</th><th>v2 (corrected)</th></tr>
+<tr><td>vob-ladder-watch inclusion</td><td>Listed as "existing pancake-stacking detector — partial precursor"</td><td>REMOVED from scope entirely per Anish 2026-05-11. Not consulted, not extended.</td></tr>
+<tr><td>Variable search space</td><td>Limited to 14 variables, all from VOB-emitted metadata</td><td>Expanded to 38 variables across (a) VOB metadata, (b) TradingView built-in <code>ta.*</code> / <code>request.*</code> namespaces, (c) our 22-family indicator library, (d) external MCP data feeds</td></tr>
+<tr><td>Defense literature</td><td>Florence equation only</td><td>Tate-Alekseevskii, Walker-Anderson, Lambert-Jonas, Recht-Ipson, Florence, Krieg-Swift-Pinaire, plus radiation shielding (Beer-Lambert, HVL) and EMI shielding (Schelkunoff)</td></tr>
+<tr><td>Chemicals/barrier literature</td><td>Mentioned in passing</td><td>Full barrier polymer derivation: P = D × S, EVOH / PVDC formulations, Salame permachor, glass transition effects</td></tr>
+<tr><td>Work-hardening literature</td><td>Hollomon mentioned</td><td>Full set: Hollomon, Voce, Ludwik, Swift, Krupkowski. Hadfield steel quantified.</td></tr>
+<tr><td>Bone remodeling (Wolff's law)</td><td>Mentioned</td><td>Quantitative: Frost's mechanostat, Carter-Hayes density-stiffness</td></tr>
+<tr><td>Taleb antifragility formalism</td><td>Convexity / Jensen sketch</td><td>Full Taleb-Douady (2013) detector H(X, f, K, s, n)</td></tr>
+</table>
+
+<p>Per SD-002, v1 file is preserved on disk for traceability. v2 is canonical going forward.</p>
+
+<h2 id="inventory">2. VOB indicator inventory — corrected</h2>
+
+<table>
+<tr><th>Family</th><th>Canonical version</th><th>Profile</th><th>Role in TIA v2</th></tr>
+<tr><td><code>vob-asym</code></td><td><code>VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine</code> (live), <code>..._FROM_MASTERDIR_ummmm_2026-05-10.pine</code> (preview with emission table)</td><td>Six sensitivity tiers A–F. 12 T3 signals, 12 zone-formation markers, Nagasaki ATH-volume, MutEx overlap engine</td><td><strong>Primary substrate.</strong> TIA replaces the 25 individual plotshapes + alerts with 6 probability-tiered detection plots (3 bull + 3 bear).</td></tr>
+<tr><td><code>vob-single-sens</code></td><td><code>VOB_SINGLE_SENS_WITH_TABLES_v1.pine</code></td><td>Single sensitivity, 3 buy + 3 sell companions</td><td><strong>Reference / sanity check.</strong> TIA validated against single-sens to confirm multi-tier earns its keep.</td></tr>
+<tr><td><s><code>vob-ladder-watch</code></s></td><td>—</td><td>—</td><td><strong>REMOVED FROM SCOPE.</strong> Per Anish 2026-05-11: "That one is completely incorrect. So just remove that one."</td></tr>
+</table>
+
+<h2 id="thesis">3. The thesis — recap from v1</h2>
+
+<p>A VOB level holds when it has three independent properties: imperviousness (resistance to penetration), tensile (absorbs stress and returns to shape), antifragility (gains strength from stress). A naive single-scalar "strength" model fails because different levels fail in different ways — thin levels get sliced (low I), brittle levels shatter (low T), eroding levels weaken under repeated tests (low A). The TIA framework decomposes the single intuition into three measurable dimensions and recombines them into a master probability P(t) = (I·T·A)^(1/3). Three detection plots fire when P crosses 0.50, 0.625, 0.875 — three bull, three bear. Inversion gives a parallel fragility F(t) = 1 − P(t) with three blow-through detection plots at the same thresholds.</p>
+
+<h2 id="imp-deep">4. Imperviousness deep dive — defense, chemicals, environmental</h2>
+
+<p><span class="panel-imp">IMPERVIOUSNESS = resistance to penetration by an external probe.</span> Three sub-fields of materials and defense science measure this directly. We extract first-principles equations from each and map every term to a measurable variable we can compute from TradingView data + our indicator library.</p>
+
+<h3>4.1 Defense ballistics — penetration mechanics</h3>
+
+<p>Modern armor design rests on a small set of canonical equations. Each describes the limit at which a projectile of given mass, velocity, and geometry defeats a target of given density, strength, and thickness. We map projectile → market-side incoming volume probe, target → VOB level defense.</p>
+
+<h4>4.1.1 The Tate-Alekseevskii long-rod penetration equation</h4>
+
+<p>For a long-rod projectile (length ≫ diameter) penetrating a semi-infinite target at hydrodynamic velocity:</p>
+
+<div class="formula">
+½ ρ<sub>p</sub> (v − u)² + Y<sub>p</sub> = ½ ρ<sub>t</sub> u² + R<sub>t</sub>
+</div>
+
+<p>where v = rod velocity, u = penetration velocity, <span class="greek">ρ<sub>p</sub></span>, <span class="greek">ρ<sub>t</sub></span> = densities of projectile and target, <span class="greek">Y<sub>p</sub></span> = dynamic flow stress of projectile, <span class="greek">R<sub>t</sub></span> = target resistance to penetration (Tate's R<sub>t</sub>, typically 4–6× the target's static yield strength). Penetration depth P_depth at exhaustion:</p>
+
+<div class="formula">
+P<sub>depth</sub> = L<sub>0</sub> × √(ρ<sub>p</sub>/ρ<sub>t</sub>) × [v / (v + √(2(R<sub>t</sub>−Y<sub>p</sub>)/ρ<sub>p</sub>))]
+</div>
+
+<p><strong>Market mapping.</strong> The incoming volume probe (price moving into the zone) is the projectile; the accumulated pool volume + cross-tier confluence is the target's effective <span class="greek">R<sub>t</sub></span>. The penetration depth analogue is how far price travels INTO the zone before being repulsed. We compute (R<sub>t</sub>)<sub>VOB</sub> := pool_volume_normalized × tier_agreement × stack_count, which goes into <span class="var-tag var-I">I-VAR-1 R<sub>t</sub></span>.</p>
+
+<h4>4.1.2 Walker-Anderson ceramic armor model</h4>
+
+<p>For ceramic-faced composite armor (typical in modern body armor), Walker and Anderson (1995, 2003) refined Tate to handle the ceramic conoid dwell phase:</p>
+
+<div class="formula">
+V<sub>50</sub><sup>2</sup> = (2 × ρ<sub>t</sub> × σ<sub>t</sub> × h × cos²θ) / (ρ<sub>p</sub> × d²)
+</div>
+
+<p>where V<sub>50</sub> is the 50% defeat velocity, <span class="greek">σ<sub>t</sub></span> the target strength, h the target thickness, θ the obliquity angle, d the projectile diameter. <strong>Mapping.</strong> Obliquity → angle of attack of incoming price (slope of fast EMA at moment of probe). Thickness → zone width (upper-lower spread). The TIA imperviousness equation inherits this thickness-times-strength scaling.</p>
+
+<h4>4.1.3 Lambert-Jonas residual velocity for finite-thickness plates</h4>
+
+<p>The empirical Lambert-Jonas equation predicts residual velocity after defeating a plate:</p>
+
+<div class="formula">
+V<sub>r</sub><sup>p</sup> = (V<sub>s</sub><sup>p</sup> − V<sub>BL</sub><sup>p</sup>)
+</div>
+
+<p>where V<sub>BL</sub> is the ballistic limit, V<sub>s</sub> the strike velocity, and p ≈ 2.0 for ductile targets. <strong>Mapping.</strong> If price exceeds the "ballistic limit" of the zone, it continues with reduced velocity — the residual move is dampened by the defended level. The exponent p ≈ 2 means kinetic energy is the conserved quantity, not momentum. TIA's tensile T(t) captures the residual-velocity damping (zones that DON'T fully halt price but slow it have positive T even if low I).</p>
+
+<h4>4.1.4 Florence ballistic limit equation</h4>
+
+<p>For multi-ply textile armor (Kevlar, Dyneema), Florence (1969):</p>
+
+<div class="formula">
+V<sub>BL</sub> = √(2 × ε<sub>f</sub> × E<sub>l</sub> × A / m)
+</div>
+
+<p>where <span class="greek">ε<sub>f</sub></span> = strain to failure, <span class="greek">E<sub>l</sub></span> = longitudinal modulus, A = areal density, m = projectile mass. <strong>Critical insight</strong>: <span class="greek">ε<sub>f</sub></span> (strain to failure) is a TENSILE property — meaning ballistic resistance depends on BOTH stiffness AND elongation. This is why we can't compute imperviousness in isolation from tensile.</p>
+
+<h4>4.1.5 Recht-Ipson momentum-balance penetration</h4>
+
+<div class="formula">
+V<sub>r</sub> = M<sub>p</sub> / (M<sub>p</sub> + M<sub>plug</sub>) × √(V<sub>s</sub><sup>2</sup> − V<sub>BL</sub><sup>2</sup>)
+</div>
+
+<p>where M<sub>plug</sub> is the mass of material ejected from the target on penetration. <strong>Mapping.</strong> A penetration event in a VOB zone "ejects" some pool volume (defenders that gave up). The Recht-Ipson plug mass corresponds to how much defensive volume is consumed per failed defense event. Variable: <span class="var-tag var-I">I-VAR-7 plug_consumption</span> = (pool_before_failed_defense − pool_after) / pool_before.</p>
+
+<h4>4.1.6 Krieg-Swift-Pinaire ballistic limit (simplified engineering form)</h4>
+
+<div class="formula">
+V<sub>BL</sub> = K × √(σ<sub>y</sub> × t / ρ<sub>p</sub>)
+</div>
+
+<p>Compact engineering version. Demonstrates that ballistic limit scales as <strong>square root of (yield strength × thickness)</strong>. <strong>Mapping.</strong> Doubling pool volume only increases imperviousness by √2, not 2×. This is encoded in the I(t) equation's square-root term on the stack count.</p>
+
+<h3>4.2 Materials hardness — indentation resistance</h3>
+
+<p>Defense ballistics measures impact/dynamic penetration. The static analogue is hardness — resistance to a slow indenter. Useful because "static" tests of VOB levels (low-volume probes that slowly chip away) are also resisted by the same fundamental imperviousness.</p>
+
+<table>
+<tr><th>Hardness test</th><th>Formula</th><th>Range</th><th>VOB mapping</th></tr>
+<tr><td><strong>Vickers H<sub>V</sub></strong></td><td>H<sub>V</sub> = 1.854 × F/d²</td><td>0–200 GPa (diamond ≈ 70–150)</td><td>Slow-probe resistance — small price probes that don't break through</td></tr>
+<tr><td><strong>Knoop H<sub>K</sub></strong></td><td>H<sub>K</sub> = 14229 × P/L²</td><td>Brittle materials</td><td>Asymmetric probe — directional susceptibility</td></tr>
+<tr><td><strong>Brinell H<sub>B</sub></strong></td><td>H<sub>B</sub> = 2F / (πD(D−√(D²−d²)))</td><td>Engineering metals</td><td>Average-volume probe resistance</td></tr>
+<tr><td><strong>Mohs</strong></td><td>Ordinal 1–10</td><td>Mineralogy</td><td>Comparative — does THIS level resist what THAT level couldn't?</td></tr>
+<tr><td><strong>Rockwell H<sub>R</sub></strong></td><td>H<sub>R</sub> = E − e (penetration depth based)</td><td>Engineering</td><td>Differential hardness across pre-stress states</td></tr>
+</table>
+
+<h4>4.2.1 Gao-Tian theoretical hardness for covalent crystals</h4>
+
+<div class="formula">
+H<sub>V</sub> = 350 × N<sub>e</sub><sup>2/3</sup> × e<sup>−1.191 f<sub>i</sub></sup> × d<sup>−2.5</sup>
+</div>
+
+<p>where <span class="greek">N<sub>e</sub></span> = electron density of the strongest bond, <span class="greek">f<sub>i</sub></span> = bond ionicity, d = bond length (Å). For VOB: electron density → confluence count of indicators marking this level; ionicity → degree of cross-direction agreement (0 if pure bull or pure bear, intermediate if mixed); bond length → distance scale of the level relative to ATR.</p>
+
+<h3>4.3 Chemicals — barrier permeability</h3>
+
+<p>Imperviousness in the chemical world is barrier performance: oxygen, water vapor, CO₂ transmission through polymer films. The standard formula:</p>
+
+<div class="formula">
+P = D × S
+</div>
+
+<p>where P is the permeability coefficient, D the diffusion coefficient (m²/s), S the solubility coefficient (mol/(m³·Pa)). Multi-layer barriers:</p>
+
+<div class="formula">
+1/P<sub>total</sub> = Σ<sub>i</sub> (L<sub>i</sub> / (P<sub>i</sub> × L<sub>total</sub>))
+</div>
+
+<p>The world's best barrier polymers:</p>
+
+<table>
+<tr><th>Polymer</th><th>O₂ transmission (cc/m²/day)</th><th>Mechanism</th></tr>
+<tr><td>EVOH 32 mol% ethylene</td><td>~0.5 (lowest commercial)</td><td>Hydrogen-bonded crystalline matrix</td></tr>
+<tr><td>PVDC (Saran)</td><td>~3</td><td>Polar polymer with high cohesive energy</td></tr>
+<tr><td>Nylon-6</td><td>~30</td><td>Hydrogen-bonded amide groups</td></tr>
+<tr><td>HDPE</td><td>~2500</td><td>Low polarity baseline reference</td></tr>
+<tr><td>Polypropylene</td><td>~4000</td><td>Even less polar than HDPE</td></tr>
+</table>
+
+<h4>4.3.1 The Salame permachor model</h4>
+
+<p>Permachor <span class="greek">π</span> is an empirical parameter aggregating polymer cohesive energy and free volume:</p>
+
+<div class="formula">
+ln(P) = ln(P<sub>0</sub>) − s × π
+</div>
+
+<p>where P<sub>0</sub> is a reference permeability and s is a substance-specific scaling. <strong>Mapping.</strong> A VOB level's "permachor" is the aggregated cohesion across its supporting indicators. High HVD+PBJ confluence + HV+FVG+GZ1 marking + Pentagon firing = high permachor = low permeability = high imperviousness.</p>
+
+<h3>4.4 Environmental — radiation and EMI shielding</h3>
+
+<h4>4.4.1 Beer-Lambert law for radiation attenuation</h4>
+
+<div class="formula">
+I(x) = I<sub>0</sub> × e<sup>−μ x</sup>
+</div>
+
+<p>where <span class="greek">μ</span> is the linear attenuation coefficient (m⁻¹) and x is the thickness traversed. The half-value layer (HVL) — thickness reducing intensity by half — is:</p>
+
+<div class="formula">
+HVL = ln(2) / μ
+</div>
+
+<p>Mass attenuation coefficient <span class="greek">μ/ρ</span> is the density-normalized version, useful for cross-material comparison. <strong>Mapping.</strong> The volume-attenuation coefficient of a VOB level := total pool volume / zone width. The "half-value layer" of the level := how much price movement consumes half the defending volume. Variable: <span class="var-tag var-I">I-VAR-12 HVL_volume</span>.</p>
+
+<h4>4.4.2 Schelkunoff EMI shielding effectiveness</h4>
+
+<div class="formula">
+SE<sub>dB</sub> = A + R + B
+</div>
+
+<p>where A = absorption loss, R = reflection loss, B = multiple-reflection correction. Each component is a function of frequency, conductivity, permeability, and thickness. <strong>Mapping.</strong> A VOB level resists "absorption" (price probes into the zone that get dampened — tensile) AND "reflection" (price bounces off without entering — pure imperviousness). The combined SE_dB analogue is what we ultimately want.</p>
+
+<h2 id="ten-deep">5. Tensile deep dive — toughness, fracture, hierarchical materials</h2>
+
+<p><span class="panel-ten">TENSILE = capacity to absorb stress without permanent damage, then return to shape.</span> The naive metric is UTS (peak stress before failure). The CORRECT metric is toughness — the integrated area under the stress-strain curve. Strength alone is brittleness; strength × elasticity is toughness.</p>
+
+<h3>5.1 The toughness integral</h3>
+
+<div class="formula">
+K<sub>toughness</sub> = ∫<sub>0</sub><sup>ε<sub>f</sub></sup> σ(ε) dε
+</div>
+
+<p>For a power-law plastic material (Hollomon): <span class="greek">σ = K × ε<sup>n</sup></span>, the toughness becomes:</p>
+
+<div class="formula">
+K<sub>toughness</sub> = K × ε<sub>f</sub><sup>n+1</sup> / (n+1)
+</div>
+
+<p><strong>Mapping.</strong> Each touch event of a VOB zone produces a (stress, strain) data point: stress = touch volume, strain = penetration depth into zone. Sum across touches with rejection-flag weighting gives the discrete toughness analogue. Variable: <span class="var-tag var-T">T-VAR-3 K_discrete</span>.</p>
+
+<h3>5.2 Fracture mechanics — when toughness fails</h3>
+
+<h4>5.2.1 Griffith's criterion (1921)</h4>
+
+<div class="formula">
+σ<sub>c</sub> = √(2 E γ<sub>s</sub> / (π a))
+</div>
+
+<p>where <span class="greek">σ<sub>c</sub></span> = critical stress for crack propagation, E = Young's modulus, <span class="greek">γ<sub>s</sub></span> = surface energy per unit area, a = half-crack length. <strong>Mapping.</strong> A VOB zone has a "critical incoming volume" above which a single probe shatters defense. Below σ_c, probes are absorbed; above, the zone fractures. The relevant variable is the zone's structural cohesion: <span class="var-tag var-T">T-VAR-4 sigma_c</span>.</p>
+
+<h4>5.2.2 Irwin's stress intensity factor</h4>
+
+<div class="formula">
+K<sub>I</sub> = σ × √(π a) × Y
+</div>
+
+<p>where Y is a dimensionless geometric factor. Fracture toughness K<sub>IC</sub> is the critical K<sub>I</sub> at which crack propagation becomes unstable. <strong>Mapping.</strong> Each touch event creates a "crack" of size proportional to penetration depth; if K_I exceeds K_IC, the zone fails catastrophically.</p>
+
+<h4>5.2.3 J-integral (Rice 1968) — for nonlinear elastic-plastic materials</h4>
+
+<div class="formula">
+J = ∫<sub>Γ</sub> (W dy − T<sub>i</sub> × ∂u<sub>i</sub>/∂x ds)
+</div>
+
+<p>The J-integral is path-independent and equals the energy release rate. For VOB: J is the total energy released per unit "crack advance" (per unit zone penetration). High J = brittle (energy released quickly = catastrophic failure). Low J = tough (energy absorbed gradually).</p>
+
+<h4>5.2.4 Paris law (1961) — fatigue crack growth</h4>
+
+<div class="formula">
+da/dN = C × (ΔK)<sup>m</sup>
+</div>
+
+<p>where da/dN = crack growth per stress cycle, ΔK = stress intensity range, m typically 2–4. <strong>Mapping.</strong> Each touch event is one fatigue cycle. The Paris exponent m governs how quickly accumulated micro-damage compounds. Variable: <span class="var-tag var-T">T-VAR-6 paris_m_estimate</span> — fitted from the zone's touch history.</p>
+
+<h4>5.2.5 Coffin-Manson low-cycle fatigue (1954)</h4>
+
+<div class="formula">
+Δε<sub>p</sub>/2 = ε<sub>f</sub>' × (2N<sub>f</sub>)<sup>c</sup>
+</div>
+
+<p>For low-cycle, high-strain fatigue (the regime where a VOB zone takes a few high-energy hits rather than many small ones). The exponent c ≈ −0.5 for most materials. Combined with Basquin's high-cycle equation:</p>
+
+<div class="formula">
+Δε/2 = (σ<sub>f</sub>'/E) × (2N<sub>f</sub>)<sup>b</sup> + ε<sub>f</sub>' × (2N<sub>f</sub>)<sup>c</sup>
+</div>
+
+<p>Captures both elastic and plastic strain regimes — the full fatigue life. <strong>Mapping.</strong> A VOB zone has a finite fatigue life. Predict it from touch history: <span class="var-tag var-T">T-VAR-7 N_f_remaining</span>.</p>
+
+<h3>5.3 Modulus of resilience and modulus of toughness</h3>
+
+<div class="formula">
+U<sub>r</sub> = σ<sub>y</sub><sup>2</sup> / (2 E)    (resilience — elastic strain energy density)
+</div>
+<div class="formula">
+U<sub>t</sub> ≈ ½ × (σ<sub>y</sub> + σ<sub>UTS</sub>) × ε<sub>f</sub>    (toughness approximation)
+</div>
+
+<p>Resilience is the energy stored in elastic deformation that returns to the system on release. Toughness includes plastic deformation that doesn't return. Both contribute to tensile T(t).</p>
+
+<h3>5.4 Hierarchical materials — nature's toughness optimization</h3>
+
+<h4>5.4.1 Spider silk (Caerostris darwini, Darwin's bark spider)</h4>
+
+<p>Toughness ≈ 520 MJ/m³ — the highest known in nature. Hierarchical structure:</p>
+
+<ul>
+<li><strong>Level 1 (Å scale):</strong> H-bonded β-sheet nanocrystals; high stiffness</li>
+<li><strong>Level 2 (nm scale):</strong> Amorphous matrix surrounding crystallites; absorbs energy elastically</li>
+<li><strong>Level 3 (μm scale):</strong> Hierarchical bundling; redirects force across fibrils</li>
+</ul>
+
+<p>The Keten-Buehler (2010) model gives the strength-elongation product:</p>
+
+<div class="formula">
+σ<sub>silk</sub> × ε<sub>silk</sub> ≈ σ<sub>β-sheet</sub> × f<sub>c</sub> × ε<sub>amorphous</sub> × (1 − f<sub>c</sub>)
+</div>
+
+<p>where f_c is the crystalline volume fraction. Optimal f_c ≈ 0.4 maximizes toughness. <strong>Mapping.</strong> A VOB level's "hierarchical structure" is the layering of (a) pool volume — Level 1 strength, (b) cross-tier confluence — Level 2 matrix, (c) cross-indicator confluence — Level 3 redirection. Variable: <span class="var-tag var-T">T-VAR-10 hierarchy_score</span>.</p>
+
+<h4>5.4.2 Nacre (mother-of-pearl) — the brick-and-mortar model</h4>
+
+<p>Aragonite tablets (95% by volume) bonded by biopolymer mortar (5%). Toughness ~3000× single-crystal aragonite. Wegst-Ashby (2004) brick-and-mortar:</p>
+
+<div class="formula">
+σ<sub>composite</sub> ∝ σ<sub>brick</sub> × √(τ<sub>mortar</sub> × t<sub>brick</sub> / L<sub>brick</sub>)
+</div>
+
+<p>Mapping: bricks = high-volume zones, mortar = the cross-tier MutEx overlap engine binding them. The √(thickness × shear) scaling reappears in TIA.</p>
+
+<h4>5.4.3 Bone — hierarchical biocomposite (Wegst, Ashby, Currey)</h4>
+
+<p>Cortical bone toughness scales with mineral fraction f_m by a power law:</p>
+
+<div class="formula">
+K<sub>IC</sub>(bone) = K<sub>0</sub> × (1 − f<sub>m</sub>)<sup>n</sup>
+</div>
+
+<p>with n ≈ 1.5. <strong>Counterintuitive</strong>: too much mineral makes bone brittle; the collagen matrix's elasticity contributes critical toughness. <strong>Mapping.</strong> Too much pool volume CONCENTRATED in one tier (no diversification across sensitivities) makes the level brittle. Diversification across tiers = collagen matrix = critical for tensile.</p>
+
+<h3>5.5 Elastomers — when nonlinearity matters</h3>
+
+<h4>5.5.1 Mooney-Rivlin (large strain elastomers)</h4>
+
+<div class="formula">
+σ = 2 (λ − λ<sup>−2</sup>) × (C<sub>1</sub> + C<sub>2</sub>/λ)
+</div>
+
+<p>For VOB levels that "stretch" significantly under load — large penetration events that get rejected. The Mooney-Rivlin behavior captures the stiffening response at large strain (rubber bands snap back HARDER from full stretch than from half stretch — same mechanism by which a deeply-probed VOB level may bounce HARDER than a lightly-probed one).</p>
+
+<h2 id="anti-deep">6. Antifragility deep dive — Taleb-Douady, work hardening, Wolff's law, hormesis</h2>
+
+<p><span class="panel-anti">ANTIFRAGILITY = property of GAINING from stress, volatility, or randomness.</span> Coined by Taleb. Formal definition is positive second derivative of payoff w.r.t. stressor. Real-world materials examples are quantitatively documented in metallurgy, biology, and toxicology.</p>
+
+<h3>6.1 Taleb-Douady (2013) — the antifragility detection operator</h3>
+
+<p>Taleb and Douady give a rigorous detector for antifragility absent a closed-form payoff function. For a system with state X subject to a perturbation of magnitude K:</p>
+
+<div class="formula">
+H(X, f, K, s, n) = (f(X+K) + f(X−K)) / 2 − f(X)
+</div>
+
+<ul>
+<li>H &gt; 0 → antifragile (mean of perturbed payoffs exceeds unperturbed = convex)</li>
+<li>H ≈ 0 → robust (linear payoff)</li>
+<li>H &lt; 0 → fragile (concave payoff; variance hurts)</li>
+</ul>
+
+<p>This is the discrete second-difference test for convexity. <strong>Mapping.</strong> For a VOB level, we evaluate H by simulating "perturbed" volume probes ±K standard deviations from the mean probe size and comparing held-rate to the unperturbed mean probe. Empirical implementation: bucket touch events into low-volume / medium-volume / high-volume groups; compute hold rates; H = avg(low_hold_rate, high_hold_rate) − medium_hold_rate. Variable: <span class="var-tag var-A">A-VAR-1 H_taleb</span>.</p>
+
+<h3>6.2 Jensen's inequality — the variance benefit</h3>
+
+<div class="formula">
+For convex f: E[f(X)] ≥ f(E[X])
+</div>
+
+<p>If our system's payoff function f is convex (antifragile), MORE variance in the input X strictly improves the expected payoff. The mathematical heart of antifragility. <strong>Mapping.</strong> A VOB level that benefits from variance (mixed volume probes) more than constant-magnitude probes is antifragile.</p>
+
+<h3>6.3 Work hardening — Hadfield steel and the Hollomon equation</h3>
+
+<p>The canonical work-hardening law (Hollomon 1945):</p>
+
+<div class="formula">
+σ = K × ε<sub>p</sub><sup>n</sup>
+</div>
+
+<p>where K is the strength coefficient, <span class="greek">ε<sub>p</sub></span> the plastic strain, n the strain hardening exponent. For most metals n ≈ 0.1–0.3. <strong>For Hadfield steel (austenitic Mn steel) n ≈ 0.5</strong> — the highest of any common alloy. Mechanism: stress-induced martensitic transformation locally where stress is highest. The harder the impact, the harder the localized response.</p>
+
+<h4>6.3.1 Voce hardening law</h4>
+
+<div class="formula">
+σ = σ<sub>s</sub> − (σ<sub>s</sub> − σ<sub>y</sub>) × exp(−ε / ε<sub>0</sub>)
+</div>
+
+<p>Better fit for materials with saturating hardening — i.e., materials that work-harden up to a ceiling. <strong>Mapping.</strong> A VOB level can only work-harden so far (finite pool capacity). Voce gives the saturation curve. Variable: <span class="var-tag var-A">A-VAR-3 sigma_s_estimate</span>.</p>
+
+<h4>6.3.2 Ludwik (1909) — strain-hardening with elastic offset</h4>
+
+<div class="formula">
+σ = σ<sub>y</sub> + K × ε<sub>p</sub><sup>n</sup>
+</div>
+
+<h4>6.3.3 Swift (1952) — strain-hardening with pre-strain offset</h4>
+
+<div class="formula">
+σ = K × (ε<sub>0</sub> + ε<sub>p</sub>)<sup>n</sup>
+</div>
+
+<h4>6.3.4 Krupkowski — combined hardening</h4>
+
+<div class="formula">
+σ = K × (ε<sub>0</sub> + ε<sub>p</sub>)<sup>n</sup> + σ<sub>0</sub>
+</div>
+
+<p>The four equations above bracket all common work-hardening behaviors. Fit each to a zone's touch-history (touch volume vs cumulative strain) and pick the best by AIC. The fitted exponent n is the antifragility-of-hardening variable: <span class="var-tag var-A">A-VAR-4 n_hollomon</span>.</p>
+
+<h3>6.4 Wolff's law and Frost's mechanostat — bone remodeling</h3>
+
+<p>Wolff (1892): bone density adapts to mechanical stress. Frost (1987) quantified the mechanostat: bone remodels to maintain strain in a target window.</p>
+
+<div class="formula">
+dρ<sub>bone</sub>/dt = k × (σ − σ<sub>threshold</sub>) when σ > σ<sub>threshold</sub> (bone DEPOSITION)
+dρ<sub>bone</sub>/dt = −k' × (σ<sub>min</sub> − σ) when σ < σ<sub>min</sub> (bone RESORPTION; disuse atrophy)
+</div>
+
+<p>Carter-Hayes (1977) density-stiffness relationship:</p>
+
+<div class="formula">
+E<sub>bone</sub> = 3790 × ρ<sub>bone</sub><sup>3</sup> (MPa)
+</div>
+
+<p>Stiffness scales as the CUBE of density — Wolff's amplification. <strong>Mapping.</strong> A VOB level's stiffness E_VOB scales with the cube of its accumulated pool volume per unit width (analogue of bone density). Variable: <span class="var-tag var-A">A-VAR-5 wolff_stiffness</span>.</p>
+
+<h3>6.5 Hormesis — the J-curve dose response</h3>
+
+<p>Calabrese-Baldwin (2003) review of hormesis in toxicology: low-dose exposure to a stressor produces an ADAPTIVE response that increases system robustness. Quantitative model:</p>
+
+<div class="formula">
+Response(D) = a + b × log(D) + c × (log(D))<sup>2</sup>
+</div>
+
+<p>with parameters fit such that the curve is inverted-U or J-shaped — peak performance at a non-zero intermediate dose. <strong>Mapping.</strong> Some volume probe magnitude is OPTIMAL for strengthening a VOB level — too small and no response, too large and the level shatters. Variable: <span class="var-tag var-A">A-VAR-6 hormesis_optimum</span>.</p>
+
+<h3>6.6 Self-healing materials — restoration after damage</h3>
+
+<p>Healing efficiency:</p>
+
+<div class="formula">
+η<sub>heal</sub> = (P<sub>healed</sub> − P<sub>damaged</sub>) / (P<sub>virgin</sub> − P<sub>damaged</sub>)
+</div>
+
+<p>For self-healing concrete (HEALCON), polymer microcapsule systems (White et al. 2001), and vascular networks. <strong>Mapping.</strong> A VOB level can recover after a partial penetration if defenders pile back in. Tracked as the volume returned to the pool within N bars of a penetration event. Variable: <span class="var-tag var-A">A-VAR-7 heal_efficiency</span>.</p>
+
+<h3>6.7 Mithridatization kinetics</h3>
+
+<div class="formula">
+dC<sub>tolerance</sub>/dt = k<sub>acq</sub> × C<sub>exposure</sub> − k<sub>loss</sub> × C<sub>tolerance</sub>
+</div>
+
+<p>Tolerance accumulates with exposure and decays without. Steady-state: <span class="greek">C<sub>tol</sub><sup>ss</sup></span> = (k<sub>acq</sub>/k<sub>loss</sub>) × C<sub>exp</sub>. <strong>Mapping.</strong> A VOB level builds tolerance to probes of a given magnitude — once it has weathered enough of them, it has "immunity" to that probe class.</p>
+
+<h2 id="data-survey">7. Data source survey — TradingView built-ins, our library, external MCPs</h2>
+
+<p>v1 limited the variable search to VOB-emitted metadata. v2 expands the search across four source classes.</p>
+
+<h3>7.1 TradingView built-in indicators (Pine <code>ta.*</code> and <code>request.*</code> namespaces)</h3>
+
+<table>
+<tr><th>Function</th><th>What it computes</th><th>TIA mapping</th></tr>
+<tr><td><code>ta.atr(len)</code></td><td>Average True Range — volatility envelope</td><td>Imperviousness — relative zone thickness; low ATR at level = dense lattice</td></tr>
+<tr><td><code>ta.rsi(src, len)</code></td><td>Relative Strength Index 0–100</td><td>Tensile — momentum extremes that retrace = elastic snap-back; tracked through zone touches</td></tr>
+<tr><td><code>ta.cci(src, len)</code></td><td>Commodity Channel Index — deviation from mean</td><td>Tensile — large deviations followed by reversion = elastic touch indicator</td></tr>
+<tr><td><code>ta.macd(src, fast, slow, signal)</code></td><td>MACD line + signal + histogram</td><td>Tensile — histogram inversions at zone touches</td></tr>
+<tr><td><code>ta.tsi(src, short, long)</code></td><td>True Strength Index — double-smoothed momentum</td><td>Tensile — clean momentum filter at touch events</td></tr>
+<tr><td><code>ta.stoch(src, high, low, len)</code></td><td>Stochastic %K</td><td>Tensile — same role as RSI</td></tr>
+<tr><td><code>ta.adx(diLen, adxSmoothing)</code></td><td>Average Directional Index</td><td>Imperviousness — directional commitment; high ADX = locked-in trend = more impervious vs counter-trend probes</td></tr>
+<tr><td><code>ta.dmi(diLen, adxSmoothing)</code></td><td>+DI and −DI</td><td>Imperviousness — directional pressure asymmetry</td></tr>
+<tr><td><code>ta.mfi(src, len)</code></td><td>Money Flow Index — volume-weighted RSI</td><td>Antifragility — volume-weighted divergence at touches indicates accumulation vs distribution</td></tr>
+<tr><td><code>ta.cmf(len)</code></td><td>Chaikin Money Flow</td><td>Antifragility — sustained money flow direction at zone</td></tr>
+<tr><td><code>ta.obv()</code></td><td>On-Balance Volume cumulative</td><td>Antifragility — OBV slope through zone tests = accumulated defensive force</td></tr>
+<tr><td><code>ta.kvo(short, long)</code></td><td>Klinger Volume Oscillator</td><td>Antifragility — volume-weighted price change momentum</td></tr>
+<tr><td><code>ta.cog(src, len)</code></td><td>Center of Gravity</td><td>Tensile — slow oscillator for trend-strength assessment</td></tr>
+<tr><td><code>ta.bb(src, len, mult)</code></td><td>Bollinger Bands</td><td>Tensile + Imperviousness — squeezes near zone, expansion on test</td></tr>
+<tr><td><code>ta.kc(src, len, mult)</code></td><td>Keltner Channels (ATR-based)</td><td>Tensile — volatility-adjusted envelope</td></tr>
+<tr><td><code>ta.dc(len)</code></td><td>Donchian Channels — N-bar high/low</td><td>Imperviousness — touch of DC ceiling/floor at zone = extreme stressor</td></tr>
+<tr><td><code>ta.vwap</code> / <code>ta.vwma(src, len)</code></td><td>Volume-weighted average / volume-weighted moving avg</td><td>Imperviousness — VWAP alignment with zone = institutional fair value</td></tr>
+<tr><td><code>ta.percentrank(src, len)</code></td><td>Percentile rank of src vs lookback</td><td>All three — normalization of pool volumes against history</td></tr>
+<tr><td><code>ta.correlation(src1, src2, len)</code></td><td>Pearson correlation</td><td>Antifragility — symbol vs index correlation; independent strength = antifragile</td></tr>
+<tr><td><code>ta.linreg(src, len, offset)</code></td><td>Linear regression value</td><td>Antifragility — slope of cumulative volume regression at level over time</td></tr>
+<tr><td><code>ta.stdev(src, len)</code></td><td>Standard deviation</td><td>Antifragility — variance term for Jensen / Taleb-Douady H</td></tr>
+<tr><td><code>ta.highest / ta.lowest(src, len)</code></td><td>Highest / lowest in window</td><td>Tensile — penetration depth bounds</td></tr>
+<tr><td><code>ta.change(src)</code></td><td>Per-bar delta</td><td>All — touch event detection</td></tr>
+<tr><td><code>ta.cum(src)</code></td><td>Cumulative sum</td><td>Antifragility — accumulated defensive volume</td></tr>
+<tr><td><code>request.security(sym, tf, expr)</code></td><td>Higher-timeframe data</td><td>Imperviousness — HTF zone alignment (1m zone aligned with 5m / 15m / 1H structure)</td></tr>
+<tr><td><code>request.financial(sym, metric)</code></td><td>Fundamental data — FCF, debt, revenue, etc.</td><td>Antifragility — fundamental resilience of the symbol</td></tr>
+<tr><td><code>request.economic(country_metric)</code></td><td>Economic data — Fed funds, CPI, GDP, unemployment</td><td>All — regime conditioning</td></tr>
+<tr><td><code>request.dividends / .splits / .earnings(sym)</code></td><td>Corporate actions</td><td>Antifragility — earnings-window survival is a key antifragility test</td></tr>
+<tr><td><code>syminfo.sector / .industry / .country / .type</code></td><td>Symbol metadata</td><td>All — sector-conditional calibration</td></tr>
+</table>
+
+<h3>7.2 Our 22-family indicator library</h3>
+
+<table>
+<tr><th>Family</th><th>What it produces</th><th>Role in TIA</th></tr>
+<tr><td><code>hvd-pbj-ppd</code></td><td>HV+D, PBJ Bull/Bear, PB Bull/Bear, Floor/2F/Rooftop/Penthouse, Bull/Bear UU/UUU/UUUU, ALPHA STRIKE, CO HV+D+PBJ/PB+USE composites, Foxtrot, LSC</td><td><strong>I+T+A.</strong> Confluence: when a VOB zone coincides with a Floor/Rooftop, imperviousness ×1.5. PBJ at zone touch = elastic snap-back signal (tensile). Repeated PBJ across tests at same zone = work-hardening evidence (antifragile).</td></tr>
+<tr><td><code>heavy-pentagon</code></td><td>Pentagon, Hiroshima, MOAB, Grand Slam, SAAB, Kratos, Heavy Nagasaki, Heavy Yin-Yang, Heavy Trident, NHx2, Bull/Bear RVOL 1x</td><td><strong>I+A.</strong> Pentagon firing at a zone = extreme pressure event; if zone held, antifragility +. MOAB at zone = massive single-bar test; rejection = strong tensile.</td></tr>
+<tr><td><code>b2b-pup</code></td><td>S1–S18 series of B2B PUP + B2B Napalm composites, UC+B2B, UU+B2B, DD+B2B</td><td><strong>A.</strong> Back-to-back pent-up pressure events at a zone test = "Hadfield" work-hardening evidence — accumulated stress events that compound.</td></tr>
+<tr><td><code>tnt-od</code></td><td>T1 RELAY, T1 STACK, B2B Napalm, RC NPM+TNT, CATALYST, IGNITE, FUSE, NPM Enriched, Density 1/2/3, UU/UUU/UUUU+TNT, WBUSH</td><td><strong>I+T.</strong> Opening-drive napalm events; T1 STACK at zone = stacked confluence (impervious); CATALYST events test the level (tensile).</td></tr>
+<tr><td><code>squarify</code></td><td>199 detections — S1-S46 atomics, csNew1 FVG Combo, csNew2, csNew3 Unified Combo, T1/T2 Opening Confluence, HV75/150/250/500/1000 atomics</td><td><strong>I+T+A.</strong> Unified Combo at zone = high-conviction multi-pipeline confluence. HV1000 atomic at zone touch = max-stress test (Hadfield).</td></tr>
+<tr><td><code>ultra-combo</code></td><td>GZ/HV Bull, HV+GZI± variants, GZ/HV MEGA, GZ1+HV MEGA, GZ/HV+HVY</td><td><strong>I.</strong> Pure confluence signal.</td></tr>
+<tr><td><code>hv-fvg-gz1-og</code></td><td>HV+FVG+GZI confluence zones (the Sat 1 of the 4-satellite GPS arch per SD-014)</td><td><strong>I.</strong> Zone-on-zone overlap with VOB level = primary imperviousness boost. Cross-indicator confluence (most important external).</td></tr>
+<tr><td><code>fauna-shifu</code></td><td>JUMBO_CIA_1ST_PUP variants — 48 detections</td><td><strong>A.</strong> "First PUP" patterns = early-warning antifragility signals.</td></tr>
+<tr><td><code>anish-50-1st-combo</code></td><td>Anish's curated 50-detection combo</td><td><strong>I.</strong> Curated high-conviction signals.</td></tr>
+<tr><td><code>anish-tb-foster</code></td><td>TB Foster proprietary detections</td><td><strong>I+T.</strong></td></tr>
+<tr><td><code>disp-4x</code></td><td>Displacement 4× detection family</td><td><strong>T.</strong> Displacement events are the "stress" applied to a level (tensile probe).</td></tr>
+<tr><td><code>e3-f2-cluster</code></td><td>E3/F2 cluster detections</td><td><strong>I.</strong> Cluster confluence.</td></tr>
+<tr><td><code>heavy-combo-toggles</code></td><td>HCG family — multiple composite toggles including Nagasaki+</td><td><strong>I+A.</strong> HCG Nagasaki+ presence at zone = high-conviction antifragile evidence.</td></tr>
+<tr><td><code>heavy-uncap</code></td><td>Heavy uncapped composites</td><td><strong>I+T.</strong></td></tr>
+<tr><td><code>heavy-weapons</code></td><td>Heavy Weapons family</td><td><strong>I.</strong></td></tr>
+<tr><td><code>hv-ladder</code></td><td>HV ladder detection family</td><td><strong>A.</strong> Ladder = sequential accumulation = work-hardening evidence.</td></tr>
+<tr><td><code>pb-pbj</code></td><td>Standalone PB / PBJ family</td><td><strong>T.</strong> Pocket pivot at zone = elastic touch.</td></tr>
+<tr><td><code>proximity-gzi-hv</code></td><td>Proximity-based GZI+HV detections</td><td><strong>I.</strong> Proximity confluence.</td></tr>
+<tr><td><code>yin-yang</code></td><td>Yin-Yang oscillator family</td><td><strong>T.</strong> Symmetric oscillation = balanced elasticity.</td></tr>
+<tr><td><code>vob-asym</code> (THIS)</td><td>The substrate itself</td><td><strong>Primary I (pool, stack, tier_agree) + raw signal source for T (touch tracking) + A (work hardening over time).</strong></td></tr>
+<tr><td><code>vob-single-sens</code></td><td>Reference</td><td>Sanity check baseline.</td></tr>
+<tr><td><s><code>vob-ladder-watch</code></s></td><td>REMOVED FROM SCOPE</td><td>—</td></tr>
+</table>
+
+<h3>7.3 External MCP data sources</h3>
+
+<table>
+<tr><th>Source</th><th>Status</th><th>Variables it adds to TIA</th></tr>
+<tr><td>TradingView MCP</td><td>Live (local CC)</td><td>Chart label scraping, study values, HTF reads, line-coordinate access</td></tr>
+<tr><td>Massive.com (Polygon) MCP</td><td>Live (local CC)</td><td>Historical OHLCV deep history, options chain — IV, OI, gamma exposure</td></tr>
+<tr><td>Benzinga MCP</td><td>Planned (SD-009 / SD-013)</td><td>News catalysts (FDA, M&amp;A, guidance), earnings calendar + beat/miss/guide</td></tr>
+<tr><td>WhaleWisdom MCP</td><td>Planned (SD-015)</td><td>13-F institutional positions quarterly</td></tr>
+<tr><td>SEC EDGAR (direct)</td><td>Not configured</td><td>13-D/G activist filings, insider transactions, S-1 / S-3 / 8-K filings</td></tr>
+<tr><td>Cboe options data</td><td>Not configured</td><td>Direct options chain (vs Polygon-via-Massive proxy)</td></tr>
+<tr><td>Bookmap / Sierra Chart MCP</td><td>Not configured</td><td>Level-2 order book depth — for direct ballistic-resistance variable</td></tr>
+<tr><td>FRED (Federal Reserve Economic Data)</td><td>Not configured (TV <code>request.economic</code> partial substitute)</td><td>Macro regime — Fed funds, CPI, unemployment, yield curve, VIX term structure</td></tr>
+</table>
+
+<h2 id="variable-map">8. Comprehensive 38-variable map</h2>
+
+<p>Each TIA variable is mapped to: (a) the real-world formula it derives from, (b) its source in our system, (c) its role in I, T, or A.</p>
+
+<h3>8.1 Imperviousness variables (15 total)</h3>
+
+<table>
+<tr><th>Var ID</th><th>Name</th><th>Formula origin</th><th>Source</th><th>Computation</th></tr>
+<tr><td>I-VAR-1</td><td>R_t (Tate target resistance)</td><td>Tate-Alekseevskii (§4.1.1)</td><td>VOB metadata</td><td>pool_volume_normalized × tier_agreement × stack_count</td></tr>
+<tr><td>I-VAR-2</td><td>tier_agreement_count</td><td>Walker-Anderson confluence (§4.1.2)</td><td>vob-asym across A-F</td><td>Count of tiers (A–F) with active zone within 0.5% of current zone midpoint</td></tr>
+<tr><td>I-VAR-3</td><td>stack_count_2pct</td><td>Multi-ply Florence (§4.1.4)</td><td>VOB metadata <code>BULLSTACK/BEARSTACK</code></td><td>Zones within 2% of close (existing)</td></tr>
+<tr><td>I-VAR-4</td><td>zone_thickness_atr</td><td>Florence h/d ratio</td><td>VOB + <code>ta.atr</code></td><td>(zone_upper − zone_lower) / ATR(200) — thinner = harder</td></tr>
+<tr><td>I-VAR-5</td><td>obliquity_slope</td><td>Walker-Anderson cos²θ (§4.1.2)</td><td>VOB metadata <code>EMA_SLOPE</code></td><td>Slope of fast EMA at time of probe — direct mapping</td></tr>
+<tr><td>I-VAR-6</td><td>d_price_norm</td><td>Gao-Tian bond length (§4.2.1)</td><td>VOB metadata <code>NEAREST_*_DIST</code></td><td>|close − zone_mid| / close</td></tr>
+<tr><td>I-VAR-7</td><td>plug_consumption</td><td>Recht-Ipson plug mass (§4.1.5)</td><td>VOB touch history + pool snapshots</td><td>(pool_before_event − pool_after) / pool_before</td></tr>
+<tr><td>I-VAR-8</td><td>cross_indicator_confluence</td><td>Salame permachor (§4.3.1)</td><td>Our library — HV+FVG+GZ1, Pentagon, PBJ, UC, Unified Combo</td><td>Count of active fires at this price level across N indicator families</td></tr>
+<tr><td>I-VAR-9</td><td>htf_alignment</td><td>Multi-scale composite armor</td><td>TV <code>request.security(higher_tf, ...)</code></td><td>Is a higher-TF (5m, 15m, 1h, 1d) zone aligned with this 1m zone?</td></tr>
+<tr><td>I-VAR-10</td><td>vwap_alignment</td><td>Institutional fair value as barrier</td><td>TV <code>ta.vwap</code></td><td>|VWAP − zone_mid| / close; lower = more institutional alignment = more impervious</td></tr>
+<tr><td>I-VAR-11</td><td>adx_strength</td><td>Directional commitment</td><td>TV <code>ta.adx</code></td><td>ADX(14) ≥ 25 with DI aligned to zone direction</td></tr>
+<tr><td>I-VAR-12</td><td>HVL_volume</td><td>Beer-Lambert HVL (§4.4.1)</td><td>VOB pool + touch history</td><td>Volume movement needed to halve pool defense — half-value-layer analogue</td></tr>
+<tr><td>I-VAR-13</td><td>sector_relative_strength</td><td>Composite armor backing</td><td>TV <code>request.security(sector_ETF, ...)</code> + <code>syminfo.sector</code></td><td>Symbol's 20-day relative strength vs sector ETF</td></tr>
+<tr><td>I-VAR-14</td><td>book_depth_imbalance</td><td>Direct ballistic limit (not metaphor)</td><td>External — Bookmap/Polygon if available</td><td>Bid/ask depth ratio at zone — direct measure of resistance</td></tr>
+<tr><td>I-VAR-15</td><td>options_strike_density</td><td>Aggregate dealer hedging pressure</td><td>External — Polygon options chain</td><td>Open interest density at strikes within zone</td></tr>
+</table>
+
+<h3>8.2 Tensile variables (13 total)</h3>
+
+<table>
+<tr><th>Var ID</th><th>Name</th><th>Formula origin</th><th>Source</th><th>Computation</th></tr>
+<tr><td>T-VAR-1</td><td>v_pool_norm (UTS analogue)</td><td>Florence UTS (§4.1.4)</td><td>VOB metadata</td><td>pool_volume / median_pool_over_lookback</td></tr>
+<tr><td>T-VAR-2</td><td>success_rate</td><td>Elastic recovery</td><td>VOB touch history (new state)</td><td>rejected_touches / max(total_touches, 1)</td></tr>
+<tr><td>T-VAR-3</td><td>K_discrete (toughness integral)</td><td>Toughness integral (§5.1)</td><td>VOB touch history</td><td>Σ(touch_vol × penetration_depth × rejected_flag)</td></tr>
+<tr><td>T-VAR-4</td><td>sigma_c (Griffith critical stress)</td><td>Griffith (§5.2.1)</td><td>VOB pool + zone width</td><td>√(2 × pool × cohesion_proxy / (π × max_observed_penetration))</td></tr>
+<tr><td>T-VAR-5</td><td>K_IC (fracture toughness)</td><td>Irwin (§5.2.2)</td><td>Touch history</td><td>Smallest probe that has historically defeated the level; if never defeated, conservative max</td></tr>
+<tr><td>T-VAR-6</td><td>paris_m_estimate</td><td>Paris law (§5.2.4)</td><td>Touch history regression</td><td>Fit da/dN vs ΔK; slope on log-log plot</td></tr>
+<tr><td>T-VAR-7</td><td>N_f_remaining</td><td>Coffin-Manson + Basquin (§5.2.5)</td><td>Touch history</td><td>Estimated touches before fatigue failure given current accumulated damage</td></tr>
+<tr><td>T-VAR-8</td><td>rsi_snap_back_quality</td><td>Elastic stiffness analogue</td><td>TV <code>ta.rsi</code></td><td>Median |RSI(touch_bar) − RSI(rejection_bar)| across past touches; higher = stiffer snap</td></tr>
+<tr><td>T-VAR-9</td><td>cci_extremity</td><td>Mooney-Rivlin large-strain stiffening (§5.5.1)</td><td>TV <code>ta.cci</code></td><td>CCI(20) excursion at touch vs at rejection; >100 excursion AND retrace = elastic</td></tr>
+<tr><td>T-VAR-10</td><td>hierarchy_score (spider silk)</td><td>Keten-Buehler hierarchy (§5.4.1)</td><td>Multi-layer confluence</td><td>(pool × tier_count) × (cross-indicator-confluence) × (htf_alignment)</td></tr>
+<tr><td>T-VAR-11</td><td>resilience_modulus U_r</td><td>U_r = σ_y²/(2E) (§5.3)</td><td>VOB pool + slope</td><td>pool² / (2 × |slope_ema| + small_ε)</td></tr>
+<tr><td>T-VAR-12</td><td>U_t toughness modulus</td><td>U_t approximation (§5.3)</td><td>VOB metadata</td><td>½ × (pool_min + pool_max_during_test) × max_penetration_depth</td></tr>
+<tr><td>T-VAR-13</td><td>volatility_adaptive_envelope</td><td>Keltner channel (§5.5)</td><td>TV <code>ta.kc</code></td><td>How far inside the KC the touch went before rejecting</td></tr>
+</table>
+
+<h3>8.3 Antifragility variables (10 total)</h3>
+
+<table>
+<tr><th>Var ID</th><th>Name</th><th>Formula origin</th><th>Source</th><th>Computation</th></tr>
+<tr><td>A-VAR-1</td><td>H_taleb (antifragility detector)</td><td>Taleb-Douady (§6.1)</td><td>VOB touch history bucketed</td><td>(hold_rate_low_vol + hold_rate_high_vol)/2 − hold_rate_med_vol</td></tr>
+<tr><td>A-VAR-2</td><td>S_convexity_c</td><td>Jensen / quadratic fit (§6.2)</td><td>VOB pool-over-touches series</td><td>Quadratic coefficient in S(i) = a + bi + ci²; positive = antifragile</td></tr>
+<tr><td>A-VAR-3</td><td>sigma_s_estimate (Voce saturation)</td><td>Voce (§6.3.1)</td><td>Touch volume history</td><td>Asymptotic peak strength fitted via Voce equation</td></tr>
+<tr><td>A-VAR-4</td><td>n_hollomon (hardening exponent)</td><td>Hollomon (§6.3)</td><td>log-log fit of pool vs cumulative strain</td><td>Slope; Hadfield n ≈ 0.5 is target reference</td></tr>
+<tr><td>A-VAR-5</td><td>wolff_stiffness</td><td>Carter-Hayes (§6.4)</td><td>VOB pool history</td><td>E_VOB = K × (pool / zone_width)³</td></tr>
+<tr><td>A-VAR-6</td><td>hormesis_optimum</td><td>Calabrese-Baldwin J-curve (§6.5)</td><td>Touch history fit</td><td>Argmax of fitted Response(D) curve over touch-volume buckets</td></tr>
+<tr><td>A-VAR-7</td><td>heal_efficiency</td><td>Self-healing materials (§6.6)</td><td>Touch history</td><td>(pool_t+5bars − pool_at_penetration) / (pool_pre_penetration − pool_at_penetration)</td></tr>
+<tr><td>A-VAR-8</td><td>hadfield_ratio</td><td>Stress-induced strengthening (§6.3)</td><td>Touch history</td><td>E[v_touch | rejected] / E[v_touch | penetrated]</td></tr>
+<tr><td>A-VAR-9</td><td>lindy_term</td><td>Lindy effect (Taleb)</td><td>VOB age + touch count</td><td>(touch_count + 1) / (age_bars / median_age + 1)</td></tr>
+<tr><td>A-VAR-10</td><td>earnings_window_survival</td><td>Catalyst-event resilience</td><td>TV <code>request.earnings</code> + zone history</td><td>Did the zone survive its most recent earnings event? Boolean ×1.5 multiplier</td></tr>
+</table>
+
+<p>Total: 15 + 13 + 10 = <strong>38 variables across imperviousness, tensile, and antifragility</strong>. Compare to v1's 14.</p>
+
+<h2 id="equations-v2">9. Updated I/T/A equations using the v2 variable space</h2>
+
+<h3>9.1 Imperviousness I(t) — updated</h3>
+
+<p>Combining the 15 imperviousness variables via a multiplicative-then-logistic formulation that captures the Tate-Alekseevskii target resistance, Walker-Anderson obliquity, Beer-Lambert HVL, and cross-source confluence:</p>
+
+<div class="formula">
+I<sub>raw</sub>(t) = R<sub>t</sub><sup>α<sub>1</sub></sup> × tier_agreement<sup>α<sub>2</sub></sup> × √stack × ATR_thin_factor × cos²(obliquity_slope) ÷ (1 + d_price)<sup>2.5</sup>
+                  × (1 + cross_indicator_confluence)<sup>α<sub>3</sub></sup> × (1 + htf_alignment)<sup>α<sub>4</sub></sup>
+                  × (1 + vwap_alignment_bonus) × (1 + adx_strength_bonus)
+                  × HVL_volume<sup>0.5</sup> × (1 + sector_relative_strength)
+                  × (book_depth_imbalance OR 1) × (options_strike_density_factor OR 1)
+</div>
+
+<p>where book_depth_imbalance and options_strike_density default to 1 (neutral) when the data source isn't connected. The defaults preserve the equation's correctness while new sources are added; the OR-1 pattern means each new data source can only IMPROVE the score, not weaken it.</p>
+
+<div class="formula">
+I(t) = σ(α<sub>I</sub> × (log(I<sub>raw</sub>(t)) − β<sub>I</sub>))
+</div>
+
+<p>Logistic on log-scale because the raw equation is multiplicative — log transforms the multiplication into addition, which the logistic squashes into [0, 1].</p>
+
+<h3>9.2 Tensile T(t) — updated</h3>
+
+<p>Combining the 13 tensile variables — toughness integral, fatigue life, hierarchical confluence, plus TV-built-in elasticity proxies:</p>
+
+<div class="formula">
+T<sub>raw</sub>(t) = v_pool_norm<sup>β<sub>1</sub></sup> × success_rate<sup>β<sub>2</sub></sup> × (1 + K_discrete)<sup>β<sub>3</sub></sup>
+                  × (N_f_remaining / N_f_initial) × sqrt(K_IC)
+                  × (1 + rsi_snap_back_quality) × (1 + cci_extremity_score)
+                  × hierarchy_score<sup>0.4</sup> × volatility_adaptive_envelope_factor
+                  × U_r<sup>0.3</sup> × U_t<sup>0.2</sup>
+</div>
+
+<div class="formula">
+T(t) = σ(α<sub>T</sub> × (log(T<sub>raw</sub>(t)) − β<sub>T</sub>))
+</div>
+
+<p>For new zones with k = 0 (no touch history), tensile-history variables (T-VAR-2/3/5/6/7/8/9) bootstrap to per-tier Bayesian priors (median values across the past 90 days of zones in this tier × symbol × session_position bucket). This keeps T computable from formation.</p>
+
+<h3>9.3 Antifragility A(t) — updated</h3>
+
+<div class="formula">
+A<sub>raw</sub>(t) = (1 + H_taleb)<sup>γ<sub>1</sub></sup> × max(0.01, S_convexity_c + 1)<sup>γ<sub>2</sub></sup>
+                  × hadfield_ratio<sup>γ<sub>3</sub></sup> × lindy_term<sup>0.5</sup>
+                  × heal_efficiency<sup>γ<sub>4</sub></sup>
+                  × (1 + earnings_survival_bonus)
+                  × max(0.5, sigma_s_estimate / pool_current)
+                  × (1 + |n_hollomon − 0|) × wolff_stiffness<sup>0.2</sup>
+                  × (1 + hormesis_optimum_match)
+</div>
+
+<div class="formula">
+A(t) = σ(α<sub>A</sub> × (log(A<sub>raw</sub>(t)) − β<sub>A</sub>))
+</div>
+
+<p>Notes: max(0.01, S_convexity_c + 1) keeps A computable even when fitted convexity is slightly negative (small fragility doesn't entirely nullify other antifragility evidence — they sum logically). Earnings-survival is a 1.5× multiplier when the zone has survived its most recent earnings event.</p>
+
+<h3>9.4 Master probability P(t) — updated</h3>
+
+<div class="formula">
+P(t) = (I(t)<sup>w<sub>I</sub></sup> × T(t)<sup>w<sub>T</sub></sup> × A(t)<sup>w<sub>A</sub></sup>)<sup>1 / (w<sub>I</sub> + w<sub>T</sub> + w<sub>A</sub>)</sup>
+</div>
+
+<p>Initial weights: w_I = w_T = w_A = 1 (equal geometric mean). After 90 days, recalibrate via logistic regression with interaction terms:</p>
+
+<div class="formula">
+P<sub>v3</sub>(t) = σ(β<sub>0</sub> + β<sub>I</sub> I + β<sub>T</sub> T + β<sub>A</sub> A + β<sub>IT</sub> IT + β<sub>IA</sub> IA + β<sub>TA</sub> TA + β<sub>ITA</sub> ITA)
+</div>
+
+<p>The triple-interaction term β_ITA captures the "all three present" reinforcement that the geometric mean already approximates — the regression measures the deviation from pure geometric-mean behavior.</p>
+
+<h2 id="thresholds">10. Thresholds 50% / 62.5% / 87.5%</h2>
+
+<p>Same rationale as v1 §9. Preserved verbatim. 50% (coin flip baseline), 62.5% = 5/8 (Fibonacci-adjacent), 87.5% = 7/8 (strong asymmetric conviction without overconfident 95%+). Empirical isotonic regression after 90 days of outcomes adjusts the predicted-P → realized-rate mapping.</p>
+
+<h2 id="latency">11. Latency analysis — updated for new variables</h2>
+
+<p>The 38-variable expansion adds compute per bar. Worst-case operations:</p>
+
+<table>
+<tr><th>Variable class</th><th>Cost per bar per zone</th><th>Notes</th></tr>
+<tr><td>Existing VOB metadata (I-VAR-1..7, T-VAR-1..7, A-VAR-2/8/9)</td><td>~30 ops</td><td>Already computed</td></tr>
+<tr><td>TV built-in <code>ta.*</code> reads (I-VAR-4/5/11, T-VAR-8/9/13, A-VAR-5)</td><td>~12 ops</td><td>Pine batches automatically</td></tr>
+<tr><td>HTF <code>request.security</code> calls (I-VAR-9)</td><td>~5 ops + 1 request</td><td>Up to 40 securities allowed in Pine v6</td></tr>
+<tr><td>Cross-indicator confluence (I-VAR-8)</td><td>~20 ops + multiple indicator reads</td><td>Requires merging label streams from other studies; potentially via input.source()</td></tr>
+<tr><td>Voce / Hollomon fits (A-VAR-3/4)</td><td>~50 ops</td><td>Closed-form regression; can incrementalize</td></tr>
+<tr><td>Hormesis fit (A-VAR-6)</td><td>~30 ops</td><td>Quadratic in log-dose; closed form</td></tr>
+<tr><td>Taleb-Douady H (A-VAR-1)</td><td>~15 ops</td><td>Bucketed touch hold rates</td></tr>
+<tr><td>External MCP variables (I-VAR-14/15, A-VAR-10)</td><td>0 ops in Pine; computed in Python port</td><td>The TIA Pine emits a placeholder; Python port enriches</td></tr>
+<tr><td><strong>Total per bar (15 zones × 6 tiers × 2 directions)</strong></td><td><strong>~50,000 ops</strong></td><td>Pine handles ~100K/bar safely; we're at 50%</td></tr>
+</table>
+
+<p>Decision latency unchanged from v1 — bar-close evaluation, &lt; 1 second end-to-end.</p>
+
+<h2 id="premortem">12. Premortem — updated failure modes</h2>
+
+<table>
+<tr><th>#</th><th>Failure mode (past tense)</th><th>Severity</th><th>Mitigation</th></tr>
+<tr><td>1</td><td>"38 variables were too many. The model overfit the training period; many variables had zero out-of-sample predictive value."</td><td>HIGH</td><td>Variable-correlation audit (Phase V1) drops variables with |correlation| &lt; 0.05. Expected drop: ~15 variables → final ~20.</td></tr>
+<tr><td>2</td><td>"Cross-indicator confluence (I-VAR-8) was double-counting. The same underlying volume event triggered B2B PUP, Pentagon, and TNT-OD simultaneously, inflating confluence to 3 when it was really 1."</td><td>MEDIUM</td><td>Decorrelation analysis: cluster the 22 library indicators by their fire-correlation matrix; replace raw count with effective-degrees-of-freedom (Fisher information).</td></tr>
+<tr><td>3</td><td>"HTF alignment (I-VAR-9) caused excessive re-paint. The 1m TIA score flipped as the 15m bar evolved within its candle."</td><td>HIGH</td><td>Always use <code>lookahead_off</code> + <code>barmerge.gaps_off</code> for <code>request.security</code>. Confirm HTF bar before reading.</td></tr>
+<tr><td>4</td><td>"Hadfield ratio (A-VAR-8) was a tautology — surviving zones had high ratios because their failures were rare, not because they were genuinely antifragile."</td><td>MEDIUM</td><td>Compare ratio to a regime baseline (median ratio across all zones in same regime). Antifragile = ratio above baseline, not just &gt; 1.</td></tr>
+<tr><td>5</td><td>"Earnings-window survival (A-VAR-10) was retroactive. The zone survived because earnings happened to be a non-event; we credited antifragility falsely."</td><td>LOW</td><td>Condition on earnings beat/miss/guide via Benzinga MCP. Survival through a NEGATIVE earnings event counts more than survival through a beat.</td></tr>
+<tr><td>6</td><td>"Wolff stiffness (A-VAR-5) cubic scaling exaggerated. Doubling pool produced 8× scoring increase; we shifted all weight to one variable."</td><td>MEDIUM</td><td>Apply log-transform before cubic; effectively cube-root before logistic. Caps the exponential blow-up.</td></tr>
+<tr><td>7</td><td>"Sector relative strength (I-VAR-13) hurt during sector rotations. Strong-sector levels failed because money rotated out mid-test."</td><td>MEDIUM</td><td>Time-lag the sector-RS reading by 5 bars; this captures the rotation event before it impacts the zone.</td></tr>
+<tr><td>8</td><td>"Options strike density (I-VAR-15) was unavailable for low-liquidity symbols; the equation defaulted to 1 and the system worked anyway — but credited imperviousness it didn't earn."</td><td>LOW</td><td>Make the defaults SLIGHTLY less than 1 (e.g., 0.9) so missing-data zones are penalized rather than treated as neutral.</td></tr>
+<tr><td>9</td><td>"Threshold 87.5% was too restrictive; D3 fired &lt; 5 times per week across the watchlist. Operators ignored the system because it didn't produce enough signal."</td><td>HIGH</td><td>Empirical isotonic recalibration after 90 days. If realized hold rate at 87.5% is consistently met at lower thresholds, lower D3 to match.</td></tr>
+<tr><td>10</td><td>"The premortem itself didn't catch a regime shift — system was calibrated on Q3 2025 data, deployed in Q2 2026 with totally different volatility regime."</td><td>HIGH</td><td>Rolling re-calibration: re-fit logistic regression weights every 30 days using the most recent 90 days of outcomes.</td></tr>
+</table>
+
+<h2 id="inversion">13. Inversion — fragility classes and equations</h2>
+
+<p>Same four classes from v1 (Thin / Brittle / Eroding / Lindy-stale), now with v2 variables:</p>
+
+<table>
+<tr><th>Class</th><th>Detection condition (v2)</th><th>Action</th></tr>
+<tr><td><strong>Thin</strong></td><td>I(t) &lt; 0.20 AND tier_agreement &lt; 2 AND cross_indicator_confluence &lt; 1</td><td>Logged not actionable.</td></tr>
+<tr><td><strong>Brittle</strong></td><td>I(t) &gt; 0.70 AND T(t) &lt; 0.30 AND K_IC × N_f_remaining &lt; baseline_median</td><td>Probable trap. Trade-through is favored.</td></tr>
+<tr><td><strong>Eroding</strong></td><td>A(t) decreasing trend over last 3 touches AND S_convexity_c &lt; 0 AND hadfield_ratio &lt; 1</td><td>"Former monolith showing cracks." Exit on next test.</td></tr>
+<tr><td><strong>Lindy-stale</strong></td><td>age_bars &gt; 500 AND last_touch_age &gt; 200 AND earnings_window_survival = "no recent event"</td><td>Treat as unknown.</td></tr>
+</table>
+
+<p>Fragility F(t) = 1 − P(t). Detection plots F₁/F₂/F₃ at the same 50% / 62.5% / 87.5% thresholds. "Former Monolith" cross-class detector: P(t) was &gt; 0.7 within last 200 bars AND F(t) just crossed 0.5 = breaking-down signal.</p>
+
+<h2 id="validation">14. Validation protocol — updated</h2>
+
+<ol>
+<li><strong>V1 — Variable correlation audit.</strong> 38 variables × outcome (held / broke). Expect ~15 to fail the 0.05 cutoff. Final set ~23.</li>
+<li><strong>V2 — Variable decorrelation.</strong> PCA on the surviving variables; consolidate redundant ones via factor loading.</li>
+<li><strong>V3 — Equation form selection.</strong> Test geometric mean, multiplicative, max-of-three, logistic regression, gradient-boosted decision tree on held-out data. Pick by AUROC + calibration.</li>
+<li><strong>V4 — Threshold calibration.</strong> Isotonic regression on the chosen equation; pick thresholds where realized rate = stated rate.</li>
+<li><strong>V5 — Regime partitioning.</strong> Re-fit per regime (trend, range, gap-up, gap-down, inside-day, earnings-window).</li>
+<li><strong>V6 — Latency profiling.</strong> Live measurement: end-to-end &lt; 1 second.</li>
+<li><strong>V7 — Fragility validation.</strong> F₃ events predict blow-through within 5 bars at &gt; 70% rate.</li>
+<li><strong>V8 — A/B canary.</strong> 14 days shadow mode vs canonical VOB. Promote when all metrics win.</li>
+</ol>
+
+<h2 id="roadmap">15. Implementation roadmap (deferred)</h2>
+
+<p>Same R1–R7 sequence as v1 §14. The TIA Pine implementation file is now <code>VOB_Asym_T3x6_TIA_v2.pine</code> using v2 variable set. Python port adopts v2 equation set.</p>
+
+<h2 id="open">16. Open questions for Anish</h2>
+
+<p>Same 8 questions from v1 §15 PLUS three new from v2 scope expansion:</p>
+
+<ol start="9">
+<li><strong>Cross-indicator confluence weights.</strong> Should I-VAR-8 weight HV+FVG+GZ1 / Heavy Pentagon / B2B PUP / TNT-OD v3 / Squarify / HVD-PBJ-PPD equally, or apply per-family weights reflecting historical predictive value? Default: equal weight initially, recalibrate after 90 days.</li>
+<li><strong>HTF alignment scope.</strong> Check 5m, 15m, 1h, 1d alignment (4 TFs)? Or smaller set (5m + 15m only)? Each HTF adds a <code>request.security</code> call. Pine v6 allows up to 40. Default: 5m + 15m + 1h (3 HTFs).</li>
+<li><strong>External MCP enrichment timing.</strong> Should the Pine indicator emit a placeholder for book_depth_imbalance / options_strike_density / earnings_survival_bonus, and the Python port enrich them? Or wait until external MCPs are wired and ship enrichment in Pine via raw API calls (not currently supported but could use webhooks)? Default: Python port enriches; Pine emits placeholders defaulting to 1.0.</li>
+</ol>
+
+<h2 id="refs">17. References — comprehensive</h2>
+
+<h3>Defense ballistics</h3>
+<ul>
+<li>Tate, A. <em>A theory for the deceleration of long rods after impact.</em> J. Mech. Phys. Solids, 15, 387–399 (1967).</li>
+<li>Alekseevskii, V. P. <em>Penetration of a rod into a target at high velocity.</em> Combustion, Explosion, and Shock Waves, 2, 63–66 (1966).</li>
+<li>Walker, J. D.; Anderson, C. E. <em>A time-dependent model for long-rod penetration.</em> Int. J. Impact Engineering, 16, 19–48 (1995).</li>
+<li>Anderson, C. E.; Walker, J. D. <em>An examination of long-rod penetration.</em> Int. J. Impact Engineering, 11, 481–501 (1991).</li>
+<li>Lambert, J. P.; Jonas, G. H. <em>Towards standardization in terminal ballistics testing: velocity representation.</em> BRL Report 1852 (1976).</li>
+<li>Recht, R. F.; Ipson, T. W. <em>Ballistic perforation dynamics.</em> J. Applied Mechanics, 30, 384–390 (1963).</li>
+<li>Florence, A. L. <em>Interaction of projectiles and composite armor.</em> Part II. Stanford Research Institute (1969).</li>
+<li>Krieg, R. D.; Swift, H. F.; Pinaire, J. S. <em>Computational mechanics of ballistic limit.</em> Sandia National Laboratories (1971).</li>
+</ul>
+
+<h3>Materials hardness and toughness</h3>
+<ul>
+<li>Gao, F. et al. <em>Hardness of covalent crystals.</em> Phys. Rev. Lett. 91, 015502 (2003).</li>
+<li>Pan, Z. et al. <em>Harder than diamond: superior indentation strength of wurtzite BN and lonsdaleite.</em> Phys. Rev. Lett. 102, 055503 (2009).</li>
+<li>Griffith, A. A. <em>The phenomena of rupture and flow in solids.</em> Phil. Trans. Royal Soc. A 221, 163–198 (1921).</li>
+<li>Irwin, G. R. <em>Analysis of stresses and strains near the end of a crack traversing a plate.</em> J. Appl. Mech. 24, 361–364 (1957).</li>
+<li>Rice, J. R. <em>A path independent integral and the approximate analysis of strain concentration by notches and cracks.</em> J. Appl. Mech. 35, 379–386 (1968).</li>
+<li>Paris, P.; Erdogan, F. <em>A critical analysis of crack propagation laws.</em> J. Basic Eng. 85, 528–533 (1963).</li>
+<li>Coffin, L. F. <em>A study of the effects of cyclic thermal stresses on a ductile metal.</em> Trans. ASME 76, 931–950 (1954).</li>
+<li>Basquin, O. H. <em>The exponential law of endurance tests.</em> Proc. ASTM 10, 625–630 (1910).</li>
+<li>Manson, S. S. <em>Behavior of materials under conditions of thermal stress.</em> NACA TN-2933 (1953).</li>
+</ul>
+
+<h3>Hierarchical natural materials</h3>
+<ul>
+<li>Agnarsson, I.; Kuntner, M.; Blackledge, T. A. <em>Bioprospecting finds the toughest biological material: extraordinary silk from a giant riverine orb spider.</em> PLoS ONE 5, e11234 (2010).</li>
+<li>Keten, S.; Buehler, M. J. <em>Nanostructure and molecular mechanics of spider dragline silk.</em> J. R. Soc. Interface 7, 1709–1721 (2010).</li>
+<li>Wegst, U. G. K.; Ashby, M. F. <em>The mechanical efficiency of natural materials.</em> Phil. Mag. 84, 2167–2186 (2004).</li>
+<li>Currey, J. D. <em>Bones: Structure and Mechanics.</em> Princeton University Press (2002).</li>
+<li>Mooney, M. <em>A theory of large elastic deformation.</em> J. Appl. Phys. 11, 582–592 (1940).</li>
+<li>Rivlin, R. S. <em>Large elastic deformations of isotropic materials.</em> Phil. Trans. Royal Soc. A 240, 459–490 (1948).</li>
+</ul>
+
+<h3>Work hardening and plasticity</h3>
+<ul>
+<li>Hollomon, J. H. <em>Tensile deformation.</em> Trans. AIME 162, 268–290 (1945).</li>
+<li>Voce, E. <em>The relationship between stress and strain for homogeneous deformation.</em> J. Inst. Metals 74, 537–562 (1948).</li>
+<li>Ludwik, P. <em>Elemente der Technologischen Mechanik.</em> Springer (1909).</li>
+<li>Swift, H. W. <em>Plastic instability under plane stress.</em> J. Mech. Phys. Solids 1, 1–18 (1952).</li>
+<li>Krupkowski, A. <em>The phenomenon of stretching during cold-drawing.</em> Bull. Polish Acad. Sci. (1948).</li>
+</ul>
+
+<h3>Bone remodeling and Wolff's law</h3>
+<ul>
+<li>Wolff, J. <em>Das Gesetz der Transformation der Knochen.</em> Hirschwald, Berlin (1892).</li>
+<li>Frost, H. M. <em>Bone "mass" and the "mechanostat": a proposal.</em> Anatomical Record 219, 1–9 (1987).</li>
+<li>Carter, D. R.; Hayes, W. C. <em>The compressive behavior of bone as a two-phase porous structure.</em> J. Bone Joint Surg. 59-A, 954–962 (1977).</li>
+</ul>
+
+<h3>Hormesis and dose-response</h3>
+<ul>
+<li>Calabrese, E. J.; Baldwin, L. A. <em>Hormesis: the dose-response revolution.</em> Annual Review of Pharmacology and Toxicology 43, 175–197 (2003).</li>
+<li>Calabrese, E. J. <em>Hormesis: a fundamental concept in biology.</em> Microb. Cell 1, 145–149 (2014).</li>
+</ul>
+
+<h3>Antifragility</h3>
+<ul>
+<li>Taleb, N. N. <em>Antifragile: Things That Gain from Disorder.</em> Random House (2012).</li>
+<li>Taleb, N. N.; Douady, R. <em>Mathematical definition, mapping, and detection of (anti)fragility.</em> Quantitative Finance 13, 1677–1689 (2013).</li>
+<li>Jensen, J. L. W. V. <em>Sur les fonctions convexes et les inégalités entre les valeurs moyennes.</em> Acta Mathematica 30, 175–193 (1906).</li>
+</ul>
+
+<h3>Permeability and barrier polymers</h3>
+<ul>
+<li>Salame, M. <em>Prediction of gas barrier properties of high polymers.</em> Polymer Engineering &amp; Science 26, 1543–1546 (1986).</li>
+<li>Crank, J. <em>The Mathematics of Diffusion.</em> Oxford University Press (2nd ed., 1975).</li>
+<li>Klopffer, M. H.; Flaconnèche, B. <em>Transport properties of gases in polymers: bibliographic review.</em> Oil &amp; Gas Sci. Tech. 56, 223–244 (2001).</li>
+</ul>
+
+<h3>Self-healing materials</h3>
+<ul>
+<li>White, S. R. et al. <em>Autonomic healing of polymer composites.</em> Nature 409, 794–797 (2001).</li>
+<li>Jonkers, H. M. <em>Self healing concrete: a biological approach.</em> Self Healing Materials (Springer) (2007).</li>
+</ul>
+
+<h3>Radiation and EMI shielding</h3>
+<ul>
+<li>Beer, A. <em>Bestimmung der Absorption des rothen Lichts in farbigen Flüssigkeiten.</em> Annalen der Physik und Chemie (1852).</li>
+<li>Schelkunoff, S. A. <em>Electromagnetic Waves.</em> Van Nostrand (1943).</li>
+<li>Chung, D. D. L. <em>Materials for electromagnetic interference shielding.</em> J. Mater. Eng. Perform. 9, 350–354 (2000).</li>
+</ul>
+
+<h3>Order flow and market microstructure</h3>
+<ul>
+<li>Cont, R.; Stoikov, S.; Talreja, R. <em>A stochastic model for order book dynamics.</em> Operations Research 58, 549–563 (2010).</li>
+<li>Bouchaud, J.-P.; Bonart, J.; Donier, J.; Gould, M. <em>Trades, Quotes and Prices.</em> Cambridge University Press (2018).</li>
+</ul>
+
+<h3>Statistical modeling</h3>
+<ul>
+<li>Cox, D. R. <em>Regression models and life-tables.</em> JRSS-B 34, 187–220 (1972).</li>
+<li>Pickands, J. <em>Statistical inference using extreme order statistics.</em> Annals of Statistics 3, 119–131 (1975).</li>
+<li>Embrechts, P.; Klüppelberg, C.; Mikosch, T. <em>Modelling Extremal Events for Insurance and Finance.</em> Springer (1997).</li>
+</ul>
+
+<h3>In-repo (this work builds on)</h3>
+<ul>
+<li><code>docs/agentic-os/research/2026-05-11-tia-vob-framework.html</code> — v1 (superseded)</li>
+<li><code>docs/agentic-os/STANDING_DECISIONS.md</code> — SD-001 through SD-015 (especially SD-002 never-modify)</li>
+<li><code>docs/agentic-os/strategy/2026-05-11-agentic-os-full-build-spec.html</code> — agentic OS master spec</li>
+<li><code>docs/agentic-os/VOB_GPS_FOUR_SATELLITE.md</code> — Sat 1–4 architecture</li>
+<li>VOB Pine sources: <code>vob-asym/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine</code>, <code>vob-single-sens/versions/VOB_SINGLE_SENS_WITH_TABLES_v1.pine</code></li>
+</ul>
+
+<h2 id="glossary">18. Glossary</h2>
+
+<p>(All v1 glossary terms retained; new v2 additions below.)</p>
+
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>R_t (Tate target resistance)</td><td>Per Tate (1967): the effective resistance a target offers to a long-rod projectile. Typically 4–6× static yield strength. In TIA: pool × tier_agreement × stack_count.</td></tr>
+<tr><td>Half-Value Layer (HVL)</td><td>Per Beer-Lambert (§4.4.1): the thickness of shielding required to reduce radiation intensity to half. In TIA: volume movement to halve defending pool.</td></tr>
+<tr><td>Salame permachor</td><td>Aggregated polymer cohesion parameter used to predict permeability. In TIA: aggregated cohesion across supporting indicators.</td></tr>
+<tr><td>Hollomon exponent n</td><td>Strain-hardening exponent. Most metals 0.1–0.3; Hadfield steel ≈ 0.5. In TIA: fitted from log-log pool-vs-strain.</td></tr>
+<tr><td>Taleb-Douady H</td><td>The discrete-second-difference antifragility detector: (f(X+K)+f(X−K))/2 − f(X). Positive = antifragile.</td></tr>
+<tr><td>Wolff stiffness</td><td>Carter-Hayes E = 3790 × ρ³. In TIA: zone stiffness scales as the cube of pool density.</td></tr>
+<tr><td>Hormesis optimum</td><td>The non-zero dose at which a stressor produces maximum adaptive benefit. In TIA: the optimal touch-volume magnitude for level-strengthening.</td></tr>
+<tr><td>Hadfield ratio</td><td>E[v|rejected] / E[v|penetrated]. &gt; 1 = high-vol tests held; antifragile.</td></tr>
+</table>
+
+<h2 id="starter">19. Starter prompt for implementation session</h2>
+
+<div class="callout">
+<strong>Anish: paste this into the implementation session when you're ready to go to code.</strong>
+</div>
+
+<pre><code>Read end-to-end:
+
+  docs/agentic-os/research/2026-05-11-tia-vob-framework-v2.html
+
+That document supersedes v1. The v2 framework has 38 variables across
+imperviousness, tensile, antifragility — derived from real defense, chemicals,
+materials, environmental, and Taleb-Douady literature. Sources span VOB
+metadata, TradingView built-ins, our 22-family library, and external MCPs.
+
+Phase R1 — Pine implementation:
+
+  1. Author vob-asym/versions/VOB_Asym_T3x6_TIA_v2.pine (NEW FILE per SD-002).
+     Source: VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine.
+     Modifications:
+       a. Add per-zone touch tracking to the `level` UDT:
+          - int touch_count, array&lt;float&gt; touch_vols, touch_pen_depths
+          - array&lt;bool&gt; touch_rejected, int formation_bar_index
+          - array&lt;float&gt; pool_snapshots_at_touch
+       b. Implement variable computations per §8 of v2:
+          - I-VAR-1..15 (imperviousness, 15 vars)
+          - T-VAR-1..13 (tensile, 13 vars)
+          - A-VAR-1..10 (antifragility, 10 vars)
+          External MCP variables (I-VAR-14/15, A-VAR-10) emit as placeholders
+          defaulting to 1.0; Python port enriches.
+       c. Compute I(t), T(t), A(t) per §9 equations.
+       d. Compute P(t) via geometric mean.
+       e. REMOVE existing plotshape() for T3a-f Buy/Sell, Nagasaki,
+          ZoneBull/ZoneBear A-F markers. Keep zone DRAWING (lines).
+       f. REMOVE alertconditions "any_t3" and "any_zone" and per-tier alert()
+          strings. Replace with new TIA alerts.
+       g. ADD 6 new plotshapes: TIA D1/D2/D3 Bull, TIA D1/D2/D3 Bear.
+       h. ADD single any-call alertcondition + Bloomberg-format alert()
+          carrying all 38 variables + I, T, A, P + threshold tier crossed.
+       i. ADD TIA score row to emission table (I, T, A, P per direction).
+  2. python_ports/vob_asym/canonical_tia_v2.py mirroring the Pine.
+  3. verification/tia/run_tia_backtest_v2.py for V1-V8 phases.
+
+DO NOT:
+  - Modify the canonical .pine (SD-002 ironclad).
+  - Touch live/ leaderboard (cloud session retains scope).
+  - Skip premortem on draft before committing.
+
+After each artifact:
+  git add &lt;files&gt; &amp;&amp; git commit -m "TIA v2 Phase R1 — &lt;summary&gt;"
+  git pull --rebase &amp;&amp; git push
+
+Begin.
+</code></pre>
+
+<div class="footer">
+TIA v2 authored 2026-05-11. v1 preserved at <code>docs/agentic-os/research/2026-05-11-tia-vob-framework.html</code> per SD-002. v2 expands to real defense / chemicals / environmental literature with 38 variables sourced from VOB metadata + TradingView built-ins + our 22-family indicator library + external MCPs. vob-ladder-watch dropped from scope per Anish 2026-05-11.
+</div>
+
+</body>
+</html>
