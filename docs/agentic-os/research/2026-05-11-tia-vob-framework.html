@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TIA — Tensile-Impervious-Antifragile VOB Framework (2026-05-11)</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 1140px; margin: 2em auto; padding: 0 1.5em; color: #1a1a1a; line-height: 1.55; }
+  h1 { border-bottom: 3px solid #1a1a1a; padding-bottom: 0.3em; font-size: 1.95em; }
+  h2 { color: #003366; border-left: 5px solid #003366; padding-left: 0.6em; margin-top: 2.2em; font-size: 1.4em; }
+  h3 { color: #4a4a4a; margin-top: 1.5em; font-size: 1.13em; }
+  h4 { color: #5a5a5a; margin-top: 1em; font-size: 1em; }
+  .critical { background: #ffe7e7; border-left: 5px solid #cc0000; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .callout  { background: #fff8e7; border-left: 5px solid #d18800; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .ok       { background: #e7f8ee; border-left: 5px solid #1f7a3f; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .info     { background: #eef4fb; border-left: 5px solid #003366; padding: 1em; margin: 1.2em 0; border-radius: 3px; }
+  .formula  { background: #fafafa; border: 1px solid #ddd; padding: 0.8em 1.2em; margin: 0.8em 0; font-family: "Cambria Math", Georgia, serif; font-size: 1.05em; border-radius: 4px; }
+  .property { background: #fff5e6; border-left: 5px solid #b85c00; padding: 1em 1.2em; margin: 1.2em 0; border-radius: 3px; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ccc; padding: 0.45em 0.7em; vertical-align: top; }
+  th { background: #f0f0f0; text-align: left; }
+  code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-family: "SF Mono", Menlo, monospace; font-size: 0.91em; }
+  pre  { background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; padding: 0.8em 1em; overflow-x: auto; font-family: "SF Mono", Menlo, monospace; font-size: 0.86em; line-height: 1.42; }
+  svg { margin: 1em auto; display: block; }
+  .footer { color: #888; font-size: 0.85em; margin-top: 3em; border-top: 1px solid #ccc; padding-top: 1em; }
+  .toc { background: #f8f9fa; border: 1px solid #ddd; padding: 1em 1.5em; margin: 1.5em 0; border-radius: 4px; }
+  .toc ol { margin: 0.5em 0; padding-left: 1.6em; }
+  .toc li { padding: 2px 0; }
+  a { color: #003366; }
+  .panel-imp { background:#cde7ff; color:#003366; padding:3px 10px; border-radius:4px; font-weight:700; font-size:0.85em; }
+  .panel-ten { background:#d8eed4; color:#1f5e1f; padding:3px 10px; border-radius:4px; font-weight:700; font-size:0.85em; }
+  .panel-anti{ background:#ffe7c2; color:#7a3300; padding:3px 10px; border-radius:4px; font-weight:700; font-size:0.85em; }
+  .greek { font-family: "Cambria Math", Georgia, serif; font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>TIA — The Tensile-Impervious-Antifragile VOB Framework</h1>
+<p><em>Research and derivation document, 2026-05-11. <strong>This is not code.</strong> Per Anish's directive: "You're gonna focus on not coding. You're gonna focus on researching those qualities, understanding the extremes." Implementation queued for the next session after this derivation is reviewed and approved.</em></p>
+
+<div class="critical">
+<strong>Mission (verbatim).</strong> Anish 2026-05-11: "I wanna eliminate the singular lines for the VOB studies. Instead I wanna have a few different pancake settings. We're gonna basically have a focus and emphasis when there's more tensile strength. You need to basically make a — look up physics, computational math, and then look up nature's most resilient tensile material. There's probably some other factors that determine the antifragile tensile impervious materials that exist in nature. Those three: impervious, antifragile, tensile. We want to know the extreme, codify it into equation. Have one that's 50% probability, one that is 62%, and then one that is 87.5% probability. Immediately when the certainty crosses the threshold, emit that detection plot and alert it. The fastest you can possibly know with that certainty level."
+</div>
+
+<h2>What ships in this document, and what doesn't</h2>
+
+<table>
+<tr><th>In scope (this document)</th><th>Out of scope (next session)</th></tr>
+<tr><td>First-principles definitions of imperviousness, tensile, antifragility</td><td>Pine v6 implementation of the TIA score</td></tr>
+<tr><td>Materials-science literature mapped to formulas</td><td>The new 6 detection plots (3 bull + 3 bear at 50% / 62.5% / 87.5%)</td></tr>
+<tr><td>Six-discipline committee perspectives + their formal contributions</td><td>The new <code>alertcondition()</code> + any-call alert wiring</td></tr>
+<tr><td>The master probability equation P(t) = f(I, T, A) with derivation</td><td>Removal of the singular T3 / zone-formation alerts from the Pine source (SD-002 means a NEW file, not a modification)</td></tr>
+<tr><td>Mapping every variable to existing VOB metadata you already emit</td><td>Python port of the TIA score in <code>python_ports/vob_asym/</code></td></tr>
+<tr><td>The inversion (fragility / blow-through) equation</td><td>Calibration of the three thresholds against historical data</td></tr>
+<tr><td>The premortem proving the derivation</td><td>Backtest results</td></tr>
+<tr><td>Latency analysis — earliest-moment detection bound</td><td>Live deployment</td></tr>
+<tr><td>References (materials-science papers, Taleb books, statistics texts)</td><td>—</td></tr>
+</table>
+
+<h2>Table of contents</h2>
+
+<div class="toc">
+<ol>
+<li><a href="#inventory">VOB indicator inventory — what we're working with</a></li>
+<li><a href="#thesis">The thesis — why three properties, not one</a></li>
+<li><a href="#imperviousness">Imperviousness — materials science of hardness and ballistic resistance</a></li>
+<li><a href="#tensile">Tensile — toughness as area under the stress-strain curve</a></li>
+<li><a href="#antifragile">Antifragility — Taleb's formalism + materials examples</a></li>
+<li><a href="#committee">The six-discipline committee — formal contributions to the derivation</a></li>
+<li><a href="#equations">First-principles equations for I, T, A, and master P</a></li>
+<li><a href="#mapping">Mapping every variable to your existing VOB metadata</a></li>
+<li><a href="#thresholds">The three thresholds — why 50% / 62.5% / 87.5%</a></li>
+<li><a href="#latency">Latency analysis — earliest-moment detection bound</a></li>
+<li><a href="#premortem">Premortem — eight failure modes and mitigations</a></li>
+<li><a href="#inversion">Inversion — the fragility equation for blow-through lines</a></li>
+<li><a href="#validation">Validation protocol — how we test before going live</a></li>
+<li><a href="#roadmap">Implementation roadmap (deferred to next session)</a></li>
+<li><a href="#open">Open questions for Anish</a></li>
+<li><a href="#refs">References</a></li>
+<li><a href="#glossary">Glossary</a></li>
+<li><a href="#starter">Starter prompt for implementation session</a></li>
+</ol>
+</div>
+
+<h2 id="inventory">1. VOB indicator inventory — what we're working with</h2>
+
+<p>Three VOB families live in this repo today. The TIA framework will apply to all three, with the six-sensitivity asym family as the primary substrate.</p>
+
+<table>
+<tr><th>Family</th><th>Path</th><th>Canonical version</th><th>Profile</th><th>Role in TIA</th></tr>
+<tr><td><code>vob-asym</code></td><td><code>vob-asym/versions/</code></td><td><code>VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine</code> (also <code>VOB_Asym_T3x6_FROM_MASTERDIR_ummmm_2026-05-10.pine</code>)</td><td>Six sensitivity tiers A–F. Six bull zones, six bear zones, 12 T3 signals, Nagasaki, MutEx overlap engine</td><td>Primary substrate. The 6 tiers supply the "tier_agree" packing-density variable</td></tr>
+<tr><td><code>vob-single-sens</code></td><td><code>vob-single-sens/versions/</code></td><td><code>VOB_SINGLE_SENS_WITH_TABLES_v1.pine</code></td><td>Single sensitivity, 3 buy + 3 sell companion detection plots</td><td>Reference / sanity check. TIA can be evaluated against this simpler engine to validate the multi-tier complexity is earning its keep</td></tr>
+<tr><td><code>vob-ladder-watch</code></td><td><code>vob-ladder-watch/versions/</code></td><td><code>VOB_LADDER_WATCH_v1.pine</code></td><td>Detects the strict-ascending F→E→D→C→B→A bull ladder (or descending bear ladder). Existing "pancake stacking" detector.</td><td>Already partly implements the imperviousness packing-density concept. TIA generalizes it.</td></tr>
+</table>
+
+<div class="info">
+<strong>Per SD-002</strong> (never modify, always new-version), the TIA implementation ships as a NEW file (e.g. <code>VOB_Asym_T3x6_TIA_v1.pine</code>) and the existing canonical stays untouched. The TIA file removes the 13 individual T3 / Nagasaki plot signals and the 12 zone-formation crosshatches as INDIVIDUAL detection plots; the underlying data still computes for use in I/T/A calculations.
+</div>
+
+<h2 id="thesis">2. The thesis — why three properties, not one</h2>
+
+<p>Anish's observation: certain VOB lines are <em>impervious</em>. Price tests them and gets rejected. They have a quality you can see on the chart — "the candles coming in wouldn't even dare. They've felt how antifragile and how impervious and how tensile that level is." The challenge is to codify "you can see it" into an equation that fires at the earliest moment we can know with stated confidence.</p>
+
+<p>A naive approach would compress everything into a single "strength" scalar — pool volume, perhaps. That fails because <strong>different lines fail in different ways</strong>:</p>
+
+<ul>
+<li><strong>Thin lines</strong> get sliced through immediately (low imperviousness). You can see them as single touches that go straight through.</li>
+<li><strong>Brittle lines</strong> look strong (high pool volume) until they break catastrophically (low tensile). One major attempt punches through; the level shatters rather than flexing.</li>
+<li><strong>Fragile lines</strong> erode under repeated tests (anti-antifragile). The 5th touch is weaker than the 1st. Smart money knows this and grinds them.</li>
+</ul>
+
+<p>The thesis: a line that <strong>holds</strong> has all three qualities. It is hard to penetrate (imperviousness), it absorbs stress without breaking (tensile), and it strengthens under repeated tests (antifragility). Conversely, a line that <strong>blows through</strong> lacks at least one. The TIA framework decomposes the single intuition into three measurable dimensions and recombines them into a probability.</p>
+
+<svg width="980" height="380" viewBox="0 0 980 380" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#444"/>
+    </marker>
+  </defs>
+  <!-- Triangle -->
+  <polygon points="490,40 80,330 900,330" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="4,3"/>
+  <!-- Three property nodes -->
+  <circle cx="490" cy="40" r="58" fill="#cde7ff" stroke="#003366" stroke-width="3"/>
+  <text x="490" y="34" text-anchor="middle" font-size="13" font-weight="700">IMPERVIOUSNESS</text>
+  <text x="490" y="50" text-anchor="middle" font-size="11">I(t)</text>
+  <text x="490" y="64" text-anchor="middle" font-size="10">Cannot be penetrated</text>
+
+  <circle cx="80" cy="330" r="58" fill="#d8eed4" stroke="#1f5e1f" stroke-width="3"/>
+  <text x="80"  y="324" text-anchor="middle" font-size="13" font-weight="700">TENSILE</text>
+  <text x="80"  y="340" text-anchor="middle" font-size="11">T(t)</text>
+  <text x="80"  y="354" text-anchor="middle" font-size="10">Flexes; returns to shape</text>
+
+  <circle cx="900" cy="330" r="58" fill="#ffe7c2" stroke="#6b3300" stroke-width="3"/>
+  <text x="900" y="324" text-anchor="middle" font-size="13" font-weight="700">ANTIFRAGILE</text>
+  <text x="900" y="340" text-anchor="middle" font-size="11">A(t)</text>
+  <text x="900" y="354" text-anchor="middle" font-size="10">Gains from stress</text>
+
+  <!-- Centroid -->
+  <circle cx="490" cy="233" r="44" fill="#fff3a8" stroke="#5a4500" stroke-width="3"/>
+  <text x="490" y="226" text-anchor="middle" font-size="13" font-weight="700">P(t)</text>
+  <text x="490" y="244" text-anchor="middle" font-size="11">master</text>
+  <text x="490" y="258" text-anchor="middle" font-size="11">probability</text>
+
+  <line x1="490" y1="98"  x2="490" y2="189" stroke="#444" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="138" y1="330" x2="446" y2="245" stroke="#444" stroke-width="1.5" marker-end="url(#ar)"/>
+  <line x1="842" y1="330" x2="534" y2="245" stroke="#444" stroke-width="1.5" marker-end="url(#ar)"/>
+
+  <text x="270" y="180" font-size="11" fill="#444" font-style="italic">three independent dimensions</text>
+  <text x="270" y="195" font-size="11" fill="#444" font-style="italic">combine into one probability</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 1 — The TIA triangle. Three independent material properties combine into the master holding probability P(t).</p>
+
+<h2 id="imperviousness">3. Imperviousness — materials science of hardness</h2>
+
+<p><span class="panel-imp">IMPERVIOUSNESS = the property of resisting penetration.</span> In materials science, imperviousness has two related but distinct scalar measures: <strong>hardness</strong> (resistance to indentation) and <strong>ballistic resistance</strong> (resistance to high-velocity penetration). Both inform the TIA imperviousness equation.</p>
+
+<h3>3.1 Nature's hardest materials</h3>
+
+<table>
+<tr><th>Material</th><th>Vickers Hardness (GPa)</th><th>Mechanism</th></tr>
+<tr><td>Lonsdaleite (hexagonal diamond)</td><td>~152 (theoretical)</td><td>Hexagonal sp³ carbon lattice; 58% harder than cubic diamond</td></tr>
+<tr><td>Wurtzite Boron Nitride</td><td>~46–58</td><td>Hexagonal BN; similar lattice to lonsdaleite</td></tr>
+<tr><td>Q-Carbon</td><td>~70</td><td>Synthetic carbon allotrope, harder than diamond</td></tr>
+<tr><td>Diamond (cubic)</td><td>70–150 (varies by crystal axis)</td><td>sp³ tetrahedral covalent network; maximum bond density of any common element</td></tr>
+<tr><td>Tungsten Carbide (WC)</td><td>~30</td><td>Industrial workhorse; W-C ionic-covalent bonds</td></tr>
+<tr><td>Boron Carbide (B<sub>4</sub>C)</td><td>~38</td><td>Used in ballistic plates; low density + high hardness</td></tr>
+</table>
+
+<h3>3.2 First principles of hardness</h3>
+
+<p>The Gao-Tian equation for theoretical hardness of covalent crystals:</p>
+
+<div class="formula">
+H<sub>V</sub> = 350 · N<sub>e</sub><sup>2/3</sup> · e<sup>−1.191 f<sub>i</sub></sup> · d<sup>−2.5</sup>
+</div>
+
+<p>where <span class="greek">N<sub>e</sub></span> is the electron density of the strongest bond, <span class="greek">f<sub>i</sub></span> is the ionicity of the bond, and <span class="greek">d</span> is the bond length in Å. The dominant terms: <strong>bond density</strong> and <strong>bond length</strong> (shorter is harder).</p>
+
+<p>The simpler scaling argument: hardness ∝ <em>bond energy × atomic packing density ÷ atomic radius</em>. Diamond wins because all three terms maximize simultaneously.</p>
+
+<h3>3.3 Ballistic resistance — different from hardness</h3>
+
+<p>Ballistic resistance follows the Florence equation for projectile defeat:</p>
+
+<div class="formula">
+V<sub>50</sub> ∝ √( σ<sub>y</sub> · t / ρ<sub>p</sub> )
+</div>
+
+<p>where V<sub>50</sub> is the velocity at which 50% of projectiles defeat the target. <span class="greek">σ<sub>y</sub></span> is target yield strength, <span class="greek">t</span> is thickness, <span class="greek">ρ<sub>p</sub></span> is projectile density. Thickness and yield strength matter LINEARLY but together; you can have high hardness with low ballistic resistance (brittle materials shatter under impact even if they're hard against slow indenters).</p>
+
+<h3>3.4 The VOB imperviousness analogy</h3>
+
+<div class="property">
+<strong>I(t) measures how hard it would be for price to penetrate the level — combining the "bond density" of the level (pool volume) with its "packing density" (how many tiers / zones are clustered there) and the "atomic radius" (distance from current price).</strong>
+</div>
+
+<p>An impervious VOB level has:</p>
+<ul>
+<li>High accumulated volume in the zone (analogue of high bond density)</li>
+<li>Multiple sensitivity tiers agreeing at the same price level (analogue of high atomic packing density — multiple "atoms" of confluence)</li>
+<li>Cross-indicator confluence — HV+FVG+GZ1 (Sat 1) or other satellites also mark this price (analogue of crystalline regularity)</li>
+<li>Tight relative spacing (the zone is THIN — small upper-to-lower range — like a dense crystal vs a loose lattice)</li>
+</ul>
+
+<h2 id="tensile">4. Tensile — toughness as area under the stress-strain curve</h2>
+
+<p><span class="panel-ten">TENSILE = the property of absorbing stress without permanent deformation, then returning to original shape.</span> The naive measure is ultimate tensile strength (UTS, the maximum stress before failure). The correct measure for our purpose is <strong>toughness</strong>: the integrated area under the stress-strain curve. A high-UTS / low-elongation material is brittle (fails catastrophically). A moderate-UTS / high-elongation material is tough (absorbs lots of energy before failing).</p>
+
+<h3>4.1 Nature's toughest materials</h3>
+
+<table>
+<tr><th>Material</th><th>UTS (GPa)</th><th>Strain at break</th><th>Toughness (MJ/m³)</th><th>Mechanism</th></tr>
+<tr><td>Darwin's Bark Spider silk (<em>Caerostris darwini</em>)</td><td>~1.6</td><td>~50%</td><td><strong>~520</strong> (world record in nature)</td><td>Hierarchical β-sheet nanocrystals in semi-amorphous matrix</td></tr>
+<tr><td>Carbon nanotubes</td><td>~63</td><td>~6%</td><td>~2700 (theoretical)</td><td>Pure sp² carbon cylinder; defect-free</td></tr>
+<tr><td>Graphene (single sheet)</td><td>~130</td><td>~10–25%</td><td>~6000+ (theoretical)</td><td>2D sp² lattice; max in-plane bond density</td></tr>
+<tr><td>Kevlar 49</td><td>3.6</td><td>3.6%</td><td>~50</td><td>Para-aramid hydrogen-bonded sheets</td></tr>
+<tr><td>Zylon (PBO)</td><td>5.8</td><td>2.5%</td><td>~60</td><td>Rigid-rod liquid crystal polymer; degrades under UV</td></tr>
+<tr><td>Dyneema (UHMWPE)</td><td>3.6</td><td>2.7%</td><td>~40</td><td>Ultra-high MW polyethylene; highest specific strength</td></tr>
+<tr><td>Vectran (LCP)</td><td>3.0</td><td>3.3%</td><td>~45</td><td>Liquid crystal polymer; thermally stable</td></tr>
+</table>
+
+<div class="callout">
+<strong>The key insight from spider silk.</strong> Darwin's bark spider produces the toughest material known in nature. Not the strongest (graphene wins UTS), not the most elastic (rubber wins strain), but the toughest. Why? Because <strong>toughness = strength × elongation</strong>, and spider silk optimizes for the integral, not for either endpoint. The hierarchical structure (nanocrystalline β-sheets in an amorphous matrix) means small stresses are absorbed elastically by the matrix; large stresses crystallize the matrix, recruiting more β-sheets — a self-amplifying response. <em>This is the right analogue for a VOB level: small price probes are absorbed elastically; large probes recruit more accumulated volume into defense.</em>
+</div>
+
+<h3>4.2 The stress-strain curve and the toughness integral</h3>
+
+<svg width="700" height="380" viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg">
+  <!-- Axes -->
+  <line x1="70" y1="320" x2="640" y2="320" stroke="#333" stroke-width="2"/>
+  <line x1="70" y1="320" x2="70"  y2="40" stroke="#333" stroke-width="2"/>
+  <text x="640" y="345" font-size="12" font-weight="700">Strain ε</text>
+  <text x="20"  y="40"  font-size="12" font-weight="700">Stress σ</text>
+
+  <!-- Spider silk curve (high toughness — area under curve fills) -->
+  <path d="M 70,320 L 100,260 L 150,210 L 220,180 L 320,150 L 440,110 L 510,80" stroke="#1f5e1f" stroke-width="3" fill="none"/>
+  <path d="M 70,320 L 100,260 L 150,210 L 220,180 L 320,150 L 440,110 L 510,80 L 510,320 Z" fill="#d8eed4" opacity="0.7"/>
+  <text x="295" y="225" font-size="13" font-weight="700" fill="#1f5e1f">TOUGH (spider silk)</text>
+  <text x="295" y="245" font-size="11" fill="#1f5e1f">large area = high toughness</text>
+
+  <!-- Brittle high-UTS curve -->
+  <path d="M 70,320 L 110,250 L 130,200 L 145,140 L 150,80 L 152,80" stroke="#7a1a1a" stroke-width="3" fill="none"/>
+  <circle cx="152" cy="80" r="5" fill="#7a1a1a"/>
+  <text x="160" y="80"  font-size="11" font-weight="700" fill="#7a1a1a">BRITTLE — snaps at peak</text>
+  <text x="160" y="96"  font-size="10" fill="#7a1a1a">(high UTS, low toughness)</text>
+
+  <!-- Weak/ductile curve -->
+  <path d="M 70,320 L 250,300 L 450,295 L 600,293" stroke="#888" stroke-width="3" fill="none"/>
+  <text x="450" y="285" font-size="11" font-weight="700" fill="#888">WEAK — flexes but no strength</text>
+
+  <text x="350" y="370" text-anchor="middle" font-size="12" font-style="italic" fill="#333">
+    Toughness K = ∫₀^ε σ(ε) dε &nbsp;&nbsp; (area under curve)
+  </text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 2 — Stress-strain curves. Toughness is the AREA under the curve. Brittle materials have high peak stress but tiny area (small useful energy absorbed). Tough materials have moderate peak stress and large area.</p>
+
+<h3>4.3 The VOB tensile analogy</h3>
+
+<div class="property">
+<strong>T(t) measures how much "energy" a level can absorb in retests without failing. The metric is the area under the analogue of the stress-strain curve: pool volume (UTS analogue) × elongation capacity (how deep price can probe and still get rejected).</strong>
+</div>
+
+<p>A tensile VOB level has:</p>
+<ul>
+<li>Sufficient pool volume to mount a defense (UTS analogue — there must be SOME strength to begin with)</li>
+<li>Historical evidence that price has entered the zone (elongated under stress) AND been rejected back out (no permanent deformation) — high success rate at probes</li>
+<li>Multiple successful retests across different volume profiles (the level has been tested elastically and re-shaped without breaking)</li>
+<li>The maximum penetration depth on prior retests stays below ~50% of the zone width (the level deformed but didn't yield)</li>
+</ul>
+
+<h2 id="antifragile">5. Antifragility — Taleb's formalism plus materials examples</h2>
+
+<p><span class="panel-anti">ANTIFRAGILITY = the property of GAINING strength from stress, volatility, and randomness.</span> Coined by Nassim Taleb in <em>Antifragile: Things That Gain from Disorder</em> (2012). Antifragility is not robustness (which merely resists harm) — it is the inverse of fragility. Fragile things hate volatility; antifragile things require it.</p>
+
+<h3>5.1 Taleb's formal definition</h3>
+
+<p>A system's response to a stressor X is described by a payoff function W(X). The system is:</p>
+
+<ul>
+<li><strong>Fragile</strong> if W''(X) &lt; 0 at relevant scales (concave payoff; Jensen's inequality says variance hurts)</li>
+<li><strong>Robust</strong> if W''(X) ≈ 0 (linear payoff; insensitive to variance)</li>
+<li><strong>Antifragile</strong> if W''(X) &gt; 0 (convex payoff; variance helps)</li>
+</ul>
+
+<p>Jensen's inequality formalizes the variance benefit:</p>
+
+<div class="formula">
+For convex f: &nbsp;&nbsp; E[f(X)] ≥ f(E[X])
+</div>
+
+<p>That is: if your payoff function is convex (antifragile), MORE volatility in the input → BETTER expected output. This is the mathematical heart of antifragility.</p>
+
+<h3>5.2 Antifragile materials and systems</h3>
+
+<table>
+<tr><th>System</th><th>Antifragile mechanism</th><th>Quantitative measure</th></tr>
+<tr><td>Hadfield steel (12-14% Mn)</td><td>Work hardening — impact transforms austenite to martensite locally, increasing hardness exactly where attacked</td><td>Hardness vs cumulative impact energy: positive slope</td></tr>
+<tr><td>Bone (Wolff's law)</td><td>Osteoblast activity proportional to mechanical load — bone density increases where stress is highest</td><td>BMD vs mechanical load history: monotonic increase</td></tr>
+<tr><td>Muscle hypertrophy</td><td>Microtears from stress → satellite cell activation → larger myofibrils</td><td>Cross-sectional area vs training volume: convex up to capacity</td></tr>
+<tr><td>Self-healing concrete</td><td>Embedded vascular networks release sealant on crack formation; sealant cures stronger than original</td><td>Strength after k crack-heal cycles: increasing for k ≤ k<sub>max</sub></td></tr>
+<tr><td>Hormesis (toxicology)</td><td>Low-dose exposure → adaptive cellular response (e.g., heat shock proteins, antioxidant upregulation)</td><td>Response vs dose: inverted-U (peak at low non-zero dose)</td></tr>
+<tr><td>Regenerative braking</td><td>Kinetic energy → stored chemical/electrical energy → reusable</td><td>Net energy balance: positive feedback under braking events</td></tr>
+<tr><td>Immune system</td><td>Pathogen exposure → memory B-cells → faster, stronger response on re-exposure</td><td>Antibody titer vs prior exposures: log-linear growth</td></tr>
+</table>
+
+<h3>5.3 Mithridatization — the original antifragile protocol</h3>
+
+<p>Mithridates VI of Pontus (134–63 BCE) is reported to have ingested sub-lethal doses of poison daily to build immunity. The protocol — graduated exposure to a stressor — is the prototype of all hormesis-class antifragility. When Mithridates attempted suicide by poison after defeat, he failed and had to ask a soldier to kill him by sword. The system had become so antifragile to its stressor that the stressor no longer worked at all.</p>
+
+<h3>5.4 The convexity plot</h3>
+
+<svg width="700" height="320" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
+  <line x1="70" y1="270" x2="640" y2="270" stroke="#333" stroke-width="2"/>
+  <line x1="350" y1="280" x2="350" y2="40" stroke="#333" stroke-width="1" stroke-dasharray="3,2"/>
+  <line x1="70" y1="270" x2="70"  y2="40" stroke="#333" stroke-width="2"/>
+  <text x="640" y="290" font-size="12" font-weight="700">Stressor X</text>
+  <text x="20"  y="40" font-size="12" font-weight="700">Payoff W(X)</text>
+
+  <!-- Antifragile (convex up) -->
+  <path d="M 70,270 Q 350,240 640,40" stroke="#1f5e1f" stroke-width="3" fill="none"/>
+  <text x="540" y="100" font-size="12" font-weight="700" fill="#1f5e1f">ANTIFRAGILE (W''&gt;0)</text>
+  <text x="540" y="118" font-size="10" fill="#1f5e1f">benefits from variance</text>
+
+  <!-- Robust (linear) -->
+  <path d="M 70,200 L 640,170" stroke="#666" stroke-width="2" fill="none"/>
+  <text x="540" y="160" font-size="12" font-weight="700" fill="#666">ROBUST (W''≈0)</text>
+
+  <!-- Fragile (concave) -->
+  <path d="M 70,40 Q 350,240 640,260" stroke="#7a1a1a" stroke-width="3" fill="none"/>
+  <text x="540" y="240" font-size="12" font-weight="700" fill="#7a1a1a">FRAGILE (W''&lt;0)</text>
+  <text x="540" y="258" font-size="10" fill="#7a1a1a">variance destroys</text>
+
+  <!-- Jensen's annotation -->
+  <text x="350" y="305" text-anchor="middle" font-size="11" font-style="italic" fill="#333">Jensen's inequality: for convex f, E[f(X)] ≥ f(E[X]) — variance is a net positive</text>
+</svg>
+
+<p class="footer" style="text-align:center; margin-top:-0.5em; margin-bottom:1.5em;">Figure 3 — Convexity classifies systems. Antifragile (convex up): payoff accelerates with stress. Fragile (concave down): payoff collapses under stress. The second derivative is the discriminator.</p>
+
+<h3>5.5 The VOB antifragility analogy</h3>
+
+<div class="property">
+<strong>A(t) measures whether the level GETS STRONGER after being tested. The convexity of pool volume (or success rate) with respect to test count. Each successful rejection recruits more volume into defense.</strong>
+</div>
+
+<p>An antifragile VOB level has:</p>
+<ul>
+<li>Pool volume that INCREASES across retest events (work hardening — defenders pile in when probed)</li>
+<li>Touches that came on high volume AND held (Hadfield steel — the harder you hit it, the harder it gets)</li>
+<li>Aged levels with repeated successful tests (Lindy effect — the longer a non-perishable info survives, the longer it will keep surviving)</li>
+<li>Conditional on volume regime: tests during high-volume sessions held more often than tests during low-volume sessions (positive correlation between stressor magnitude and survival)</li>
+<li>The Wolff's-law analogue: zones at price levels with the most "stress" (most volume churn nearby) have the most accumulated volume — strength concentrates where stress is highest</li>
+</ul>
+
+<h2 id="committee">6. The six-discipline committee — formal contributions</h2>
+
+<p>Anish 2026-05-11: "Make up a committee who will all agree from various disciplines, engineering, physics, astrophysics, computational mathematics, advanced statistical modeling, neurolinguistics. You need to have a full multi-perspective view." Each discipline contributes a specific piece of the derivation — they are not bullet points but load-bearing structural elements.</p>
+
+<table>
+<tr><th>Discipline</th><th>Formal contribution to TIA</th><th>Key equation / framework</th></tr>
+<tr><td><strong>Mechanical engineering</strong></td><td>Stress-strain mechanics, fatigue cycles, fracture criterion. Tells us how to combine UTS and elongation into toughness; gives the Griffith criterion for catastrophic failure.</td><td>σ<sub>c</sub> = √(2Eγ/πa) — critical stress for crack propagation; S-N (Wöhler) fatigue curves for cyclic loading</td></tr>
+<tr><td><strong>Solid-state physics</strong></td><td>Bond energy → hardness scaling; dislocation theory for plastic vs elastic regime; theoretical strength ceiling.</td><td>Gao-Tian hardness formula; theoretical strength σ<sub>th</sub> ≈ E/10; Peierls-Nabarro stress</td></tr>
+<tr><td><strong>Astrophysics</strong></td><td>Equations of state under extreme pressure. Crucial because VOB levels under heavy-volume attack are in EXTREME regime where ordinary intuition fails — analogous to neutron star pressure regimes.</td><td>Polytropic EOS P = K ρ<sup>γ</sup>; Chandrasekhar limit M<sub>C</sub> ≈ 1.4 M<sub>☉</sub>; degeneracy pressure</td></tr>
+<tr><td><strong>Computational mathematics</strong></td><td>Convex analysis (Jensen's inequality) formalizes antifragility. Stochastic differential equations model the price process. Optimization theory gives the Pareto-optimal threshold placement.</td><td>Jensen: E[f(X)] ≥ f(E[X]) for convex f; Itô SDE: dX = μ dt + σ dW</td></tr>
+<tr><td><strong>Advanced statistical modeling</strong></td><td>Survival analysis on level lifetimes; Cox proportional hazards on penetration as a function of metadata; Extreme Value Theory for tail events; Bayesian updating as touches accumulate.</td><td>Kaplan-Meier S(t); Cox: λ(t|x) = λ₀(t) e<sup>βx</sup>; Pickands-Balkema-de Haan for tail</td></tr>
+<tr><td><strong>Neurolinguistics</strong></td><td>How we NAME the system controls how we think with it. The "pancake" vocabulary, the I/T/A acronym, the threshold tier names — all chosen to evoke the right cognitive structure without distorting the math.</td><td>Sapir-Whorf (weak version); category-anchored chunking; reduces operator error in alerting</td></tr>
+</table>
+
+<p>Each member of the committee will have a chance to red-team the others' contribution in the premortem (§11). The neurolinguist, in particular, vetoes any term that introduces a misleading mental model — for example, "Diamond" as a tier name would falsely imply that imperviousness dominates the score; "Spider Silk" would falsely emphasize tensile. The neutral "TIER 1 / TIER 2 / TIER 3" maps directly to probability bands and adds nothing extraneous.</p>
+
+<h2 id="equations">7. First-principles equations for I, T, A, and master P</h2>
+
+<p>This section derives the three property equations from first principles and combines them into the master probability. Every term has a physical interpretation and a concrete metadata mapping (§8).</p>
+
+<h3>7.1 Imperviousness I(t) — derivation</h3>
+
+<p>Starting from the Gao-Tian hardness equation H<sub>V</sub> ∝ N<sub>e</sub><sup>2/3</sup> · d<sup>−2.5</sup>, we identify the analogues:</p>
+
+<ul>
+<li><span class="greek">N<sub>e</sub></span> (electron density of strongest bond) → pool volume of the zone × cross-tier agreement count</li>
+<li><span class="greek">d</span> (bond length) → distance from current price to zone midpoint, as fraction</li>
+</ul>
+
+<p>The raw imperviousness signal:</p>
+
+<div class="formula">
+I<sub>raw</sub>(t) = (v<sub>zone</sub>(t) · n<sub>tier</sub>(t)) · n<sub>stack</sub>(t)<sup>1/2</sup> ÷ (1 + d<sub>price</sub>(t))<sup>5/2</sup>
+</div>
+
+<p>where:</p>
+<ul>
+<li><span class="greek">v<sub>zone</sub></span>(t) = volume of THIS zone, normalized to its tier's median volume (so v=1 means median strength)</li>
+<li><span class="greek">n<sub>tier</sub></span>(t) ∈ {1, 2, 3, 4, 5, 6} = number of sensitivity tiers (A–F) with an active zone at this price level (cross-tier confluence)</li>
+<li><span class="greek">n<sub>stack</sub></span>(t) ∈ {0, 1, 2, ...} = number of zones (across all tiers, all directions) within stack_thresh_pct (default 2%) of current price</li>
+<li><span class="greek">d<sub>price</sub></span>(t) = |close(t) − zone_mid(t)| ÷ close(t), as fraction</li>
+</ul>
+
+<p>Normalize to [0, 1] via logistic transform with empirical scale parameters:</p>
+
+<div class="formula">
+I(t) = 1 / (1 + e<sup>−α<sub>I</sub>(I<sub>raw</sub>(t) − β<sub>I</sub>)</sup>)
+</div>
+
+<p>where <span class="greek">α<sub>I</sub></span> and <span class="greek">β<sub>I</sub></span> are calibrated against historical hold/penetrate outcomes. Initial values: <span class="greek">α<sub>I</sub></span> = 0.5, <span class="greek">β<sub>I</sub></span> = median(I<sub>raw</sub>) over training sample.</p>
+
+<h3>7.2 Tensile T(t) — derivation</h3>
+
+<p>Toughness K = ∫σ dε. Discretize the stress-strain curve as a series of touch events with associated stress (touch volume) and strain (penetration depth):</p>
+
+<div class="formula">
+K<sub>VOB</sub>(t) = Σ<sub>i=1..k</sub> [ v<sub>touch,i</sub> · ε<sub>touch,i</sub> · 𝟙{rejected<sub>i</sub>} ]
+</div>
+
+<p>where <span class="greek">k</span> = total touch count, <span class="greek">ε<sub>touch,i</sub></span> = penetration depth on touch i (as fraction of zone width, capped at 1.0), <span class="greek">𝟙{rejected<sub>i</sub>}</span> is 1 if touch was rejected (price exited zone in same direction it entered) else 0.</p>
+
+<p>Combine with current pool volume (the UTS analogue) and the success rate (the elastic-recovery analogue):</p>
+
+<div class="formula">
+T<sub>raw</sub>(t) = v<sub>pool</sub><sup>normalized</sup>(t) · r<sub>success</sub>(t) · (1 + K<sub>VOB</sub>(t))
+</div>
+
+<p>where <span class="greek">r<sub>success</sub></span>(t) = successful_rejections ÷ max(total_touches, 1).</p>
+
+<p>For new zones with no touches: <span class="greek">K<sub>VOB</sub></span> = 0, <span class="greek">r<sub>success</sub></span> = bootstrapped to the tier's median r<sub>success</sub> over the past 90 days (Bayesian prior). This gives T(t) immediate value even at formation.</p>
+
+<p>Normalize:</p>
+
+<div class="formula">
+T(t) = 1 / (1 + e<sup>−α<sub>T</sub>(T<sub>raw</sub>(t) − β<sub>T</sub>)</sup>)
+</div>
+
+<h3>7.3 Antifragility A(t) — derivation</h3>
+
+<p>From Taleb's formalism, A is the SECOND derivative of strength with respect to stress. In practice, fit a quadratic to the touch-event sequence and take the curvature coefficient. Let strength_proxy(i) = cumulative pool volume after touch i. Fit S(i) = a + b·i + c·i² and extract c. The antifragility signal is the sign and magnitude of c.</p>
+
+<div class="formula">
+c(t) = argmin<sub>c</sub> Σ<sub>i=1..k</sub> (S(i) − (a + b·i + c·i²))²
+</div>
+
+<p>Equivalent simpler operator (more robust for small k): the second-difference of cumulative strength.</p>
+
+<div class="formula">
+A<sub>raw</sub>(t) = (1 / k) · Σ<sub>i=3..k</sub> [ S(i) − 2·S(i−1) + S(i−2) ]
+</div>
+
+<p>Augment with a <strong>Lindy term</strong> for level age:</p>
+
+<div class="formula">
+A<sub>lindy</sub>(t) = (k + 1) / (age_bars(t) / median_age + 1)
+</div>
+
+<p>and a <strong>Hadfield term</strong> capturing whether high-volume tests held more often than low-volume tests:</p>
+
+<div class="formula">
+A<sub>hadfield</sub>(t) = E[v<sub>touch</sub> | rejected] / E[v<sub>touch</sub> | penetrated]
+</div>
+
+<p>(With smoothing constants for zero-division on new zones: add 1 to numerator and denominator counts.)</p>
+
+<p>Combined antifragility signal:</p>
+
+<div class="formula">
+A<sub>raw, comb</sub>(t) = A<sub>raw</sub>(t) · A<sub>lindy</sub>(t)<sup>γ<sub>L</sub></sup> · A<sub>hadfield</sub>(t)<sup>γ<sub>H</sub></sup>
+</div>
+
+<p>with default exponents <span class="greek">γ<sub>L</sub></span> = 0.5 and <span class="greek">γ<sub>H</sub></span> = 1.0 (Hadfield-weighted; Lindy is a moderate multiplier). Normalize:</p>
+
+<div class="formula">
+A(t) = 1 / (1 + e<sup>−α<sub>A</sub>(A<sub>raw, comb</sub>(t) − β<sub>A</sub>)</sup>)
+</div>
+
+<h3>7.4 Master probability P(t)</h3>
+
+<p>Three options for combining I, T, A into the master probability. We propose <strong>weighted geometric mean</strong> for the initial release, with equal weights, then re-calibrate weights via logistic regression once we have outcome data:</p>
+
+<div class="formula">
+P(t) = (I(t)<sup>w<sub>I</sub></sup> · T(t)<sup>w<sub>T</sub></sup> · A(t)<sup>w<sub>A</sub></sup>)<sup>1 / (w<sub>I</sub> + w<sub>T</sub> + w<sub>A</sub>)</sup>
+</div>
+
+<p>with initial weights <span class="greek">w<sub>I</sub></span> = <span class="greek">w<sub>T</sub></span> = <span class="greek">w<sub>A</sub></span> = 1 (equal). The geometric mean has the critical property that <strong>if any one of I, T, A is near zero, P is near zero</strong> — the level fails even if the other two dimensions are strong. This matches Anish's "all three qualities" requirement.</p>
+
+<p>Why geometric mean and not multiplicative (P = I × T × A)? Both are zero-dominated, but the geometric mean stays in [0, 1] naturally without renormalization. Multiplicative would produce very small numbers (0.5³ = 0.125) that confuse the threshold interpretation.</p>
+
+<p>Future work: replace with a calibrated logistic regression once we have 30+ days of outcome data:</p>
+
+<div class="formula">
+P<sub>v2</sub>(t) = 1 / (1 + e<sup>−(β₀ + β<sub>I</sub>·I(t) + β<sub>T</sub>·T(t) + β<sub>A</sub>·A(t) + interaction terms)</sup>)
+</div>
+
+<h2 id="mapping">8. Mapping every variable to your existing VOB metadata</h2>
+
+<p>The TIA equations use 14 distinct variables. Every one maps to data you already emit (per the Pine source Anish pasted) or to data trivially derivable from current state. None require new market data feeds.</p>
+
+<table>
+<tr><th>Equation variable</th><th>Existing emission</th><th>Pine source reference</th><th>Notes</th></tr>
+<tr><td>v<sub>zone</sub>(t) — current zone volume</td><td><code>NEAREST_ZONE_VOL</code> in emission table</td><td>Computed by <code>f_nearest_vol(arr, close)</code></td><td>Per direction (bull/bear)</td></tr>
+<tr><td>n<sub>tier</sub>(t) — cross-tier agreement</td><td>Derivable from per-tier <code>ZoneCnt</code> + <code>NrDist%</code></td><td>Per-tier <code>f_count_active</code> and <code>f_nearest_dist_pct</code></td><td>Compute: count tiers where nearest-zone-dist &lt; threshold</td></tr>
+<tr><td>n<sub>stack</sub>(t) — zones within stack_thresh_pct</td><td><code>BULLSTACK</code>, <code>BEARSTACK</code></td><td><code>f_stack_near(arr, close, stack_thresh_pct)</code></td><td>Already aggregated across tiers</td></tr>
+<tr><td>d<sub>price</sub>(t) — distance to zone</td><td><code>NEAREST_BULL_DIST</code>, <code>NEAREST_BEAR_DIST</code></td><td><code>f_nearest_dist_pct(arr, close)</code></td><td>Already in percent</td></tr>
+<tr><td>v<sub>pool</sub>(t) — total pool volume</td><td><code>BULLPOOL_A..F</code>, <code>BEARPOOL_A..F</code></td><td>Returned by <code>f_vob()</code></td><td>Sum across tiers for total pool</td></tr>
+<tr><td>k — touch count</td><td>NEW — needs per-zone touch history</td><td>Add to <code>level</code> UDT: <code>int touch_count</code></td><td>Incremented when price enters then exits zone</td></tr>
+<tr><td>v<sub>touch,i</sub> — touch volumes</td><td>NEW — needs touch history array</td><td>Add to <code>level</code> UDT: <code>array&lt;float&gt; touch_vols</code></td><td>Volume on the bar that touched the zone</td></tr>
+<tr><td>ε<sub>touch,i</sub> — penetration depth</td><td>NEW — needs touch event tracking</td><td>Compute: (penetration_price − zone_edge) / zone_width</td><td>Capped at 1.0</td></tr>
+<tr><td>𝟙{rejected<sub>i</sub>} — rejection indicator</td><td>NEW — needs forward-looking confirmation</td><td>Set true on bar that returns past zone edge in same direction it entered</td><td>3-bar confirmation window suggested</td></tr>
+<tr><td>v<sub>pool</sub><sup>normalized</sup> — pool vs historical median</td><td>Existing pool / 200-bar rolling median(pool)</td><td>Easy derive</td><td>Initial value: 1.0 (median)</td></tr>
+<tr><td>age_bars(t)</td><td>Derivable: bar_index − zone.indx (with indx as bar index, not time)</td><td>Modify UDT to store bar_index too</td><td>Or compute on the fly</td></tr>
+<tr><td>S(i) — strength proxy series</td><td>NEW — track cumulative pool volume over zone's lifetime</td><td>Per-zone time series of pool snapshots at each touch</td><td>k+1 values per zone</td></tr>
+<tr><td>v<sub>touch_rejected_avg</sub>, v<sub>touch_penetrated_avg</sub></td><td>Derivable from touch_vols + rejected flags</td><td>Two running averages per zone</td><td>For Hadfield term</td></tr>
+<tr><td>median_age — median age across all live zones</td><td>NEW — running median of (current_bar − zone.indx_bar)</td><td>Compute on barstate.islast</td><td>For Lindy normalization</td></tr>
+</table>
+
+<p>Net new tracking: per-zone touch history (count, volumes, penetration depths, rejection flags) and per-zone strength-proxy time series. All bounded — max 64 touch records per zone (more than enough; older roll off), max 15 zones per tier (existing cap). Storage cost: ~64 × 6 × 4 × 15 × 6 tiers × 2 directions ≈ 41K floats — negligible.</p>
+
+<h2 id="thresholds">9. The three thresholds — why 50% / 62.5% / 87.5%</h2>
+
+<p>Anish's specification: three detection plots per direction at 50%, ~62%, ~87% probabilities. The question is whether these specific numbers are calibration-optimal or merely intuition-driven. Both perspectives below.</p>
+
+<h3>9.1 The intuition case</h3>
+
+<table>
+<tr><th>Threshold</th><th>Numerical rationale</th><th>Mental model</th></tr>
+<tr><td><strong>50% (1/2)</strong></td><td>Coin flip baseline. Below 50% the level offers no information — could go either way. ABOVE 50% the level holds more often than not.</td><td>"Worth watching." Earliest actionable signal. Maximum recall, modest precision.</td></tr>
+<tr><td><strong>62.5% (5/8)</strong></td><td>Fibonacci-adjacent: 0.618 is the inverse golden ratio, 5/8 = 0.625 ≈ φ⁻¹. Canonical in trader vocabulary (Fibonacci retracements).</td><td>"Confirmation." 5:3 odds the level holds. Reasonable conviction without overreach.</td></tr>
+<tr><td><strong>87.5% (7/8)</strong></td><td>Strong asymmetric conviction. 7:1 odds. Stops short of 95% (which is overconfident given model misspecification risk).</td><td>"Ironclad." High precision; trade with size.</td></tr>
+</table>
+
+<h3>9.2 The calibration case</h3>
+
+<p>After 90 days of outcomes accumulated through the TIA system, we can produce a calibration curve: for each predicted probability bucket, what fraction actually held? A perfectly calibrated system has predicted-P equal to realized-rate across all buckets.</p>
+
+<p>If realized rates deviate, we apply <em>isotonic regression</em> to the calibration curve to find adjusted thresholds where the realized rate matches the stated rate. Initial settings stay at 0.50/0.625/0.875 (intuition); after 90 days, re-fit.</p>
+
+<h3>9.3 Why three thresholds, not one or five</h3>
+
+<p>One threshold loses the gradient information; we'd treat 51% the same as 95% — wasting the model's discrimination power. Five thresholds (e.g., 50/60/70/80/90) fragment the alert stream into bands that traders can't reliably distinguish — operator noise overwhelms signal.</p>
+
+<p>Three is the minimum that preserves a meaningful gradient (low/medium/high conviction) without overwhelming the operator. Aligned with the OS-wide three-tier structure (grunt / knowledge / owner).</p>
+
+<h2 id="latency">10. Latency analysis — earliest-moment detection bound</h2>
+
+<p>Anish's hard requirement: "Immediately when it's fifty percent... emit that detection plot and alert it. The fastest you can possibly know with that certainty level." This section bounds the latency from condition-crossing to alert emission.</p>
+
+<h3>10.1 Per-bar compute cost</h3>
+
+<table>
+<tr><th>Operation</th><th>Cost per bar per tier</th><th>Notes</th></tr>
+<tr><td>I(t) computation</td><td>~6 arithmetic ops</td><td>Already-computed metadata; one logistic eval</td></tr>
+<tr><td>T(t) computation</td><td>~20 ops + O(k) for touch traversal</td><td>k ≤ 64 by cap; ~64 multiply-add</td></tr>
+<tr><td>A(t) computation</td><td>~25 ops + O(k) for quadratic fit</td><td>Closed-form quadratic; no iteration</td></tr>
+<tr><td>P(t) combination</td><td>~6 ops</td><td>Geometric mean of 3 values</td></tr>
+<tr><td>Threshold crossing detection</td><td>~3 ops</td><td>P(t) ≥ τ AND P(t−1) &lt; τ</td></tr>
+<tr><td><strong>Total per bar (6 tiers × 2 directions × per-zone × max 15 zones)</strong></td><td><strong>~14000 ops</strong></td><td>Pine handles ~100K ops/bar safely; we're at 14%</td></tr>
+</table>
+
+<h3>10.2 Decision latency</h3>
+
+<p>The decision to emit the detection plot is bounded by the time from "bar closes" to "alert fires." Pine evaluates indicators on bar close; alertcondition + alert are evaluated within the same evaluation pass. So latency is &lt; 100ms from bar close to alert dispatch in normal conditions.</p>
+
+<p>To go FASTER than bar-close requires real-time tick-level evaluation with <code>barstate.isconfirmed = false</code>, which introduces repaint risk (a level that "fires" at 50% mid-bar may drop below 50% by bar close). Recommendation: <strong>stay at bar-close evaluation for D₂ and D₃ (high conviction)</strong>; experiment with real-time eval ONLY for D₁ (50% threshold, exploratory). If real-time D₁ generates too many flips, demote to bar-close.</p>
+
+<h3>10.3 Cold-start latency</h3>
+
+<p>A new zone has zero touches and zero outcomes. The TIA score is computable from formation thanks to the Bayesian bootstrap (§7.2, §7.3) — we use tier-median r<sub>success</sub>, Hadfield ratio, and Lindy term to initialize. So D₁ can fire on the SAME bar a new zone forms if I(t) is already extreme enough. T(t) and A(t) lag — but they're bootstrapped at neutral so they don't actively SUPPRESS detection.</p>
+
+<h2 id="premortem">11. Premortem — eight failure modes and mitigations</h2>
+
+<p>Per the <code>premortem</code> skill (SD-013), assume the TIA framework has been deployed and has FAILED. Why?</p>
+
+<table>
+<tr><th>#</th><th>Failure mode (past tense)</th><th>Severity</th><th>Mitigation</th></tr>
+<tr><td>1</td><td>"The mapping from materials variables to trading metadata was metaphorical, not isomorphic. Pool volume turned out to not correlate with rejection rates."</td><td>CRITICAL</td><td>Backtest each variable in isolation against rejection rates BEFORE combining into I/T/A. If a variable has zero or wrong-sign correlation, drop it.</td></tr>
+<tr><td>2</td><td>"The geometric-mean combination understated the value of having ONE extreme dimension. A level with I=0.95 + T=0.30 + A=0.30 was treated as weaker than I=0.65 + T=0.65 + A=0.65, but in reality the first case was a stronger hold."</td><td>HIGH</td><td>Test the three combinations (geometric, logistic-regression, max-of-three) against held-out validation data. Pick the highest AUROC.</td></tr>
+<tr><td>3</td><td>"Thresholds 0.50/0.625/0.875 were pulled from intuition. They didn't align with realized calibration. D₁ fires happened in 35% of cases, not 50%, so traders lost trust."</td><td>HIGH</td><td>Empirical isotonic regression on the first 90 days. Adjust thresholds so realized rates match stated rates.</td></tr>
+<tr><td>4</td><td>"Antifragility was conflated with selection bias. We only observed levels that survived prior tests; the 'antifragile' ones were merely the survivors. The A score was a tautology."</td><td>MEDIUM</td><td>Track failed levels (formed-then-blown-through) explicitly. Compute A on both survivors and failures. Validate A discriminates.</td></tr>
+<tr><td>5</td><td>"The Lindy term inverted for HFT-discovered levels. Older levels were MORE likely to get blown through because everyone knew them and HFT picked them off in liquidity sweeps."</td><td>MEDIUM</td><td>Include a 'discovery timestamp' variable. Partition Lindy: aged-AND-recently-tested = strong; aged-AND-untested = weak.</td></tr>
+<tr><td>6</td><td>"Latency was too high. By the time enough touch data accumulated for A(t) to converge, the move was already gone."</td><td>MEDIUM</td><td>Bayesian bootstrap of A at zone formation (§7.3). Don't require touches before firing D₁ — let I dominate early, with A's neutral prior staying out of the way.</td></tr>
+<tr><td>7</td><td>"Pool volume on bull/bear side was gamed by spoofing. Large-volume zones formed at price levels where there was no real interest, just liquidity-pull tactics."</td><td>LOW-MEDIUM</td><td>Compare pool volume to time-of-day baselines. Flag anomalies. Optionally: weight zone volume by depth-of-book stability (would require new data).</td></tr>
+<tr><td>8</td><td>"The system overfit the training regime. Worked in trending markets where retests are infrequent and clean. Failed in chop where every bar tests every level repeatedly."</td><td>HIGH</td><td>Regime-conditional calibration via the <code>axis-decomposition</code> skill (SD-013). Maintain separate threshold sets for trend / range / gap-up / gap-down / inside-day regimes.</td></tr>
+</table>
+
+<h2 id="inversion">12. Inversion — the fragility equation for blow-through lines</h2>
+
+<p>Per the <code>inversion</code> skill (SD-013 + Munger), instead of asking "what makes a level hold?" ask "what guarantees a level blows through?" The inverse equation gives us a SECOND useful signal: detection of fragile levels we should EXPECT to fail.</p>
+
+<h3>12.1 Fragility classes</h3>
+
+<table>
+<tr><th>Class</th><th>Definition</th><th>Detection</th><th>Trading implication</th></tr>
+<tr><td><strong>Thin</strong></td><td>Low I — small pool, no tier confluence, no stack</td><td>I(t) &lt; 0.20</td><td>Don't trust this level. Trade THROUGH it.</td></tr>
+<tr><td><strong>Brittle</strong></td><td>High I + low T — looks strong but has never been tested or all tests failed</td><td>I(t) &gt; 0.70 AND r<sub>success</sub> &lt; 0.30 AND k ≥ 3</td><td>Probable trap — the pool is big but the level lacks elasticity. First major test will shatter it.</td></tr>
+<tr><td><strong>Eroding</strong></td><td>Antifragile gone negative — touches coming on declining volume and shallower rejections</td><td>A(t) decreasing trend over last 3 touches; c &lt; 0 in quadratic fit</td><td>"Former monolith showing cracks." Don't add to longs (bull zone) or shorts (bear zone) — exit on next test.</td></tr>
+<tr><td><strong>Lindy-stale</strong></td><td>Aged level with no recent tests</td><td>age_bars &gt; 500 AND last_touch_age &gt; 200</td><td>Treat as unknown. The system has no evidence it still holds.</td></tr>
+</table>
+
+<h3>12.2 The fragility equation</h3>
+
+<p>Mirror the P equation:</p>
+
+<div class="formula">
+F(t) = 1 − P(t) = 1 − (I(t) · T(t) · A(t))<sup>1/3</sup>
+</div>
+
+<p>plus class-specific overrides (the four classes above produce a class label, not just a scalar). Three blow-through detection plots:</p>
+
+<ul>
+<li><strong>F₁(t)</strong>: F(t) ≥ 0.50 — earliest warning</li>
+<li><strong>F₂(t)</strong>: F(t) ≥ 0.625 — confirmed weakness</li>
+<li><strong>F₃(t)</strong>: F(t) ≥ 0.875 — imminent break</li>
+</ul>
+
+<p>And one additional cross-class detection plot: "Former Monolith" = F(t) crossed up from below 0.30 (a level that was previously strong but is now showing weakness).</p>
+
+<h2 id="validation">13. Validation protocol — how we test before going live</h2>
+
+<ol>
+<li><strong>Variable correlation audit (Phase V1).</strong> For each metadata variable (pool volume, stack count, tier agreement, gap, slope, success rate, touch count, age, Hadfield ratio), compute its individual correlation with the binary outcome (level held vs blew through) over a 90-day historical sample. Drop variables with correlation &lt; 0.05 in absolute value. Goal: ensure every term in the equation earns its keep.</li>
+<li><strong>Combination test (Phase V2).</strong> Compute I, T, A for every historical level. Test three combination strategies: geometric mean, multiplicative, max-of-three, and weighted logistic regression. Compare AUROC on a held-out 30-day validation window. Pick the winner.</li>
+<li><strong>Threshold calibration (Phase V3).</strong> For each candidate P combination, plot the reliability curve (predicted P vs realized hold rate). Apply isotonic regression. Find the predicted-P that corresponds to actual-P = 0.50, 0.625, 0.875. These become the empirical thresholds.</li>
+<li><strong>Regime partitioning (Phase V4).</strong> Re-run V3 separately for each regime axis value (trend, range, gap-up, gap-down, inside-day). Verify the thresholds are stable across regimes; if not, ship regime-conditional thresholds.</li>
+<li><strong>Latency profiling (Phase V5).</strong> Measure end-to-end latency from bar close to alert fire on a sample of TradingView accounts. Confirm &lt; 1 second.</li>
+<li><strong>Inversion validation (Phase V6).</strong> Repeat V1–V3 for the fragility equation. Verify F₃ events predict blow-through within 5 bars at &gt; 70% rate (the empirical "fragility hit rate").</li>
+<li><strong>A/B canary (Phase V7).</strong> Run TIA in shadow alongside the existing canonical VOB for 14 days. Compare: number of alerts, alert quality, false positive rate, missed events. If TIA wins on all four metrics, promote to canonical.</li>
+</ol>
+
+<h2 id="roadmap">14. Implementation roadmap (deferred to next session)</h2>
+
+<table>
+<tr><th>Step</th><th>Artifact</th><th>Owner / when</th></tr>
+<tr><td>R1</td><td>Author <code>VOB_Asym_T3x6_TIA_v1.pine</code> with per-zone touch tracking, I/T/A computation, P combination, three bull + three bear detection plots, one any-call alertcondition for each TIER (3 total alerts, each direction-merged or 6 if separated)</td><td>Next Claude Code session (post review)</td></tr>
+<tr><td>R2</td><td>Author <code>python_ports/vob_asym/canonical_tia_v1.py</code> mirroring the Pine TIA logic with deterministic numpy</td><td>Next session</td></tr>
+<tr><td>R3</td><td>Build <code>verification/tia/run_tia_backtest.py</code> harness for Phase V1–V4</td><td>Next session</td></tr>
+<tr><td>R4</td><td>Run 90-day backtest on top 7 symbols × {1m, 5m, 15m} timeframes</td><td>Local CC MCP session (has data access)</td></tr>
+<tr><td>R5</td><td>Append SD-016 if the framework passes V1–V4: "TIA replaces individual T3 / zone-formation alerts in vob-asym canonical"</td><td>Cloud session</td></tr>
+<tr><td>R6</td><td>Phase V7 canary, then cutover</td><td>2 weeks after R4 completes</td></tr>
+<tr><td>R7</td><td>Strategic-principles loop: <code>krishna-steelman</code> + <code>shiva-redteam</code> on TIA's strategic value at 90 days</td><td>Strategy review cadence</td></tr>
+</table>
+
+<h2 id="open">15. Open questions for Anish</h2>
+
+<ol>
+<li><strong>Threshold labels.</strong> 50% / 62.5% / 87.5% — do you want them named TIER 1 / TIER 2 / TIER 3, or named functionally (e.g. EARLY / CONFIRMED / IRONCLAD, or WHISPER / HARMONIC / MONOLITH)? Neurolinguistic choice matters for operator focus. Default: TIER 1 / 2 / 3 (matches the OS-wide three-tier vocabulary).</li>
+<li><strong>Any-call structure.</strong> One any-call alert (fires on any TIA detection — D₁ bull OR D₁ bear OR D₂ bull OR ... OR F₃ bear) or split into TWO any-calls (one for HOLD predictions D₁/D₂/D₃, one for BLOW-THROUGH predictions F₁/F₂/F₃)? Default: two any-calls — semantically distinct, traders can disable one independently.</li>
+<li><strong>Sensitivity defaults from your settings panel.</strong> Your screenshots show A=850, B=750, C=650, D=550, E=450, F=350 (current chart) versus the canonical 2500/2250/2000/1500/1250/1000. Which do we keep in the TIA v1 — your current chart values, the canonical, both as alternatives?</li>
+<li><strong>Real-time vs bar-close evaluation for D₁.</strong> Real-time evaluation fires earlier but introduces repaint risk. Default proposal: bar-close for all six detection plots. Promote to real-time only after V7 canary confirms stability.</li>
+<li><strong>Removal of singular lines.</strong> Your directive: eliminate the singular T3 / zone-formation alerts. Confirm: TIA v1 should keep the underlying zone DRAWING (visual lines on chart) but remove only the <code>plotshape</code> markers and <code>alertcondition</code>/<code>alert()</code> emissions for individual T3 and zone-formation events? Or remove ALL of it (lines, plots, alerts) — and rely purely on TIA's six detection plots? Default: keep lines for visual context, remove individual plotshapes + alerts.</li>
+<li><strong>Outcome window for "rejected" vs "penetrated."</strong> Per SD-010 outcome_window is per-plot. For TIA's tensile T(t), default outcome window = 5 bars from touch. Confirm.</li>
+<li><strong>Inversion deployment.</strong> Do we ship the F₁/F₂/F₃ blow-through detections in V1, or hold them for V2 once we've validated the P direction? Default: V2 — hold F until P is calibrated, to avoid overwhelming the operator.</li>
+<li><strong>Sensitivity per-tier touch tracking storage.</strong> Per-zone touch history adds state. With max 15 zones per tier × 6 tiers × 2 directions × 64 touches × ~6 fields = ~70K floats. Pine handles this comfortably. Confirm OK.</li>
+</ol>
+
+<h2 id="refs">16. References</h2>
+
+<h3>Materials science (hardness, tensile, toughness)</h3>
+<ul>
+<li>Gao, F.; He, J.; Wu, E.; Liu, S.; Yu, D.; Li, D.; Zhang, S.; Tian, Y. <em>Hardness of covalent crystals.</em> Physical Review Letters, 91(1), 015502 (2003). The Gao-Tian hardness formula.</li>
+<li>Pan, Z.; Sun, H.; Zhang, Y.; Chen, C. <em>Harder than diamond: superior indentation strength of wurtzite BN and lonsdaleite.</em> Physical Review Letters, 102(5), 055503 (2009).</li>
+<li>Agnarsson, I.; Kuntner, M.; Blackledge, T. A. <em>Bioprospecting finds the toughest biological material: extraordinary silk from a giant riverine orb spider.</em> PLoS ONE, 5(9), e11234 (2010). Darwin's bark spider silk toughness.</li>
+<li>Du, Y.; Liu, T.; Yu, B.; Gao, H.; Xu, P.; Wang, J.; Wang, X.; Liu, Y. <em>The resistance to high-velocity projectile impact of high-entropy alloys.</em> Acta Materialia (2020).</li>
+<li>ASM Handbook, Volume 8: Mechanical Testing and Evaluation, ASM International.</li>
+</ul>
+
+<h3>Antifragility</h3>
+<ul>
+<li>Taleb, N. N. <em>Antifragile: Things That Gain from Disorder.</em> Random House (2012). Foundational reference.</li>
+<li>Taleb, N. N.; Douady, R. <em>Mathematical definition, mapping, and detection of (anti)fragility.</em> Quantitative Finance, 13(11), 1677–1689 (2013). Convexity formalism.</li>
+<li>Calabrese, E. J.; Baldwin, L. A. <em>Hormesis: the dose-response revolution.</em> Annual Review of Pharmacology and Toxicology, 43, 175–197 (2003).</li>
+<li>Wolff, J. <em>Das Gesetz der Transformation der Knochen.</em> Hirschwald (1892). Wolff's law for bone remodeling.</li>
+</ul>
+
+<h3>Statistical modeling, survival analysis, extreme value theory</h3>
+<ul>
+<li>Cox, D. R. <em>Regression models and life-tables.</em> Journal of the Royal Statistical Society B, 34(2), 187–220 (1972). Cox proportional hazards.</li>
+<li>Kaplan, E. L.; Meier, P. <em>Nonparametric estimation from incomplete observations.</em> JASA, 53(282), 457–481 (1958).</li>
+<li>Pickands, J. <em>Statistical inference using extreme order statistics.</em> Annals of Statistics, 3, 119–131 (1975). Foundation of EVT.</li>
+<li>Embrechts, P.; Klüppelberg, C.; Mikosch, T. <em>Modelling Extremal Events for Insurance and Finance.</em> Springer (1997).</li>
+</ul>
+
+<h3>Convex analysis and optimization</h3>
+<ul>
+<li>Jensen, J. L. W. V. <em>Sur les fonctions convexes et les inégalités entre les valeurs moyennes.</em> Acta Mathematica, 30, 175–193 (1906). Jensen's inequality.</li>
+<li>Boyd, S.; Vandenberghe, L. <em>Convex Optimization.</em> Cambridge University Press (2004).</li>
+</ul>
+
+<h3>Trading-relevant (price action, order flow)</h3>
+<ul>
+<li>Cont, R.; Stoikov, S.; Talreja, R. <em>A stochastic model for order book dynamics.</em> Operations Research, 58(3), 549–563 (2010).</li>
+<li>Bouchaud, J.-P.; Bonart, J.; Donier, J.; Gould, M. <em>Trades, Quotes and Prices: Financial Markets Under the Microscope.</em> Cambridge University Press (2018).</li>
+</ul>
+
+<h3>In-repo references (this work builds on)</h3>
+<ul>
+<li><code>docs/agentic-os/STANDING_DECISIONS.md</code> — SD-001 through SD-015 (especially SD-002 never-modify, SD-013 strategic pillars including premortem + inversion)</li>
+<li><code>docs/agentic-os/VOB_GPS_FOUR_SATELLITE.md</code> — the 4-satellite triangulation arch (now scheduled per SD-014)</li>
+<li><code>docs/agentic-os/strategy/2026-05-11-agentic-os-full-build-spec.html</code> — the agentic OS master spec</li>
+<li><code>vob-asym/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine</code> — current canonical 6-sensitivity VOB</li>
+<li><code>vob-ladder-watch/versions/VOB_LADDER_WATCH_v1.pine</code> — existing pancake-stacking detector (partial precursor)</li>
+</ul>
+
+<h2 id="glossary">17. Glossary</h2>
+
+<table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>TIA</td><td>Tensile-Impervious-Antifragile. The three-property framework defined in this doc. Replaces individual T3 and zone-formation detection plots in vob-asym canonical with six probability-tiered detection plots (3 bull + 3 bear).</td></tr>
+<tr><td>Imperviousness I(t)</td><td>Property of resisting penetration. Scalar in [0, 1]. Computed from pool volume, tier-confluence count, stack count, and distance to current price.</td></tr>
+<tr><td>Tensile T(t)</td><td>Property of flexing under stress and returning to shape. Scalar in [0, 1]. Computed from pool volume, success rate of past touches, and the toughness integral over touch history.</td></tr>
+<tr><td>Antifragility A(t)</td><td>Property of gaining strength from stress. Scalar in [0, 1]. Computed from the convexity of strength vs touch count (Taleb), Hadfield ratio (high-volume tests vs low-volume tests), and Lindy term (age × test frequency).</td></tr>
+<tr><td>Master probability P(t)</td><td>The composite hold-probability. P(t) = (I · T · A)<sup>1/3</sup> (geometric mean). Equal weights initially; logistic regression after 90 days of outcomes.</td></tr>
+<tr><td>Fragility F(t)</td><td>1 − P(t). The complement: probability the level blows through.</td></tr>
+<tr><td>Detection plots D₁, D₂, D₃</td><td>The three hold-direction detection plots at thresholds 0.50, 0.625, 0.875 of P. Fire on first crossing from below.</td></tr>
+<tr><td>Detection plots F₁, F₂, F₃</td><td>The three blow-through detection plots at thresholds 0.50, 0.625, 0.875 of F. Mirror structure.</td></tr>
+<tr><td>Touch event</td><td>Bar at which price enters a previously-untouched zone (or re-enters after exiting). Tracked per-zone in the new state machine.</td></tr>
+<tr><td>Rejection</td><td>Outcome of a touch where price exited the zone in the same direction it entered, within the outcome_window (default 5 bars).</td></tr>
+<tr><td>Penetration</td><td>Outcome of a touch where price exited the zone in the OPPOSITE direction (crossed all the way through). The "failure" outcome.</td></tr>
+<tr><td>Hadfield ratio</td><td>Antifragility term: E[touch_volume | rejected] / E[touch_volume | penetrated]. &gt; 1 means high-volume tests held (antifragile); &lt; 1 means high-volume tests broke through (fragile).</td></tr>
+<tr><td>Lindy term</td><td>Antifragility term: (touch_count + 1) / (age_bars / median_age + 1). Captures the "what has survived will keep surviving" effect, normalized.</td></tr>
+<tr><td>Toughness K</td><td>Σ (touch_volume × penetration_depth × 𝟙{rejected}) over the zone's touch history. The discrete analogue of the stress-strain area integral.</td></tr>
+<tr><td>Pancake / Braided</td><td>Anish's vocabulary for the visual appearance of multiple sensitivity tiers' zones at the same price level. Maps directly to the n_tier and n_stack variables in I(t).</td></tr>
+<tr><td>Singular line</td><td>An individual T3 buy/sell or zone-formation marker, of which there are 13 + 12 = 25 in the current canonical vob-asym. TIA replaces these with six probability-tiered detection plots in the new TIA file.</td></tr>
+</table>
+
+<h2 id="starter">18. Starter prompt for implementation session</h2>
+
+<div class="callout">
+<strong>Anish: when you're ready to implement, paste this block into the cloud session OR the local Claude Code MCP session. Self-contained.</strong>
+</div>
+
+<pre><code>Read end-to-end:
+
+  docs/agentic-os/research/2026-05-11-tia-vob-framework.html
+
+That document is the approved derivation. Implementation Phase R1 starts now.
+
+Author docs/agentic-os/research/2026-05-11-tia-vob-framework.html-derived
+artifacts in the following order:
+
+  1. vob-asym/versions/VOB_Asym_T3x6_TIA_v1.pine — NEW FILE (per SD-002).
+     Source: the current canonical (VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine).
+     Modifications:
+       a. Add per-zone touch tracking to the `level` UDT:
+          - int   touch_count
+          - array&lt;float&gt; touch_vols
+          - array&lt;float&gt; touch_pen_depths
+          - array&lt;bool&gt;  touch_rejected
+          - int   age_bars
+          - array&lt;float&gt; strength_proxy_at_touch
+       b. Add touch-event detection logic (price enters zone, then exits;
+          classify rejected vs penetrated using 5-bar outcome_window).
+       c. Implement f_imperviousness(zone, n_tier, n_stack, d_price) per §7.1
+       d. Implement f_tensile(zone, v_pool_normalized) per §7.2
+       e. Implement f_antifragile(zone, median_age) per §7.3
+       f. Implement f_master_p(I, T, A) per §7.4 (geometric mean, equal weights)
+       g. REMOVE plotshape() calls for T3a Buy/Sell ... T3f Buy/Sell, Nagasaki,
+          and ZoneBull/ZoneBear A-F markers. Keep zone DRAWING (lines + fills).
+       h. REMOVE the "any_t3" and "any_zone" alertconditions and the per-tier
+          alert() calls.
+       i. ADD six new plotshapes:
+          - TIA D1 Bull / TIA D1 Bear (threshold 0.50)
+          - TIA D2 Bull / TIA D2 Bear (threshold 0.625)
+          - TIA D3 Bull / TIA D3 Bear (threshold 0.875)
+       j. ADD a single any-call alertcondition: fires on any TIA detection.
+          Plus a Bloomberg-format alert() string with full TIA metadata
+          (I, T, A, P, sensitivity tier, tier_agree, n_stack, etc.).
+       k. Add the TIA score to the emission table (4 new rows: I, T, A, P
+          per direction).
+
+  2. python_ports/vob_asym/canonical_tia_v1.py — Python port mirroring step 1.
+     Format: per python_ports/_common conventions. Includes DETECTIONS,
+     OFFSETS, STUBBED, STATE_MACHINES registries.
+
+  3. verification/tia/run_tia_backtest.py — backtest harness for Phase V1-V4.
+     Pulls 90 days of OHLCV via TV-MCP or Massive.com MCP. Computes I, T, A,
+     P per bar per zone. Tracks outcomes. Produces correlation reports per V1
+     and combination test per V2.
+
+DO NOT:
+
+  - Modify the existing canonical vob-asym .pine (SD-002).
+  - Touch the live/ leaderboard yet (cloud session retains that scope).
+  - Skip the premortem on your own implementation — apply the premortem
+    skill to your draft before committing.
+
+After each artifact:
+  git add &lt;files&gt; &amp;&amp; git commit -m "TIA Phase R1 — &lt;summary&gt;"
+  git pull --rebase &amp;&amp; git push -u origin claude/organize-indicators-hierarchy-8JDw1
+
+Reply when R1 is committed. R2-R7 sequence afterward.
+
+Begin.
+</code></pre>
+
+<div class="footer">
+Authored 2026-05-11 by the cloud Claude Code session. Research document, no code shipped. Implementation begins after Anish review. Companions: <code>docs/agentic-os/strategy/2026-05-11-agentic-os-full-build-spec.html</code>, <code>docs/agentic-os/STANDING_DECISIONS.md</code>, <code>docs/agentic-os/VOB_GPS_FOUR_SATELLITE.md</code>.
+</div>
+
+</body>
+</html>
