@@ -1121,7 +1121,10 @@ if bull_zone_tier_n >= 0 and bull_zone_idx >= 0
                         : bull_zone_tier_n == 4 ? slope_ema_e
                         : slope_ema_f
     [I_b_, T_b_, A_b_, P_b_] = f_compute_tia(lv_b, close, tier_agree_bull, stk_bull, pool_med_lower, atr_base, slope_for_tier, bull_gap, true)
-    I_bull := I_b_, T_bull := T_b_, A_bull := A_b_, P_bull := P_b_
+    I_bull := I_b_
+    T_bull := T_b_
+    A_bull := A_b_
+    P_bull := P_b_
 
 if bear_zone_tier_n >= 0 and bear_zone_idx >= 0
     level lv_s = bear_zone_tier_n == 0 ? upper_a.get(bear_zone_idx)
@@ -1138,7 +1141,10 @@ if bear_zone_tier_n >= 0 and bear_zone_idx >= 0
                         : bear_zone_tier_n == 4 ? slope_ema_e
                         : slope_ema_f
     [I_s_, T_s_, A_s_, P_s_] = f_compute_tia(lv_s, close, tier_agree_bear, stk_bear, pool_med_upper, atr_base, slope_for_tier, bear_gap, false)
-    I_bear := I_s_, T_bear := T_s_, A_bear := A_s_, P_bear := P_s_
+    I_bear := I_s_
+    T_bear := T_s_
+    A_bear := A_s_
+    P_bear := P_s_
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1406,8 +1412,10 @@ var array<float> ovlp_bull_lo = array.new<float>()
 var array<float> ovlp_bull_hi = array.new<float>()
 var array<float> ovlp_bear_lo = array.new<float>()
 var array<float> ovlp_bear_hi = array.new<float>()
-ovlp_bull_lo.clear(), ovlp_bull_hi.clear()
-ovlp_bear_lo.clear(), ovlp_bear_hi.clear()
+ovlp_bull_lo.clear()
+ovlp_bull_hi.clear()
+ovlp_bear_lo.clear()
+ovlp_bear_hi.clear()
 
 f_count_overlaps(array<float> trk_lo, array<float> trk_hi, float zlo, float zhi) =>
     int count = 0
