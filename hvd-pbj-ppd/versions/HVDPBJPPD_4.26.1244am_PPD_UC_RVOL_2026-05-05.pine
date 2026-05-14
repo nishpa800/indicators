@@ -1356,6 +1356,9 @@ if conf and (sigP21BullUUUU or sigP21BearUUUU or sigP21BullUUU or sigP21BearUUU 
 // ┌──────────────────────────────────────────────────────────────────────────┐
 // │  PIPELINE C TERMINAL OUTPUTS — all USE fire_* booleans                 │
 // └──────────────────────────────────────────────────────────────────────────┘
+// CS1/CS2 are only allowed to plot when a UU/UUU/UUUU is firing on the same bar.
+bool any_uu_bull = sigUUBull or sigP21BullUUU or sigP21BullUUUU
+bool any_uu_bear = sigUUBear or sigP21BearUUU or sigP21BearUUUU
 bool fire_BullUUUU=show_BullUUUU and sigP21BullUUUU and masterGate, bool fire_BullUUU=show_BullUUU and sigP21BullUUU and masterGate
 bool fire_BullUU=show_BullUU and uu_gated_bull and masterGate
 bool fire_AlphaStrikeB=show_AlphaStrikeB and sigAlphaStrikeBull and masterGate, bool fire_FoxtrotB=show_FoxtrotB and sigFoxtrotBull and masterGate
@@ -1363,7 +1366,7 @@ bool fire_OmegaLong=show_OmegaLong and sigOmegaLong and masterGate, bool fire_Om
 bool fire_ODBull=show_ODBull and sigODBull and masterGate
 bool fire_DispConsBull2=show_DispConsBull2 and sigDispConsBull2 and masterGate, bool fire_DispConsBull3=show_DispConsBull3 and sigDispConsBull3 and masterGate
 bool fire_GolfBull=show_GolfBull and sigGolfBull and masterGate, bool fire_PAFBull=show_PAFBull and sigPAFBull and masterGate
-bool fire_CS1B=show_CS1B and csNew1_Bull and masterGate, bool fire_CS2B=show_CS2B and csNew2_Bull and masterGate, bool fire_CS3B=show_CS3B and csNew3_Bull and masterGate
+bool fire_CS1B=show_CS1B and csNew1_Bull and any_uu_bull and masterGate, bool fire_CS2B=show_CS2B and csNew2_Bull and any_uu_bull and masterGate, bool fire_CS3B=show_CS3B and csNew3_Bull and masterGate
 bool fire_CCBull=show_CCBull and sigCCBull and masterGate, bool fire_LSCBull=show_LSCBull and sigLSCBull and masterGate
 bool fire_BullFloor=show_BullFloor and floor_gated and masterGate, bool fire_Bull2ndFloor=show_Bull2ndFloor and floor2_gated and masterGate
 bool fire_HWBull=show_HWBull and hwBull and masterGate, bool fire_SuperBull=show_SuperBull and superBull and masterGate, bool fire_SDuperBull=show_SDuperBull and sduperBull and masterGate
@@ -1375,7 +1378,7 @@ bool fire_AlphaStrikeR=show_AlphaStrikeR and sigAlphaStrikeBear and masterGate, 
 bool fire_ODBear=show_ODBear and sigODBear and masterGate
 bool fire_DispConsBear2=show_DispConsBear2 and sigDispConsBear2 and masterGate, bool fire_DispConsBear3=show_DispConsBear3 and sigDispConsBear3 and masterGate
 bool fire_GolfBear=show_GolfBear and sigGolfBear and masterGate, bool fire_PAFBear=show_PAFBear and sigPAFBear and masterGate
-bool fire_CS1R=show_CS1R and csNew1_Bear and masterGate, bool fire_CS2R=show_CS2R and csNew2_Bear and masterGate, bool fire_CS3R=show_CS3R and csNew3_Bear and masterGate
+bool fire_CS1R=show_CS1R and csNew1_Bear and any_uu_bear and masterGate, bool fire_CS2R=show_CS2R and csNew2_Bear and any_uu_bear and masterGate, bool fire_CS3R=show_CS3R and csNew3_Bear and masterGate
 bool fire_CCBear=show_CCBear and sigCCBear and masterGate, bool fire_LSCBear=show_LSCBear and sigLSCBear and masterGate
 bool fire_BearRooftop=show_BearRooftop and anyBearRoof and masterGate, bool fire_BearPent=show_BearPenthouse and anyBearPent and masterGate
 bool fire_HWBear=show_HWBear and hwBear and masterGate, bool fire_SuperBear=show_SuperBear and superBear and masterGate, bool fire_SDuperBear=show_SDuperBear and sduperBear and masterGate
@@ -1396,34 +1399,40 @@ bool hvd_pbj_bull = hvd_fire_bull and nz(sigBullPBJ[1])
 bool hvd_pb_bear  = hvd_fire_bear and nz(sigBearPB[1])
 bool hvd_pbj_bear = hvd_fire_bear and nz(sigBearPBJ[1])
 
+// HV+D detection plots additionally require a same-bar Unified Combo (CS3).
+// HV+D fires bar N (plots offset=-1 → visual N-1); csNew3 also plots offset=-1,
+// so a same-bar csNew3 places the UC visual on the same candle as HV+D.
+bool hvd_uc_bull = csNew3_Bull
+bool hvd_uc_bear = csNew3_Bear
+
 // ============================================================================
 // STANDALONE PLOTS — HV+D (2)
 // ============================================================================
-plotshape(en_hvd_bull and hvd_fire_bull and masterGate, "HV+D Bull", shape.triangleup,   location.top, color.new(#00E676, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
-plotshape(en_hvd_bear and hvd_fire_bear and masterGate, "HV+D Bear", shape.triangledown, location.bottom, color.new(#FF1744, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
+plotshape(en_hvd_bull and hvd_fire_bull and hvd_uc_bull and masterGate, "HV+D Bull", shape.triangleup,   location.top, color.new(#00E676, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
+plotshape(en_hvd_bear and hvd_fire_bear and hvd_uc_bear and masterGate, "HV+D Bear", shape.triangledown, location.bottom, color.new(#FF1744, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
 
 // ============================================================================
 // HV+D ↔ PBJ CO-OCCURRENCE (2-way AND)
 // ============================================================================
-plotshape(en_hvd_pb_bull  and hvd_pb_bull and masterGate,  "PB Bull",  shape.labelup,  location.bottom, color.new(color.aqua, 75),   size=size.small,  text="HV+D\nPB",  textcolor=color.white, offset=-1)
-plotshape(en_hvd_pbj_bull and hvd_pbj_bull and masterGate, "PBJ Bull", shape.diamond,  location.top, color.new(color.yellow, 25), size=size.normal, text="HV+D\nPBJ", textcolor=color.white, offset=-1)
-plotshape(en_hvd_pb_bear  and hvd_pb_bear and masterGate,  "PB Bear",  shape.labeldown, location.top,   color.new(color.orange, 75), size=size.small,  text="HV+D\nPB",  textcolor=color.white, offset=-1)
-plotshape(en_hvd_pbj_bear and hvd_pbj_bear and masterGate, "PBJ Bear", shape.diamond,  location.top,    color.new(color.red, 25),    size=size.normal, text="HV+D\nPBJ", textcolor=color.white, offset=-1)
+plotshape(en_hvd_pb_bull  and hvd_pb_bull and hvd_uc_bull and masterGate,  "PB Bull",  shape.labelup,  location.bottom, color.new(color.aqua, 75),   size=size.small,  text="HV+D\nPB",  textcolor=color.white, offset=-1)
+plotshape(en_hvd_pbj_bull and hvd_pbj_bull and hvd_uc_bull and masterGate, "PBJ Bull", shape.diamond,  location.top, color.new(color.yellow, 25), size=size.normal, text="HV+D\nPBJ", textcolor=color.white, offset=-1)
+plotshape(en_hvd_pb_bear  and hvd_pb_bear and hvd_uc_bear and masterGate,  "PB Bear",  shape.labeldown, location.top,   color.new(color.orange, 75), size=size.small,  text="HV+D\nPB",  textcolor=color.white, offset=-1)
+plotshape(en_hvd_pbj_bear and hvd_pbj_bear and hvd_uc_bear and masterGate, "PBJ Bear", shape.diamond,  location.top,    color.new(color.red, 25),    size=size.normal, text="HV+D\nPBJ", textcolor=color.white, offset=-1)
 
 // ============================================================================
 // HV+D & HV+D+PBJ ALERTS — Bloomberg format
 // ============================================================================
-if en_hvd_bull and hvd_fire_bull and masterGate and not hvd_pbj_bull and not hvd_pb_bull
+if en_hvd_bull and hvd_fire_bull and hvd_uc_bull and masterGate and not hvd_pbj_bull and not hvd_pb_bull
     alert("BULL | " + _FIRST + " | HV+D", alert.freq_once_per_bar_close)
-if en_hvd_bear and hvd_fire_bear and masterGate and not hvd_pbj_bear and not hvd_pb_bear
+if en_hvd_bear and hvd_fire_bear and hvd_uc_bear and masterGate and not hvd_pbj_bear and not hvd_pb_bear
     alert("BEAR | " + _FIRST + " | HV+D", alert.freq_once_per_bar_close)
-if en_hvd_pbj_bull and hvd_pbj_bull and masterGate
+if en_hvd_pbj_bull and hvd_pbj_bull and hvd_uc_bull and masterGate
     alert("BULL | " + _FIRST + " | HV+D+PBJ", alert.freq_once_per_bar_close)
-if en_hvd_pb_bull and hvd_pb_bull and masterGate
+if en_hvd_pb_bull and hvd_pb_bull and hvd_uc_bull and masterGate
     alert("BULL | " + _FIRST + " | HV+D+PB", alert.freq_once_per_bar_close)
-if en_hvd_pbj_bear and hvd_pbj_bear and masterGate
+if en_hvd_pbj_bear and hvd_pbj_bear and hvd_uc_bear and masterGate
     alert("BEAR | " + _FIRST + " | HV+D+PBJ", alert.freq_once_per_bar_close)
-if en_hvd_pb_bear and hvd_pb_bear and masterGate
+if en_hvd_pb_bear and hvd_pb_bear and hvd_uc_bear and masterGate
     alert("BEAR | " + _FIRST + " | HV+D+PB", alert.freq_once_per_bar_close)
 
 // ============================================================================
