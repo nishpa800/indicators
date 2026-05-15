@@ -1,6 +1,14 @@
 name: Pylint
 
-on: [push]
+on:
+  push:
+    paths:
+      - '**/*.py'
+      - '.github/workflows/pylint.yml'
+  pull_request:
+    paths:
+      - '**/*.py'
+      - '.github/workflows/pylint.yml'
 
 jobs:
   build:
@@ -20,4 +28,4 @@ jobs:
         pip install pylint
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        pylint --fail-under=9.0 $(git ls-files '*.py')
