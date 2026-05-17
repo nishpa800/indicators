@@ -1,6 +1,47 @@
+# OS / editor
 .DS_Store
 *.swp
 *.swo
 *~
 .idea/
 .vscode/
+
+# Local overrides / secrets — never commit
+*.local.*
+CLAUDE.local.md
+.claude/settings.local.json
+.env
+.env.*
+secrets/
+**/credentials*
+
+# Data lake — never commit raw or normalized data
+data/raw/
+data/normalized/
+data/derived/
+data/manifests/*.parquet
+data/manifests/*.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# Vendor caches
+*.parquet
+*.csv.gz
+!data-sources/**/example*.csv.gz
+!data-sources/**/example*.parquet
+
+# Logs
+*.log
+logs/
