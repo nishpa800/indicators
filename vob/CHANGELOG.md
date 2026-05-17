@@ -1,5 +1,65 @@
 # VOB Indicator Suite — Changelog
 
+## VOB_Asym_T3x6_MutEx_Claude_v10_2026-05-17.pine — v10 — 2026-05-17
+
+Per-zone OHLC capture, all three visual tables removed, new VLB Strict
+Ladder detection (bull + bear). Indicator title bumped to v10.
+
+Per-zone OHLC capture:
+- `level` UDT extended with four fields: `o`, `h`, `l`, `c` — the open,
+  high, low, and close of the origin (swing) bar where the zone formed.
+  Volume (`vol`) was already captured; this adds the rest of the OHLCV
+  snapshot for every zone in every tier A–F, bull and bear.
+- Captured in `f_vob()` at the same `level.new(...)` call that sets the
+  zone's price boundaries — no schema change for downstream consumers
+  except the four new readable fields.
+- Invalidated zones still write all-na (na, na, na, na, na, na, na, na, na)
+  so existing "is this zone alive?" checks (`na(z.vol)`) keep working.
+
+Tables removed (visual only — data capture preserved):
+- Emission Comprehensive Table (`etbl`, top-left, definitions + snapshot)
+  REMOVED.
+- Audit Table (`tbl`, last-3 zone events per sensitivity) REMOVED.
+- T3 Signal Table (`tbl2`, last-3 T3/Nagasaki fires) REMOVED.
+- All `tbl_*` / `tbl2_*` styling inputs, position-string switch blocks,
+  and the `f_emit_row` / `f_evt_cell` / `f_t3_cell` helpers REMOVED.
+- The underlying history arrays (`hb_*`, `hs_*`, `ht3*`, `h_nag`) and
+  push functions (`f_push_hist`, `f_push_t3_hist`) are PRESERVED — the
+  data is still acquired, just no longer rendered as on-chart tables.
+- `hist_depth` input moved from "Audit Table" group to "Emission Layer".
+
+New detection — VLB Strict Ladder (bull + bear, one plotshape each):
+- **VLB Bull** (`VLB↑` green up-triangle below the bar) — Fires on the
+  exact bar where bullish zone-A completes a strict chronological
+  F→E→D→C→B→A ladder, where at every step the new zone's price range
+  is not entirely below the prior zone (`new.high >= prior.low`).
+- **VLB Bear** (`VLB↓` red down-triangle above the bar) — Mirror.
+  Strict F→E→D→C→B→A bearish chronological ladder with
+  `new.low <= prior.high` at every step.
+- Rolling-window state machine:
+  * Any bearish zone (any tier) on a bar resets the bullish window;
+    no new F can start on that same bar.
+  * A wrong-tier bullish zone (including a fresh F mid-ladder) kills
+    the window.
+  * Expected tier with a price-fail (`new.high < prior.low`) kills it.
+  * After fire OR kill the window resets to waiting-for-F.
+- Per-step OHLCV is snapshotted into var floats so the firing-bar alert
+  reports the ORIGINAL zone OHLCV (even if intermediate zones were later
+  invalidated by close-through).
+- New input toggles: `show_vlb_bull`, `show_vlb_bear` (group
+  "Detection — VLB Strict Ladder"), defaulting ON.
+- 1:1 plotshape ↔ alert parity: same boolean drives the visual and the
+  `alert()`; gated by `barstate.isconfirmed` so the plot only paints on
+  confirmed bar close, matching `alert.freq_once_per_bar_close`.
+- New consolidated `alertcondition("VLB Strict Ladder (v10)", ...)`.
+- Bloomberg-format alert payload:
+  `VLB_BULL|TICKER|EXCHANGE|TF|DIR|CLOSE|SENS_A..F|`
+  `ZF_O|ZF_H|ZF_L|ZF_C|ZF_V| ... |ZA_O|ZA_H|ZA_L|ZA_C|ZA_V|`
+  `RSI|VOLRANK|SESS|BULLSTACK|BULLGAP` (bear is the mirror with
+  `BEARSTACK|BEARGAP`).
+
+Plot budget: 34 plotshapes + 4 alertconditions = 38 / 64 outputs.
+
 ## VOB_Asym_T3x6_MutEx_Claude_v9_2026-05-12.pine — v9.1 patch — 2026-05-12
 
 Adds the "Wrong-Way 3" family + makes every v9 detection non-repainting
