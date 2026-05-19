@@ -4,7 +4,7 @@
 // ║  ═══════════════════════════════════════════════════════════════════════       ║
 // ║  EXCEPTIONS                                                                  ║
 // ║  ═══════════════════════════════════════════════════════════════════════       ║
-// ║  CHECKBOX BYPASSERS: Nagasaki (fire_NagPlusBull always plots/alerts)         ║
+// ║  CHECKBOX BYPASSERS: None. Every alert + plot is gated by its checkbox.      ║
 // ║  AGGREGATOR BYPASSERS: None.                                                 ║
 // ║  ═══════════════════════════════════════════════════════════════════════       ║
 // ╠════════════════════════════════════════════════════════════════════════════════╣
@@ -345,6 +345,8 @@ show_GolfBull=input.bool(true,"Golf Bull",group=grp_t1,inline="j",tooltip="3-bar
 show_GolfBear=input.bool(true,"Golf Bear",group=grp_t1,inline="j",tooltip="Bear mirror.")
 show_PAFBull=input.bool(true,"PAF PUP B2B",group=grp_t1,inline="k",tooltip="Back-to-back PUP + FAUNA bull.")
 show_PAFBear=input.bool(true,"PAF PPD B2B",group=grp_t1,inline="k",tooltip="Bear mirror.")
+show_NagPlusBull=input.bool(true,"NAG+ Bull",group=grp_t1,inline="n1",tooltip="Plot for Nagasaki + bull directional confirmation. Plot only — no separate alert.")
+show_Nagasaki=input.bool(true,"Nagasaki Alert",group=grp_t1,inline="n2",tooltip="Raw Nagasaki (all-time-high volume) alert. Direction in payload (BULL/BEAR/BOTH/NEUTRAL). Uncheck to suppress.")
 
 grp_t1b = "★ TIER 1B: Combo Sets ★"
 show_CS1B=input.bool(false,"CS1 FVG Bull",group=grp_t1b,inline="1",tooltip="FVG Combo consolidated.")
@@ -1367,7 +1369,7 @@ bool fire_CS1B=show_CS1B and csNew1_Bull and masterGate, bool fire_CS2B=show_CS2
 bool fire_CCBull=show_CCBull and sigCCBull and masterGate, bool fire_LSCBull=show_LSCBull and sigLSCBull and masterGate
 bool fire_BullFloor=show_BullFloor and floor_gated and masterGate, bool fire_Bull2ndFloor=show_Bull2ndFloor and floor2_gated and masterGate
 bool fire_HWBull=show_HWBull and hwBull and masterGate, bool fire_SuperBull=show_SuperBull and superBull and masterGate, bool fire_SDuperBull=show_SDuperBull and sduperBull and masterGate
-bool fire_NagPlusBull=sigNagPlusBull
+bool fire_NagPlusBull=show_NagPlusBull and sigNagPlusBull and masterGate
 
 bool fire_BearUUUU=show_BearUUUU and sigP21BearUUUU and masterGate, bool fire_BearUUU=show_BearUUU and sigP21BearUUU and masterGate
 bool fire_BearUU=show_BearUU and sigUUBear and masterGate
@@ -1934,6 +1936,6 @@ if conf
     if en_aggregate and str.length(rs)>0
         alert("BEAR | " + _FIRST + " | " + rs, alert.freq_once_per_bar_close)
 
-    if sigNagasaki
+    if show_Nagasaki and sigNagasaki and masterGate
         string nd=nag_dir_bull and nag_dir_bear?"BOTH":nag_dir_bull?"BULL":nag_dir_bear?"BEAR":"NEUTRAL"
         alert("BULL | " + _FIRST + " | NAGASAKI " + nd, alert.freq_once_per_bar_close)
