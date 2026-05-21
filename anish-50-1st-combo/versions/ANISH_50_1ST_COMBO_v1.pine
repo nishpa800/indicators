@@ -1,0 +1,181 @@
+//@version=6
+// ============================================================================
+// Anish 50% 1st Combo (FIXED — Non-Repainting)
+//
+// FIXES APPLIED:
+// 1. All signal generation gated by barstate.isconfirmed
+// 2. All var-state updates (TB/Foster counters) gated by barstate.isconfirmed
+//    to prevent mid-bar state corruption
+// 3. Plots and alerts use the exact same fire_* booleans → 1:1 parity
+// ============================================================================
+
+indicator("Anish 50% 1st Combo (NR)", overlay=true, max_bars_back=2000)
+
+// === INPUTS ===
+barSize = input.float(3.0, "% Change (Barsize)", minval=0.1, step=0.1, group="Pocket Pivot")
+ppLookback = input.int(10, "Lookback Days", minval=1, group="Pocket Pivot")
+gapUpEnabled = input.bool(false, "Gap-Up Required", group="Gap Detection")
+gapDownEnabled = input.bool(false, "Gap-Down Required", group="Gap Detection")
+gapValue = input.float(0.5, "Gap Value %", minval=0.1, step=0.1, group="Gap Detection")
+
+// === TB/FOSTER SIGNAL INPUTS ===
+minAnishBars = input.int(5, "Min Anish Bars (X)", minval=1, group="TB/Foster Signals", tooltip="Minimum consecutive bars with Anish signal before transition")
+followUpBars = input.int(2, "Follow-up PP Bars (Y)", minval=1, group="TB/Foster Signals", tooltip="Number of bars with PP but no Anish needed to trigger signal")
+
+// === CONFIRMED BAR GATE ===
+conf = barstate.isconfirmed
+
+// === CORE CALCS ===
+float ema50 = ta.ema(close, 50)
+float ema150 = ta.ema(close, 150)
+float ema200 = ta.ema(close, 200)
+float ema200_1m = ema200[21]
+float w52Hi = ta.highest(high, 252)
+float w52Lo = ta.lowest(low, 252)
+
+// === ANISH BULL CONDITIONS (Stage 2 Uptrend) ===
+bool bullPass = close > ema50 and close >= ema150 and close >= ema200
+     and ema50 > ema150 and ema50 > ema200 and ema150 >= ema200
+     and ema200 > ema200_1m
+     and close > (w52Lo * 1.30) and close >= (w52Hi * 0.75)
+
+// === ANISH BEAR CONDITIONS (Stage 4 Downtrend) ===
+bool bearPass = close < ema50 and close <= ema150 and close <= ema200
+     and ema50 < ema150 and ema50 < ema200 and ema150 <= ema200
+     and ema200 < ema200_1m
+     and close < (w52Hi * 0.70) and close <= (w52Lo * 1.25)
+
+// === POCKET PIVOT CALCS ===
+float redVol = close < open ? volume : 0.0
+float greenVol = close > open ? volume : 0.0
+float hiRedVol = ta.highest(redVol[1], ppLookback)
+float hiGreenVol = ta.highest(greenVol[1], ppLookback)
+
+bool priceUp = ((close - open) / open) * 100 > barSize
+bool priceDn = ((open - close) / open) * 100 > barSize
+bool volBull = volume > hiRedVol
+bool volBear = volume > hiGreenVol
+
+bool sPPBull = priceUp and volBull
+bool sPPBear = priceDn and volBear
+
+// === GAP DETECTION ===
+bool gapUp = open > (close[1] * (1 + gapValue / 100))
+bool gapDn = open < (close[1] * (1 - gapValue / 100))
+bool gapUpSig = gapUpEnabled and gapUp
+bool gapDnSig = gapDownEnabled and gapDn
+
+// === CONFLUENCE SIGNALS ===
+bool sAllBull = sPPBull and gapUpSig and bullPass
+bool sAllBear = sPPBear and gapDnSig and bearPass
+
+// === SUPER PPD / SUPER PUP (Same-bar confluence) ===
+bool superPPD = sPPBear and bearPass
+bool superPup = sPPBull and bullPass
+
+// === TB SIGNAL LOGIC (Bearish) ===
+// FIX: All var-state updates gated by conf to prevent mid-bar corruption.
+var int consecAnishBull = 0
+var bool reachedMinBull = false
+var int noBullWithPPDCount = 0
+var bool tbSignal = false
+
+if conf
+    // Reset tbSignal each confirmed bar (it's a one-bar pulse)
+    tbSignal := false
+
+    // Track consecutive Anish Bull bars
+    consecAnishBull := bullPass ? consecAnishBull + 1 : 0
+
+    // Track if we've reached the minimum threshold
+    if consecAnishBull >= minAnishBars
+        reachedMinBull := true
+
+    // Track consecutive bars with no Anish Bull but WITH PPD
+    if not bullPass and sPPBear and reachedMinBull
+        noBullWithPPDCount := noBullWithPPDCount + 1
+    else if bullPass
+        noBullWithPPDCount := 0
+    else if not sPPBear and not bullPass and reachedMinBull
+        // PPD disappeared without completing - reset tracking
+        noBullWithPPDCount := 0
+        reachedMinBull := false
+
+    // TB Signal triggers when we hit Y bars of no-bull + PPD
+    if noBullWithPPDCount == followUpBars
+        tbSignal := true
+        reachedMinBull := false
+        noBullWithPPDCount := 0
+
+// === FOSTER SIGNAL LOGIC (Bullish) ===
+// FIX: All var-state updates gated by conf to prevent mid-bar corruption.
+var int consecAnishBear = 0
+var bool reachedMinBear = false
+var int noBearWithPUPCount = 0
+var bool fosterSignal = false
+
+if conf
+    // Reset fosterSignal each confirmed bar (it's a one-bar pulse)
+    fosterSignal := false
+
+    // Track consecutive Anish Bear bars
+    consecAnishBear := bearPass ? consecAnishBear + 1 : 0
+
+    // Track if we've reached the minimum threshold
+    if consecAnishBear >= minAnishBars
+        reachedMinBear := true
+
+    // Track consecutive bars with no Anish Bear but WITH PUP
+    if not bearPass and sPPBull and reachedMinBear
+        noBearWithPUPCount := noBearWithPUPCount + 1
+    else if bearPass
+        noBearWithPUPCount := 0
+    else if not sPPBull and not bearPass and reachedMinBear
+        // PUP disappeared without completing - reset tracking
+        noBearWithPUPCount := 0
+        reachedMinBear := false
+
+    // Foster Signal triggers when we hit Y bars of no-bear + PUP
+    if noBearWithPUPCount == followUpBars
+        fosterSignal := true
+        reachedMinBear := false
+        noBearWithPUPCount := 0
+
+// === FIRE CONDITIONS (conf-gated, same boolean for plot + alert) ===
+bool fire_PPBull    = conf and sPPBull
+bool fire_PPBear    = conf and sPPBear
+bool fire_bullPass  = conf and bullPass
+bool fire_bearPass  = conf and bearPass
+bool fire_allBull   = conf and sAllBull
+bool fire_allBear   = conf and sAllBear
+bool fire_superPup  = conf and superPup
+bool fire_superPPD  = conf and superPPD
+// tbSignal and fosterSignal are already conf-gated via the if-conf block above
+bool fire_tb        = tbSignal
+bool fire_foster    = fosterSignal
+
+// === PLOTS (use fire_* booleans) ===
+plotshape(fire_PPBull,    "Pocket Pivot Bull", shape.triangleup,   location.belowbar, color.blue,   size=size.normal, text="PUP")
+plotshape(fire_PPBear,    "Pocket Pivot Bear", shape.triangledown, location.abovebar, color.red,    size=size.normal, text="PPD")
+plotshape(fire_bullPass,  "Anish Bull",        shape.diamond,      location.abovebar, color.green,  size=size.small)
+plotshape(fire_bearPass,  "Anish Bear",        shape.diamond,      location.belowbar, color.red,    size=size.small)
+plotshape(fire_allBull,   "All Three Bull",    shape.circle,       location.abovebar, color.yellow, size=size.normal)
+plotshape(fire_allBear,   "All Three Bear",    shape.circle,       location.belowbar, color.fuchsia,size=size.normal)
+
+plotshape(fire_superPup,  "Super Pup",  shape.labelup,   location.belowbar, color.lime,   size=size.large, text="S-PUP",   textcolor=color.black)
+plotshape(fire_superPPD,  "Super PPD",  shape.labeldown,  location.abovebar, color.maroon, size=size.large, text="S-PPD",   textcolor=color.white)
+plotshape(fire_foster,    "Foster Buy", shape.labelup,   location.belowbar, color.aqua,   size=size.large, text="FOSTER",  textcolor=color.black)
+plotshape(fire_tb,        "TB Sell",    shape.labeldown,  location.abovebar, color.purple, size=size.large, text="TB",      textcolor=color.white)
+
+// === ALERTS (same fire_* booleans as plots → 1:1 parity) ===
+alertcondition(fire_PPBull,    "Pocket Pivot Bull",  "Bullish Pocket Pivot on {{ticker}}")
+alertcondition(fire_PPBear,    "Pocket Pivot Bear",  "Bearish Pocket Pivot on {{ticker}}")
+alertcondition(fire_bullPass,  "Anish Bull Pass",    "Anish Patel Bull Pass - Stage 2 Uptrend on {{ticker}}")
+alertcondition(fire_bearPass,  "Anish Bear Pass",    "Anish Patel Bear Pass - Stage 4 Downtrend on {{ticker}}")
+alertcondition(fire_allBull,   "All Three Bull",     "PP + Gap Up + Anish Bull on {{ticker}}")
+alertcondition(fire_allBear,   "All Three Bear",     "PP + Gap Down + Anish Bear on {{ticker}}")
+alertcondition(fire_superPup,  "Super Pup",          "PUP + Anish Bull Confluence - Strong Buy on {{ticker}}")
+alertcondition(fire_superPPD,  "Super PPD",           "PPD + Anish Bear Confluence - Strong Sell on {{ticker}}")
+alertcondition(fire_foster,    "Foster Buy",          "Foster Signal - Rescue Buy after Bear Phase on {{ticker}}")
+alertcondition(fire_tb,        "TB Sell",             "TB Signal - Breakdown after Bull Phase on {{ticker}}")
+// ============================================================================

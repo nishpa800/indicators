@@ -1,5 +1,22 @@
 # Heavy Combo Toggles — CHANGELOG
 
+## v2 — 2026-05-10
+
+Adds `alert()` function calls. v1 had only `alertcondition()` declarations
+(which require manual per-plot alert setup in TradingView and only ever
+fire one of the three). v2 lets you set a single "Any alert() function
+call" alert on this indicator and get a notification for every checked
+combo. Each alert message lists which combo families fired on the same
+bar (HYY / HN / HNV / HT / NHx2), prefixed with ticker, timeframe, and
+direction. `freq_once_per_bar_close` so no repaint mid-bar.
+
+- New per-combo `fire_*` booleans (`f_HYYBull`, `f_HNBull`, etc.) gate
+  alerts AND drive the master OR-gates — single source of truth.
+- v1's three `alertcondition()` declarations are kept for backward
+  compat.
+- Plot logic, offsets, eligibility checkboxes, pipelines, and combo
+  building blocks unchanged from v1.
+
 ## v1 — 2026-05-08
 
 Initial version. Collapses Heavy PENTAGON's 15 Heavy-Combo plotshapes into 3
