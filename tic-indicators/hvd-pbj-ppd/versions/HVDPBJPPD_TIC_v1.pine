@@ -61,7 +61,7 @@
 // ╚════════════════════════════════════════════════════════════════════════════════╝
 
 //@version=5
-indicator("HV+D ↔ PBJ ↔ 4.26.1244am added PPD UC RVOL 1x w/HV+D and +PBJ", shorttitle="HVD PBJ PPD", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
+indicator("HV+D ↔ PBJ ↔ PPD — TIC v1 (tick-safe)", shorttitle="HVD PBJ PPD TIC", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
 
 import TradingView/ta/7 as tv_ta
 
@@ -73,6 +73,27 @@ conf = barstate.isconfirmed
 int tfSec = timeframe.in_seconds(timeframe.period)
 f_add(string base, string part) => base == "" ? part : base + " + " + part
 atr14 = ta.atr(14)
+
+// ── TICK-CHART DETECTION ──
+// tv_ta.relativeVolume() calls timeframe.change() internally, which throws
+// RE10023 on tick-based timeframes. Detect once and route around it.
+bool _isTick = str.contains(timeframe.period, "T")
+
+// TIC-safe relative-volume wrapper.
+// On time-based charts: defer to TradingView's library implementation.
+// On tick charts: use a simple SMA proxy (current bar volume vs trailing avg).
+//   The third return slot is unused throughout the indicator, so we return 0.0.
+f_relVol_safe(int _len, string _anchor, bool _cum, bool _rt) =>
+    float _curr = na
+    float _past = na
+    if _isTick
+        _curr := volume
+        _past := nz(ta.sma(volume, _len)[1], 1.0)
+    else
+        [_c, _p, _u] = tv_ta.relativeVolume(_len, _anchor, _cum, _rt)
+        _curr := _c
+        _past := _p
+    [_curr, _past, 0.0]
 
 // ── MASTER TOGGLES ──
 grpM = "★ MASTER ★"
@@ -483,7 +504,7 @@ sigMOAB=conf and bb_baseBearish and (bb_normalizedPrice>=th_gs_moab)
 sigBullRVOL1x=conf and bb_baseBullish and bb_inRange(bb_normalizedPrice,th_1x,th_gs_moab) and not sigGrandSlam
 sigBearRVOL1x=conf and bb_baseBearish and bb_inRange(bb_normalizedPrice,th_1x,th_gs_moab) and not sigMOAB
 
-[currentVolume_reg,pastVolume_reg,_unused]=tv_ta.relativeVolume(reg_length,reg_anchorTimeframe,reg_calculationMode=="Cumulative",reg_adjustRealtime)
+[currentVolume_reg,pastVolume_reg,_unused]=f_relVol_safe(reg_length,reg_anchorTimeframe,reg_calculationMode=="Cumulative",reg_adjustRealtime)
 relVolRatio=currentVolume_reg/pastVolume_reg
 sigWTC=conf and (relVolRatio>th_wtc) and (relVolRatio<=th_hiroshima)
 sigHiroshima=conf and (relVolRatio>th_hiroshima)
@@ -938,8 +959,8 @@ bool sigFoxtrotBull=conf and sigFAUNABull and nz(sigFAUNABull[1]) and nz(sigFAUN
 bool sigFoxtrotBear=conf and sigFAUNABear and nz(sigFAUNABear[1]) and nz(sigFAUNABear[2]) and nz(sigFAUNABear[3])
 
 // === ENGINE 11: LONG/SHORT ===
-[currentVol_r,pastVol_r,_r2]=tv_ta.relativeVolume(reg_length,reg_anchorTimeframe,false,reg_adjustRealtime)
-[currentVol_c,pastVol_c,_c2]=tv_ta.relativeVolume(reg_length,reg_anchorTimeframe,true,reg_adjustRealtime)
+[currentVol_r,pastVol_r,_r2]=f_relVol_safe(reg_length,reg_anchorTimeframe,false,reg_adjustRealtime)
+[currentVol_c,pastVol_c,_c2]=f_relVol_safe(reg_length,reg_anchorTimeframe,true,reg_adjustRealtime)
 float ls_regRatio=nz(currentVol_r/pastVol_r), float ls_cumRatio=nz(currentVol_c/pastVol_c)
 float ls_bodyRat=(high-low)==0?0.0:math.abs(close-open)/(high-low)
 bool sigLong1=conf and ls_regRatio>ls_reg1 and ls_cumRatio>ls_cum1 and close>open and ls_bodyRat>=ls_body1

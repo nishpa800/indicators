@@ -61,7 +61,7 @@
 // ╚════════════════════════════════════════════════════════════════════════════════╝
 
 //@version=5
-indicator("HV+D ↔ PBJ ↔ 4.26.1244am added PPD UC RVOL 1x w/HV+D and +PBJ", shorttitle="HVD PBJ PPD", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
+indicator("BASE HV+D ↔ PBJ ↔ PPD v1 (no HTF)", shorttitle="BASE HVD PBJ", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
 
 import TradingView/ta/7 as tv_ta
 
@@ -113,28 +113,6 @@ bool masterGate = not en_firstBarOnly or (isFirstBar and _anyHV_bar0)
 // ║                                                                          ║
 // ╚════════════════════════════════════════════════════════════════════════════╝
 
-hvd_tf2sec(string t) =>
-    switch t
-        "1 Min"   => 60
-        "2 Min"   => 120
-        "3 Min"   => 180
-        "4 Min"   => 240
-        "5 Min"   => 300
-        "10 Min"  => 600
-        "15 Min"  => 900
-        "30 Min"  => 1800
-        "1 Hour"  => 3600
-        "2 Hour"  => 7200
-        "3 Hour"  => 10800
-        "4 Hour"  => 14400
-        "1 Day"   => 86400
-        "2 Day"   => 172800
-        "3 Day"   => 259200
-        "1 Week"  => 604800
-        "1 Month" => 2592000
-        "3 Month" => 7776000
-        => 0
-
 // === PIPELINE A: DISPLACEMENT 1 (BASE) ===
 grp_hvd1 = "── HV+D: DISP BASE ──"
 d1_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd1)
@@ -148,34 +126,6 @@ bool  d1_bullFVG  = low > high[2] and close[1] > open[1]
 bool  d1_bearFVG  = high < low[2] and close[1] < open[1]
 bool  d1_bull = conf and d1_prevDisp and d1_bullFVG
 bool  d1_bear = conf and d1_prevDisp and d1_bearFVG
-
-// === PIPELINE A: DISPLACEMENT 2 (HTF1) ===
-grp_hvd2 = "── HV+D: DISP HTF1 ──"
-d2_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd2)
-d2_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd2)
-d2_mult = input.float(4.0, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd2)
-float d2_rng = d2_type == "Open to Close" ? math.abs(open - close) : high - low
-float d2_std = ta.stdev(d2_rng, d2_len)
-float d2_thresh = d2_std * d2_mult
-bool  d2_prevDisp = d2_rng[1] > d2_thresh[1]
-bool  d2_bullFVG  = low > high[2] and close[1] > open[1]
-bool  d2_bearFVG  = high < low[2] and close[1] < open[1]
-bool  d2_bull = conf and d2_prevDisp and d2_bullFVG
-bool  d2_bear = conf and d2_prevDisp and d2_bearFVG
-
-// === PIPELINE A: DISPLACEMENT 3 (HTF2) ===
-grp_hvd3 = "── HV+D: DISP HTF2 ──"
-d3_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd3)
-d3_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd3)
-d3_mult = input.float(2.5, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd3)
-float d3_rng = d3_type == "Open to Close" ? math.abs(open - close) : high - low
-float d3_std = ta.stdev(d3_rng, d3_len)
-float d3_thresh = d3_std * d3_mult
-bool  d3_prevDisp = d3_rng[1] > d3_thresh[1]
-bool  d3_bullFVG  = low > high[2] and close[1] > open[1]
-bool  d3_bearFVG  = high < low[2] and close[1] < open[1]
-bool  d3_bull = conf and d3_prevDisp and d3_bullFVG
-bool  d3_bear = conf and d3_prevDisp and d3_bearFVG
 
 // === PIPELINE A: BASE HV INPUTS ===
 string grpHVBase = "── HV+D: BASE HV ──"
@@ -198,46 +148,6 @@ bool ub750  = input.bool(true,  "750-Bar",  group=grpHVBase)
 bool ub1000 = input.bool(true,  "1000-Bar", group=grpHVBase)
 bool useHEV = input.bool(true,  "All-Time High Volume (HEV)", group=grpHVBase)
 
-// === PIPELINE A: HTF PROFILE 1 ===
-string grpHTF1 = "── HV+D: HTF1 ──"
-bool   h1On   = input.bool(true, "Enable HTF Profile 1", group=grpHTF1)
-string h1From = input.string("15 Min", "From TF", group=grpHTF1, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
-string h1To   = input.string("2 Hour", "To TF",   group=grpHTF1, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
-bool uh1_5  = input.bool(false, "5-Bar",  group=grpHTF1)
-bool uh1_10 = input.bool(false, "10-Bar", group=grpHTF1)
-bool uh1_20 = input.bool(true, "20-Bar", group=grpHTF1)
-bool uh1_25 = input.bool(true, "25-Bar", group=grpHTF1)
-bool uh1_30 = input.bool(true, "30-Bar", group=grpHTF1)
-bool uh1_40 = input.bool(true, "40-Bar", group=grpHTF1)
-bool uh1_50 = input.bool(true, "50-Bar", group=grpHTF1)
-bool uh1_60 = input.bool(true, "60-Bar", group=grpHTF1)
-bool uh1_70 = input.bool(true, "70-Bar", group=grpHTF1)
-bool uh1_75 = input.bool(true, "75-Bar", group=grpHTF1)
-bool uh1_80 = input.bool(true, "80-Bar", group=grpHTF1)
-bool uh1_90 = input.bool(true, "90-Bar", group=grpHTF1)
-
-// === PIPELINE A: HTF PROFILE 2 ===
-string grpHTF2 = "── HV+D: HTF2 ──"
-bool   h2On   = input.bool(true, "Enable HTF Profile 2", group=grpHTF2)
-string h2From = input.string("2 Hour", "From TF", group=grpHTF2, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
-string h2To   = input.string("3 Month","To TF",   group=grpHTF2, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
-bool uh2_5  = input.bool(true, "5-Bar",  group=grpHTF2)
-bool uh2_10 = input.bool(true, "10-Bar", group=grpHTF2)
-bool uh2_20 = input.bool(true, "20-Bar", group=grpHTF2)
-bool uh2_25 = input.bool(true, "25-Bar", group=grpHTF2)
-bool uh2_30 = input.bool(true, "30-Bar", group=grpHTF2)
-bool uh2_40 = input.bool(true, "40-Bar", group=grpHTF2)
-bool uh2_50 = input.bool(true, "50-Bar", group=grpHTF2)
-bool uh2_60 = input.bool(true, "60-Bar", group=grpHTF2)
-bool uh2_70 = input.bool(true, "70-Bar", group=grpHTF2)
-bool uh2_75 = input.bool(true, "75-Bar", group=grpHTF2)
-bool uh2_80 = input.bool(true, "80-Bar", group=grpHTF2)
-bool uh2_90 = input.bool(true, "90-Bar", group=grpHTF2)
-
-// === PIPELINE A: HTF ACTIVATION ===
-bool htf1Active = h1On and tfSec >= hvd_tf2sec(h1From) and tfSec <= hvd_tf2sec(h1To)
-bool htf2Active = h2On and tfSec >= hvd_tf2sec(h2From) and tfSec <= hvd_tf2sec(h2To)
-
 // === PIPELINE A: HV CALCULATIONS [1] ===
 bool is50   = volume[1] == ta.highest(volume, 50)[1]
 bool is75   = volume[1] == ta.highest(volume, 75)[1]
@@ -256,18 +166,6 @@ bool is650  = volume[1] == ta.highest(volume, 650)[1]
 bool is700  = volume[1] == ta.highest(volume, 700)[1]
 bool is750  = volume[1] == ta.highest(volume, 750)[1]
 bool is1000 = volume[1] == ta.highest(volume, 1000)[1]
-bool isH5  = volume[1] == ta.highest(volume, 5)[1]
-bool isH10 = volume[1] == ta.highest(volume, 10)[1]
-bool isH20 = volume[1] == ta.highest(volume, 20)[1]
-bool isH25 = volume[1] == ta.highest(volume, 25)[1]
-bool isH30 = volume[1] == ta.highest(volume, 30)[1]
-bool isH40 = volume[1] == ta.highest(volume, 40)[1]
-bool isH50 = volume[1] == ta.highest(volume, 50)[1]
-bool isH60 = volume[1] == ta.highest(volume, 60)[1]
-bool isH70 = volume[1] == ta.highest(volume, 70)[1]
-bool isH75 = volume[1] == ta.highest(volume, 75)[1]
-bool isH80 = volume[1] == ta.highest(volume, 80)[1]
-bool isH90 = volume[1] == ta.highest(volume, 90)[1]
 
 var float maxVolEver = 0.0
 bool isHEV = false
@@ -277,8 +175,6 @@ if volume[1] > maxVolEver
 
 // === PIPELINE A: PRIORITY RANKING ===
 int baseRank = is1000 ? 1000 : is750 ? 750 : is700 ? 700 : is650 ? 650 : is600 ? 600 : is550 ? 550 : is500 ? 500 : is450 ? 450 : is400 ? 400 : is350 ? 350 : is300 ? 300 : is250 ? 250 : is200 ? 200 : is150 ? 150 : is100 ? 100 : is75 ? 75 : is50 ? 50 : 0
-int h1Rank = not htf1Active ? 0 : uh1_90 and isH90 ? 90 : uh1_80 and isH80 ? 80 : uh1_75 and isH75 ? 75 : uh1_70 and isH70 ? 70 : uh1_60 and isH60 ? 60 : uh1_50 and isH50 ? 50 : uh1_40 and isH40 ? 40 : uh1_30 and isH30 ? 30 : uh1_25 and isH25 ? 25 : uh1_20 and isH20 ? 20 : uh1_10 and isH10 ? 10 : uh1_5 and isH5 ? 5 : 0
-int h2Rank = not htf2Active ? 0 : uh2_90 and isH90 ? 90 : uh2_80 and isH80 ? 80 : uh2_75 and isH75 ? 75 : uh2_70 and isH70 ? 70 : uh2_60 and isH60 ? 60 : uh2_50 and isH50 ? 50 : uh2_40 and isH40 ? 40 : uh2_30 and isH30 ? 30 : uh2_25 and isH25 ? 25 : uh2_20 and isH20 ? 20 : uh2_10 and isH10 ? 10 : uh2_5 and isH5 ? 5 : 0
 
 // === PIPELINE A: COMBO + TERMINAL BOOLEANS ===
 bool base_enabled = (ub50 and baseRank == 50) or (ub75 and baseRank == 75) or (ub100 and baseRank == 100) or (ub150 and baseRank == 150) or (ub200 and baseRank == 200) or (ub250 and baseRank == 250) or (ub300 and baseRank == 300) or (ub350 and baseRank == 350) or (ub400 and baseRank == 400) or (ub450 and baseRank == 450) or (ub500 and baseRank == 500) or (ub550 and baseRank == 550) or (ub600 and baseRank == 600) or (ub650 and baseRank == 650) or (ub700 and baseRank == 700) or (ub750 and baseRank == 750) or (ub1000 and baseRank == 1000)
@@ -286,17 +182,13 @@ bool hev_hit = useHEV and isHEV
 bool base_hv_hit = hev_hit or (base_enabled and not isHEV)
 bool base_combo_bull = base_hv_hit and d1_bull
 bool base_combo_bear = base_hv_hit and d1_bear
-bool htf1_combo_bull = h1Rank > 0 and d2_bull
-bool htf1_combo_bear = h1Rank > 0 and d2_bear
-bool htf2_combo_bull = h2Rank > 0 and d3_bull
-bool htf2_combo_bear = h2Rank > 0 and d3_bear
 
 // ┌──────────────────────────────────────────────────────────────────────────┐
 // │  PIPELINE A TERMINAL OUTPUTS — the ONLY thing Pipeline D may read      │
 // │  hvd_fire_bull describes bar N-1. hvd_fire_bear describes bar N-1.     │
 // └──────────────────────────────────────────────────────────────────────────┘
-bool hvd_fire_bull = base_combo_bull or htf1_combo_bull or htf2_combo_bull
-bool hvd_fire_bear = base_combo_bear or htf1_combo_bear or htf2_combo_bear
+bool hvd_fire_bull = base_combo_bull
+bool hvd_fire_bear = base_combo_bear
 
 
 // ╔════════════════════════════════════════════════════════════════════════════╗
