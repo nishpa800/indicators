@@ -1,5 +1,49 @@
 # VOB Indicator Suite — Changelog
 
+## VOB_Asym_T3x6_MutEx_Claude_v10_2026-05-21.pine — v10 — 2026-05-21
+
+New "Multi-Zone Same-Candle" detection family — four new detection
+plots that fire when 2 or 3+ zone-formation visual plots (the existing
+zA / zB / zC / zD / zE / zF cross markers) appear on the SAME candle.
+
+Built on top of the v10 base (VLB strict-ladder + origin-bar OHLC
+capture + Bloomberg-format alert layer + emission layer).
+
+New plots (Layer 3 — Multi-Zone Same Candle):
+- **Multi-Zone Bull 2**  (`MZ2↑` lime square below bar) — exactly 2
+  bullish zone-formation markers on this bar.
+- **Multi-Zone Bull 3+** (`MZ3↑` lime flag   below bar) — 3 or more
+  bullish zone-formation markers on this bar. Catches 4-, 5-, 6-tier
+  same-candle bursts as well.
+- **Multi-Zone Bear 2**  (`MZ2↓` red square above bar)  — exactly 2
+  bearish zone-formation markers on this bar.
+- **Multi-Zone Bear 3+** (`MZ3↓` red flag   above bar)  — 3 or more
+  bearish zone-formation markers on this bar.
+
+Mutual exclusivity: within a direction, only one of {2, 3+} can fire
+per bar. Across directions a bull and bear multi-zone can co-fire on
+the same bar (rare — both sides crossing in the same bar).
+
+Non-repainting + 1:1 parity:
+- Counts read off the same gated booleans (`fire_zb_*` / `fire_zs_*`)
+  that drive the on-chart zA…zF cross markers, so what is counted is
+  literally what is visible.
+- Zone formation itself is computed inside `f_vob()` under
+  `barstate.isconfirmed`, so the source booleans never paint and
+  retract.
+- Each detection's plotshape and `alert()` are driven by the same
+  `plot_mz_*` boolean → visual + inbox parity is exact.
+- `alert.freq_once_per_bar_close` matches the plot's bar-close paint.
+
+Each detection gets its own `alertcondition` for granular subscription,
+plus a Bloomberg-format `alert()` payload listing which tiers fired,
+COUNT, RSI, VOLRANK, SESS, BULL/BEARZONES, STACK, GAP, and nearest-zone
+distance. Each detection also gets its own cooldown stamp
+(`last_mz_b2` / `_b3` / `_s2` / `_s3`) so a Bull 2 fire does not gate a
+Bear 2 fire and vice-versa.
+
+Plot budget bumped to 31 plotshapes + 7 alertconditions = 38 / 64.
+
 ## VOB_Asym_T3x6_MutEx_Claude_v9_2026-05-12.pine — v9.1 patch — 2026-05-12
 
 Adds the "Wrong-Way 3" family + makes every v9 detection non-repainting
