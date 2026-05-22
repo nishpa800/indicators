@@ -1,0 +1,2161 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// TNT OPENING DRIVE (OD) v3 — Extreme Anomaly Detection
+// ══════════════════════════════════════════════════════════════════════════════
+// CHANGELOG v2 → v3 (2026-05-08)
+// ──────────────────────────────────────────────────────────────────────────────
+//   1. NEW CONDITIONAL GATE on the 4 NPM-family Tier 1 plots
+//      (B2B NAPALM, RC NPM+TNT, CATALYST, PBJ+NPM — bull AND bear) and on
+//      ALL 12 Tier 2 plots. Each plot now ALSO requires ANY of these 6:
+//        • RVOL 1x          (u5_RVOL1xB / u5_RVOL1xR)
+//        • Grand Slam       (u5_GrandSlam) [bear: MOAB]
+//        • Unified Combo    (uc_bull / uc_bear — placeholder definition,
+//                            see UC ENGINE section below; replaceable with
+//                            real Squarify v2 UC source if needed)
+//        • Nagasaki + Any   (Nagasaki AND any of P2/P1 tier signals)
+//        • HCT              (inline-ported HCT engine — uses HCT's OWN
+//                            thresholds, NOT TNT OD's u5_*; per Anish's
+//                            Indicator Trust Rules)
+//        • Displacement ≥ adjustable σ-multiplier (NEW INPUT: gateStdMult,
+//                            default 6.5, separate from the 4 existing
+//                            displacement engines below)
+//      Master toggle: en_newGate (default ON). Turn OFF to bypass the gate
+//      entirely (legacy v2 behavior).
+//
+//   2. NEW PLOT — T1 RELAY (bull/bear)
+//      Fires when ANY Tier 1 visual plot landed on bar[2] AND ANY Tier 1
+//      visual plot landed on bar[1] (consecutive visual bars). Same type
+//      counts (CATALYST→CATALYST is valid). Bull tracks bull-then-bull
+//      only; bear tracks bear-then-bear only. Pool of qualifying Tier 1:
+//      B2B NAPALM, RC NPM+TNT, FUSE, CATALYST, PBJ+NPM, PBJ+TNT, IGNITE
+//      (T+C and N+C variants), DYNAMITE, plus HCT and UC as Tier 1
+//      substitutes. Boolean true on bar[0]; visual offset = -1 → lands on
+//      bar[1] (the SECOND of the two consecutive bars).
+//
+//   3. NEW PLOT — T1 STACK (bull/bear)
+//      Fires when ≥ 2 distinct Tier 1 visual plots landed on the SAME
+//      visual bar (bar[1] from current). Same Tier 1 pool as RELAY (10
+//      candidates including HCT and UC). Boolean true on bar[0]; visual
+//      offset = -1 → lands on bar[1] (the bar where the stack occurred).
+//
+//   4. CLARIFICATION OF EVERY DISPLACEMENT INPUT (no behavior change, only
+//      tooltip text). There are now FIVE distinct displacement engines:
+//        Engine #1 — Main TNT OD engine
+//          Inputs: DISP_STD_LEN (=100), DISP_STD_X (=5)
+//          Used by: dispBull / dispBear → Napalm, Charge, B2B NAPALM,
+//                   sudden change, CONT, IGNITE NPM+CONT, RC NPM+TNT, etc.
+//        Engine #2 — DYNAMITE (DEDICATED — yes, DYNAMITE has its own)
+//          Input: dynStdMult (=5.0). 100-bar stdev hard-coded.
+//          Used by: DYNAMITE plot ONLY (det_dynamiteBull/Bear).
+//        Engine #3 — USE V5 enrichment
+//          Inputs: u5_std_len (=100), u5_std_min (=3.0)
+//          Used by: u5_DISPBull / u5_DISPBear → Tier 2 enrichment gate,
+//                   WBUSH direction classifier.
+//        Engine #4 — HCT (NEW in v3, inline-ported)
+//          Inputs: hct_disp_strength (=6.0), hct_disp_lookback (=100),
+//                  hct_threshPct (=2.0), hct_auto (=true).
+//          Used by: hct_dispBull / hct_dispBear → hct_bull / hct_bear in
+//                   the new conditional gate.
+//        Engine #5 — NEW GATE displacement (NEW in v3)
+//          Input: gateStdMult (=6.5). Reuses DISP_STD_LEN for lookback.
+//          Used by: gate_disp_bull / gate_disp_bear in the new gate ONLY.
+//
+//   5. INLINE-PORTED HCT ENGINE — uses HCT's OWN threshold formulas (not
+//      TNT OD's u5_*) per Indicator Trust Rules. Produces hct_bull /
+//      hct_bear / hct_neutral. hct_neutral is computed but NOT plotted in
+//      TNT OD (HCT standalone still owns the plot if you want the visual).
+//
+//   6. INLINE UC ENGINE — placeholder Unified Combo definition. UC bull/bear
+//      = ≥ 2 distinct confluence streams from {FAUNA, RVOL tier, WMD,
+//      PUP/PPD, CS1}. CLEARLY MARKED IN CODE as replaceable: paste your
+//      real Squarify v2 UC engine in if this approximation isn't tight
+//      enough. UC offset = 0 (current bar atoms only — no displacement
+//      chain).
+//
+// CARRIED FORWARD FROM v2 (unchanged):
+//   • DYNAMITE FVG-mandatory rewrite (v2 fix)
+//   • UU/UUU/UUUU pG path
+//   • Density 1/2/3 offset = -1
+//   • UU+TNT offset = -1
+//   • WBUSH detections
+//   • NAGASAKI alert checkbox-gated default OFF
+//   • Max TNT zones 30/30
+//   • Tooltip coverage
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// ─── SIGNAL TAXONOMY & DEFINITIONS ──────────────────────────────────────────
+//
+// TERMINOLOGY:
+//   TNT     = Three-engine confluence (VOB + ANISH + FLUX)
+//   NPM     = Napalm — displacement through an active TNT zone
+//   CONT    = Continuous — sudden-change proximity (rapid-fire events within N bars)
+//   RET     = Return — price retraces back into a TNT zone after breakout
+//   PBJ     = Supertrend-based entry engine (VWMA + ATR trailing stop)
+//   CS1     = FVG Combo — consecutive or HV-backed fair-value gaps
+//   FAUNA   = Candle anatomy qualifier (Momentum Bar, Range Expansion, Trend Accel, Gap & Go)
+//   RVOL    = Relative volume rank (SAAB, 1x, GrandSlam tiers)
+//   WMD     = Volume ratio rank (Pentagon, WTC, Hiroshima, Nagasaki tiers)
+//   DISP    = Displacement — bar[1] range exceeds stdev threshold, bar[0] confirms FVG
+//   ENR     = Enriched — co-signal from USE V5 engine (RVOL, WMD, FAUNA, CS1, PUP/PPD, HV1000, DYNAMITE)
+//   HV      = High Volume rank — volume is highest in N-bar lookback (N = 50 to 1000)
+//   FVG     = Fair Value Gap — price gap between bar[0] and bar[2] that bar[1] spans
+//
+// ─── TIER SYSTEM ────────────────────────────────────────────────────────────
+//
+// TIER 1: Fires as-is. Multi-axis confluence already built into the combo.
+//   B2B NAPALM       Back-to-back Napalm on consecutive visual bars.
+//                    Detects: serial displacement through TNT zones.
+//                    Axes: Price displacement + Zone (x2 consecutive).
+//                    Offset: -1 (displacement+FVG in chain). Plot bar = bar[0]-1.
+//
+//   RC NPM+TNT       Rare Combo — Napalm and TNT fire on the same visual bar.
+//                    Detects: displacement event coincides with structural confluence.
+//                    Axes: Price displacement + Zone + Structural breakout.
+//                    Offset: -1 (NPM is offset-1; TNT at [1] = same visual bar).
+//
+//   FUSE             Sequential NPM → TNT → CONT within proximity window.
+//                    Detects: escalating event cascade in tight temporal cluster.
+//                    Axes: Displacement + Structure + Temporal clustering.
+//                    Offset: 0 (CONT has no displacement+FVG in its chain).
+//
+//   CATALYST         Napalm + CS1 on the same visual bar.
+//                    Detects: displacement event backed by FVG clustering or HV-FVG.
+//                    Axes: Price displacement + FVG structural confluence.
+//                    Offset: -1 (both NPM and CS1 have displacement+FVG).
+//
+//   PBJ+NPM          PBJ crossover + Napalm on same visual bar.
+//                    Detects: supertrend reversal coincides with zone displacement.
+//                    Axes: Supertrend reversal + Displacement + Zone.
+//                    Offset: -1 (NPM offset-1; PBJ at [1] = same visual bar).
+//
+//   PBJ+TNT          PBJ crossover + TNT on same visual bar.
+//                    Detects: supertrend reversal coincides with structural confluence.
+//                    Axes: Supertrend reversal + Structural breakout.
+//                    Offset: 0 (neither has displacement+FVG in combo chain).
+//
+//   IGNITE TNT+CONT  TNT + Continuous on same visual bar.
+//                    Detects: structural breakout that is also part of rapid-fire cluster.
+//                    Axes: Structural breakout + Temporal clustering.
+//                    Offset: 0 (TNT and CONT are both offset-0).
+//
+//   IGNITE NPM+CONT  Napalm + Continuous on same visual bar.
+//                    Detects: displacement event that is also part of rapid-fire cluster.
+//                    Axes: Displacement + Zone + Temporal clustering.
+//                    Offset: -1 (NPM offset-1; CONT at [1] = same visual bar).
+//
+//   DYNAMITE         B2B extreme displacement + FAUNA on both consecutive bars.
+//                    Detects: consecutive bars with extreme range AND strong candle anatomy.
+//                    Axes: Serial displacement + Candle anatomy (x2).
+//                    Offset: 0 (checks consecutive displaced bars, no FVG in combo chain).
+//
+// TIER 2: Hard-gated — NEVER fires without USE V5 enrichment co-signal.
+//   TNT ENRICHED     TNT detection + enrichment on same bar.
+//   NPM ENRICHED     Napalm detection + enrichment on visual bar.
+//   CONT ENRICHED    Continuous detection + enrichment on same bar.
+//   RC TNT+RET ENR   TNT + Return on same bar + enrichment.
+//   RC RET+NPM ENR   Return + Napalm on same visual bar + enrichment.
+//   PBJ+RET ENRICHED PBJ + Return on same bar + enrichment.
+//
+// OTHER:
+//   DENSITY 1/2/3    Rolling window: X visual events within Y bars. Temporal density.
+//   UU/UUU/UUUU+TNT  U-streak (consecutive qualified RVOL bars with path qualification)
+//                    overlapping with any TNT indicator signal within the streak window.
+//
+// ─── OFFSET SUMMARY ─────────────────────────────────────────────────────────
+//   Offset -1: B2B NAPALM, RC NPM+TNT, CATALYST, PBJ+NPM, IGNITE NPM+CONT,
+//              NPM ENRICHED, RC RET+NPM ENRICHED
+//   Offset  0: Everything else
+//
+// ─── ALERT FORMAT ───────────────────────────────────────────────────────────
+//   DIRECTION | FIRST_STATUS | NAME
+//   DIRECTION:    BULL or BEAR
+//   FIRST_STATUS: FIRST !!! (first bar, gap ≤ bar range — price action is strong)
+//                 FIRST XXX (first bar, gap > bar range — gap did heavy lifting)
+//                 NOT !!!   (not the first bar of the session)
+//   NEVER includes ticker, timeframe, or exchange (TradingView adds automatically).
+//
+// ─── MASTER TOGGLES ─────────────────────────────────────────────────────────
+//   First Bar Only:    When ON, alerts require first bar of session AND any HV rank
+//                      (volume ≥ highest in 50-bar lookback) on the plot bar.
+//                      Both conditions must be true. Alerts blocked if either missing.
+//   Aggregate Alerts:  When ON, one combined alert per bar.
+//                      When OFF, individual alerts per detection.
+//
+// ─── EXCEPTIONS ─────────────────────────────────────────────────────────────
+//   CHECKBOX BYPASSERS:    Nagasaki (fires standalone alert without a toggle).
+//   AGGREGATOR BYPASSERS:  Nagasaki (excluded from the aggregated alert string).
+//
+// ══════════════════════════════════════════════════════════════════════════════
+
+//@version=5
+indicator("TNT Opening Drive OD v3 (tick-safe)", "TNT OD v3", overlay = true,
+     max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500, max_bars_back=2500)
+
+// ═══ TICK-SAFE SHIM ═══════════════════════════════════════════════════════════
+// Replaces time("D") and tv_ta.relativeVolume() — both throw RE10023 on tick
+// charts. See tick-compatible/README.md for the full conversion contract.
+_dayKey() => year * 10000 + month * 100 + dayofmonth
+_rvol(simple int length, simple bool cumulative) =>
+    bool _isNew = ta.change(_dayKey()) != 0
+    var float _cum = 0.0
+    _cum := (_isNew or bar_index == 0) ? volume : _cum + volume
+    float _cur = cumulative ? _cum : volume
+    float _avg = ta.sma(_cur, math.max(length, 1))
+    [_cur, _avg, _isNew]
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ─── MASTER ─────────────────────────────────────────────────────────────────
+grpM = "★ MASTER ★"
+bool masterFirstBar  = input.bool(true, "First Bar Only Alerts", group = grpM,
+     tooltip = "When ON, alerts require first bar of session AND any HV rank (vol ≥ highest in 50 bars) on the plot bar.")
+bool masterAggregate = input.bool(true, "Aggregate Alerts", group = grpM,
+     tooltip = "When ON, one combined alert per bar. When OFF, individual alerts per detection.")
+
+// ─── ENGINE INPUTS ──────────────────────────────────────────────────────────
+grpE = "Engine (Displacement #1 — MAIN ENGINE)"
+int   SENS      = input.int(100, "Sensitivity", minval = 1, group = grpE)
+int   SWING_LEN = input.int(10, "Swing Length", minval = 3, group = grpE)
+string DISP_TYPE = input.string("Open to Close", "Range Type", options = ["Open to Close", "High to Low"], group = grpE,
+     tooltip = "Range type for the MAIN displacement engine (#1). Drives Napalm/Charge/B2B Napalm/Catalyst/Sudden-Change/Cont/Ignite NPM+CONT/RC NPM+TNT — basically every plot whose offset is -1 because of a displacement+FVG chain.")
+int   DISP_STD_LEN = input.int(100, "Disp Std Dev Length", minval = 1, group = grpE,
+     tooltip = "Lookback bars for the MAIN displacement engine's stdev (#1). Same value is also reused by the new GATE displacement engine (#5).")
+int   DISP_STD_X   = input.int(5, "Disp Std Dev Mult", minval = 0, group = grpE,
+     tooltip = "σ-multiplier for the MAIN displacement engine (Engine #1). Every plot that depends on displacement+FVG (Napalm, Charge, B2B Napalm, Catalyst, RC NPM+TNT, etc.) uses THIS value. DO NOT raise this to filter the new gate — use gateStdMult below for that.")
+float RET_TNT_PCT = input.float(100.0, "Return to TNT %", minval = -10, step = 0.1, group = grpE)
+float RET_SUPER_PCT = input.float(50.0, "Return to TNT 2.0 %", minval = -10, step = 0.1, group = grpE)
+int   SUDDEN_PROX = input.int(3, "Sudden Change Max Bar Distance", minval = 1, group = grpE)
+
+// ─── DYNAMITE INPUTS ────────────────────────────────────────────────────────
+grpDyn = "★ DYNAMITE ★ (Displacement #2 — DEDICATED to DYNAMITE only)"
+float dynStdMult = input.float(5.0, "Displacement Std Dev Multiplier (DYNAMITE-only)", minval = 1.0, step = 0.5, group = grpDyn,
+     tooltip = "Displacement #2 — DEDICATED to DYNAMITE. This σ-multiplier is used ONLY by the DYNAMITE detection (B2B σ-range + FVG check). Hard-coded 100-bar stdev lookback. NOT shared with any other plot. Yes, DYNAMITE has its own dedicated displacement engine separate from the main Engine #1 above and the gate Engine #5 below.")
+
+// ─── TIER 1 ENABLES ─────────────────────────────────────────────────────────
+grpT1 = "Tier 1 Signals"
+bool en_b2bBull    = input.bool(true, "✓ B2B Napalm Bull",        group = grpT1, tooltip = "Back-to-back Napalm on consecutive visual bars (bar[1] AND bar[2]). Detects: serial displacement through opposing TNT zones. Two-bar confirmation. Offset = -1. Plot anchors on bar[1].")
+bool en_b2bBear    = input.bool(true, "✓ B2B Napalm Bear",        group = grpT1, tooltip = "Back-to-back Napalm on consecutive visual bars, bearish. Two-bar confirmation. Offset = -1.")
+bool en_rcNTBull   = input.bool(true, "✓ RC NPM+TNT Bull",        group = grpT1, tooltip = "Rare Combo: Napalm AND TNT fired on the same visual bar. Detects: displacement event coincides with structural confluence (VOB+ANISH+FLUX). Offset = -1.")
+bool en_rcNTBear   = input.bool(true, "✓ RC NPM+TNT Bear",        group = grpT1, tooltip = "Rare Combo: bearish Napalm AND bearish TNT on the same visual bar. Offset = -1.")
+bool en_fuseBull   = input.bool(true, "✓ FUSE Bull",              group = grpT1, tooltip = "Sequential cascade: Napalm → TNT → CONT all within proximity window (Sudden Change Max Bar Distance). Detects escalating event cascade in tight temporal cluster. Offset = 0.")
+bool en_fuseBear   = input.bool(true, "✓ FUSE Bear",              group = grpT1, tooltip = "Bearish sequential cascade: NPM → TNT → CONT in tight window. Offset = 0.")
+bool en_catBull    = input.bool(true, "✓ CATALYST Bull",          group = grpT1, tooltip = "Napalm AND CS1 (FVG Combo) on the same visual bar. Detects displacement event backed by FVG clustering or HV-FVG structure. Both have displacement+FVG in chain → Offset = -1.")
+bool en_catBear    = input.bool(true, "✓ CATALYST Bear",          group = grpT1, tooltip = "Bearish Napalm AND bearish CS1 same visual bar. Offset = -1.")
+bool en_pnBull     = input.bool(true, "✓ PBJ+NPM Bull",           group = grpT1, tooltip = "PBJ supertrend reversal AND Napalm on same visual bar. Detects supertrend reversal coinciding with zone displacement. Offset = -1 (NPM has displacement+FVG).")
+bool en_pnBear     = input.bool(true, "✓ PBJ+NPM Bear",           group = grpT1, tooltip = "PBJ bearish reversal AND bearish Napalm same visual bar. Offset = -1.")
+bool en_ptBull     = input.bool(true, "✓ PBJ+TNT Bull",           group = grpT1, tooltip = "PBJ supertrend reversal AND TNT on same visual bar. Detects supertrend reversal coinciding with structural breakout. No displacement+FVG in chain → Offset = 0.")
+bool en_ptBear     = input.bool(true, "✓ PBJ+TNT Bear",           group = grpT1, tooltip = "PBJ bearish reversal AND bearish TNT same visual bar. Offset = 0.")
+bool en_ignBull    = input.bool(true, "✓ IGNITE Bull",            group = grpT1, tooltip = "TNT+CONT (offset 0) OR NPM+CONT (offset -1) on same visual bar. Detects breakout that is also part of rapid-fire cluster.")
+bool en_ignBear    = input.bool(true, "✓ IGNITE Bear",            group = grpT1, tooltip = "Bearish version of IGNITE. Mixed offset (T+C = 0, N+C = -1).")
+bool en_dynBull    = input.bool(true, "✓ DYNAMITE Bull",          group = grpT1, tooltip = "B2B displacement (bar[1] AND bar[2] both exceed stdev range AND same bullish color) + FAUNA on bar[1] AND bar[2] + bar[0] confirms bullish FVG. v2: FVG check now mandatory. Offset = -1.")
+bool en_dynBear    = input.bool(true, "✓ DYNAMITE Bear",          group = grpT1, tooltip = "B2B bearish displacement on bar[1] AND bar[2] + FAUNA bearish on each + bar[0] confirms bearish FVG. v2: FVG mandatory. Offset = -1.")
+
+// ─── TIER 2 ENABLES ─────────────────────────────────────────────────────────
+grpT2 = "Tier 2 Signals (enrichment required)"
+bool en_t2tntBull  = input.bool(true, "✓ TNT Enriched Bull",      group = grpT2, tooltip = "Raw TNT detection PLUS at least one enrichment co-signal on same bar (RVOL1x / GrandSlam / PUP / CS1 / FAUNA / WMD / HV1000 / DYNAMITE). Hard-gated — never fires without enrichment. Offset = 0.")
+bool en_t2tntBear  = input.bool(true, "✓ TNT Enriched Bear",      group = grpT2, tooltip = "Bearish raw TNT + bearish enrichment co-signal. Hard-gated. Offset = 0.")
+bool en_t2npmBull  = input.bool(true, "✓ NPM Enriched Bull",      group = grpT2, tooltip = "Raw Napalm PLUS enrichment co-signal on visual bar 1 (bar[1] of detection time). Hard-gated. Offset = -1.")
+bool en_t2npmBear  = input.bool(true, "✓ NPM Enriched Bear",      group = grpT2, tooltip = "Bearish raw Napalm + bearish enrichment on visual bar 1. Hard-gated. Offset = -1.")
+bool en_t2contBull = input.bool(true, "✓ CONT Enriched Bull",     group = grpT2, tooltip = "Raw Continuous (rapid-fire cluster) PLUS enrichment co-signal on same bar. Hard-gated. Offset = 0.")
+bool en_t2contBear = input.bool(true, "✓ CONT Enriched Bear",     group = grpT2, tooltip = "Bearish CONT + bearish enrichment. Hard-gated. Offset = 0.")
+bool en_t2trBull   = input.bool(true, "✓ RC TNT+RET Enriched Bull", group = grpT2, tooltip = "Rare Combo: TNT AND Return-to-TNT same bar PLUS enrichment co-signal. Hard-gated. Offset = 0.")
+bool en_t2trBear   = input.bool(true, "✓ RC TNT+RET Enriched Bear", group = grpT2, tooltip = "Bearish version. Hard-gated. Offset = 0.")
+bool en_t2rnBull   = input.bool(true, "✓ RC RET+NPM Enriched Bull", group = grpT2, tooltip = "Rare Combo: Return AND Napalm on same visual bar (NPM offset -1, RET[1] aligns to bar 1) PLUS enrichment. Hard-gated. Offset = -1.")
+bool en_t2rnBear   = input.bool(true, "✓ RC RET+NPM Enriched Bear", group = grpT2, tooltip = "Bearish version. Hard-gated. Offset = -1.")
+bool en_t2prBull   = input.bool(true, "✓ PBJ+RET Enriched Bull",  group = grpT2, tooltip = "PBJ supertrend reversal AND Return-to-TNT same bar PLUS enrichment. Hard-gated. Offset = 0.")
+bool en_t2prBear   = input.bool(true, "✓ PBJ+RET Enriched Bear",  group = grpT2, tooltip = "Bearish PBJ + Return + enrichment. Hard-gated. Offset = 0.")
+
+// ─── DENSITY ENABLES ────────────────────────────────────────────────────────
+grpD1 = "Density 1"
+int  den1_X = input.int(2, "Events (X)", minval = 1, group = grpD1, tooltip = "Density 1 fires when X visual events occurred within Y bars (rolling).")
+int  den1_Y = input.int(2, "Bars (Y)",   minval = 1, group = grpD1, tooltip = "Window of visual bars to scan back.")
+bool en_d1b = input.bool(true, "✓ Bull", group = grpD1, tooltip = "Density 1 Bull: 2 visual bull events in 2 bars by default. Offset = -1 (chain touches Napalm).")
+bool en_d1s = input.bool(true, "✓ Bear", group = grpD1, tooltip = "Density 1 Bear. Offset = -1.")
+grpD2 = "Density 2"
+int  den2_X = input.int(3, "Events (X)", minval = 1, group = grpD2, tooltip = "Density 2 fires at 3 visual events in 3 bars by default. Stricter than Density 1.")
+int  den2_Y = input.int(3, "Bars (Y)",   minval = 1, group = grpD2)
+bool en_d2b = input.bool(true, "✓ Bull", group = grpD2, tooltip = "Density 2 Bull. Offset = -1.")
+bool en_d2s = input.bool(true, "✓ Bear", group = grpD2, tooltip = "Density 2 Bear. Offset = -1.")
+grpD3 = "Density 3"
+int  den3_X = input.int(2, "Events (X)", minval = 1, group = grpD3, tooltip = "Density 3 fires at 2 visual events in 6 bars by default. Looser window for sparse-but-temporally-clustered events.")
+int  den3_Y = input.int(6, "Bars (Y)",   minval = 1, group = grpD3)
+bool en_d3b = input.bool(true, "✓ Bull", group = grpD3, tooltip = "Density 3 Bull. Offset = -1.")
+bool en_d3s = input.bool(true, "✓ Bear", group = grpD3, tooltip = "Density 3 Bear. Offset = -1.")
+
+// ─── UU/UUU/UUUU + TNT ANY ENABLES ─────────────────────────────────────────
+grpU = "UU/UUU/UUUU + TNT INDICATOR ANY SIGNAL"
+bool en_uu_bull   = input.bool(true, "✓ UU + TNT ANY Bull",   group = grpU, tooltip = "UU = 2-bar bullish RVOL streak. Streak qualifies via paths pA/pB/pC/pE OR new pG (≥2 distinct qualifiers from {PBJ, DISP, FAUNA, SAAB, RVOL1x, GS} present anywhere in streak — can stack on same bar). Fires when streak qualifies AND any TNTOD bullish detection occurred within streak window. Offset = -1.")
+bool en_uu_bear   = input.bool(true, "✓ UU + TNT ANY Bear",   group = grpU, tooltip = "Bearish UU. Offset = -1.")
+bool en_uuu_bull  = input.bool(true, "✓ UUU + TNT ANY Bull",  group = grpU, tooltip = "UUU = 3-bar bullish RVOL streak. Path pG requires ≥3 distinct qualifiers (or pA/pB/pC/pE). Plus any TNTOD bullish signal in window. Offset = -1.")
+bool en_uuu_bear  = input.bool(true, "✓ UUU + TNT ANY Bear",  group = grpU, tooltip = "Bearish UUU. Offset = -1.")
+bool en_uuuu_bull = input.bool(true, "✓ UUUU + TNT ANY Bull", group = grpU, tooltip = "UUUU = 4+ bar bullish RVOL streak. Path pG requires ≥4 distinct qualifiers (or pA/pB/pC/pE/pF). Plus any TNTOD bullish signal in window. Offset = -1.")
+bool en_uuuu_bear = input.bool(true, "✓ UUUU + TNT ANY Bear", group = grpU, tooltip = "Bearish UUUU. Offset = -1.")
+
+// ─── WBUSH ENABLES ──────────────────────────────────────────────────────────
+grpWB = "WBUSH (HEAVY PENTAGON × TNTOD ANY)"
+bool en_wbushBull    = input.bool(true, "✓ WBUSH+TNTOD ANY Bull",    group = grpWB, tooltip = "Fires when WBUSH-bull state (any of: Heavy Yin-Yang Bull, Heavy Nagasaki Bull, Heavy Nagasaki Vol Bull, Heavy Trident Bull, Neutral Heavy x2 Bull) AND any TNTOD bullish detection plot fired on this bar. Direction classification follows HEAVY PENTAGON's displacement engine. Offset = 0 base; aligned with TNTOD bull plots.")
+bool en_wbushBear    = input.bool(true, "✓ WBUSH+TNTOD ANY Bear",    group = grpWB, tooltip = "Mirror of bull: WBUSH-bear state (any of 5 Heavy Combo Bears) AND any TNTOD bearish detection. Offset = 0.")
+bool en_wbushNeutral = input.bool(true, "✓ WBUSH Neutral (standalone)", group = grpWB, tooltip = "WBUSH-neutral state (any of 5 Heavy Combo Neutrals). Fires on its own — does not require TNTOD pairing. Neutrals contain Nagasaki / extreme volume by definition; alert worth knowing regardless of direction. Offset = 0.")
+
+// ─── USE V5 BOWL SETTINGS (Displacement #3 — USE V5 enrichment) ─────────────
+grpU5 = "USE V5 Bowl (Displacement #3 — USE V5 enrichment)"
+int   u5_std_len   = input.int(100, "Disp Std Dev Len (USE V5)", minval = 1, group = grpU5,
+     tooltip = "Lookback bars for USE V5 displacement engine #3. Used by u5_DISPBull/Bear (drives Tier 2 enrichment gate, WBUSH direction classifier, USE V5 PUP/PPD chain). Independent of Engine #1 (main) and Engine #5 (gate).")
+float u5_std_min   = input.float(3.0, "Disp Min Mult (USE V5)", step = 0.1, group = grpU5,
+     tooltip = "σ-multiplier for USE V5 displacement engine #3 (default 3.0σ — looser than Engine #1's 5σ). USE V5 fires more often because Tier 2 enrichment gate needs more candidate bars. Adjust here if you want enrichment to be stricter or looser without affecting any other engine.")
+int   u5_od_max_bars = input.int(1, "Opening Drive Max Bars", minval = 1, group = grpU5)
+
+// ─── NEW CONDITIONAL GATE INPUTS (v3) ───────────────────────────────────────
+grpGate = "★ NEW GATE (v3) ★"
+bool   en_newGate   = input.bool(true, "✓ Apply new gate to NPM-family Tier 1 + all Tier 2",
+     group = grpGate,
+     tooltip = "When ON: the 4 NPM-family Tier 1 plots (B2B NAPALM, RC NPM+TNT, CATALYST, PBJ+NPM) and all 12 Tier 2 plots ALSO require ANY of: RVOL 1x / Grand Slam (MOAB) / Unified Combo / Nagasaki+Any / HCT / Displacement ≥ gateStdMult. Turn OFF to bypass entirely (legacy v2 behavior).")
+float  gateStdMult  = input.float(6.5, "Gate Displacement Std Dev Mult (Engine #5)", minval = 1.0, step = 0.1,
+     group = grpGate,
+     tooltip = "σ-multiplier for displacement engine #5 — DEDICATED to the new gate ONLY. NOT shared with Engine #1 (main TNT OD), Engine #2 (DYNAMITE), Engine #3 (USE V5), or Engine #4 (HCT). Default 6.5 = stricter than the main engine. Adjust freely without breaking any other plot. Reuses DISP_STD_LEN for lookback to keep stdev window consistent across all displacement engines.")
+
+// ─── HCT INPUTS (Displacement #4 — HCT inline-port, v3 new) ─────────────────
+grpHCT = "★ HCT (Displacement #4 — inline-port, v3 new) ★"
+float  hct_disp_strength = input.float(6.0, "HCT Disp σ-mult", minval = 1.0, step = 0.5, group = grpHCT,
+     tooltip = "HCT-specific σ-multiplier (default 6.0σ — higher than Engine #1's 5σ). This is HCT's own displacement engine, INDEPENDENT from the main TNT OD engine. Inline-ported from the standalone HCT indicator. Per Indicator Trust Rules, HCT uses its OWN thresholds (this one), NOT TNT OD's.")
+int    hct_disp_lookback = input.int(100, "HCT Disp Lookback", minval = 10, group = grpHCT,
+     tooltip = "Lookback bars for HCT's displacement stdev (Engine #4). Independent of Engine #1's DISP_STD_LEN.")
+float  hct_threshPct     = input.float(2.0, "HCT FVG Threshold % (when Auto OFF)", minval = 0, maxval = 100, step = 0.1, group = grpHCT,
+     tooltip = "Manual FVG gap threshold as % of price for HCT. Used only when Auto FVG Threshold is OFF.")
+bool   hct_auto          = input.bool(true, "HCT Auto FVG Threshold", group = grpHCT,
+     tooltip = "When ON, HCT computes FVG threshold as cumulative average range / bar_index (HCT's standalone default). When OFF, uses HCT FVG Threshold % above.")
+
+int maxZones = input.int(30, "Max TNT 1.0 Zones", minval = 1, group = "Zones", tooltip = "How many active TNT 1.0 zones to keep tracking for Napalm/Charge/Return scans. Higher = more historical zones considered. Default 30.")
+int maxSuperZones = input.int(30, "Max TNT 2.0 Zones", minval = 1, group = "Zones", tooltip = "How many TNT 2.0 (super) zones to track. Default 30.")
+
+// ─── CONSTANTS ──────────────────────────────────────────────────────────────
+int EMA_FAST = SENS, int EMA_SLOW = SENS + 13
+float ATR_VAL = ta.atr(200), float ATR14 = ta.atr(14)
+float ATR_MULT = 3.5, float ATR_MIN = 0.5
+int MIN_SIG_GAP = EMA_SLOW
+bool isFirstBar = session.isfirstbar
+var int sessionFirstBarIdx = na
+if isFirstBar
+    sessionFirstBarIdx := bar_index
+int u5_tfSec = nz(timeframe.in_seconds(timeframe.period), 60)
+bool isSubMinute = u5_tfSec <= 60
+
+// ─── TYPES ──────────────────────────────────────────────────────────────────
+type Zone
+    int    originIdx
+    int    confirmIdx
+    float  upper
+    float  lower
+    float  level
+    float  vol
+    bool   isBull
+    bool   isActive     = true
+    bool   returnFired  = false
+    line   lvlLine
+    label  sigLabel
+
+type SuperZone
+    int    formBar
+    float  zoneTop
+    float  zoneBtm
+    float  returnLevel
+    bool   isBull
+    bool   isActive     = true
+    bool   returnFired  = false
+    box    zoneBox
+    label  formLabel
+    label  returnLabel
+    line   returnLine
+
+type SwingPoint
+    float  val = na
+    int    idx = na
+    bool   crossed = false
+
+type BullBearEvent
+    int    barIdx
+    float  level
+    float  upper
+    float  lower
+    bool   isBull
+    bool   isTrue
+
+type ChargeLevel
+    float  level
+    bool   isBull
+    int    barIdx
+    bool   violated = false
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE 1: VOB
+// ══════════════════════════════════════════════════════════════════════════════
+float ema_fast = ta.ema(close, EMA_FAST), float ema_slow = ta.ema(close, EMA_SLOW)
+bool vob_bull_cross = ta.crossover(ema_fast, ema_slow) and barstate.isconfirmed
+bool vob_bear_cross = ta.crossunder(ema_fast, ema_slow) and barstate.isconfirmed
+var float vob_bull_upper = na, var float vob_bull_lower = na, var int vob_bull_origin = na, var float vob_bull_vol = na, var bool vob_bull_new = false
+var float vob_bear_upper = na, var float vob_bear_lower = na, var int vob_bear_origin = na, var float vob_bear_vol = na, var bool vob_bear_new = false
+float atr_hi = ta.highest(ATR_VAL, 200) * 2.0
+if vob_bull_cross
+    float cumVol = 0.0, int originBar = bar_index, float originLow = low
+    for i = 1 to EMA_SLOW
+        if low[i] <= originLow
+            originLow := low[i], originBar := bar_index - i
+        cumVol += volume[i]
+    float src = math.min(open[bar_index - originBar], close[bar_index - originBar])
+    src := (src - originLow) < atr_hi * 0.5 ? originLow + atr_hi * 0.5 : src
+    vob_bull_upper := src, vob_bull_lower := originLow, vob_bull_origin := originBar, vob_bull_vol := cumVol, vob_bull_new := true
+else
+    vob_bull_new := false
+if vob_bear_cross
+    float cumVol = 0.0, int originBar = bar_index, float originHigh = high
+    for i = 1 to EMA_SLOW
+        if high[i] >= originHigh
+            originHigh := high[i], originBar := bar_index - i
+        cumVol += volume[i]
+    float src = math.max(open[bar_index - originBar], close[bar_index - originBar])
+    src := (originHigh - src) < atr_hi * 0.5 ? originHigh - atr_hi * 0.5 : src
+    vob_bear_upper := originHigh, vob_bear_lower := src, vob_bear_origin := originBar, vob_bear_vol := cumVol, vob_bear_new := true
+else
+    vob_bear_new := false
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SWING + ENGINE 2: ANISH + ENGINE 3: FLUX
+// ══════════════════════════════════════════════════════════════════════════════
+var int swingState = 0
+var SwingPoint swHigh = SwingPoint.new(na, na), var SwingPoint swLow = SwingPoint.new(na, na)
+float sw_upper = ta.highest(high, SWING_LEN), float sw_lower = ta.lowest(low, SWING_LEN)
+swingState := high[SWING_LEN] > sw_upper ? 0 : low[SWING_LEN] < sw_lower ? 1 : swingState
+if swingState == 0 and swingState[1] != 0
+    swHigh := SwingPoint.new(high[SWING_LEN], bar_index[SWING_LEN])
+if swingState == 1 and swingState[1] != 1
+    swLow := SwingPoint.new(low[SWING_LEN], bar_index[SWING_LEN])
+
+var float anish_bull_ob_upper = na, var float anish_bull_ob_lower = na, var int anish_bull_ob_idx = na
+var float anish_bull_prev_upper = na, var float anish_bull_prev_lower = na, var int anish_bull_prev_idx = na, var bool anish_bull_new = false
+var float anish_bear_ob_upper = na, var float anish_bear_ob_lower = na, var int anish_bear_ob_idx = na
+var float anish_bear_prev_upper = na, var float anish_bear_prev_lower = na, var int anish_bear_prev_idx = na, var bool anish_bear_new = false
+
+if close > swHigh.val and not swHigh.crossed and barstate.isconfirmed and not na(swHigh.val)
+    swHigh.crossed := true
+    float obLow = low[1], float obHigh = high[1], int obIdx = bar_index - 1
+    int lookback = bar_index - swHigh.idx
+    if lookback > 1
+        for i = 1 to lookback - 1
+            if open[i] > close[i] and low[i] <= obLow
+                obLow := low[i], obHigh := high[i], obIdx := bar_index - i
+    anish_bull_prev_upper := anish_bull_ob_upper, anish_bull_prev_lower := anish_bull_ob_lower, anish_bull_prev_idx := anish_bull_ob_idx
+    anish_bull_ob_upper := obHigh, anish_bull_ob_lower := obLow, anish_bull_ob_idx := obIdx
+    anish_bull_new := not na(anish_bull_prev_upper) and obIdx <= nz(anish_bull_prev_idx, 0) + EMA_SLOW and obHigh > nz(anish_bull_prev_lower, na) and obLow < nz(anish_bull_prev_upper, na)
+else
+    anish_bull_new := false
+
+if close < swLow.val and not swLow.crossed and barstate.isconfirmed and not na(swLow.val)
+    swLow.crossed := true
+    float obLow = low[1], float obHigh = high[1], int obIdx = bar_index - 1
+    int lookback = bar_index - swLow.idx
+    if lookback > 1
+        for i = 1 to lookback - 1
+            if open[i] < close[i] and high[i] >= obHigh
+                obHigh := high[i], obLow := low[i], obIdx := bar_index - i
+    anish_bear_prev_upper := anish_bear_ob_upper, anish_bear_prev_lower := anish_bear_ob_lower, anish_bear_prev_idx := anish_bear_ob_idx
+    anish_bear_ob_upper := obHigh, anish_bear_ob_lower := obLow, anish_bear_ob_idx := obIdx
+    anish_bear_new := not na(anish_bear_prev_lower) and obIdx <= nz(anish_bear_prev_idx, 0) + EMA_SLOW and obLow < nz(anish_bear_prev_upper, na) and obHigh > nz(anish_bear_prev_lower, na)
+else
+    anish_bear_new := false
+
+// FLUX
+var float flux_bull_ob_top = na, var float flux_bull_ob_btm = na, var int flux_bull_ob_time = na
+var bool flux_bull_ob_active = false, var bool flux_bull_pb_new = false, var int flux_bull_pb_idx = na
+var float flux_bear_ob_top = na, var float flux_bear_ob_btm = na, var int flux_bear_ob_time = na
+var bool flux_bear_ob_active = false, var bool flux_bear_pb_new = false, var int flux_bear_pb_idx = na
+var SwingPoint flux_swH = SwingPoint.new(na, na), var SwingPoint flux_swL = SwingPoint.new(na, na)
+if swingState == 0 and swingState[1] != 0
+    flux_swH := SwingPoint.new(high[SWING_LEN], bar_index[SWING_LEN])
+if swingState == 1 and swingState[1] != 1
+    flux_swL := SwingPoint.new(low[SWING_LEN], bar_index[SWING_LEN])
+if close > flux_swH.val and not flux_swH.crossed and barstate.isconfirmed and not na(flux_swH.val)
+    flux_swH.crossed := true
+    float boxBtm = math.min(open[1], close[1]), float boxTop = math.max(open[1], close[1]), int boxIdx = bar_index - 1
+    int lookback = bar_index - flux_swH.idx
+    if lookback > 1
+        for i = 1 to lookback - 1
+            if math.min(open[i], close[i]) < boxBtm
+                boxBtm := math.min(open[i], close[i]), boxTop := math.max(open[i], close[i]), boxIdx := bar_index - i
+    float obSize = math.abs(boxTop - boxBtm)
+    if obSize <= ATR_VAL * ATR_MULT and obSize > ATR_VAL * ATR_MIN
+        flux_bull_ob_top := boxTop, flux_bull_ob_btm := boxBtm, flux_bull_ob_time := boxIdx, flux_bull_ob_active := true
+if close < flux_swL.val and not flux_swL.crossed and barstate.isconfirmed and not na(flux_swL.val)
+    flux_swL.crossed := true
+    float boxTop = math.max(open[1], close[1]), float boxBtm = math.min(open[1], close[1]), int boxIdx = bar_index - 1
+    int lookback = bar_index - flux_swL.idx
+    if lookback > 1
+        for i = 1 to lookback - 1
+            if math.max(open[i], close[i]) > boxTop
+                boxTop := math.max(open[i], close[i]), boxBtm := math.min(open[i], close[i]), boxIdx := bar_index - i
+    float obSize = math.abs(boxTop - boxBtm)
+    if obSize <= ATR_VAL * ATR_MULT and obSize > ATR_VAL * ATR_MIN
+        flux_bear_ob_top := boxTop, flux_bear_ob_btm := boxBtm, flux_bear_ob_time := boxIdx, flux_bear_ob_active := true
+flux_bull_pb_new := false
+if flux_bull_ob_active and barstate.isconfirmed
+    if close < flux_bull_ob_btm
+        flux_bull_ob_active := false
+    else if low[1] < flux_bull_ob_top and low[1] > flux_bull_ob_btm and close > open and close > high[1]
+        flux_bull_pb_new := true, flux_bull_pb_idx := flux_bull_ob_time
+flux_bear_pb_new := false
+if flux_bear_ob_active and barstate.isconfirmed
+    if close > flux_bear_ob_top
+        flux_bear_ob_active := false
+    else if high[1] > flux_bear_ob_btm and high[1] < flux_bear_ob_top and close < open and close < low[1]
+        flux_bear_pb_new := true, flux_bear_pb_idx := flux_bear_ob_time
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CONFLUENCE → TNT 1.0 + ZONES + CHARGE + RETURN + DISPLACEMENT + NAPALM + CHARGE + SUDDEN CHANGE
+// ══════════════════════════════════════════════════════════════════════════════
+int CONF_WINDOW = EMA_SLOW * 2
+var int vob_bull_conf_bar = 0, var int anish_bull_conf_bar = 0, var int flux_bull_conf_bar = 0
+var int vob_bear_conf_bar = 0, var int anish_bear_conf_bar = 0, var int flux_bear_conf_bar = 0
+var float vob_bull_u = na, var float vob_bull_l = na, var float vob_bear_u = na, var float vob_bear_l = na
+if vob_bull_new
+    vob_bull_conf_bar := bar_index, vob_bull_u := vob_bull_upper, vob_bull_l := vob_bull_lower
+if vob_bear_new
+    vob_bear_conf_bar := bar_index, vob_bear_u := vob_bear_upper, vob_bear_l := vob_bear_lower
+if anish_bull_new
+    anish_bull_conf_bar := bar_index
+if anish_bear_new
+    anish_bear_conf_bar := bar_index
+if flux_bull_pb_new
+    flux_bull_conf_bar := bar_index
+if flux_bear_pb_new
+    flux_bear_conf_bar := bar_index
+
+f_temporal_ok(int a, int b, int c) =>
+    int mn = math.min(a, math.min(b, c)), int mx = math.max(a, math.max(b, c))
+    mx - mn <= CONF_WINDOW and mn > 0
+f_zones_overlap(float u1, float l1, float u2, float l2) => not na(u1) and not na(u2) and u1 >= l2 and u2 >= l1
+float volMedian = ta.median(volume, EMA_SLOW), float emaSlope = ema_fast - ema_fast[5], float rsiVal = ta.rsi(close, 14)
+f_synergy_bull(float vV, float vU, float vL, float aU, float aL) => vV > volMedian * EMA_SLOW * 0.5 and emaSlope > 0 and rsiVal < 80 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+f_synergy_bear(float vV, float vU, float vL, float aU, float aL) => vV > volMedian * EMA_SLOW * 0.5 and emaSlope < 0 and rsiVal > 20 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+
+var tnt_zones = array.new<Zone>(0)
+var int lastBullSigBar = 0, var int lastBearSigBar = 0
+bool bullConf = f_temporal_ok(vob_bull_conf_bar, anish_bull_conf_bar, flux_bull_conf_bar) and f_zones_overlap(vob_bull_u, vob_bull_l, anish_bull_ob_upper, anish_bull_ob_lower)
+bool bearConf = f_temporal_ok(vob_bear_conf_bar, anish_bear_conf_bar, flux_bear_conf_bar) and f_zones_overlap(vob_bear_u, vob_bear_l, anish_bear_ob_upper, anish_bear_ob_lower)
+bool raw_bullTNT = bullConf and f_synergy_bull(nz(vob_bull_vol), nz(vob_bull_u), nz(vob_bull_l), nz(anish_bull_ob_upper), nz(anish_bull_ob_lower)) and barstate.isconfirmed and (bar_index - lastBullSigBar) > MIN_SIG_GAP
+bool raw_bearTNT = bearConf and f_synergy_bear(nz(vob_bear_vol), nz(vob_bear_u), nz(vob_bear_l), nz(anish_bear_ob_upper), nz(anish_bear_ob_lower)) and barstate.isconfirmed and (bar_index - lastBearSigBar) > MIN_SIG_GAP
+
+f_bull_level() => math.avg(math.min(nz(vob_bull_u, high), nz(anish_bull_ob_upper, high)), math.max(nz(vob_bull_l, low), nz(anish_bull_ob_lower, low)))
+f_bear_level() => math.avg(math.min(nz(vob_bear_u, high), nz(anish_bear_ob_upper, high)), math.max(nz(vob_bear_l, low), nz(anish_bear_ob_lower, low)))
+f_bull_origin() => int org = math.min(nz(vob_bull_origin, bar_index), math.min(nz(anish_bull_ob_idx, bar_index), nz(flux_bull_pb_idx, bar_index))), org > 0 ? org : bar_index
+f_bear_origin() => int org = math.min(nz(vob_bear_origin, bar_index), math.min(nz(anish_bear_ob_idx, bar_index), nz(flux_bear_pb_idx, bar_index))), org > 0 ? org : bar_index
+var charge_levels = array.new<ChargeLevel>(0)
+
+color c_bullTNT = #089981, color c_bearTNT = #f23645
+if raw_bullTNT
+    lastBullSigBar := bar_index
+    int origin = f_bull_origin()
+    float oU = math.min(nz(vob_bull_u, high), nz(anish_bull_ob_upper, high)), float oL = math.max(nz(vob_bull_l, low), nz(anish_bull_ob_lower, low)), float lvl = math.avg(oU, oL)
+    tnt_zones.push(Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bull_vol), true, true, false, line.new(origin, lvl, bar_index, lvl, color = c_bullTNT, width = 2), label.new(na, na, na)))
+    charge_levels.push(ChargeLevel.new(lvl, true, bar_index))
+if raw_bearTNT
+    lastBearSigBar := bar_index
+    int origin = f_bear_origin()
+    float oU = math.min(nz(vob_bear_u, high), nz(anish_bear_ob_upper, high)), float oL = math.max(nz(vob_bear_l, low), nz(anish_bear_ob_lower, low)), float lvl = math.avg(oU, oL)
+    tnt_zones.push(Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bear_vol), false, true, false, line.new(origin, lvl, bar_index, lvl, color = c_bearTNT, width = 2), label.new(na, na, na)))
+    charge_levels.push(ChargeLevel.new(lvl, false, bar_index))
+
+// Return
+bool raw_retBullTNT = false, bool raw_retBearTNT = false
+if tnt_zones.size() > 0
+    for i = tnt_zones.size() - 1 to 0
+        Zone z = tnt_zones.get(i)
+        if z.isActive
+            z.lvlLine.set_x2(bar_index)
+            if z.isBull and close < z.lower
+                z.isActive := false, z.lvlLine.set_style(line.style_dotted)
+            if not z.isBull and close > z.upper
+                z.isActive := false, z.lvlLine.set_style(line.style_dotted)
+            if z.isActive and not z.returnFired and barstate.isconfirmed and bar_index > z.confirmIdx
+                float zH = z.upper - z.lower
+                if z.isBull
+                    float retLvl = z.lower + zH * (RET_TNT_PCT / 100.0)
+                    if low <= retLvl and close > z.lower
+                        z.returnFired := true, raw_retBullTNT := true
+                if not z.isBull
+                    float retLvl = z.upper - zH * (RET_TNT_PCT / 100.0)
+                    if high >= retLvl and close < z.upper
+                        z.returnFired := true, raw_retBearTNT := true
+    while tnt_zones.size() > maxZones
+        Zone old = tnt_zones.shift()
+        old.lvlLine.delete(), old.sigLabel.delete()
+
+// Displacement
+float disp_range = DISP_TYPE == "Open to Close" ? math.abs(open - close) : high - low
+float disp_std = ta.stdev(disp_range, DISP_STD_LEN), float disp_threshold = disp_std * DISP_STD_X
+bool isBullishFVG = low > high[2] and open[1] < close[1], bool isBearishFVG = high < low[2] and open[1] > close[1]
+bool prevBarDisplaced = disp_range[1] > disp_threshold[1]
+bool dispSignal = prevBarDisplaced and (isBullishFVG or isBearishFVG) and barstate.isconfirmed
+bool dispBull = dispSignal and close[1] > open[1], bool dispBear = dispSignal and close[1] < open[1]
+
+// Napalm + Charge
+bool raw_napalmBull = false, bool raw_napalmBear = false
+float pseudoBullLevel = na, float pseudoBearLevel = na
+if barstate.isconfirmed and tnt_zones.size() > 0
+    if dispBull
+        for i = tnt_zones.size() - 1 to 0
+            Zone z = tnt_zones.get(i)
+            if not z.isBull and z.isActive and low[1] > z.level
+                raw_napalmBull := true, pseudoBullLevel := z.level
+                break
+    if dispBear
+        for i = tnt_zones.size() - 1 to 0
+            Zone z = tnt_zones.get(i)
+            if z.isBull and z.isActive and high[1] < z.level
+                raw_napalmBear := true, pseudoBearLevel := z.level
+                break
+bool raw_bullCharge = false, bool raw_bearCharge = false
+float chargeBullLevel = na, float chargeBearLevel = na
+if barstate.isconfirmed and charge_levels.size() > 0
+    if dispBull
+        for i = charge_levels.size() - 1 to 0
+            ChargeLevel cl = charge_levels.get(i)
+            if not cl.isBull and not cl.violated and close[1] > cl.level
+                cl.violated := true, raw_bullCharge := true, chargeBullLevel := cl.level
+                charge_levels.push(ChargeLevel.new(low[1], true, bar_index))
+                break
+    if dispBear
+        for i = charge_levels.size() - 1 to 0
+            ChargeLevel cl = charge_levels.get(i)
+            if cl.isBull and not cl.violated and close[1] < cl.level
+                cl.violated := true, raw_bearCharge := true, chargeBearLevel := cl.level
+                charge_levels.push(ChargeLevel.new(high[1], false, bar_index))
+                break
+while charge_levels.size() > 100
+    charge_levels.shift()
+
+// Super Charge + Super TNT (internal)
+bool raw_superTNTBull = raw_bullTNT and raw_bearCharge, bool raw_superTNTBear = raw_bearTNT and raw_bullCharge
+
+// Event log + TNT 2.0 (compact)
+var bull_events = array.new<BullBearEvent>(0), var bear_events = array.new<BullBearEvent>(0)
+bool effectiveBullCharge = raw_bullCharge and not raw_bearTNT, bool effectiveBearCharge = raw_bearCharge and not raw_bullTNT
+bool anyBullEvent = raw_bullTNT or raw_napalmBull or effectiveBullCharge, bool anyBearEvent = raw_bearTNT or raw_napalmBear or effectiveBearCharge
+if anyBullEvent
+    int evtBar = raw_bullTNT ? bar_index : bar_index - 1
+    float evtLvl = raw_bullTNT ? f_bull_level() : raw_napalmBull ? pseudoBullLevel : chargeBullLevel
+    bull_events.push(BullBearEvent.new(evtBar, evtLvl, high, low, true, raw_bullTNT))
+    bear_events.clear()
+    while bull_events.size() > 20
+        bull_events.shift()
+if anyBearEvent and not anyBullEvent
+    int evtBar = raw_bearTNT ? bar_index : bar_index - 1
+    float evtLvl = raw_bearTNT ? f_bear_level() : raw_napalmBear ? pseudoBearLevel : chargeBearLevel
+    bear_events.push(BullBearEvent.new(evtBar, evtLvl, high, low, false, raw_bearTNT))
+    bull_events.clear()
+    while bear_events.size() > 20
+        bear_events.shift()
+
+var super_zones = array.new<SuperZone>(0)
+var int lastSuperBullBar = 0, var int lastSuperBearBar = 0
+bool raw_bullTNT2 = false, bool raw_bearTNT2 = false
+if bull_events.size() >= 2 and anyBullEvent and barstate.isconfirmed and (bar_index - lastSuperBullBar) > MIN_SIG_GAP
+    raw_bullTNT2 := true, lastSuperBullBar := bar_index
+if bear_events.size() >= 2 and anyBearEvent and not anyBullEvent and barstate.isconfirmed and (bar_index - lastSuperBearBar) > MIN_SIG_GAP
+    raw_bearTNT2 := true, lastSuperBearBar := bar_index
+
+// Return TNT 2.0 (compact)
+bool raw_retBullTNT2 = false, bool raw_retBearTNT2 = false
+if super_zones.size() > 0 and barstate.isconfirmed
+    for i = super_zones.size() - 1 to 0
+        SuperZone sz = super_zones.get(i)
+        if sz.isActive and not sz.returnFired
+            if sz.isBull and low <= sz.returnLevel and close > sz.zoneBtm
+                sz.returnFired := true, raw_retBullTNT2 := true
+            if not sz.isBull and high >= sz.returnLevel and close < sz.zoneTop
+                sz.returnFired := true, raw_retBearTNT2 := true
+    while super_zones.size() > maxSuperZones
+        super_zones.shift()
+
+// Sudden Change — Continuous only
+var int sc_lastBullChargeBar = na, var int sc_lastBearChargeBar = na
+var int sc_lastRetBullBar = na, var int sc_lastRetBearBar = na
+var int sc_lastBullTNTBar = na, var int sc_lastBearTNTBar = na
+var int sc_lastBullTNT2Bar = na, var int sc_lastBearTNT2Bar = na
+bool raw_contBull = (raw_bullCharge and not na(sc_lastRetBullBar) and (bar_index - 1 - sc_lastRetBullBar) <= SUDDEN_PROX) or ((raw_bullTNT or raw_bullTNT2) and not na(sc_lastBullChargeBar) and (bar_index - sc_lastBullChargeBar) <= SUDDEN_PROX) or (raw_bullCharge and ((not na(sc_lastBullTNTBar) and (bar_index - 1 - sc_lastBullTNTBar) <= SUDDEN_PROX) or (not na(sc_lastBullTNT2Bar) and (bar_index - 1 - sc_lastBullTNT2Bar) <= SUDDEN_PROX)))
+bool raw_contBear = (raw_bearCharge and not na(sc_lastRetBearBar) and (bar_index - 1 - sc_lastRetBearBar) <= SUDDEN_PROX) or ((raw_bearTNT or raw_bearTNT2) and not na(sc_lastBearChargeBar) and (bar_index - sc_lastBearChargeBar) <= SUDDEN_PROX) or (raw_bearCharge and ((not na(sc_lastBearTNTBar) and (bar_index - 1 - sc_lastBearTNTBar) <= SUDDEN_PROX) or (not na(sc_lastBearTNT2Bar) and (bar_index - 1 - sc_lastBearTNT2Bar) <= SUDDEN_PROX)))
+if raw_bullCharge
+    sc_lastBullChargeBar := bar_index - 1
+if raw_bearCharge
+    sc_lastBearChargeBar := bar_index - 1
+if raw_retBullTNT or raw_retBullTNT2
+    sc_lastRetBullBar := bar_index
+if raw_retBearTNT or raw_retBearTNT2
+    sc_lastRetBearBar := bar_index
+if raw_bullTNT
+    sc_lastBullTNTBar := bar_index
+if raw_bearTNT
+    sc_lastBearTNTBar := bar_index
+if raw_bullTNT2
+    sc_lastBullTNT2Bar := bar_index
+if raw_bearTNT2
+    sc_lastBearTNT2Bar := bar_index
+
+// Consolidated detection
+bool det_bullTNT = raw_bullTNT or raw_bullTNT2 or raw_superTNTBull
+bool det_bearTNT = raw_bearTNT or raw_bearTNT2 or raw_superTNTBear
+bool det_bullNapalm = raw_napalmBull or raw_bullCharge
+bool det_bearNapalm = raw_napalmBear or raw_bearCharge
+bool det_bullRetTNT = raw_retBullTNT or raw_retBullTNT2
+bool det_bearRetTNT = raw_retBearTNT or raw_retBearTNT2
+bool det_contBull = raw_contBull, bool det_contBear = raw_contBear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// USE V5 ENGINE — RVOL + WMD + FAUNA + PBJ + DISPLACEMENT + CS1 + PUP
+// ══════════════════════════════════════════════════════════════════════════════
+bool u5_is_new_day = ta.change(_dayKey()) != 0
+var int u5_sessionBarCount = 0, var int u5_lastCountedBar = -1
+if u5_is_new_day and bar_index != u5_lastCountedBar
+    u5_sessionBarCount := 1, u5_lastCountedBar := bar_index
+else if bar_index != u5_lastCountedBar
+    u5_sessionBarCount += 1, u5_lastCountedBar := bar_index
+
+// RVOL Engine (decoupled Engine A)
+int u5_bb_avgLen = 30, int u5_bb_smaLen = 20
+float u5_bb_spike = math.abs(close - open)
+float u5_bb_avgSpikeDenom = ta.sma(u5_bb_spike, u5_bb_avgLen)[1]
+float u5_bb_normPrice = u5_bb_spike / nz(u5_bb_avgSpikeDenom, 1.0)
+float u5_bb_avgVolDenom = ta.sma(volume, u5_bb_avgLen)[1]
+float u5_bb_normVol = volume / nz(u5_bb_avgVolDenom, 1.0)
+float u5_bb_diff = u5_bb_normPrice - u5_bb_normVol
+float u5_bb_posDiff = u5_bb_diff > 0 ? u5_bb_diff : na
+float u5_bb_smaDiff = ta.sma(u5_bb_posDiff, u5_bb_smaLen)
+bool u5_bb_baseBull = (close > open) and (u5_bb_posDiff > u5_bb_smaDiff) and barstate.isconfirmed
+bool u5_bb_baseBear = (close < open) and (u5_bb_posDiff > u5_bb_smaDiff) and barstate.isconfirmed
+u5_bb_inRange(v, lo, hi) => v >= lo and v < hi
+
+f_u5_1x(int _s) => _s<=10?38.0:_s<=15?33.0:_s<=30?28.0:_s<=45?23.0:_s<=60?20.0:_s<=120?18.0:_s<=300?13.0:_s<=360?13.0:_s<=540?11.0:_s<=600?10.0:_s<=660?9.0:_s<=900?7.5:_s<=1560?6.5:_s<=2340?6.0:_s<=3600?4.5:_s<=9000?4.0:_s<=11700?3.5:_s<259200?1.8:1.0
+f_u5_gs(int _s) => _s<60?f_u5_1x(_s)*3.0:_s<=300?35.0:_s<=600?25.0:_s<=1500?20.0:_s<=3000?20.0:_s<=7260?10.0:_s<=11700?8.0:_s<=86400?7.5:_s<=259200?3.5:3.0
+f_u5_saab(int _s) => f_u5_1x(_s) * 0.56
+f_u5_wtc(int _s) => f_u5_1x(_s) * 2.0
+f_u5_hiro(int _s) => _s<60?f_u5_1x(_s)*3.0:_s<=300?35.0:_s<=600?25.0:_s<=1500?25.0:_s<=3060?20.0:_s<=7260?10.0:_s<=11700?8.0:_s<=86400?7.5:_s<=259200?5:3.5
+float u5_th_saab = f_u5_saab(u5_tfSec), float u5_th_1x = f_u5_1x(u5_tfSec), float u5_th_gs = f_u5_gs(u5_tfSec)
+float u5_th_wtc = f_u5_wtc(u5_tfSec), float u5_th_hiro = f_u5_hiro(u5_tfSec)
+
+bool u5_SAAB = u5_bb_baseBull and u5_bb_inRange(u5_bb_normPrice, u5_th_saab, u5_th_1x)
+bool u5_Kratos = u5_bb_baseBear and u5_bb_inRange(u5_bb_normPrice, u5_th_saab, u5_th_1x)
+bool u5_GrandSlam = u5_bb_baseBull and (u5_bb_normPrice >= u5_th_gs)
+bool u5_MOAB = u5_bb_baseBear and (u5_bb_normPrice >= u5_th_gs)
+bool u5_RVOL1xB = u5_bb_baseBull and u5_bb_inRange(u5_bb_normPrice, u5_th_1x, u5_th_gs) and not u5_GrandSlam
+bool u5_RVOL1xR = u5_bb_baseBear and u5_bb_inRange(u5_bb_normPrice, u5_th_1x, u5_th_gs) and not u5_MOAB
+
+// WMD Engine (decoupled Engine B — relativeVolume)
+[u5_currentVol_reg, u5_pastVol_reg, _u5_unused] = _rvol(30, true)
+float u5_relVolRatio = u5_currentVol_reg / u5_pastVol_reg
+bool u5_WTC = barstate.isconfirmed and (u5_relVolRatio > u5_th_wtc) and (u5_relVolRatio <= u5_th_hiro)
+bool u5_Hiroshima = barstate.isconfirmed and (u5_relVolRatio > u5_th_hiro)
+bool u5_Pentagon = barstate.isconfirmed and (u5_relVolRatio >= u5_th_1x) and (u5_relVolRatio <= u5_th_wtc)
+var float u5_maxVol = 0.0
+bool u5_isNag = false
+if bar_index == 0
+    u5_maxVol := volume
+else if volume > u5_maxVol
+    u5_isNag := true, u5_maxVol := volume
+bool u5_Nagasaki = u5_isNag
+bool u5_WMD = u5_Pentagon or u5_WTC or u5_Hiroshima or u5_Nagasaki
+
+// HV1000
+bool u5_HV1000 = barstate.isconfirmed and volume >= ta.highest(volume, 1000)[1]
+
+// FAUNA
+float u5_f_atr = ATR14, float u5_f_avgVol = ta.sma(volume, 20), float u5_f_avgBody = ta.sma(math.abs(close - open), 20)
+float u5_f_avgDelta = ta.sma(math.abs(close - close[1]), 10), float u5_f_trendMA = ta.sma(close, 50)
+float u5_f_body = close - open, float u5_f_rng = high - low, float u5_f_bodySz = math.abs(u5_f_body)
+float u5_f_bodyRat = u5_f_rng == 0 ? 0.0 : u5_f_bodySz / u5_f_rng
+bool u5_f_up = u5_f_body > 0, bool u5_f_dn = u5_f_body < 0
+float u5_f_prev_body = close[1] - open[1], float u5_f_prev_range = high[1] - low[1]
+bool u5_MB_b = u5_f_up and u5_f_bodySz > 1.6 * u5_f_atr and u5_f_bodyRat > 0.70 and volume > 1.8 * u5_f_avgVol
+bool u5_RE_b = u5_f_up and u5_f_rng > 2.2 * u5_f_atr and (high - close) < 0.15 * u5_f_rng and volume > 1.8 * u5_f_avgVol
+bool u5_TA_b = u5_f_trendMA > u5_f_trendMA[1] and (close - close[1]) > 1.6 * u5_f_avgDelta and u5_f_up and volume > 1.8 * u5_f_avgVol
+bool u5_GG_b = (open - close[1]) > 0.9 * u5_f_atr and u5_f_up and low > close[1] and volume > 1.8 * u5_f_avgVol
+bool u5_StrongBear = close[1] < open[1] and math.abs(u5_f_prev_body) > 1.5 * u5_f_avgBody[1] and volume[1] > 1.5 * u5_f_avgVol[1]
+bool u5_WeakBear = close[1] < open[1] and (u5_f_prev_range == 0 ? 0.0 : math.abs(u5_f_prev_body) / u5_f_prev_range) <= 0.2
+bool u5_TR_b = u5_WeakBear and (u5_MB_b or u5_RE_b or u5_TA_b), bool u5_ES_b = u5_StrongBear and (u5_MB_b or u5_RE_b or u5_TA_b), bool u5_GDR_b = close[1] < open[1] and u5_GG_b
+int u5_b_core = (u5_MB_b ? 1 : 0) + (u5_RE_b ? 1 : 0) + (u5_TA_b ? 1 : 0)
+bool u5_b_gg_exc = u5_GG_b and not ((u5_b_core >= 2) and (u5_f_bodyRat >= 0.80))
+bool u5_FAUNABull = barstate.isconfirmed and (u5_MB_b or u5_RE_b or u5_TA_b) and not (u5_TR_b or u5_ES_b or u5_GDR_b or u5_b_gg_exc)
+
+bool u5_MB_r = u5_f_dn and u5_f_bodySz > 1.6 * u5_f_atr and u5_f_bodyRat > 0.70 and volume > 1.8 * u5_f_avgVol
+bool u5_RE_r = u5_f_dn and u5_f_rng > 2.2 * u5_f_atr and (close - low) < 0.15 * u5_f_rng and volume > 1.8 * u5_f_avgVol
+bool u5_TA_r = u5_f_trendMA < u5_f_trendMA[1] and (close[1] - close) > 1.6 * u5_f_avgDelta and u5_f_dn and volume > 1.8 * u5_f_avgVol
+bool u5_GG_r = (close[1] - open) > 0.9 * u5_f_atr and u5_f_dn and high < close[1] and volume > 1.8 * u5_f_avgVol
+bool u5_StrongBull = close[1] > open[1] and math.abs(u5_f_prev_body) > 1.5 * u5_f_avgBody[1] and volume[1] > 1.5 * u5_f_avgVol[1]
+bool u5_WeakBull = close[1] > open[1] and (u5_f_prev_range == 0 ? 0.0 : math.abs(u5_f_prev_body) / u5_f_prev_range) <= 0.2
+bool u5_TR_r = u5_WeakBull and (u5_MB_r or u5_RE_r or u5_TA_r), bool u5_ES_r = u5_StrongBull and (u5_MB_r or u5_RE_r or u5_TA_r), bool u5_GDR_r = close[1] > open[1] and u5_GG_r
+int u5_s_core = (u5_MB_r ? 1 : 0) + (u5_RE_r ? 1 : 0) + (u5_TA_r ? 1 : 0)
+bool u5_s_gg_exc = u5_GG_r and not ((u5_s_core >= 2) and (u5_f_bodyRat >= 0.80))
+bool u5_FAUNABear = barstate.isconfirmed and (u5_MB_r or u5_RE_r or u5_TA_r) and not (u5_TR_r or u5_ES_r or u5_GDR_r or u5_s_gg_exc)
+
+// Displacement (USE V5)
+float u5_disp_rng = math.abs(open - close), float u5_disp_std = ta.stdev(u5_disp_rng, u5_std_len)
+float u5_disp_thresh_min = u5_disp_std * u5_std_min
+bool u5_disp_bullFVG = low > high[2] and close[1] > open[1], bool u5_disp_bearFVG = high < low[2] and close[1] < open[1]
+bool u5_DISPBull = barstate.isconfirmed and (u5_disp_rng[1] > u5_disp_thresh_min[1]) and u5_disp_bullFVG
+bool u5_DISPBear = barstate.isconfirmed and (u5_disp_rng[1] > u5_disp_thresh_min[1]) and u5_disp_bearFVG
+
+// PUP / PPD
+float u5_pp_redVol = close < open ? volume : 0.0, float u5_pp_greenVol = close > open ? volume : 0.0
+float u5_pp_hiRedVol = ta.highest(u5_pp_redVol[1], 10), float u5_pp_hiGreenVol = ta.highest(u5_pp_greenVol[1], 10)
+bool u5_PUP = barstate.isconfirmed and ((close - open) / open) * 100 > 3.0 and volume > u5_pp_hiRedVol
+bool u5_PPD = barstate.isconfirmed and ((open - close) / open) * 100 > 3.0 and volume > u5_pp_hiGreenVol
+
+// PBJ Engine (compact)
+float u5_base_ma = ta.vwma(close, 5), float u5_st_atr = 2.0 * ta.atr(10)
+float u5_dyn_long = u5_base_ma - u5_st_atr, float u5_dyn_short = u5_base_ma + u5_st_atr
+var int u5_st_dir = 1
+float u5_sig_line = 0.0, float u5_curr_long = 0.0
+u5_curr_long := u5_base_ma > nz(u5_curr_long[1], u5_dyn_long) ? math.max(u5_dyn_long, nz(u5_curr_long[1])) : u5_dyn_long
+float u5_curr_short = 0.0
+u5_curr_short := u5_base_ma < nz(u5_curr_short[1], u5_dyn_short) ? math.min(u5_dyn_short, nz(u5_curr_short[1])) : u5_dyn_short
+if nz(u5_st_dir[1]) == -1 and close > nz(u5_curr_short[1])
+    u5_st_dir := 1
+else if nz(u5_st_dir[1]) == 1 and close < nz(u5_curr_long[1])
+    u5_st_dir := -1
+u5_sig_line := u5_st_dir == 1 ? u5_curr_long : u5_curr_short
+bool u5_buy_cross = ta.crossover(close, u5_sig_line), bool u5_sell_cross = ta.crossunder(close, u5_sig_line)
+bool u5_bull_reaccel = u5_st_dir == 1 and u5_sig_line > nz(u5_sig_line[1]) and nz(u5_sig_line[1]) == nz(u5_sig_line[2])
+bool u5_bear_reaccel = u5_st_dir == -1 and u5_sig_line < nz(u5_sig_line[1]) and nz(u5_sig_line[1]) == nz(u5_sig_line[2])
+float u5_pbjMA = ta.ema(close, 20), float u5_pbjATR = ta.atr(14), float u5_zoo_avg_vol = ta.sma(volume, 20)
+float u5_zoo_thresh = close == 0 ? 0 : (u5_pbjATR / close * 3.0)
+bool u5_pbj_buy = low < u5_pbjMA * (1 - u5_zoo_thresh) and low == ta.lowest(low, 25) and volume > u5_zoo_avg_vol * 0.1
+bool u5_pbj_sell = high > u5_pbjMA * (1 + u5_zoo_thresh) and high == ta.highest(high, 25) and volume > u5_zoo_avg_vol * 0.1
+
+type u5_lvl
+    float upper
+    float lower
+    float vol
+    bool  approached
+var u5_bull_lvls = array.new<u5_lvl>(), var u5_bear_lvls = array.new<u5_lvl>()
+float u5_atr_pb = ATR14 * 2.0
+f_u5_add_lvl(arr, up, lo, v) => if math.abs(up - lo) >= syminfo.mintick
+    array.push(arr, u5_lvl.new(up, lo, v, false))
+if u5_buy_cross
+    float up = math.max(open[1], close[1]), float lo = low[1]
+    if up - lo < u5_atr_pb * 0.5
+        up := lo + u5_atr_pb * 0.5
+    f_u5_add_lvl(u5_bull_lvls, up, lo, volume[1])
+if u5_sell_cross
+    float up = high[1], float lo = math.min(open[1], close[1])
+    if up - lo < u5_atr_pb * 0.5
+        lo := up - u5_atr_pb * 0.5
+    f_u5_add_lvl(u5_bear_lvls, up, lo, volume[1])
+if u5_bull_reaccel and not na(u5_sig_line)
+    float p2 = math.min(open, close)
+    f_u5_add_lvl(u5_bull_lvls, math.max(u5_sig_line, p2), math.min(u5_sig_line, p2), volume)
+if u5_bear_reaccel and not na(u5_sig_line)
+    float p2 = math.max(open, close)
+    f_u5_add_lvl(u5_bear_lvls, math.max(u5_sig_line, p2), math.min(u5_sig_line, p2), volume)
+
+var bool u5_wait_buy = false, var bool u5_wait_sell = false
+var bool u5_wait_pbj_buy = false, var bool u5_wait_pbj_sell = false
+f_u5_check_approach(arr, is_bull) =>
+    bool approached = false
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0
+            if i >= array.size(arr)
+                continue
+            u5_lvl l = array.get(arr, i)
+            if is_bull and close < l.lower
+                array.remove(arr, i)
+                continue
+            if not is_bull and close > l.upper
+                array.remove(arr, i)
+                continue
+            float ap = is_bull ? l.upper * 1.005 : l.lower * 0.995
+            if is_bull
+                if not l.approached and low <= ap
+                    approached := true, l.approached := true
+                else if l.approached and low > l.upper
+                    l.approached := false
+            else
+                if not l.approached and high >= ap
+                    approached := true, l.approached := true
+                else if l.approached and high < l.lower
+                    l.approached := false
+    approached
+if barstate.isconfirmed
+    if f_u5_check_approach(u5_bull_lvls, true)
+        u5_wait_buy := true
+    if f_u5_check_approach(u5_bear_lvls, false)
+        u5_wait_sell := true
+if u5_pbj_buy
+    u5_wait_pbj_buy := true
+if u5_pbj_sell
+    u5_wait_pbj_sell := true
+while u5_bull_lvls.size() > 30
+    u5_bull_lvls.shift()
+while u5_bear_lvls.size() > 30
+    u5_bear_lvls.shift()
+bool u5_sig_pbj_buy = u5_buy_cross and u5_wait_pbj_buy, bool u5_sig_pb_buy = u5_buy_cross and u5_wait_buy
+bool u5_sig_pbj_sell = u5_sell_cross and u5_wait_pbj_sell, bool u5_sig_pb_sell = u5_sell_cross and u5_wait_sell
+if u5_sig_pb_buy
+    u5_wait_buy := false
+if u5_sig_pbj_buy
+    u5_wait_pbj_buy := false
+if u5_sig_pb_sell
+    u5_wait_sell := false
+if u5_sig_pbj_sell
+    u5_wait_pbj_sell := false
+bool u5_PBJBull = barstate.isconfirmed and u5_sig_pbj_buy
+bool u5_PBJBear = barstate.isconfirmed and u5_sig_pbj_sell
+
+// CS1 (FVG Combo — for CATALYST and enrichment)
+type u5_fvg_s
+    float mx
+    float mn
+    bool  bull
+    int   t
+    int   idx
+    bool  hv
+float u5_gz_v1 = volume[1], float u5_hv5k = ta.highest(volume, 5000)[1], float u5_hv252 = ta.highest(volume, 252)[1], float u5_hv63 = ta.highest(volume, 63)[1]
+bool u5_gz_isHV = (u5_gz_v1 == u5_hv5k) or (u5_gz_v1 == u5_hv252) or (u5_gz_v1 == u5_hv63)
+float u5_gz_thresh = ta.cum((high - low) / low) / bar_index
+bool u5_gz_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > u5_gz_thresh
+bool u5_gz_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > u5_gz_thresh
+var u5_gz_fvgs = array.new<u5_fvg_s>(0), var int u5_gz_lastT = 0
+bool u5_gz_bullGZI = false, bool u5_gz_bearGZI = false, bool u5_gz_bullHV = false, bool u5_gz_bearHV = false
+if barstate.isconfirmed and u5_gz_bFVG and time != u5_gz_lastT
+    float mx = low, float mn = high[2]
+    if u5_gz_isHV
+        u5_gz_bullHV := true
+    if u5_gz_fvgs.size() > 0
+        for i = 0 to u5_gz_fvgs.size() - 1
+            u5_fvg_s e = u5_gz_fvgs.get(i)
+            if e.bull and bar_index - e.idx <= 7 and (math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and u5_gz_isHV))
+                u5_gz_bullGZI := true
+                break
+    u5_gz_fvgs.unshift(u5_fvg_s.new(mx, mn, true, time, bar_index, u5_gz_isHV)), u5_gz_lastT := time
+if barstate.isconfirmed and u5_gz_sFVG and time != u5_gz_lastT
+    float mx = low[2], float mn = high
+    if u5_gz_isHV
+        u5_gz_bearHV := true
+    if u5_gz_fvgs.size() > 0
+        for i = 0 to u5_gz_fvgs.size() - 1
+            u5_fvg_s e = u5_gz_fvgs.get(i)
+            if not e.bull and bar_index - e.idx <= 7 and (math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and u5_gz_isHV))
+                u5_gz_bearGZI := true
+                break
+    u5_gz_fvgs.unshift(u5_fvg_s.new(mx, mn, false, time, bar_index, u5_gz_isHV)), u5_gz_lastT := time
+if u5_gz_fvgs.size() > 0
+    for i = u5_gz_fvgs.size() - 1 to 0
+        u5_fvg_s g = u5_gz_fvgs.get(i)
+        if (g.bull and close < g.mn) or (not g.bull and close > g.mx)
+            u5_gz_fvgs.remove(i)
+if u5_gz_fvgs.size() > 50
+    u5_gz_fvgs.pop()
+
+float u5_cs_bp1 = high[1] - low[1] == 0 ? 0.0 : math.abs(close[1] - open[1]) / (high[1] - low[1])
+bool u5_cs_vb = u5_cs_bp1 >= 0.85
+bool u5_CS1_Bull = barstate.isconfirmed and u5_cs_vb and (u5_gz_bullHV or u5_gz_bullGZI) and (nz(u5_SAAB[1]) or nz(u5_RVOL1xB[1]) or nz(u5_GrandSlam[1]) or nz(u5_Pentagon[1]) or nz(u5_WTC[1]) or nz(u5_Hiroshima[1]) or nz(u5_Nagasaki[1]))
+bool u5_CS1_Bear = barstate.isconfirmed and u5_cs_vb and (u5_gz_bearHV or u5_gz_bearGZI) and (nz(u5_Kratos[1]) or nz(u5_RVOL1xR[1]) or nz(u5_MOAB[1]) or nz(u5_Pentagon[1]) or nz(u5_WTC[1]) or nz(u5_Hiroshima[1]) or nz(u5_Nagasaki[1]))
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DYNAMITE v2 — B2B Displacement + FAUNA on bar[1] AND bar[2] + bar[0] FVG
+// ──────────────────────────────────────────────────────────────────────────────
+// v2 changes (Verification Protocol Rule 1 + Rule 4 compliance):
+//   • FVG check now MANDATORY (was missing — calling stdev range "displacement"
+//     without FVG was indefensible per Rule 1).
+//   • Displacement candles are bar[1] AND bar[2] (D2+ pattern). bar[0] is the
+//     confirmation bar that gaps above/below bar[2] (FVG).
+//   • FAUNA checked on bar[1] AND bar[2] (the displacement candles), NOT on
+//     bar[0] which is the confirmation bar (Rule 4 / Example 9).
+//   • Boolean true on bar[0]; visual plot offset = -1 (anchors to bar[1],
+//     the most recent displacement candle).
+// ══════════════════════════════════════════════════════════════════════════════
+float dyn_disp = math.abs(open - close)
+float dyn_std = ta.stdev(dyn_disp, 100)
+// Both bar[1] AND bar[2] must exceed the range threshold (D2+ pattern)
+bool dyn_disp_b1 = dyn_disp[1] > nz(dyn_std[1]) * dynStdMult
+bool dyn_disp_b2 = dyn_disp[2] > nz(dyn_std[2]) * dynStdMult
+// FVG confirmation on bar[0] vs bar[2] (gap that bar[1] body spans)
+bool dyn_bullFVG = low > high[2] and close[1] > open[1]
+bool dyn_bearFVG = high < low[2] and close[1] < open[1]
+// Both displacement candles same color
+bool dyn_bull_dir = close[1] > open[1] and close[2] > open[2]
+bool dyn_bear_dir = close[1] < open[1] and close[2] < open[2]
+// FAUNA on each displacement candle (NOT on confirmation bar[0])
+bool dyn_fauna_bull = nz(u5_FAUNABull[1]) and nz(u5_FAUNABull[2])
+bool dyn_fauna_bear = nz(u5_FAUNABear[1]) and nz(u5_FAUNABear[2])
+bool det_dynamiteBull = barstate.isconfirmed and dyn_disp_b1 and dyn_disp_b2 and dyn_bull_dir and dyn_fauna_bull and dyn_bullFVG
+bool det_dynamiteBear = barstate.isconfirmed and dyn_disp_b1 and dyn_disp_b2 and dyn_bear_dir and dyn_fauna_bear and dyn_bearFVG
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HEAVY PENTAGON — 5 Heavy Combo classifications + WBUSH aggregate
+// ──────────────────────────────────────────────────────────────────────────────
+// Ports HEAVY PENTAGON's Stage-5 combo detections into TNT OD using existing
+// USE V5 pipeline outputs (u5_*). Mirrors HEAVY PENTAGON exactly:
+//   Group A (Pipeline 1, directional, excludes SAAB/Kratos):
+//     groupA_Bull = u5_RVOL1xB OR u5_GrandSlam
+//     groupA_Bear = u5_RVOL1xR OR u5_MOAB
+//   Group B (Pipeline 2, neutral heavy):
+//     groupB = u5_Pentagon OR u5_WTC OR u5_Hiroshima
+//   Direction classifier: u5_DISPBull / u5_DISPBear / noDisp (no FVG-confirmed
+//                         displacement either direction → neutral)
+//
+// 5 base combos × 3 directions = 15 sub-signals. WBUSH = any of the 15 fired.
+// ══════════════════════════════════════════════════════════════════════════════
+bool hp_groupA_Bull = u5_RVOL1xB or u5_GrandSlam
+bool hp_groupA_Bear = u5_RVOL1xR or u5_MOAB
+bool hp_groupB      = u5_Pentagon or u5_WTC or u5_Hiroshima
+
+bool hp_baseYinYang   = (hp_groupA_Bull or hp_groupA_Bear) and hp_groupB
+bool hp_baseNagasaki  = u5_Nagasaki and (hp_groupA_Bull or hp_groupA_Bear)
+bool hp_baseNagasakiV = u5_Nagasaki and hp_groupB
+bool hp_baseTrident   = u5_Nagasaki and (hp_groupA_Bull or hp_groupA_Bear) and hp_groupB
+bool hp_baseNHx2      = (u5_Pentagon and u5_WTC) or (u5_Pentagon and u5_Hiroshima) or (u5_WTC and u5_Hiroshima)
+
+bool hp_noDisp = (not u5_DISPBull) and (not u5_DISPBear)
+
+// Heavy Yin-Yang (P1 + P2)
+bool hp_HYYBull    = hp_baseYinYang and u5_DISPBull
+bool hp_HYYBear    = hp_baseYinYang and u5_DISPBear
+bool hp_HYYNeutral = hp_baseYinYang and hp_noDisp
+// Heavy Nagasaki (P3 + P1)
+bool hp_HNBull     = hp_baseNagasaki and u5_DISPBull
+bool hp_HNBear     = hp_baseNagasaki and u5_DISPBear
+bool hp_HNNeutral  = hp_baseNagasaki and hp_noDisp
+// Heavy Nagasaki Vol (P3 + P2)
+bool hp_HNVBull    = hp_baseNagasakiV and u5_DISPBull
+bool hp_HNVBear    = hp_baseNagasakiV and u5_DISPBear
+bool hp_HNVNeutral = hp_baseNagasakiV and hp_noDisp
+// Heavy Trident (P1 + P2 + P3)
+bool hp_HTBull     = hp_baseTrident and u5_DISPBull
+bool hp_HTBear     = hp_baseTrident and u5_DISPBear
+bool hp_HTNeutral  = hp_baseTrident and hp_noDisp
+// Neutral Heavy x2 (P2 × 2)
+bool hp_NHx2Bull    = hp_baseNHx2 and u5_DISPBull
+bool hp_NHx2Bear    = hp_baseNHx2 and u5_DISPBear
+bool hp_NHx2Neutral = hp_baseNHx2 and hp_noDisp
+
+// WBUSH aggregates — any of the 15 fired
+bool sig_WBUSH_Bull    = hp_HYYBull    or hp_HNBull    or hp_HNVBull    or hp_HTBull    or hp_NHx2Bull
+bool sig_WBUSH_Bear    = hp_HYYBear    or hp_HNBear    or hp_HNVBear    or hp_HTBear    or hp_NHx2Bear
+bool sig_WBUSH_Neutral = hp_HYYNeutral or hp_HNNeutral or hp_HNVNeutral or hp_HTNeutral or hp_NHx2Neutral
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HCT ENGINE (Displacement #4) — INLINE-PORTED FROM HCT STANDALONE
+// ──────────────────────────────────────────────────────────────────────────────
+// Per Indicator Trust Rules: HCT uses HCT's OWN threshold formulas, NOT TNT
+// OD's u5_*. The two indicators have different f_rvol_1x_threshold curves at
+// 60s–600s timeframes; same-named signals are NOT equivalent across them.
+//
+// Pipelines reused from TNT OD (identical math): bb_normalizedPrice (already
+// computed as u5_bb_normPrice), Nagasaki (u5_Nagasaki). HCT-specific: its
+// own threshold curves + its own RVOL Reg call + its own displacement engine.
+// ══════════════════════════════════════════════════════════════════════════════
+f_hct_1x(int _s) =>
+    _s <= 10   ? 38.0 :
+     _s <= 15   ? 33.0 :
+     _s <= 30   ? 28.0 :
+     _s <= 45   ? 23.0 :
+     _s <= 60   ? 20.0 :
+     _s <= 120  ? 19.0 :
+     _s <= 180  ? 17.0 :
+     _s <= 240  ? 16.0 :
+     _s <= 300  ? 15.0 :
+     _s <= 360  ? 14.0 :
+     _s <= 420  ? 12.0 :
+     _s <= 480  ? 11.0 :
+     _s <= 540  ? 10.0 :
+     _s <= 600  ? 10.0 :
+     _s <= 900  ? 8.4  :
+     _s <= 1800 ? 6.9  :
+     _s <= 3600 ? 5.9  :
+     _s <= 7200 ? 3.0  : 1.8
+f_hct_saab(int _s) => f_hct_1x(_s) * 0.56
+f_hct_gs(int _s) =>
+    _s <= 10   ? 114.0 :
+     _s <= 15   ? 99.0 :
+     _s <= 30   ? 84.0 :
+     _s <= 45   ? 69.0 :
+     _s <= 60   ? 35.0 :
+     _s <= 300  ? 35.0 :
+     _s <= 600  ? 25.0 :
+     _s <= 900  ? 20.0 :
+     _s <= 3600 ? 10.0 : 8.0
+f_hct_wtc(int _s) => f_hct_1x(_s) * 2.0
+f_hct_hiro(int _s) => f_hct_gs(_s)
+
+float hct_th_saab = f_hct_saab(u5_tfSec)
+float hct_th_1x   = f_hct_1x(u5_tfSec)
+float hct_th_gs   = f_hct_gs(u5_tfSec)
+float hct_th_wtc  = f_hct_wtc(u5_tfSec)
+float hct_th_hiro = f_hct_hiro(u5_tfSec)
+
+// HCT RVOL Bull/Bear — uses HCT thresholds (same bb_normPrice as USE V5)
+bool hct_SAAB        = u5_bb_baseBull and u5_bb_normPrice >= hct_th_saab and u5_bb_normPrice <  hct_th_1x
+bool hct_Kratos      = u5_bb_baseBear and u5_bb_normPrice >= hct_th_saab and u5_bb_normPrice <  hct_th_1x
+bool hct_BullRVOL1x  = u5_bb_baseBull and u5_bb_normPrice >= hct_th_1x   and u5_bb_normPrice <  hct_th_gs
+bool hct_BearRVOL1x  = u5_bb_baseBear and u5_bb_normPrice >= hct_th_1x   and u5_bb_normPrice <  hct_th_gs
+bool hct_GrandSlam   = u5_bb_baseBull and u5_bb_normPrice >= hct_th_gs
+bool hct_MOAB        = u5_bb_baseBear and u5_bb_normPrice >= hct_th_gs
+
+// HCT RVOL Reg — uses HCT thresholds (same relVolRatio as USE V5)
+bool hct_Pentagon  = barstate.isconfirmed and u5_relVolRatio >= hct_th_1x  and u5_relVolRatio <= hct_th_wtc
+bool hct_WTC       = barstate.isconfirmed and u5_relVolRatio >  hct_th_wtc and u5_relVolRatio <= hct_th_hiro
+bool hct_Hiroshima = barstate.isconfirmed and u5_relVolRatio >  hct_th_hiro
+
+// HCT Displacement (Engine #4) — its own σ-mult and FVG threshold
+float hct_thresh = hct_auto ? ta.cum((high - low) / low) / bar_index : hct_threshPct / 100.0
+bool  hct_bFVG   = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > hct_thresh
+bool  hct_sFVG   = high < low[2] and close[1] < low[2] and (low[2] - high) / high > hct_thresh
+float hct_barRange   = high[1] - low[1]
+float hct_rangeStdev = ta.stdev(high - low, hct_disp_lookback)
+bool  hct_dispCandleMet = hct_barRange > hct_disp_strength * nz(hct_rangeStdev[1])
+bool  hct_dispBull = barstate.isconfirmed and hct_dispCandleMet and (close[1] > open[1]) and hct_bFVG
+bool  hct_dispBear = barstate.isconfirmed and hct_dispCandleMet and (close[1] < open[1]) and hct_sFVG
+bool  hct_noDisp   = (not hct_dispBull) and (not hct_dispBear)
+
+// HCT base combos
+bool hct_groupA_Bull = hct_BullRVOL1x or hct_GrandSlam
+bool hct_groupA_Bear = hct_BearRVOL1x or hct_MOAB
+bool hct_groupB      = hct_Pentagon or hct_WTC or hct_Hiroshima
+bool hct_baseYY      = (hct_groupA_Bull or hct_groupA_Bear) and hct_groupB
+bool hct_baseN       = u5_Nagasaki and (hct_groupA_Bull or hct_groupA_Bear)
+bool hct_baseNV      = u5_Nagasaki and hct_groupB
+bool hct_baseT       = u5_Nagasaki and (hct_groupA_Bull or hct_groupA_Bear) and hct_groupB
+bool hct_baseNH      = (hct_Pentagon and hct_WTC) or (hct_Pentagon and hct_Hiroshima) or (hct_WTC and hct_Hiroshima)
+bool hct_baseAny     = hct_baseYY or hct_baseN or hct_baseNV or hct_baseT or hct_baseNH
+
+// HCT master OR-gates (offset = -1, due to dispBull/Bear FVG chain)
+bool hct_bull    = hct_baseAny and hct_dispBull
+bool hct_bear    = hct_baseAny and hct_dispBear
+bool hct_neutral = hct_baseAny and hct_noDisp
+
+// ══════════════════════════════════════════════════════════════════════════════
+// UC (UNIFIED COMBO) ENGINE — PLACEHOLDER, REPLACEABLE
+// ──────────────────────────────────────────────────────────────────────────────
+// This is a best-guess inline definition of UC for use by the new conditional
+// gate and as a Tier 1 substitute in T1 RELAY / T1 STACK. UC = ≥ 2 distinct
+// confluence streams from {FAUNA, RVOL tier, WMD, PUP/PPD, CS1}. Offset = 0
+// (current-bar atoms only).
+//
+// IF YOU HAVE THE REAL SQUARIFY v2 UC ENGINE SOURCE: paste it in here in
+// place of the block below and assign the resulting bull/bear booleans to
+// `uc_bull` / `uc_bear`. The rest of the file uses only those two names.
+// ══════════════════════════════════════════════════════════════════════════════
+int uc_bull_count = (u5_FAUNABull ? 1 : 0) + ((u5_RVOL1xB or u5_GrandSlam or u5_SAAB) ? 1 : 0) + (u5_WMD ? 1 : 0) + (u5_PUP ? 1 : 0) + (u5_CS1_Bull ? 1 : 0)
+int uc_bear_count = (u5_FAUNABear ? 1 : 0) + ((u5_RVOL1xR or u5_MOAB or u5_Kratos) ? 1 : 0) + (u5_WMD ? 1 : 0) + (u5_PPD ? 1 : 0) + (u5_CS1_Bear ? 1 : 0)
+bool uc_bull = barstate.isconfirmed and uc_bull_count >= 2
+bool uc_bear = barstate.isconfirmed and uc_bear_count >= 2
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NAGASAKI + ANY (gate condition)
+// ──────────────────────────────────────────────────────────────────────────────
+// u5_Nagasaki AND any other directional/volume tier signal on same bar.
+// ══════════════════════════════════════════════════════════════════════════════
+bool nagAny_bull = barstate.isconfirmed and u5_Nagasaki and (u5_Pentagon or u5_WTC or u5_Hiroshima or u5_RVOL1xB or u5_GrandSlam or u5_SAAB)
+bool nagAny_bear = barstate.isconfirmed and u5_Nagasaki and (u5_Pentagon or u5_WTC or u5_Hiroshima or u5_RVOL1xR or u5_MOAB or u5_Kratos)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GATE DISPLACEMENT (Engine #5) — DEDICATED to the new conditional gate
+// ──────────────────────────────────────────────────────────────────────────────
+// σ-multiplier from gateStdMult input. Lookback reuses DISP_STD_LEN (Engine
+// #1's window) for stdev-window consistency. FVG check uses Engine #1's
+// isBullishFVG/isBearishFVG (already computed). Independent of all other
+// engines — adjust gateStdMult freely.
+// ══════════════════════════════════════════════════════════════════════════════
+float gate_disp_std       = ta.stdev(disp_range, DISP_STD_LEN)
+float gate_disp_threshold = gate_disp_std * gateStdMult
+bool  gate_disp_bull      = barstate.isconfirmed and (disp_range[1] > nz(gate_disp_threshold[1])) and isBullishFVG and (close[1] > open[1])
+bool  gate_disp_bear      = barstate.isconfirmed and (disp_range[1] > nz(gate_disp_threshold[1])) and isBearishFVG and (close[1] < open[1])
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MASTER OR-GATE (the conditional requirement)
+// ──────────────────────────────────────────────────────────────────────────────
+// Bull = RVOL1x OR Grand Slam OR Unified Combo OR Nagasaki+Any OR HCT OR
+//        gate displacement. Bear mirrors with bear-side atoms.
+// When en_newGate is OFF, gate_bull/gate_bear default to true (passthrough).
+// ══════════════════════════════════════════════════════════════════════════════
+bool gate_bull_raw = u5_RVOL1xB or u5_GrandSlam or uc_bull or nagAny_bull or hct_bull or gate_disp_bull
+bool gate_bear_raw = u5_RVOL1xR or u5_MOAB     or uc_bear or nagAny_bear or hct_bear or gate_disp_bear
+bool gate_bull = (not en_newGate) or gate_bull_raw
+bool gate_bear = (not en_newGate) or gate_bear_raw
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COMBO DETECTION — VISUAL BAR ALIGNED
+// ══════════════════════════════════════════════════════════════════════════════
+// RC NPM+TNT: NPM detects bar[0] (visual bar[0]-1), TNT at [1] = visual bar[0]-1 → same visual bar
+// v3: gated by gate_bull[1] / gate_bear[1] (offset -1 → check gate at visual bar 1)
+bool sig_rcNTBull = det_bullNapalm and (det_bullTNT[1] == true) and en_rcNTBull and nz(gate_bull[1])
+bool sig_rcNTBear = det_bearNapalm and (det_bearTNT[1] == true) and en_rcNTBear and nz(gate_bear[1])
+// RC TNT+RET: both offset-0, same detection bar = same visual bar
+bool det_rcTRBull = det_bullTNT and det_bullRetTNT, bool det_rcTRBear = det_bearTNT and det_bearRetTNT
+// RC RET+NPM: NPM detects bar[0] (visual bar[0]-1), Return at [1] = visual bar[0]-1 → same visual bar
+bool det_rcRNBull = det_bullNapalm and (det_bullRetTNT[1] == true), bool det_rcRNBear = det_bearNapalm and (det_bearRetTNT[1] == true)
+// PBJ+NPM: NPM offset-1 (visual bar[0]-1), PBJ at [1] = visual bar[0]-1 → same visual bar
+bool det_pnBull = det_bullNapalm and (u5_PBJBull[1] == true), bool det_pnBear = det_bearNapalm and (u5_PBJBear[1] == true)
+// PBJ+TNT: both offset-0, same detection bar = same visual bar
+bool det_ptBull = det_bullTNT and u5_PBJBull, bool det_ptBear = det_bearTNT and u5_PBJBear
+// PBJ+RET: both offset-0, same detection bar = same visual bar
+bool det_prBull = det_bullRetTNT and u5_PBJBull, bool det_prBear = det_bearRetTNT and u5_PBJBear
+
+// FUSE: NPM→TNT→CONT sequential within proximity window
+var int lastBullNPMVis = na, var int lastBullTNTVis = na, var int lastBearNPMVis = na, var int lastBearTNTVis = na
+if det_bullNapalm
+    lastBullNPMVis := bar_index - 1
+if det_bullTNT
+    lastBullTNTVis := bar_index
+if det_bearNapalm
+    lastBearNPMVis := bar_index - 1
+if det_bearTNT
+    lastBearTNTVis := bar_index
+bool det_fuseBull = det_contBull and not na(lastBullTNTVis) and not na(lastBullNPMVis) and lastBullNPMVis < lastBullTNTVis and lastBullTNTVis < bar_index and (bar_index - lastBullTNTVis) <= SUDDEN_PROX and (lastBullTNTVis - lastBullNPMVis) <= SUDDEN_PROX and lastBullNPMVis >= nz(sessionFirstBarIdx, 0)
+bool det_fuseBear = det_contBear and not na(lastBearTNTVis) and not na(lastBearNPMVis) and lastBearNPMVis < lastBearTNTVis and lastBearTNTVis < bar_index and (bar_index - lastBearTNTVis) <= SUDDEN_PROX and (lastBearTNTVis - lastBearNPMVis) <= SUDDEN_PROX and lastBearNPMVis >= nz(sessionFirstBarIdx, 0)
+
+// IGNITE: (TNT or NPM) + Continuous same visual bar
+bool ign_tc_bull = det_bullTNT and det_contBull, bool ign_tc_bear = det_bearTNT and det_contBear
+// NPM offset-1 (visual bar[0]-1), CONT at [1] = visual bar[0]-1 → same visual bar
+bool ign_nc_bull = det_bullNapalm and (det_contBull[1] == true), bool ign_nc_bear = det_bearNapalm and (det_contBear[1] == true)
+bool det_igniteBull = ign_tc_bull or ign_nc_bull, bool det_igniteBear = ign_tc_bear or ign_nc_bear
+
+// CATALYST: NPM + CS1 same visual bar
+// FIX (v3.3 audit): Both NPM and CS1 have displacement+FVG in chain → both offset-1.
+// Both detect on bar[0] (bar[1] displaced, bar[0] FVG). Same detection bar = same visual bar.
+// Previous code had u5_CS1_Bull[1] which shifted CS1 visual to bar[0]-2 (WRONG).
+bool det_catBull = det_bullNapalm and u5_CS1_Bull, bool det_catBear = det_bearNapalm and u5_CS1_Bear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SUPPRESSION
+// ══════════════════════════════════════════════════════════════════════════════
+bool supp_bullNPM = sig_rcNTBull or det_rcRNBull or det_pnBull
+bool supp_bearNPM = sig_rcNTBear or det_rcRNBear or det_pnBear
+bool supp_bullTNT = sig_rcNTBull or det_rcTRBull or det_ptBull
+bool supp_bearTNT = sig_rcNTBear or det_rcTRBear or det_ptBear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TIER 2 ENRICHMENT GATE
+// Enrichment for visual bar N (non-offset Tier 2 signals):
+// Enrichment for visual bar N-1 (offset-1 Tier 2 signals):
+// ══════════════════════════════════════════════════════════════════════════════
+// v2: DYNAMITE moved from offset 0 → offset -1. det_dynamiteBull at bar[0] = visual bar 1.
+//     Removed from enrichBull_N (was incorrectly treated as visual bar 0). enrichBull_N1 keeps it.
+bool enrichBull_N = u5_RVOL1xB or u5_GrandSlam or u5_PUP or u5_CS1_Bull or u5_FAUNABull or u5_WMD or u5_HV1000
+bool enrichBear_N = u5_RVOL1xR or u5_MOAB or u5_PPD or u5_CS1_Bear or u5_FAUNABear or u5_WMD or u5_HV1000
+bool enrichBull_N1 = nz(u5_RVOL1xB[1]) or nz(u5_GrandSlam[1]) or nz(u5_PUP[1]) or nz(u5_CS1_Bull[1]) or nz(u5_FAUNABull[1]) or nz(u5_Pentagon[1]) or nz(u5_WTC[1]) or nz(u5_Hiroshima[1]) or nz(u5_Nagasaki[1]) or nz(u5_HV1000[1]) or det_dynamiteBull or nz(det_dynamiteBull[1])
+bool enrichBear_N1 = nz(u5_RVOL1xR[1]) or nz(u5_MOAB[1]) or nz(u5_PPD[1]) or nz(u5_CS1_Bear[1]) or nz(u5_FAUNABear[1]) or nz(u5_Pentagon[1]) or nz(u5_WTC[1]) or nz(u5_Hiroshima[1]) or nz(u5_Nagasaki[1]) or nz(u5_HV1000[1]) or det_dynamiteBear or nz(det_dynamiteBear[1])
+
+// ≤1min TF gate for PBJ+NPM and PBJ+TNT
+bool pnGateBull = not isSubMinute or (nz(u5_RVOL1xB[1]) or nz(u5_GrandSlam[1]) or nz(u5_PUP[1]) or nz(u5_HV1000[1]) or nz(u5_Pentagon[1]) or nz(u5_WTC[1]) or nz(u5_Hiroshima[1]) or nz(u5_Nagasaki[1]))
+bool pnGateBear = not isSubMinute or (nz(u5_RVOL1xR[1]) or nz(u5_MOAB[1]) or nz(u5_PPD[1]) or nz(u5_HV1000[1]) or nz(u5_Pentagon[1]) or nz(u5_WTC[1]) or nz(u5_Hiroshima[1]) or nz(u5_Nagasaki[1]))
+bool ptGateBull = not isSubMinute or (u5_RVOL1xB or u5_GrandSlam or u5_PUP or u5_HV1000 or u5_WMD)
+bool ptGateBear = not isSubMinute or (u5_RVOL1xR or u5_MOAB or u5_PPD or u5_HV1000 or u5_WMD)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FINAL PLOT BOOLEANS
+// ══════════════════════════════════════════════════════════════════════════════
+// TIER 1
+// v3 GATE applies to the 4 NPM-family Tier 1 plots: B2B NAPALM, PBJ+NPM, CATALYST.
+// (RC NPM+TNT is gated upstream where sig_rcNTBull/Bear is computed.)
+// All four are offset = -1, so we check gate at visual bar 1 → gate_bull[1] / gate_bear[1].
+// FUSE / PBJ+TNT / IGNITE / DYNAMITE are NOT in the 4 PBJ+NPM-family per Anish 2026-05-08 ask.
+bool p_b2bBull = det_bullNapalm and not supp_bullNPM and (det_bullNapalm[1] == true) and not na(sessionFirstBarIdx) and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBull and nz(gate_bull[1])
+bool p_b2bBear = det_bearNapalm and not supp_bearNPM and (det_bearNapalm[1] == true) and not na(sessionFirstBarIdx) and (bar_index - 2) >= sessionFirstBarIdx and en_b2bBear and nz(gate_bear[1])
+bool p_pnBull = det_pnBull and pnGateBull and en_pnBull and nz(gate_bull[1]), bool p_pnBear = det_pnBear and pnGateBear and en_pnBear and nz(gate_bear[1])
+bool p_ptBull = det_ptBull and ptGateBull and en_ptBull, bool p_ptBear = det_ptBear and ptGateBear and en_ptBear
+// NPM+PBJ Unsup REMOVED — was identical boolean to PBJ+NPM (det_pnBull). See audit Finding 2.
+bool p_fuseBull = det_fuseBull and en_fuseBull, bool p_fuseBear = det_fuseBear and en_fuseBear
+bool p_catBull = det_catBull and en_catBull and nz(gate_bull[1]), bool p_catBear = det_catBear and en_catBear and nz(gate_bear[1])
+bool p_ignBull = det_igniteBull and en_ignBull, bool p_ignBear = det_igniteBear and en_ignBear
+bool p_dynBull = det_dynamiteBull and en_dynBull, bool p_dynBear = det_dynamiteBear and en_dynBear
+
+// TIER 2 (hard-gated by USE V5 enrichment AND v3 new conditional gate)
+// Offset 0 plots (TNT-ENR, CONT-ENR, RC TR-ENR, PBJ+RET-ENR) → gate_bull / gate_bear at bar 0
+// Offset -1 plots (NPM-ENR, RC RN-ENR) → gate_bull[1] / gate_bear[1] at visual bar 1
+bool p_t2tntBull = det_bullTNT and not supp_bullTNT and enrichBull_N and en_t2tntBull and gate_bull
+bool p_t2tntBear = det_bearTNT and not supp_bearTNT and enrichBear_N and en_t2tntBear and gate_bear
+bool p_t2npmBull = det_bullNapalm and not supp_bullNPM and enrichBull_N1 and en_t2npmBull and nz(gate_bull[1])
+bool p_t2npmBear = det_bearNapalm and not supp_bearNPM and enrichBear_N1 and en_t2npmBear and nz(gate_bear[1])
+bool p_t2contBull = det_contBull and enrichBull_N and en_t2contBull and gate_bull
+bool p_t2contBear = det_contBear and enrichBear_N and en_t2contBear and gate_bear
+bool p_t2trBull = det_rcTRBull and enrichBull_N and en_t2trBull and gate_bull, bool p_t2trBear = det_rcTRBear and enrichBear_N and en_t2trBear and gate_bear
+bool p_t2rnBull = det_rcRNBull and enrichBull_N1 and en_t2rnBull and nz(gate_bull[1]), bool p_t2rnBear = det_rcRNBear and enrichBear_N1 and en_t2rnBear and nz(gate_bear[1])
+bool p_t2prBull = det_prBull and enrichBull_N and en_t2prBull and gate_bull, bool p_t2prBear = det_prBear and enrichBear_N and en_t2prBear and gate_bear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DENSITY — VISUAL-BAR-ALIGNED ROLLING WINDOW
+// v2: Density now treated as offset -1 plot (chain touches Napalm w/ FVG → Rule 2)
+//     denVisBull / denVisBear definitions unchanged — they already track visual bar 1.
+//     Plotshape offset and alert gating updated below to use N1.
+// ══════════════════════════════════════════════════════════════════════════════
+bool denVisBull = nz(det_bullTNT[1]) or nz(det_contBull[1]) or nz(det_rcTRBull[1]) or nz(det_ptBull[1]) or nz(det_prBull[1]) or det_bullNapalm or sig_rcNTBull or det_rcRNBull or det_pnBull
+bool denVisBear = nz(det_bearTNT[1]) or nz(det_contBear[1]) or nz(det_rcTRBear[1]) or nz(det_ptBear[1]) or nz(det_prBear[1]) or det_bearNapalm or sig_rcNTBear or det_rcRNBear or det_pnBear
+
+var int d1br = -1, var int d1sr = -1, var bool d1ba = true, var bool d1sa = true
+var int d2br = -1, var int d2sr = -1, var bool d2ba = true, var bool d2sa = true
+var int d3br = -1, var int d3sr = -1, var bool d3ba = true, var bool d3sa = true
+bool sig_d1b = false, bool sig_d1s = false, bool sig_d2b = false, bool sig_d2s = false, bool sig_d3b = false, bool sig_d3s = false
+if isFirstBar
+    d1br := bar_index - 1, d1sr := bar_index - 1, d1ba := true, d1sa := true
+    d2br := bar_index - 1, d2sr := bar_index - 1, d2ba := true, d2sa := true
+    d3br := bar_index - 1, d3sr := bar_index - 1, d3ba := true, d3sa := true
+if barstate.isconfirmed
+    int c1b = 0
+    for i = 0 to den1_Y - 1
+        if nz(denVisBull[i]) and (bar_index - 1 - i) >= nz(sessionFirstBarIdx, 0) and (bar_index - 1 - i) > d1br
+            c1b += 1
+    if c1b >= den1_X and d1ba
+        sig_d1b := true, d1br := bar_index - 2, d1ba := false
+    if c1b < den1_X
+        d1ba := true
+    int c1s = 0
+    for i = 0 to den1_Y - 1
+        if nz(denVisBear[i]) and (bar_index - 1 - i) >= nz(sessionFirstBarIdx, 0) and (bar_index - 1 - i) > d1sr
+            c1s += 1
+    if c1s >= den1_X and d1sa
+        sig_d1s := true, d1sr := bar_index - 2, d1sa := false
+    if c1s < den1_X
+        d1sa := true
+    int c2b = 0
+    for i = 0 to den2_Y - 1
+        if nz(denVisBull[i]) and (bar_index - 1 - i) >= nz(sessionFirstBarIdx, 0) and (bar_index - 1 - i) > d2br
+            c2b += 1
+    if c2b >= den2_X and d2ba
+        sig_d2b := true, d2br := bar_index - 2, d2ba := false
+    if c2b < den2_X
+        d2ba := true
+    int c2s = 0
+    for i = 0 to den2_Y - 1
+        if nz(denVisBear[i]) and (bar_index - 1 - i) >= nz(sessionFirstBarIdx, 0) and (bar_index - 1 - i) > d2sr
+            c2s += 1
+    if c2s >= den2_X and d2sa
+        sig_d2s := true, d2sr := bar_index - 2, d2sa := false
+    if c2s < den2_X
+        d2sa := true
+    int c3b = 0
+    for i = 0 to den3_Y - 1
+        if nz(denVisBull[i]) and (bar_index - 1 - i) >= nz(sessionFirstBarIdx, 0) and (bar_index - 1 - i) > d3br
+            c3b += 1
+    if c3b >= den3_X and d3ba
+        sig_d3b := true, d3br := bar_index - 2, d3ba := false
+    if c3b < den3_X
+        d3ba := true
+    int c3s = 0
+    for i = 0 to den3_Y - 1
+        if nz(denVisBear[i]) and (bar_index - 1 - i) >= nz(sessionFirstBarIdx, 0) and (bar_index - 1 - i) > d3sr
+            c3s += 1
+    if c3s >= den3_X and d3sa
+        sig_d3s := true, d3sr := bar_index - 2, d3sa := false
+    if c3s < den3_X
+        d3sa := true
+bool p_d1b = sig_d1b and en_d1b, bool p_d1s = sig_d1s and en_d1s
+bool p_d2b = sig_d2b and en_d2b, bool p_d2s = sig_d2s and en_d2s
+bool p_d3b = sig_d3b and en_d3b, bool p_d3s = sig_d3s and en_d3s
+
+// ══════════════════════════════════════════════════════════════════════════════
+// UU/UUU/UUUU + TNT INDICATOR ANY SIGNAL
+// ══════════════════════════════════════════════════════════════════════════════
+// Step 1: U-streak qualification (from USE V5)
+bool u5_u_qual_bull = barstate.isconfirmed and u5_bb_baseBull and u5_bb_normPrice >= 0.5
+bool u5_u_qual_bear = barstate.isconfirmed and u5_bb_baseBear and u5_bb_normPrice >= 0.5
+var int u5_u_bull_streak = 0, var int u5_u_bear_streak = 0
+var bool u5_u_bull_hasDay1 = false, var bool u5_u_bear_hasDay1 = false
+if barstate.isconfirmed
+    if u5_u_qual_bull
+        u5_u_bull_streak += 1, u5_u_bull_hasDay1 := u5_u_bull_hasDay1 or u5_is_new_day
+    else
+        u5_u_bull_streak := 0, u5_u_bull_hasDay1 := false
+    if u5_u_qual_bear
+        u5_u_bear_streak += 1, u5_u_bear_hasDay1 := u5_u_bear_hasDay1 or u5_is_new_day
+    else
+        u5_u_bear_streak := 0, u5_u_bear_hasDay1 := false
+
+// Step 2+3: Unrolled path qualification + TNT ANY check (constant indices only)
+bool bp0_pbj = u5_PBJBull, bool bp0_disp = u5_DISPBull, bool bp0_fauna = u5_FAUNABull
+bool bp0_saab = u5_SAAB or u5_RVOL1xB or u5_GrandSlam
+bool bp1_pbj = bar_index >= 1 ? nz(u5_PBJBull[1]) : false
+bool bp1_disp = bar_index >= 1 ? nz(u5_DISPBull[1]) : false
+bool bp1_fauna = bar_index >= 1 ? nz(u5_FAUNABull[1]) : false
+bool bp1_saab = bar_index >= 1 ? (nz(u5_SAAB[1]) or nz(u5_RVOL1xB[1]) or nz(u5_GrandSlam[1])) : false
+bool bp2_pbj = bar_index >= 2 ? nz(u5_PBJBull[2]) : false
+bool bp2_disp = bar_index >= 2 ? nz(u5_DISPBull[2]) : false
+bool bp2_fauna = bar_index >= 2 ? nz(u5_FAUNABull[2]) : false
+bool bp2_saab = bar_index >= 2 ? (nz(u5_SAAB[2]) or nz(u5_RVOL1xB[2]) or nz(u5_GrandSlam[2])) : false
+bool bp3_pbj = bar_index >= 3 ? nz(u5_PBJBull[3]) : false
+bool bp3_disp = bar_index >= 3 ? nz(u5_DISPBull[3]) : false
+bool bp3_fauna = bar_index >= 3 ? nz(u5_FAUNABull[3]) : false
+bool bp3_saab = bar_index >= 3 ? (nz(u5_SAAB[3]) or nz(u5_RVOL1xB[3]) or nz(u5_GrandSlam[3])) : false
+
+bool sp0_pbj = u5_PBJBear, bool sp0_disp = u5_DISPBear, bool sp0_fauna = u5_FAUNABear
+bool sp0_saab = u5_Kratos or u5_RVOL1xR or u5_MOAB
+bool sp1_pbj = bar_index >= 1 ? nz(u5_PBJBear[1]) : false
+bool sp1_disp = bar_index >= 1 ? nz(u5_DISPBear[1]) : false
+bool sp1_fauna = bar_index >= 1 ? nz(u5_FAUNABear[1]) : false
+bool sp1_saab = bar_index >= 1 ? (nz(u5_Kratos[1]) or nz(u5_RVOL1xR[1]) or nz(u5_MOAB[1])) : false
+bool sp2_pbj = bar_index >= 2 ? nz(u5_PBJBear[2]) : false
+bool sp2_disp = bar_index >= 2 ? nz(u5_DISPBear[2]) : false
+bool sp2_fauna = bar_index >= 2 ? nz(u5_FAUNABear[2]) : false
+bool sp2_saab = bar_index >= 2 ? (nz(u5_Kratos[2]) or nz(u5_RVOL1xR[2]) or nz(u5_MOAB[2])) : false
+bool sp3_pbj = bar_index >= 3 ? nz(u5_PBJBear[3]) : false
+bool sp3_disp = bar_index >= 3 ? nz(u5_DISPBear[3]) : false
+bool sp3_fauna = bar_index >= 3 ? nz(u5_FAUNABear[3]) : false
+bool sp3_saab = bar_index >= 3 ? (nz(u5_Kratos[3]) or nz(u5_RVOL1xR[3]) or nz(u5_MOAB[3])) : false
+
+// === v2: separate per-bar qualifier breakdown for pG path (count distinct qualifier types) ===
+// Bull side: SAAB / RVOL1x / GS as 3 separate qualifier types (mutually exclusive in TNT OD)
+bool bp0_sa = u5_SAAB,    bool bp0_r1 = u5_RVOL1xB, bool bp0_gs = u5_GrandSlam
+bool bp1_sa = bar_index >= 1 ? nz(u5_SAAB[1])      : false
+bool bp1_r1 = bar_index >= 1 ? nz(u5_RVOL1xB[1])   : false
+bool bp1_gs = bar_index >= 1 ? nz(u5_GrandSlam[1]) : false
+bool bp2_sa = bar_index >= 2 ? nz(u5_SAAB[2])      : false
+bool bp2_r1 = bar_index >= 2 ? nz(u5_RVOL1xB[2])   : false
+bool bp2_gs = bar_index >= 2 ? nz(u5_GrandSlam[2]) : false
+bool bp3_sa = bar_index >= 3 ? nz(u5_SAAB[3])      : false
+bool bp3_r1 = bar_index >= 3 ? nz(u5_RVOL1xB[3])   : false
+bool bp3_gs = bar_index >= 3 ? nz(u5_GrandSlam[3]) : false
+// Bear side: Kratos / RVOL1xR / MOAB as 3 separate qualifier types
+bool sp0_sa = u5_Kratos,  bool sp0_r1 = u5_RVOL1xR, bool sp0_gs = u5_MOAB
+bool sp1_sa = bar_index >= 1 ? nz(u5_Kratos[1])    : false
+bool sp1_r1 = bar_index >= 1 ? nz(u5_RVOL1xR[1])   : false
+bool sp1_gs = bar_index >= 1 ? nz(u5_MOAB[1])      : false
+bool sp2_sa = bar_index >= 2 ? nz(u5_Kratos[2])    : false
+bool sp2_r1 = bar_index >= 2 ? nz(u5_RVOL1xR[2])   : false
+bool sp2_gs = bar_index >= 2 ? nz(u5_MOAB[2])      : false
+bool sp3_sa = bar_index >= 3 ? nz(u5_Kratos[3])    : false
+bool sp3_r1 = bar_index >= 3 ? nz(u5_RVOL1xR[3])   : false
+bool sp3_gs = bar_index >= 3 ? nz(u5_MOAB[3])      : false
+
+// === v2: pG path — count distinct qualifier types in streak ===
+// Bull streak2 (UU): bars 0-1 — 6 qualifier types: PBJ, DISP, FAUNA, SAAB, RVOL1x, GS
+bool s2pbj_b   = bp0_pbj   or bp1_pbj
+bool s2disp_b  = bp0_disp  or bp1_disp
+bool s2fauna_b = bp0_fauna or bp1_fauna
+bool s2sa_b    = bp0_sa    or bp1_sa
+bool s2r1_b    = bp0_r1    or bp1_r1
+bool s2gs_b    = bp0_gs    or bp1_gs
+int  qc2_b     = (s2pbj_b?1:0) + (s2disp_b?1:0) + (s2fauna_b?1:0) + (s2sa_b?1:0) + (s2r1_b?1:0) + (s2gs_b?1:0)
+bool pG_uu_b   = qc2_b >= 2
+// Bull streak3 (UUU): bars 0-2
+bool s3pbj_b   = s2pbj_b   or bp2_pbj
+bool s3disp_b  = s2disp_b  or bp2_disp
+bool s3fauna_b = s2fauna_b or bp2_fauna
+bool s3sa_b    = s2sa_b    or bp2_sa
+bool s3r1_b    = s2r1_b    or bp2_r1
+bool s3gs_b    = s2gs_b    or bp2_gs
+int  qc3_b     = (s3pbj_b?1:0) + (s3disp_b?1:0) + (s3fauna_b?1:0) + (s3sa_b?1:0) + (s3r1_b?1:0) + (s3gs_b?1:0)
+bool pG_uuu_b  = qc3_b >= 3
+// Bull streak4 (UUUU): bars 0-3
+bool s4pbj_b   = s3pbj_b   or bp3_pbj
+bool s4disp_b  = s3disp_b  or bp3_disp
+bool s4fauna_b = s3fauna_b or bp3_fauna
+bool s4sa_b    = s3sa_b    or bp3_sa
+bool s4r1_b    = s3r1_b    or bp3_r1
+bool s4gs_b    = s3gs_b    or bp3_gs
+int  qc4_b     = (s4pbj_b?1:0) + (s4disp_b?1:0) + (s4fauna_b?1:0) + (s4sa_b?1:0) + (s4r1_b?1:0) + (s4gs_b?1:0)
+bool pG_uuuu_b = qc4_b >= 4
+
+// Bear streak2/3/4
+bool s2pbj_s   = sp0_pbj   or sp1_pbj
+bool s2disp_s  = sp0_disp  or sp1_disp
+bool s2fauna_s = sp0_fauna or sp1_fauna
+bool s2sa_s    = sp0_sa    or sp1_sa
+bool s2r1_s    = sp0_r1    or sp1_r1
+bool s2gs_s    = sp0_gs    or sp1_gs
+int  qc2_s     = (s2pbj_s?1:0) + (s2disp_s?1:0) + (s2fauna_s?1:0) + (s2sa_s?1:0) + (s2r1_s?1:0) + (s2gs_s?1:0)
+bool pG_uu_s   = qc2_s >= 2
+bool s3pbj_s   = s2pbj_s   or sp2_pbj
+bool s3disp_s  = s2disp_s  or sp2_disp
+bool s3fauna_s = s2fauna_s or sp2_fauna
+bool s3sa_s    = s2sa_s    or sp2_sa
+bool s3r1_s    = s2r1_s    or sp2_r1
+bool s3gs_s    = s2gs_s    or sp2_gs
+int  qc3_s     = (s3pbj_s?1:0) + (s3disp_s?1:0) + (s3fauna_s?1:0) + (s3sa_s?1:0) + (s3r1_s?1:0) + (s3gs_s?1:0)
+bool pG_uuu_s  = qc3_s >= 3
+bool s4pbj_s   = s3pbj_s   or sp3_pbj
+bool s4disp_s  = s3disp_s  or sp3_disp
+bool s4fauna_s = s3fauna_s or sp3_fauna
+bool s4sa_s    = s3sa_s    or sp3_sa
+bool s4r1_s    = s3r1_s    or sp3_r1
+bool s4gs_s    = s3gs_s    or sp3_gs
+int  qc4_s     = (s4pbj_s?1:0) + (s4disp_s?1:0) + (s4fauna_s?1:0) + (s4sa_s?1:0) + (s4r1_s?1:0) + (s4gs_s?1:0)
+bool pG_uuuu_s = qc4_s >= 4
+
+f_path_agg(bool p0, bool d0, bool f0, bool s0, bool p1, bool d1, bool f1, bool s1, bool p2, bool d2, bool f2, bool s2, bool p3, bool d3, bool f3, bool s3, int streak, bool hasDay1) =>
+    int _n = math.min(streak, 4)
+    bool _hp = false, bool _hd = false, bool _hf = false
+    bool _ad = true, bool _asd = true
+    bool _dnp = false, bool _pnd = false
+    bool df0 = d0 or f0
+    if p0
+        _hp := true
+    if d0
+        _hd := true
+    if f0
+        _hf := true
+    if not d0
+        _ad := false
+    if not s0 or not df0
+        _asd := false
+    if df0 and not p0
+        _dnp := true
+    if p0 and not df0
+        _pnd := true
+    if _n >= 2
+        bool df1 = d1 or f1
+        if p1
+            _hp := true
+        if d1
+            _hd := true
+        if f1
+            _hf := true
+        if not d1
+            _ad := false
+        if not s1 or not df1
+            _asd := false
+        if df1 and not p1
+            _dnp := true
+        if p1 and not df1
+            _pnd := true
+    if _n >= 3
+        bool df2 = d2 or f2
+        if p2
+            _hp := true
+        if d2
+            _hd := true
+        if f2
+            _hf := true
+        if not d2
+            _ad := false
+        if not s2 or not df2
+            _asd := false
+        if df2 and not p2
+            _dnp := true
+        if p2 and not df2
+            _pnd := true
+    if _n >= 4
+        bool df3 = d3 or f3
+        if p3
+            _hp := true
+        if d3
+            _hd := true
+        if f3
+            _hf := true
+        if not d3
+            _ad := false
+        if not s3 or not df3
+            _asd := false
+        if df3 and not p3
+            _dnp := true
+        if p3 and not df3
+            _pnd := true
+    bool pA = hasDay1 and _hp
+    bool pB = _ad
+    bool pC = _asd
+    bool pE = (_dnp and _hp) or (_pnd and (_hd or _hf))
+    bool pF = streak >= 4 and (_hf or _hd) and _hp
+    pA or pB or pC or pE or pF
+
+// v2: u_pathBull/Bear now ORs existing path_agg (pA/pB/pC/pE/pF) with new pG (k-of-6 distinct qualifiers in streak).
+bool u_pathBull2 = barstate.isconfirmed and u5_u_bull_streak == 2 and bar_index >= 1 and (f_path_agg(bp0_pbj, bp0_disp, bp0_fauna, bp0_saab, bp1_pbj, bp1_disp, bp1_fauna, bp1_saab, false, false, false, false, false, false, false, false, 2, u5_u_bull_hasDay1) or pG_uu_b)
+bool u_pathBull3 = barstate.isconfirmed and u5_u_bull_streak == 3 and bar_index >= 2 and (f_path_agg(bp0_pbj, bp0_disp, bp0_fauna, bp0_saab, bp1_pbj, bp1_disp, bp1_fauna, bp1_saab, bp2_pbj, bp2_disp, bp2_fauna, bp2_saab, false, false, false, false, 3, u5_u_bull_hasDay1) or pG_uuu_b)
+bool u_pathBull4 = barstate.isconfirmed and u5_u_bull_streak >= 4 and bar_index >= 3 and (f_path_agg(bp0_pbj, bp0_disp, bp0_fauna, bp0_saab, bp1_pbj, bp1_disp, bp1_fauna, bp1_saab, bp2_pbj, bp2_disp, bp2_fauna, bp2_saab, bp3_pbj, bp3_disp, bp3_fauna, bp3_saab, u5_u_bull_streak, u5_u_bull_hasDay1) or pG_uuuu_b)
+bool u_pathBear2 = barstate.isconfirmed and u5_u_bear_streak == 2 and bar_index >= 1 and (f_path_agg(sp0_pbj, sp0_disp, sp0_fauna, sp0_saab, sp1_pbj, sp1_disp, sp1_fauna, sp1_saab, false, false, false, false, false, false, false, false, 2, u5_u_bear_hasDay1) or pG_uu_s)
+bool u_pathBear3 = barstate.isconfirmed and u5_u_bear_streak == 3 and bar_index >= 2 and (f_path_agg(sp0_pbj, sp0_disp, sp0_fauna, sp0_saab, sp1_pbj, sp1_disp, sp1_fauna, sp1_saab, sp2_pbj, sp2_disp, sp2_fauna, sp2_saab, false, false, false, false, 3, u5_u_bear_hasDay1) or pG_uuu_s)
+bool u_pathBear4 = barstate.isconfirmed and u5_u_bear_streak >= 4 and bar_index >= 3 and (f_path_agg(sp0_pbj, sp0_disp, sp0_fauna, sp0_saab, sp1_pbj, sp1_disp, sp1_fauna, sp1_saab, sp2_pbj, sp2_disp, sp2_fauna, sp2_saab, sp3_pbj, sp3_disp, sp3_fauna, sp3_saab, u5_u_bear_streak, u5_u_bear_hasDay1) or pG_uuuu_s)
+
+// Step 3: TNT ANY check — pre-computed at global scope, constant indices
+// Non-offset signals on bar N-0,1,2,3 + offset signals visual = detection[i-1]
+// NPM+PBJ Unsup (det_npbBull/Bear) REMOVED — was identical to det_pnBull/Bear, OR-redundant
+// v2: DYNAMITE moved offset 0 → -1; references shifted (visual 0 → none, 1 → bare, 2 → [1], 3 → [2]).
+//     Density (sig_d1b/etc) ALSO moved offset 0 → -1; same shift applied.
+bool tntAnyBull0 = det_bullTNT or det_contBull or det_rcTRBull or det_ptBull or det_prBull or det_fuseBull or det_igniteBull
+bool tntAnyBull1 = bar_index >= 1 ? (nz(det_bullTNT[1]) or nz(det_contBull[1]) or nz(det_rcTRBull[1]) or nz(det_ptBull[1]) or nz(det_prBull[1]) or nz(det_fuseBull[1]) or nz(det_igniteBull[1]) or sig_d1b or sig_d2b or sig_d3b or det_dynamiteBull or det_bullNapalm or sig_rcNTBull or det_rcRNBull or det_pnBull or det_catBull) : false
+bool tntAnyBull2 = bar_index >= 2 ? (nz(det_bullTNT[2]) or nz(det_contBull[2]) or nz(det_rcTRBull[2]) or nz(det_ptBull[2]) or nz(det_prBull[2]) or nz(det_fuseBull[2]) or nz(det_igniteBull[2]) or nz(sig_d1b[1]) or nz(sig_d2b[1]) or nz(sig_d3b[1]) or nz(det_dynamiteBull[1]) or nz(det_bullNapalm[1]) or nz(sig_rcNTBull[1]) or nz(det_rcRNBull[1]) or nz(det_pnBull[1]) or nz(det_catBull[1])) : false
+bool tntAnyBull3 = bar_index >= 3 ? (nz(det_bullTNT[3]) or nz(det_contBull[3]) or nz(det_rcTRBull[3]) or nz(det_ptBull[3]) or nz(det_prBull[3]) or nz(det_fuseBull[3]) or nz(det_igniteBull[3]) or nz(sig_d1b[2]) or nz(sig_d2b[2]) or nz(sig_d3b[2]) or nz(det_dynamiteBull[2]) or nz(det_bullNapalm[2]) or nz(sig_rcNTBull[2]) or nz(det_rcRNBull[2]) or nz(det_pnBull[2]) or nz(det_catBull[2])) : false
+
+bool tntAnyBear0 = det_bearTNT or det_contBear or det_rcTRBear or det_ptBear or det_prBear or det_fuseBear or det_igniteBear
+bool tntAnyBear1 = bar_index >= 1 ? (nz(det_bearTNT[1]) or nz(det_contBear[1]) or nz(det_rcTRBear[1]) or nz(det_ptBear[1]) or nz(det_prBear[1]) or nz(det_fuseBear[1]) or nz(det_igniteBear[1]) or sig_d1s or sig_d2s or sig_d3s or det_dynamiteBear or det_bearNapalm or sig_rcNTBear or det_rcRNBear or det_pnBear or det_catBear) : false
+bool tntAnyBear2 = bar_index >= 2 ? (nz(det_bearTNT[2]) or nz(det_contBear[2]) or nz(det_rcTRBear[2]) or nz(det_ptBear[2]) or nz(det_prBear[2]) or nz(det_fuseBear[2]) or nz(det_igniteBear[2]) or nz(sig_d1s[1]) or nz(sig_d2s[1]) or nz(sig_d3s[1]) or nz(det_dynamiteBear[1]) or nz(det_bearNapalm[1]) or nz(sig_rcNTBear[1]) or nz(det_rcRNBear[1]) or nz(det_pnBear[1]) or nz(det_catBear[1])) : false
+bool tntAnyBear3 = bar_index >= 3 ? (nz(det_bearTNT[3]) or nz(det_contBear[3]) or nz(det_rcTRBear[3]) or nz(det_ptBear[3]) or nz(det_prBear[3]) or nz(det_fuseBear[3]) or nz(det_igniteBear[3]) or nz(sig_d1s[2]) or nz(sig_d2s[2]) or nz(sig_d3s[2]) or nz(det_dynamiteBear[2]) or nz(det_bearNapalm[2]) or nz(sig_rcNTBear[2]) or nz(det_rcRNBear[2]) or nz(det_pnBear[2]) or nz(det_catBear[2])) : false
+
+bool hasTntBull2 = tntAnyBull0 or tntAnyBull1
+bool hasTntBull3 = hasTntBull2 or tntAnyBull2
+bool hasTntBull4 = hasTntBull3 or tntAnyBull3
+bool hasTntBear2 = tntAnyBear0 or tntAnyBear1
+bool hasTntBear3 = hasTntBear2 or tntAnyBear2
+bool hasTntBear4 = hasTntBear3 or tntAnyBear3
+
+bool p_uuBull   = u_pathBull2 and hasTntBull2 and en_uu_bull
+bool p_uuBear   = u_pathBear2 and hasTntBear2 and en_uu_bear
+bool p_uuuBull  = u_pathBull3 and hasTntBull3 and en_uuu_bull
+bool p_uuuBear  = u_pathBear3 and hasTntBear3 and en_uuu_bear
+bool p_uuuuBull = u_pathBull4 and hasTntBull4 and en_uuuu_bull
+bool p_uuuuBear = u_pathBear4 and hasTntBear4 and en_uuuu_bear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// T1 RELAY + T1 STACK (v3 NEW) — Visual-bar-aligned Tier 1 combos
+// ──────────────────────────────────────────────────────────────────────────────
+// VISUAL BAR semantics — for each Tier 1 plot we compute "is its visual on
+// bar[1] (the bar one back from current)":
+//
+//   Plot                  Offset   Visual-on-bar[1] formula
+//   ────                  ──────   ────────────────────────
+//   B2B NAPALM            -1       p_b2bBull (current bar boolean)
+//   RC NPM+TNT            -1       sig_rcNTBull
+//   CATALYST              -1       p_catBull
+//   PBJ+NPM               -1       p_pnBull
+//   IGNITE NPM+CONT       -1       p_ignBull AND ign_nc_bull
+//   DYNAMITE              -1       p_dynBull
+//   FUSE                   0       p_fuseBull[1]
+//   PBJ+TNT                0       p_ptBull[1]
+//   IGNITE TNT+CONT        0       p_ignBull[1] AND ign_tc_bull[1]
+//   HCT (inline)          -1       hct_bull (FVG chain → -1)
+//   UC (inline)            0       uc_bull[1] (current-bar atoms only)
+//
+// "Visual on bar[2]" = same expressions but with a one-bar shift:
+//   Offset -1 → boolean[1]; Offset 0 → boolean[2].
+//
+// T1 RELAY: visual on bar[2] AND visual on bar[1]. Same direction only.
+// T1 STACK: ≥ 2 distinct visuals on bar[1]. Same direction only.
+// Both fire boolean on bar[0]; plotted with offset = -1 → visual lands on
+// bar[1] (the second bar of the relay pair / the stack bar).
+// ══════════════════════════════════════════════════════════════════════════════
+
+// --- Tier 1 visuals on bar[1] (bull) ---
+bool t1_v1_b_b2b = p_b2bBull
+bool t1_v1_b_rcnt = sig_rcNTBull
+bool t1_v1_b_cat = p_catBull
+bool t1_v1_b_pn = p_pnBull
+bool t1_v1_b_ignNC = p_ignBull and ign_nc_bull
+bool t1_v1_b_dyn = p_dynBull
+bool t1_v1_b_fuse = nz(p_fuseBull[1])
+bool t1_v1_b_pt = nz(p_ptBull[1])
+bool t1_v1_b_ignTC = nz(p_ignBull[1]) and nz(ign_tc_bull[1])
+bool t1_v1_b_hct = hct_bull
+bool t1_v1_b_uc = nz(uc_bull[1])
+
+// --- Tier 1 visuals on bar[1] (bear) ---
+bool t1_v1_s_b2b = p_b2bBear
+bool t1_v1_s_rcnt = sig_rcNTBear
+bool t1_v1_s_cat = p_catBear
+bool t1_v1_s_pn = p_pnBear
+bool t1_v1_s_ignNC = p_ignBear and ign_nc_bear
+bool t1_v1_s_dyn = p_dynBear
+bool t1_v1_s_fuse = nz(p_fuseBear[1])
+bool t1_v1_s_pt = nz(p_ptBear[1])
+bool t1_v1_s_ignTC = nz(p_ignBear[1]) and nz(ign_tc_bear[1])
+bool t1_v1_s_hct = hct_bear
+bool t1_v1_s_uc = nz(uc_bear[1])
+
+// --- Tier 1 visuals on bar[2] (bull) — one bar shift ---
+bool t1_v2_b_b2b = nz(p_b2bBull[1])
+bool t1_v2_b_rcnt = nz(sig_rcNTBull[1])
+bool t1_v2_b_cat = nz(p_catBull[1])
+bool t1_v2_b_pn = nz(p_pnBull[1])
+bool t1_v2_b_ignNC = nz(p_ignBull[1]) and nz(ign_nc_bull[1])
+bool t1_v2_b_dyn = nz(p_dynBull[1])
+bool t1_v2_b_fuse = nz(p_fuseBull[2])
+bool t1_v2_b_pt = nz(p_ptBull[2])
+bool t1_v2_b_ignTC = nz(p_ignBull[2]) and nz(ign_tc_bull[2])
+bool t1_v2_b_hct = nz(hct_bull[1])
+bool t1_v2_b_uc = nz(uc_bull[2])
+
+// --- Tier 1 visuals on bar[2] (bear) ---
+bool t1_v2_s_b2b = nz(p_b2bBear[1])
+bool t1_v2_s_rcnt = nz(sig_rcNTBear[1])
+bool t1_v2_s_cat = nz(p_catBear[1])
+bool t1_v2_s_pn = nz(p_pnBear[1])
+bool t1_v2_s_ignNC = nz(p_ignBear[1]) and nz(ign_nc_bear[1])
+bool t1_v2_s_dyn = nz(p_dynBear[1])
+bool t1_v2_s_fuse = nz(p_fuseBear[2])
+bool t1_v2_s_pt = nz(p_ptBear[2])
+bool t1_v2_s_ignTC = nz(p_ignBear[2]) and nz(ign_tc_bear[2])
+bool t1_v2_s_hct = nz(hct_bear[1])
+bool t1_v2_s_uc = nz(uc_bear[2])
+
+// --- ANY-bull / ANY-bear on bar[1] and bar[2] ---
+bool t1_v1_anyB = t1_v1_b_b2b or t1_v1_b_rcnt or t1_v1_b_cat or t1_v1_b_pn or t1_v1_b_ignNC or t1_v1_b_dyn or t1_v1_b_fuse or t1_v1_b_pt or t1_v1_b_ignTC or t1_v1_b_hct or t1_v1_b_uc
+bool t1_v1_anyS = t1_v1_s_b2b or t1_v1_s_rcnt or t1_v1_s_cat or t1_v1_s_pn or t1_v1_s_ignNC or t1_v1_s_dyn or t1_v1_s_fuse or t1_v1_s_pt or t1_v1_s_ignTC or t1_v1_s_hct or t1_v1_s_uc
+bool t1_v2_anyB = t1_v2_b_b2b or t1_v2_b_rcnt or t1_v2_b_cat or t1_v2_b_pn or t1_v2_b_ignNC or t1_v2_b_dyn or t1_v2_b_fuse or t1_v2_b_pt or t1_v2_b_ignTC or t1_v2_b_hct or t1_v2_b_uc
+bool t1_v2_anyS = t1_v2_s_b2b or t1_v2_s_rcnt or t1_v2_s_cat or t1_v2_s_pn or t1_v2_s_ignNC or t1_v2_s_dyn or t1_v2_s_fuse or t1_v2_s_pt or t1_v2_s_ignTC or t1_v2_s_hct or t1_v2_s_uc
+
+// --- T1 RELAY: bar[2] visual AND bar[1] visual, same direction ---
+bool p_t1RelayBull = t1_v2_anyB and t1_v1_anyB and barstate.isconfirmed
+bool p_t1RelayBear = t1_v2_anyS and t1_v1_anyS and barstate.isconfirmed
+
+// --- T1 STACK: ≥ 2 distinct visuals on bar[1] ---
+int t1_v1_count_b = (t1_v1_b_b2b?1:0) + (t1_v1_b_rcnt?1:0) + (t1_v1_b_cat?1:0) + (t1_v1_b_pn?1:0) + (t1_v1_b_ignNC?1:0) + (t1_v1_b_dyn?1:0) + (t1_v1_b_fuse?1:0) + (t1_v1_b_pt?1:0) + (t1_v1_b_ignTC?1:0) + (t1_v1_b_hct?1:0) + (t1_v1_b_uc?1:0)
+int t1_v1_count_s = (t1_v1_s_b2b?1:0) + (t1_v1_s_rcnt?1:0) + (t1_v1_s_cat?1:0) + (t1_v1_s_pn?1:0) + (t1_v1_s_ignNC?1:0) + (t1_v1_s_dyn?1:0) + (t1_v1_s_fuse?1:0) + (t1_v1_s_pt?1:0) + (t1_v1_s_ignTC?1:0) + (t1_v1_s_hct?1:0) + (t1_v1_s_uc?1:0)
+bool p_t1StackBull = t1_v1_count_b >= 2 and barstate.isconfirmed
+bool p_t1StackBear = t1_v1_count_s >= 2 and barstate.isconfirmed
+
+// ══════════════════════════════════════════════════════════════════════════════
+// WBUSH PLOTS — HEAVY PENTAGON state × TNTOD any plot
+// ──────────────────────────────────────────────────────────────────────────────
+// tntod_any_bull / tntod_any_bear — does ANY TNTOD detection plot fire on this
+// bar (ignoring direction-mismatched ones)? Used by WBUSH bull/bear plots only.
+// (Excludes WBUSH itself to avoid feedback.)
+// ══════════════════════════════════════════════════════════════════════════════
+bool tntod_any_bull = p_b2bBull or sig_rcNTBull or p_fuseBull or p_catBull or p_pnBull or p_ptBull or p_ignBull or p_dynBull or p_t2tntBull or p_t2npmBull or p_t2contBull or p_t2trBull or p_t2rnBull or p_t2prBull or p_d1b or p_d2b or p_d3b or p_uuBull or p_uuuBull or p_uuuuBull
+bool tntod_any_bear = p_b2bBear or sig_rcNTBear or p_fuseBear or p_catBear or p_pnBear or p_ptBear or p_ignBear or p_dynBear or p_t2tntBear or p_t2npmBear or p_t2contBear or p_t2trBear or p_t2rnBear or p_t2prBear or p_d1s or p_d2s or p_d3s or p_uuBear or p_uuuBear or p_uuuuBear
+
+bool p_wbushBull    = en_wbushBull    and sig_WBUSH_Bull    and tntod_any_bull
+bool p_wbushBear    = en_wbushBear    and sig_WBUSH_Bear    and tntod_any_bear
+bool p_wbushNeutral = en_wbushNeutral and sig_WBUSH_Neutral
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NAGASAKI ALERT GATE (v2 — was always-on; now checkbox, default OFF)
+// ══════════════════════════════════════════════════════════════════════════════
+grpNag = "★ NAGASAKI ALERT ★"
+bool en_nagAlert = input.bool(false, "✓ Fire NAGASAKI alert (default OFF — floods)", group = grpNag, tooltip = "When OFF, NAGASAKI does NOT fire its standalone alert. Default OFF because Nagasaki = all-time-high volume which fires often and floods the alert feed. Turn ON only when you want a 'note me on every all-time-high volume bar' workflow.")
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIRST BAR + GAP QUALIFIER + HV RANK — ALERT GATING
+// ══════════════════════════════════════════════════════════════════════════════
+bool isF_N = isFirstBar
+bool isF_N1 = not na(sessionFirstBarIdx) and (bar_index - 1) == sessionFirstBarIdx
+
+// Gap qualifier for bar[0] (offset-0 plot bar)
+float gap_N  = math.abs(open - close[1])
+float rng_N  = high - low
+string firstStatus_N = not isF_N ? "NOT !!!" : (gap_N <= rng_N ? "FIRST !!!" : "FIRST XXX")
+
+// Gap qualifier for bar[1] (offset-1 plot bar)
+float gap_N1 = bar_index >= 1 ? math.abs(open[1] - close[2]) : 0.0
+float rng_N1 = bar_index >= 1 ? (high[1] - low[1]) : 1.0
+string firstStatus_N1 = not isF_N1 ? "NOT !!!" : (gap_N1 <= rng_N1 ? "FIRST !!!" : "FIRST XXX")
+
+// HV rank: volume is highest in 50-bar lookback (covers all ranks 50 through 1000)
+bool anyHVRank_N  = volume >= ta.highest(volume, 50)[1]
+bool anyHVRank_N1 = bar_index >= 1 ? volume[1] >= ta.highest(volume, 50)[2] : false
+
+// Master gate: First Bar Only requires first bar + HV rank on the PLOT bar
+bool alertOK_N  = not masterFirstBar or (isF_N and anyHVRank_N)
+bool alertOK_N1 = not masterFirstBar or (isF_N1 and anyHVRank_N1)
+
+// Alert format: DIRECTION | FIRST_STATUS | NAME
+f_alert(string dir, string firstSt, string name) => dir + " | " + firstSt + " | " + name
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PLOTSHAPES — 42 total (limit: 64) ✓
+// ══════════════════════════════════════════════════════════════════════════════
+// TIER 1 — offset -1
+plotshape(p_b2bBull,  "B2B Napalm Bull",       shape.diamond,   location.bottom,   #1de9b6, size=size.normal, text="B2B NAPALM",    textcolor=#1de9b6, display=display.pane, offset=-1)
+plotshape(p_b2bBear,  "B2B Napalm Bear",       shape.diamond,   location.top,      #ff1744, size=size.normal, text="B2B NAPALM",    textcolor=#ff1744, display=display.pane, offset=-1)
+plotshape(sig_rcNTBull,"RC NPM+TNT Bull",      shape.flag,      location.belowbar, #ffeb3b, size=size.normal, text="RC NPM+TNT",    textcolor=#ffeb3b, display=display.pane, offset=-1)
+plotshape(sig_rcNTBear,"RC NPM+TNT Bear",      shape.flag,      location.abovebar, #ff6f00, size=size.normal, text="RC NPM+TNT",    textcolor=#ff6f00, display=display.pane, offset=-1)
+// TIER 1 — offset 0
+plotshape(p_fuseBull, "FUSE Bull",             shape.labelup,   location.belowbar, #00e5ff, size=size.normal, text="FUSE",           textcolor=color.white, display=display.pane)
+plotshape(p_fuseBear, "FUSE Bear",             shape.labeldown, location.abovebar, #ff3d00, size=size.normal, text="FUSE",           textcolor=color.white, display=display.pane)
+// TIER 1 — offset -1 (CATALYST: both NPM and CS1 have displacement+FVG)
+plotshape(p_catBull,  "CATALYST Bull",         shape.labelup,   location.belowbar, #18ffff, size=size.normal, text="CATALYST",       textcolor=color.white, display=display.pane, offset=-1)
+plotshape(p_catBear,  "CATALYST Bear",         shape.labeldown, location.abovebar, #ff6e40, size=size.normal, text="CATALYST",       textcolor=color.white, display=display.pane, offset=-1)
+// TIER 1 — offset -1
+plotshape(p_pnBull,   "PBJ+NPM Bull",         shape.diamond,   location.belowbar, #4caf50, size=size.small,  text="PBJ+NPM",       textcolor=#4caf50, display=display.pane, offset=-1)
+plotshape(p_pnBear,   "PBJ+NPM Bear",         shape.diamond,   location.abovebar, #e91e63, size=size.small,  text="PBJ+NPM",       textcolor=#e91e63, display=display.pane, offset=-1)
+// TIER 1 — offset 0
+plotshape(p_ptBull,   "PBJ+TNT Bull",         shape.diamond,   location.belowbar, #66bb6a, size=size.small,  text="PBJ+TNT",       textcolor=#66bb6a, display=display.pane)
+plotshape(p_ptBear,   "PBJ+TNT Bear",         shape.diamond,   location.abovebar, #c2185b, size=size.small,  text="PBJ+TNT",       textcolor=#c2185b, display=display.pane)
+// TIER 1 — IGNITE (mixed offset: T+C = 0, N+C = -1)
+plotshape(p_ignBull and ign_tc_bull, "IGNITE TNT+CONT Bull", shape.labelup, location.belowbar, #76ff03, size=size.normal, text="IGNITE T+C",    textcolor=color.white, display=display.pane)
+plotshape(p_ignBear and ign_tc_bear, "IGNITE TNT+CONT Bear", shape.labeldown, location.abovebar, #d500f9, size=size.normal, text="IGNITE T+C",    textcolor=color.white, display=display.pane)
+plotshape(p_ignBull and ign_nc_bull, "IGNITE NPM+CONT Bull", shape.labelup, location.belowbar, #76ff03, size=size.normal, text="IGNITE N+C",    textcolor=color.white, display=display.pane, offset=-1)
+plotshape(p_ignBear and ign_nc_bear, "IGNITE NPM+CONT Bear", shape.labeldown, location.abovebar, #d500f9, size=size.normal, text="IGNITE N+C",    textcolor=color.white, display=display.pane, offset=-1)
+// TIER 1 — offset -1 (v2: DYNAMITE chain now contains FVG → Rule 2 → offset -1)
+plotshape(p_dynBull, "DYNAMITE Bull",          shape.labelup,   location.belowbar, #FF0000, size=size.large,  text="★ DYNAMITE",    textcolor=color.white, display=display.pane, offset=-1)
+plotshape(p_dynBear, "DYNAMITE Bear",          shape.labeldown, location.abovebar, #FF0000, size=size.large,  text="★ DYNAMITE",    textcolor=color.white, display=display.pane, offset=-1)
+
+// TIER 2 — offset 0
+plotshape(p_t2tntBull,  "TNT Enriched Bull",     shape.triangleup,   location.belowbar, #089981, size=size.small, text="TNT ENR",       textcolor=#089981, display=display.pane)
+plotshape(p_t2tntBear,  "TNT Enriched Bear",     shape.triangledown, location.abovebar, #f23645, size=size.small, text="TNT ENR",       textcolor=#f23645, display=display.pane)
+// TIER 2 — offset -1
+plotshape(p_t2npmBull,  "NPM Enriched Bull",     shape.arrowup,      location.belowbar, #00bcd4, size=size.small, text="NPM ENR",       textcolor=#00bcd4, display=display.pane, offset=-1)
+plotshape(p_t2npmBear,  "NPM Enriched Bear",     shape.arrowdown,    location.abovebar, #ff9800, size=size.small, text="NPM ENR",       textcolor=#ff9800, display=display.pane, offset=-1)
+// TIER 2 — offset 0
+plotshape(p_t2contBull, "CONT Enriched Bull",    shape.triangleup,   location.belowbar, #00acc1, size=size.small, text="CONT ENR",      textcolor=#00acc1, display=display.pane)
+plotshape(p_t2contBear, "CONT Enriched Bear",    shape.triangledown, location.abovebar, #f06292, size=size.small, text="CONT ENR",      textcolor=#f06292, display=display.pane)
+// TIER 2 — offset 0
+plotshape(p_t2trBull,   "RC TNT+RET Enriched Bull", shape.flag, location.belowbar, #fdd835, size=size.small, text="RC T+R ENR",    textcolor=#fdd835, display=display.pane)
+plotshape(p_t2trBear,   "RC TNT+RET Enriched Bear", shape.flag, location.abovebar, #e65100, size=size.small, text="RC T+R ENR",    textcolor=#e65100, display=display.pane)
+// TIER 2 — offset -1
+plotshape(p_t2rnBull,   "RC RET+NPM Enriched Bull", shape.flag, location.belowbar, #fff176, size=size.small, text="RC R+N ENR",    textcolor=#fff176, display=display.pane, offset=-1)
+plotshape(p_t2rnBear,   "RC RET+NPM Enriched Bear", shape.flag, location.abovebar, #bf360c, size=size.small, text="RC R+N ENR",    textcolor=#bf360c, display=display.pane, offset=-1)
+// TIER 2 — offset 0
+plotshape(p_t2prBull,   "PBJ+RET Enriched Bull", shape.diamond, location.belowbar, #81c784, size=size.small, text="PBJ+RET ENR",   textcolor=#81c784, display=display.pane)
+plotshape(p_t2prBear,   "PBJ+RET Enriched Bear", shape.diamond, location.abovebar, #ad1457, size=size.small, text="PBJ+RET ENR",   textcolor=#ad1457, display=display.pane)
+
+// DENSITY — offset -1 (v2: chain touches Napalm with FVG → Rule 2 → offset -1)
+plotshape(p_d1b, "Density 1 Bull", shape.flag, location.bottom, #26a69a, size=size.small, text="DENSITY 1", textcolor=#26a69a, display=display.pane, offset=-1)
+plotshape(p_d1s, "Density 1 Bear", shape.flag, location.top,    #e53935, size=size.small, text="DENSITY 1", textcolor=#e53935, display=display.pane, offset=-1)
+plotshape(p_d2b, "Density 2 Bull", shape.triangleup, location.bottom, #00897b, size=size.small, text="DENSITY 2", textcolor=#00897b, display=display.pane, offset=-1)
+plotshape(p_d2s, "Density 2 Bear", shape.triangledown, location.top, #d81b60, size=size.small, text="DENSITY 2", textcolor=#d81b60, display=display.pane, offset=-1)
+plotshape(p_d3b, "Density 3 Bull", shape.labelup, location.bottom, #80cbc4, size=size.small, text="DENSITY 3", textcolor=color.white, display=display.pane, offset=-1)
+plotshape(p_d3s, "Density 3 Bear", shape.labeldown, location.top, #ab47bc, size=size.small, text="DENSITY 3", textcolor=color.white, display=display.pane, offset=-1)
+
+// UU/UUU/UUUU + TNT ANY — offset -1 (v2: chain touches Napalm → Rule 2 → offset -1)
+plotshape(p_uuBull,   "UU+TNT ANY Bull",   shape.circle, location.belowbar, #00e676, size=size.large, text="UU+TNT ANY",   textcolor=#00e676, display=display.pane, offset=-1)
+plotshape(p_uuBear,   "UU+TNT ANY Bear",   shape.circle, location.abovebar, #ff5252, size=size.large, text="UU+TNT ANY",   textcolor=#ff5252, display=display.pane, offset=-1)
+plotshape(p_uuuBull,  "UUU+TNT ANY Bull",  shape.circle, location.belowbar, #00c853, size=size.large, text="UUU+TNT ANY",  textcolor=#00c853, display=display.pane, offset=-1)
+plotshape(p_uuuBear,  "UUU+TNT ANY Bear",  shape.circle, location.abovebar, #d50000, size=size.large, text="UUU+TNT ANY",  textcolor=#d50000, display=display.pane, offset=-1)
+plotshape(p_uuuuBull, "UUUU+TNT ANY Bull", shape.circle, location.belowbar, #00bfa5, size=size.large, text="UUUU+TNT ANY", textcolor=#00bfa5, display=display.pane, offset=-1)
+plotshape(p_uuuuBear, "UUUU+TNT ANY Bear", shape.circle, location.abovebar, #b71c1c, size=size.large, text="UUUU+TNT ANY", textcolor=#b71c1c, display=display.pane, offset=-1)
+
+// WBUSH — HEAVY PENTAGON × TNTOD (v2 new) — offset 0 base
+plotshape(p_wbushBull,    "WBUSH+TNTOD ANY Bull",  shape.diamond, location.belowbar, #00bfa5, size=size.huge,   text="WBUSH+ANY",  textcolor=color.white, display=display.pane)
+plotshape(p_wbushBear,    "WBUSH+TNTOD ANY Bear",  shape.diamond, location.abovebar, #c2185b, size=size.huge,   text="WBUSH+ANY",  textcolor=color.white, display=display.pane)
+plotshape(p_wbushNeutral, "WBUSH Neutral",         shape.diamond, location.top,      #9e9e9e, size=size.normal, text="WBUSH NEUTRAL", textcolor=color.white, display=display.pane)
+
+// T1 RELAY + T1 STACK — v3 NEW — offset -1 (lands on bar[1] — the second relay bar / the stack bar)
+plotshape(p_t1RelayBull, "T1 RELAY Bull", shape.xcross, location.belowbar, #ffea00, size=size.large, text="T1 RELAY", textcolor=#ffea00, display=display.pane, offset=-1)
+plotshape(p_t1RelayBear, "T1 RELAY Bear", shape.xcross, location.abovebar, #ff1744, size=size.large, text="T1 RELAY", textcolor=#ff1744, display=display.pane, offset=-1)
+plotshape(p_t1StackBull, "T1 STACK Bull", shape.square, location.belowbar, #ffd600, size=size.large, text="T1 STACK", textcolor=#ffd600, display=display.pane, offset=-1)
+plotshape(p_t1StackBear, "T1 STACK Bear", shape.square, location.abovebar, #d50000, size=size.large, text="T1 STACK", textcolor=#d50000, display=display.pane, offset=-1)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ALERTS — BLOOMBERG TERMINAL FORMAT
+// Format: DIRECTION | FIRST_STATUS | NAME
+// ══════════════════════════════════════════════════════════════════════════════
+string msg = ""
+
+// --- Tier 1: offset -1 signals use alertOK_N1 + firstStatus_N1 ---
+if p_b2bBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "B2B NAPALM")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_b2bBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "B2B NAPALM")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if sig_rcNTBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "RC NPM+TNT")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if sig_rcNTBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "RC NPM+TNT")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// --- Tier 1: offset 0 signals use alertOK_N + firstStatus_N ---
+if p_fuseBull and alertOK_N
+    string a = f_alert("BULL", firstStatus_N, "FUSE")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_fuseBear and alertOK_N
+    string a = f_alert("BEAR", firstStatus_N, "FUSE")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// CATALYST: offset -1
+if p_catBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "CATALYST")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_catBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "CATALYST")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// PBJ+NPM: offset -1
+if p_pnBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "PBJ+NPM")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_pnBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "PBJ+NPM")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// PBJ+TNT: offset 0
+if p_ptBull and alertOK_N
+    string a = f_alert("BULL", firstStatus_N, "PBJ+TNT")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_ptBear and alertOK_N
+    string a = f_alert("BEAR", firstStatus_N, "PBJ+TNT")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// IGNITE: mixed — T+C is offset 0, N+C is offset -1
+if p_ignBull and alertOK_N
+    if ign_tc_bull
+        string a = f_alert("BULL", firstStatus_N, "IGNITE TNT+CONT")
+        if not masterAggregate
+            alert(a, alert.freq_once_per_bar_close)
+        else
+            msg += (msg != "" ? " + " : "") + a
+if p_ignBull and alertOK_N1
+    if ign_nc_bull
+        string a = f_alert("BULL", firstStatus_N1, "IGNITE NPM+CONT")
+        if not masterAggregate
+            alert(a, alert.freq_once_per_bar_close)
+        else
+            msg += (msg != "" ? " + " : "") + a
+if p_ignBear and alertOK_N
+    if ign_tc_bear
+        string a = f_alert("BEAR", firstStatus_N, "IGNITE TNT+CONT")
+        if not masterAggregate
+            alert(a, alert.freq_once_per_bar_close)
+        else
+            msg += (msg != "" ? " + " : "") + a
+if p_ignBear and alertOK_N1
+    if ign_nc_bear
+        string a = f_alert("BEAR", firstStatus_N1, "IGNITE NPM+CONT")
+        if not masterAggregate
+            alert(a, alert.freq_once_per_bar_close)
+        else
+            msg += (msg != "" ? " + " : "") + a
+
+// DYNAMITE: offset -1 (v2: FVG mandatory, displacement chain → Rule 2 → -1)
+if p_dynBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "DYNAMITE")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_dynBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "DYNAMITE")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// --- Tier 2: offset 0 ---
+if p_t2tntBull and alertOK_N
+    string a = f_alert("BULL", firstStatus_N, "TNT ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_t2tntBear and alertOK_N
+    string a = f_alert("BEAR", firstStatus_N, "TNT ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// Tier 2 NPM: offset -1
+if p_t2npmBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "NPM ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_t2npmBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "NPM ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// Tier 2 CONT: offset 0
+if p_t2contBull and alertOK_N
+    string a = f_alert("BULL", firstStatus_N, "CONT ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_t2contBear and alertOK_N
+    string a = f_alert("BEAR", firstStatus_N, "CONT ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// Tier 2 RC TNT+RET: offset 0
+if p_t2trBull and alertOK_N
+    string a = f_alert("BULL", firstStatus_N, "RC TNT+RET ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_t2trBear and alertOK_N
+    string a = f_alert("BEAR", firstStatus_N, "RC TNT+RET ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// Tier 2 RC RET+NPM: offset -1
+if p_t2rnBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "RC RET+NPM ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_t2rnBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "RC RET+NPM ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// Tier 2 PBJ+RET: offset 0
+if p_t2prBull and alertOK_N
+    string a = f_alert("BULL", firstStatus_N, "PBJ+RET ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_t2prBear and alertOK_N
+    string a = f_alert("BEAR", firstStatus_N, "PBJ+RET ENRICHED")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// --- Density: offset -1 (v2) ---
+if p_d1b and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "DENSITY 1")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_d1s and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "DENSITY 1")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_d2b and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "DENSITY 2")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_d2s and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "DENSITY 2")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_d3b and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "DENSITY 3")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_d3s and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "DENSITY 3")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// --- UU/UUU/UUUU: offset -1 (v2) ---
+if p_uuBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "UU+TNT ANY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_uuBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "UU+TNT ANY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_uuuBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "UUU+TNT ANY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_uuuBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "UUU+TNT ANY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_uuuuBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "UUUU+TNT ANY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_uuuuBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "UUUU+TNT ANY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// --- WBUSH: offset 0 (v2 new) ---
+if p_wbushBull and alertOK_N
+    string a = f_alert("BULL", firstStatus_N, "WBUSH+TNTOD ANY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_wbushBear and alertOK_N
+    string a = f_alert("BEAR", firstStatus_N, "WBUSH+TNTOD ANY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_wbushNeutral and alertOK_N
+    string a = f_alert("NEUTRAL", firstStatus_N, "WBUSH NEUTRAL")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// --- T1 RELAY + T1 STACK: offset -1 (v3 new) ---
+if p_t1RelayBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "T1 RELAY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_t1RelayBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "T1 RELAY")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_t1StackBull and alertOK_N1
+    string a = f_alert("BULL", firstStatus_N1, "T1 STACK")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+if p_t1StackBear and alertOK_N1
+    string a = f_alert("BEAR", firstStatus_N1, "T1 STACK")
+    if not masterAggregate
+        alert(a, alert.freq_once_per_bar_close)
+    else
+        msg += (msg != "" ? " + " : "") + a
+
+// Fire aggregated alert (only when Aggregate Alerts is ON)
+if masterAggregate and msg != ""
+    alert(msg, alert.freq_once_per_bar_close)
+
+// Nagasaki standalone — v2: now CHECKBOX-GATED (default OFF). When OFF, no alert fires.
+// Stays AGGREGATOR BYPASSER (always its own line, never bundled).
+if u5_Nagasaki and en_nagAlert
+    string nagDir = close > open ? "BULL" : "BEAR"
+    string nagFirst = not isFirstBar ? "NOT !!!" : (math.abs(open - close[1]) <= (high - low) ? "FIRST !!!" : "FIRST XXX")
+    alert(f_alert(nagDir, nagFirst, "NAGASAKI ALL-TIME HIGH VOLUME"), alert.freq_once_per_bar_close)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// END — TNT OPENING DRIVE (OD)
+// ══════════════════════════════════════════════════════════════════════════════
