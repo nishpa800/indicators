@@ -1,0 +1,2455 @@
+// SQUARIFY 46 v2 — every plot is a buy/sell trigger
+// ════════════════════════════════════════════════════════════════════════════
+// CHANGELOG v1 (64 signals) → v2 (46 signals)
+// ──────────────────────────────────────────────────────────────────────────────
+//   1. NAPALM BUG FIX. v1 used `raw_napalmBull/Bear` (raw napalm only) in 19+
+//      detection plots. v2 uses `det_bull/bearNapalmCons` (raw OR Charge) per
+//      Anish's framework — Napalm and Charge are equivalent. Fixes silent
+//      under-firing of NPM-based plots.
+//   2. SUPER + SDUPER REDEFINED per Anish:
+//        SUPER  = UC (Unified Combo, csNew3) + Napalm consolidated
+//        SDUPER = UC + Napalm + PUP
+//      Old "perfect-storm" definitions never fired in practice.
+//   3. UC NAGASAKI added (#45 Bull, #46 Bear): Unified Combo + Nagasaki on
+//      same visual bar. Offset = -1.
+//   4. WMD ripped out, replaced with WBUSH (#41 Bull, #42 Bear, #43 Neutral).
+//      WBUSH = HEAVY PENTAGON's 5 Heavy Combo families × 3 directions = 15
+//      sub-signals OR'd. More granular than WMD's 2-of-3 axes.
+//   5. CO restructured: now requires UC OR FVG Combo Set (csNew3 or csNew1).
+//      Old `use_any_bull[1]` broad gate replaced.
+//   6. UU/UUU/UUUU + new path pG: count distinct qualifier types in streak
+//      from {PBJ, DISP, FAUNA, SAAB, RVOL1x, GS}. UU=2, UUU=3, UUUU=4.
+//      ORs into existing pA/pB/pC/pD/pE/pF — additive.
+//   7. REMOVED 22 signals:
+//        - Reserved (en_25, en_40)
+//        - B2B PUP overlaps (en_14-24, 26, 27, 31, 32, 57, 58, 62) — kept GOLF
+//        - CONT (en_59) — per Anish
+//        - WMD (en_61) — replaced by WBUSH
+//        - WMD+BULL (en_64) — covered by WBUSH
+//   8. RENUMBERED 1-46 contiguously. No reserved IDs.
+// ──────────────────────────────────────────────────────────────────────────────
+// EXCEPTIONS:
+//   CHECKBOX BYPASSERS: None. All 46 detections gated by their en_* toggles.
+//   AGGREGATOR BYPASSERS: None.
+// ════════════════════════════════════════════════════════════════════════════
+//@version=5
+strategy("SQUARIFY v2 BT — NAG+ / B2B NPM",
+     shorttitle="SQ46 v2 BT",
+     overlay=true,
+     max_labels_count=500,
+     max_lines_count=500,
+     max_boxes_count=500,
+     max_bars_back=1500,
+     pyramiding=0,
+     initial_capital=10000,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=100,
+     commission_type=strategy.commission.percent,
+     commission_value=0.05,
+     calc_on_every_tick=false,
+     process_orders_on_close=true)
+// SHARED
+// ============================================================================
+conf = barstate.isconfirmed
+int tfSec = nz(timeframe.in_seconds(timeframe.period), 60)
+f_add(string base, string part) => base == "" ? part : base + " + " + part
+atr14 = ta.atr(14)
+
+// ════════════════════════════════════════════════════════════════════════════
+// MASTER TOGGLES
+// ════════════════════════════════════════════════════════════════════════════
+grpMASTER = "★★★ MASTER TOGGLES ★★★"
+bool master_firstBarOnly = input.bool(false, "First Bar Only", group=grpMASTER, tooltip="ON: requires first bar of session AND any HV rank on bar[0]. Both must be true. Detections blocked if either missing.")
+bool master_aggAlerts = input.bool(true, "Aggregate Alerts", group=grpMASTER, tooltip="ON = one combined alert per bar. OFF = individual alerts per detection.")
+
+// Gap qualifier for FIRST/NOT alert format
+float _gapSize = math.abs(open - close[1])
+float _barRange = high - low
+bool _isGapBar = ta.change(_dayKey()) != 0
+string _gapQual = not _isGapBar ? "NOT !!!" : (_gapSize <= _barRange ? "FIRST !!!" : "FIRST XXX")
+
+
+// ╔════════════════════════════════════════════════════════════════════════════╗
+// ║  PIPELINE A: HV+D — HIGH VOLUME + DISPLACEMENT                         ║
+// ║  This pipeline knows NOTHING about PBJ, Zoo, Supertrend, FAUNA,         ║
+// ║  RVOL, Ping Pong, Combo Sets, or any USE engine.                        ║
+// ║  It checks volume rank and candle displacement. That is ALL.             ║
+// ╚════════════════════════════════════════════════════════════════════════════╝
+
+hvd_tf2sec(string t) =>
+    switch t
+        "1 Min"   => 60
+        "2 Min"   => 120
+        "3 Min"   => 180
+        "4 Min"   => 240
+        "5 Min"   => 300
+        "10 Min"  => 600
+        "15 Min"  => 900
+        "30 Min"  => 1800
+        "1 Hour"  => 3600
+        "2 Hour"  => 7200
+        "3 Hour"  => 10800
+        "4 Hour"  => 14400
+        "1 Day"   => 86400
+        "2 Day"   => 172800
+        "3 Day"   => 259200
+        "1 Week"  => 604800
+        "1 Month" => 2592000
+        "3 Month" => 7776000
+        => 0
+
+// === PIPELINE A: DISPLACEMENT 1 (BASE) ===
+grp_hvd1 = "── HV+D: DISP BASE ──"
+d1_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd1)
+d1_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd1)
+d1_mult = input.float(5.0, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd1)
+float d1_rng = d1_type == "Open to Close" ? math.abs(open - close) : high - low
+float d1_std = ta.stdev(d1_rng, d1_len)
+float d1_thresh = d1_std * d1_mult
+bool  d1_prevDisp = d1_rng[1] > d1_thresh[1]
+bool  d1_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d1_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d1_bull = conf and d1_prevDisp and d1_bullFVG
+bool  d1_bear = conf and d1_prevDisp and d1_bearFVG
+
+// === PIPELINE A: DISPLACEMENT 2 (HTF1) ===
+grp_hvd2 = "── HV+D: DISP HTF1 ──"
+d2_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd2)
+d2_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd2)
+d2_mult = input.float(2.5, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd2)
+float d2_rng = d2_type == "Open to Close" ? math.abs(open - close) : high - low
+float d2_std = ta.stdev(d2_rng, d2_len)
+float d2_thresh = d2_std * d2_mult
+bool  d2_prevDisp = d2_rng[1] > d2_thresh[1]
+bool  d2_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d2_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d2_bull = conf and d2_prevDisp and d2_bullFVG
+bool  d2_bear = conf and d2_prevDisp and d2_bearFVG
+
+// === PIPELINE A: DISPLACEMENT 3 (HTF2) ===
+grp_hvd3 = "── HV+D: DISP HTF2 ──"
+d3_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd3)
+d3_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd3)
+d3_mult = input.float(1.5, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd3)
+float d3_rng = d3_type == "Open to Close" ? math.abs(open - close) : high - low
+float d3_std = ta.stdev(d3_rng, d3_len)
+float d3_thresh = d3_std * d3_mult
+bool  d3_prevDisp = d3_rng[1] > d3_thresh[1]
+bool  d3_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d3_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d3_bull = conf and d3_prevDisp and d3_bullFVG
+bool  d3_bear = conf and d3_prevDisp and d3_bearFVG
+
+// === PIPELINE A: BASE HV INPUTS ===
+// v2: 64 → 45 contiguous signals. B2B-overlap removals (kept GOLF), reserved removed,
+//     CONT removed, WMD replaced with WBUSH (3 plots), UC NAGASAKI added, Super/SDuper
+//     redefined to UC+NPM / UC+NPM+PUP per Anish.
+grpSIG = "★ SIGNAL TOGGLES ★"
+bool en_1  = input.bool(true, "1. SD!",            group=grpSIG, tooltip="SD! (Super Duper) — REDEFINED v2: Unified Combo (csNew3) + Napalm (consolidated NPM=raw OR Charge) + PUP. All on same visual bar. Offset = -1.")
+bool en_2  = input.bool(true, "2. SUPER",          group=grpSIG, tooltip="SUPER — REDEFINED v2: Unified Combo (csNew3) + Napalm (consolidated). All on same visual bar. Offset = -1.")
+bool en_3  = input.bool(true, "3. HW",             group=grpSIG, tooltip="HW (Heavy Weapon): Green bar + 5x displacement (std dev, NO FVG) + PBJ + (GrandSlam or WTC or Hiroshima or directional Nagasaki) + Platform. ALL required. No gate. Offset=0.")
+bool en_4  = input.bool(true, "4. FLOOR",          group=grpSIG, tooltip="FLOOR: Ping Pong bull (structural support) + PBJ + directional RVOL (1x/GS/WTC/Hiro/dirNag). GATE: one-of-these + checkbox qualifiers Set 1 (PBJ EXCLUDED from checkbox since Floor already requires it). Offset=0.")
+bool en_5  = input.bool(true, "5. 2F",             group=grpSIG, tooltip="2F (2nd Floor): Ping Pong bull (structural support) + PB (not PBJ) + directional RVOL. GATE: one-of-these + checkbox qualifiers Set 1. Offset=0.")
+bool en_6  = input.bool(true, "6. UUUU",           group=grpSIG, tooltip="UUUU: 4+ consecutive qualified U bars. Paths A/B/C/D/E/F + new pG (≥4 distinct qualifiers from {PBJ,DISP,FAUNA,SAAB,RVOL1x,GS} in streak). SUB-2MIN RULE applies. Offset=0.")
+bool en_7  = input.bool(true, "7. UUU",            group=grpSIG, tooltip="UUU: 3 consecutive qualified U bars. Paths A-E + new pG (≥3 distinct qualifiers in streak). SUB-2MIN RULE applies. Offset=0.")
+bool en_8  = input.bool(true, "8. UU",             group=grpSIG, tooltip="UU: 2 consecutive qualified U bars. Paths A-E + new pG (≥2 distinct qualifiers in streak). GATE: one-of-these-for-UU. SUB-2MIN RULE applies. Offset=0.")
+bool en_9  = input.bool(true, "9. A★",             group=grpSIG, tooltip="A★ (Alpha Strike): First signal of session + Ping Pong bull + (GrandSlam or RVOL1x) + PBJ ONLY + expanded FAUNA slot. PB does NOT qualify. Offset=0.")
+bool en_10 = input.bool(true, "10. ΩA",            group=grpSIG, tooltip="ΩA (Omega-A): Boom Hunter omega event + high-confidence cosignal ONLY. Requires NOT MOAB and NOT bear displacement. Offset=0.")
+bool en_11 = input.bool(true, "11. FOX",           group=grpSIG, tooltip="FOX (Foxtrot): 4 consecutive FAUNA-confirmed bullish bars. GATE: (HV+D + PBJ) OR one-of-these. Offset=0.")
+bool en_12 = input.bool(true, "12. OD",            group=grpSIG, tooltip="OD (Opening Drive): Session bar ≤ max bars into session + FVG + displacement from bar[1] + PUP + PBJ on displacement candle. ALL required. No gate. Offset=-1.")
+bool en_13 = input.bool(true, "13. GOLF",          group=grpSIG, tooltip="GOLF: 3-bar sequence: bar[2]=FAUNA+PUP, bar[1]=FAUNA+PUP+DISP, bar[0]=DISP confirmation. Offset=-1.")
+bool en_28 = input.bool(true, "14. PBJ+F2/E3",     group=grpSIG, tooltip="PBJ+F2/E3: PBJ + Foster Pair or Exhaustion Triple. Offset=0.")
+bool en_29 = input.bool(true, "15. PBJ+CL",        group=grpSIG, tooltip="PBJ+CL: PBJ + full FAUNA Cluster. Offset=0.")
+bool en_30 = input.bool(true, "16. F2CL→E3",       group=grpSIG, tooltip="F2CL→E3: Sequential Foster Pair + Cluster then Exhaustion Triple. Offset=0.")
+bool en_33 = input.bool(true, "17. E3⅔PP",         group=grpSIG, tooltip="E3⅔PP: Exhaustion Triple where 2 of 3 bars are PUP. Offset=0.")
+bool en_34 = input.bool(true, "18. F2×2D",         group=grpSIG, tooltip="F2×2D: Foster Pair on consecutive trading sessions. Offset=0.")
+bool en_35 = input.bool(true, "19. E3×2D",         group=grpSIG, tooltip="E3×2D: Exhaustion Triple on consecutive sessions. Offset=0.")
+bool en_36 = input.bool(true, "20. F2E3seq",       group=grpSIG, tooltip="F2E3seq: Foster Pair one session then Exhaustion Triple next. Offset=0.")
+bool en_37 = input.bool(true, "21. CL×2D",         group=grpSIG, tooltip="CL×2D: FAUNA Cluster on consecutive sessions. Offset=0.")
+bool en_38 = input.bool(true, "22. NPM+",          group=grpSIG, tooltip="NPM+: Napalm (consolidated NPM) + ((PBJ + (UC or HW or WBUSH)) OR WBUSH alone). Offset=-1.")
+bool en_39 = input.bool(true, "23. NPM12",         group=grpSIG, tooltip="NPM12: Napalm (consolidated) + checkbox qualifier Set 1 OR Set 2. Offset=-1.")
+bool en_41 = input.bool(true, "24. NPM3",          group=grpSIG, tooltip="NPM3: Napalm (consolidated) + checkbox qualifier Set 3. Fires only when NPM12 does NOT fire. Offset=-1.")
+bool en_42 = input.bool(true, "25. B2BNPM",        group=grpSIG, tooltip="B2BNPM: Back-to-back Napalm (consolidated NPM=raw OR Charge). Offset=-1.")
+bool en_43 = input.bool(true, "26. NPM+TNT",       group=grpSIG, tooltip="NPM+TNT: Napalm + TNT on same visual candle. Offset=-1.")
+bool en_44 = input.bool(true, "27. CO",            group=grpSIG, tooltip="CO — RESTRUCTURED v2: HV+D + PBJ + (Unified Combo OR FVG Combo Set). No longer fires on any bullish signal — must be UC or FVG combo set. Offset=-1.")
+bool en_45 = input.bool(true, "28. HVD+PBJ",       group=grpSIG, tooltip="HVD+PBJ: HV+D + PBJ on same candle. Sub-3min requires checkbox. Excludes CO. Offset=-1.")
+bool en_46 = input.bool(true, "29. B2BHVD+PBJ",    group=grpSIG, tooltip="B2BHVD+PBJ: Consecutive HV+D + PBJ on either bar. Offset=-1.")
+bool en_47 = input.bool(true, "30. B2BHVD",        group=grpSIG, tooltip="B2BHVD: Consecutive HV+D without PBJ. Offset=-1.")
+bool en_48 = input.bool(true, "31. UU+UC",         group=grpSIG, tooltip="UU+UC: Any UU family + Uni.Combo on same candle. Offset=-1.")
+bool en_49 = input.bool(true, "32. GRAIL",         group=grpSIG, tooltip="GRAIL: Napalm (consolidated) + PBJ + PUP + Uni.Combo ALL on same visual candle. Offset=-1.")
+bool en_50 = input.bool(true, "33. FLR+NPM",       group=grpSIG, tooltip="FLR+NPM: Floor + Napalm (consolidated) on same candle. Offset=-1.")
+bool en_51 = input.bool(true, "34. NPM+PBJ+PUP",   group=grpSIG, tooltip="NPM+PBJ+PUP: Napalm (consolidated) + PBJ + PUP without Uni.Combo. Offset=-1.")
+bool en_52 = input.bool(true, "35. NAG+",          group=grpSIG, tooltip="NAG+: Nagasaki + any bullish signal. Offset=0.")
+bool en_53 = input.bool(true, "36. UU+HVD",        group=grpSIG, tooltip="UU+HVD: Any UU family + HV+D + PBJ on same candle. Offset=-1.")
+bool en_54 = input.bool(true, "37. UU+NPM",        group=grpSIG, tooltip="UU+NPM: Any UU family + Napalm (consolidated) on same window. Offset=-1.")
+bool en_55 = input.bool(true, "38. FLR+UU",        group=grpSIG, tooltip="FLR+UU: Floor or 2F + any UU family. Offset=0.")
+bool en_56 = input.bool(true, "39. FOS+PUP+1x",    group=grpSIG, tooltip="FOS+PUP+1x: Foster + PUP + (RVOL1x or Napalm consolidated). Offset=0.")
+bool en_60 = input.bool(true, "40. NPM+UC",        group=grpSIG, tooltip="NPM+UC: Napalm (consolidated) + Uni.Combo WITHOUT PBJ. Offset=-1.")
+bool en_wbushBull    = input.bool(true, "41. WBUSH+ANY Bull",    group=grpSIG, tooltip="WBUSH = any of HEAVY PENTAGON's 5 Heavy Combos (Yin-Yang, Nagasaki, Nagasaki Vol, Trident, Neutral Heavy x2) firing bullish. Replaces WMD. Offset = 0.")
+bool en_wbushBear    = input.bool(true, "42. WBUSH+ANY Bear",    group=grpSIG, tooltip="Mirror of WBUSH bull — any of the 5 Heavy Combos firing bearish. Offset = 0.")
+bool en_wbushNeutral = input.bool(true, "43. WBUSH Neutral",     group=grpSIG, tooltip="WBUSH-neutral classification (no FVG-confirmed displacement either direction). Standalone alert — fires when any of the 5 Heavy Combos hits neutral. Offset = 0.")
+bool en_63 = input.bool(true, "44. NPM+UC+PBJ",    group=grpSIG, tooltip="NPM+UC+PBJ: Napalm (consolidated) + Uni.Combo + PBJ. Offset=-1.")
+bool en_ucNagBull = input.bool(true, "45. UC NAGASAKI Bull",  group=grpSIG, tooltip="UC NAGASAKI: Unified Combo (csNew3) + Nagasaki on same visual bar. Offset = -1.")
+bool en_ucNagBear = input.bool(true, "46. UC NAGASAKI Bear",  group=grpSIG, tooltip="UC NAGASAKI Bear mirror. Offset = -1.")
+
+string grpHVBase = "── HV+D: BASE HV ──"
+bool ub50   = input.bool(false, "50-Bar",   group=grpHVBase)
+bool ub75   = input.bool(false, "75-Bar",   group=grpHVBase)
+bool ub100  = input.bool(false, "100-Bar",  group=grpHVBase)
+bool ub150  = input.bool(false, "150-Bar",  group=grpHVBase)
+bool ub200  = input.bool(false, "200-Bar",  group=grpHVBase)
+bool ub250  = input.bool(true,  "250-Bar",  group=grpHVBase)
+bool ub300  = input.bool(true,  "300-Bar",  group=grpHVBase)
+bool ub350  = input.bool(true,  "350-Bar",  group=grpHVBase)
+bool ub400  = input.bool(true,  "400-Bar",  group=grpHVBase)
+bool ub450  = input.bool(true,  "450-Bar",  group=grpHVBase)
+bool ub500  = input.bool(true,  "500-Bar",  group=grpHVBase)
+bool ub550  = input.bool(true,  "550-Bar",  group=grpHVBase)
+bool ub600  = input.bool(true,  "600-Bar",  group=grpHVBase)
+bool ub650  = input.bool(true,  "650-Bar",  group=grpHVBase)
+bool ub700  = input.bool(true,  "700-Bar",  group=grpHVBase)
+bool ub750  = input.bool(true,  "750-Bar",  group=grpHVBase)
+bool ub1000 = input.bool(true,  "1000-Bar", group=grpHVBase)
+bool useHEV = input.bool(true,  "All-Time High Volume (HEV)", group=grpHVBase)
+
+// === PIPELINE A: HTF PROFILE 1 ===
+string grpHTF1 = "── HV+D: HTF1 ──"
+bool   h1On   = input.bool(true, "Enable HTF Profile 1", group=grpHTF1)
+string h1From = input.string("15 Min", "From TF", group=grpHTF1, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
+string h1To   = input.string("2 Hour", "To TF",   group=grpHTF1, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
+bool uh1_5  = input.bool(true, "5-Bar",  group=grpHTF1)
+bool uh1_10 = input.bool(true, "10-Bar", group=grpHTF1)
+bool uh1_20 = input.bool(true, "20-Bar", group=grpHTF1)
+bool uh1_25 = input.bool(true, "25-Bar", group=grpHTF1)
+bool uh1_30 = input.bool(true, "30-Bar", group=grpHTF1)
+bool uh1_40 = input.bool(true, "40-Bar", group=grpHTF1)
+bool uh1_50 = input.bool(true, "50-Bar", group=grpHTF1)
+bool uh1_60 = input.bool(true, "60-Bar", group=grpHTF1)
+bool uh1_70 = input.bool(true, "70-Bar", group=grpHTF1)
+bool uh1_75 = input.bool(true, "75-Bar", group=grpHTF1)
+bool uh1_80 = input.bool(true, "80-Bar", group=grpHTF1)
+bool uh1_90 = input.bool(true, "90-Bar", group=grpHTF1)
+
+// === PIPELINE A: HTF PROFILE 2 ===
+string grpHTF2 = "── HV+D: HTF2 ──"
+bool   h2On   = input.bool(true, "Enable HTF Profile 2", group=grpHTF2)
+string h2From = input.string("3 Hour", "From TF", group=grpHTF2, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
+string h2To   = input.string("3 Month","To TF",   group=grpHTF2, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
+bool uh2_5  = input.bool(false, "5-Bar",  group=grpHTF2)
+bool uh2_10 = input.bool(false, "10-Bar", group=grpHTF2)
+bool uh2_20 = input.bool(false, "20-Bar", group=grpHTF2)
+bool uh2_25 = input.bool(false, "25-Bar", group=grpHTF2)
+bool uh2_30 = input.bool(false, "30-Bar", group=grpHTF2)
+bool uh2_40 = input.bool(true, "40-Bar", group=grpHTF2)
+bool uh2_50 = input.bool(true, "50-Bar", group=grpHTF2)
+bool uh2_60 = input.bool(true, "60-Bar", group=grpHTF2)
+bool uh2_70 = input.bool(true, "70-Bar", group=grpHTF2)
+bool uh2_75 = input.bool(true, "75-Bar", group=grpHTF2)
+bool uh2_80 = input.bool(true, "80-Bar", group=grpHTF2)
+bool uh2_90 = input.bool(true, "90-Bar", group=grpHTF2)
+
+// === PIPELINE A: HTF ACTIVATION ===
+bool htf1Active = h1On and tfSec >= hvd_tf2sec(h1From) and tfSec <= hvd_tf2sec(h1To)
+bool htf2Active = h2On and tfSec >= hvd_tf2sec(h2From) and tfSec <= hvd_tf2sec(h2To)
+
+// === PIPELINE A: HV CALCULATIONS [1] ===
+bool is50   = volume[1] == ta.highest(volume, 50)[1]
+bool is75   = volume[1] == ta.highest(volume, 75)[1]
+bool is100  = volume[1] == ta.highest(volume, 100)[1]
+bool is150  = volume[1] == ta.highest(volume, 150)[1]
+bool is200  = volume[1] == ta.highest(volume, 200)[1]
+bool is250  = volume[1] == ta.highest(volume, 250)[1]
+bool is300  = volume[1] == ta.highest(volume, 300)[1]
+bool is350  = volume[1] == ta.highest(volume, 350)[1]
+bool is400  = volume[1] == ta.highest(volume, 400)[1]
+bool is450  = volume[1] == ta.highest(volume, 450)[1]
+bool is500  = volume[1] == ta.highest(volume, 500)[1]
+bool is550  = volume[1] == ta.highest(volume, 550)[1]
+bool is600  = volume[1] == ta.highest(volume, 600)[1]
+bool is650  = volume[1] == ta.highest(volume, 650)[1]
+bool is700  = volume[1] == ta.highest(volume, 700)[1]
+bool is750  = volume[1] == ta.highest(volume, 750)[1]
+bool is1000 = volume[1] == ta.highest(volume, 1000)[1]
+bool isH5  = volume[1] == ta.highest(volume, 5)[1]
+bool isH10 = volume[1] == ta.highest(volume, 10)[1]
+bool isH20 = volume[1] == ta.highest(volume, 20)[1]
+bool isH25 = volume[1] == ta.highest(volume, 25)[1]
+bool isH30 = volume[1] == ta.highest(volume, 30)[1]
+bool isH40 = volume[1] == ta.highest(volume, 40)[1]
+bool isH50 = volume[1] == ta.highest(volume, 50)[1]
+bool isH60 = volume[1] == ta.highest(volume, 60)[1]
+bool isH70 = volume[1] == ta.highest(volume, 70)[1]
+bool isH75 = volume[1] == ta.highest(volume, 75)[1]
+bool isH80 = volume[1] == ta.highest(volume, 80)[1]
+bool isH90 = volume[1] == ta.highest(volume, 90)[1]
+
+var float maxVolEver = 0.0
+var bool _hev_pending = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    _hev_pending := true
+bool isHEV = _hev_pending
+if conf and _hev_pending
+    _hev_pending := false
+
+// === PIPELINE A: PRIORITY RANKING ===
+int baseRank = is1000 ? 1000 : is750 ? 750 : is700 ? 700 : is650 ? 650 : is600 ? 600 : is550 ? 550 : is500 ? 500 : is450 ? 450 : is400 ? 400 : is350 ? 350 : is300 ? 300 : is250 ? 250 : is200 ? 200 : is150 ? 150 : is100 ? 100 : is75 ? 75 : is50 ? 50 : 0
+int h1Rank = not htf1Active ? 0 : uh1_90 and isH90 ? 90 : uh1_80 and isH80 ? 80 : uh1_75 and isH75 ? 75 : uh1_70 and isH70 ? 70 : uh1_60 and isH60 ? 60 : uh1_50 and isH50 ? 50 : uh1_40 and isH40 ? 40 : uh1_30 and isH30 ? 30 : uh1_25 and isH25 ? 25 : uh1_20 and isH20 ? 20 : uh1_10 and isH10 ? 10 : uh1_5 and isH5 ? 5 : 0
+int h2Rank = not htf2Active ? 0 : uh2_90 and isH90 ? 90 : uh2_80 and isH80 ? 80 : uh2_75 and isH75 ? 75 : uh2_70 and isH70 ? 70 : uh2_60 and isH60 ? 60 : uh2_50 and isH50 ? 50 : uh2_40 and isH40 ? 40 : uh2_30 and isH30 ? 30 : uh2_25 and isH25 ? 25 : uh2_20 and isH20 ? 20 : uh2_10 and isH10 ? 10 : uh2_5 and isH5 ? 5 : 0
+
+// === PIPELINE A: COMBO + TERMINAL BOOLEANS ===
+bool base_enabled = (ub50 and baseRank == 50) or (ub75 and baseRank == 75) or (ub100 and baseRank == 100) or (ub150 and baseRank == 150) or (ub200 and baseRank == 200) or (ub250 and baseRank == 250) or (ub300 and baseRank == 300) or (ub350 and baseRank == 350) or (ub400 and baseRank == 400) or (ub450 and baseRank == 450) or (ub500 and baseRank == 500) or (ub550 and baseRank == 550) or (ub600 and baseRank == 600) or (ub650 and baseRank == 650) or (ub700 and baseRank == 700) or (ub750 and baseRank == 750) or (ub1000 and baseRank == 1000)
+bool hev_hit = useHEV and isHEV
+bool base_hv_hit = hev_hit or (base_enabled and not isHEV)
+bool base_combo_bull = base_hv_hit and d1_bull
+bool base_combo_bear = base_hv_hit and d1_bear
+bool htf1_combo_bull = h1Rank > 0 and d2_bull
+bool htf1_combo_bear = h1Rank > 0 and d2_bear
+bool htf2_combo_bull = h2Rank > 0 and d3_bull
+bool htf2_combo_bear = h2Rank > 0 and d3_bear
+
+// ┌──────────────────────────────────────────────────────────────────────────┐
+// │  PIPELINE A TERMINAL OUTPUTS — the ONLY thing Pipeline D may read      │
+// │  hvd_fire_bull describes bar N-1. hvd_fire_bear describes bar N-1.     │
+// └──────────────────────────────────────────────────────────────────────────┘
+bool hvd_fire_bull = base_combo_bull or htf1_combo_bull or htf2_combo_bull
+bool hvd_fire_bear = base_combo_bear or htf1_combo_bear or htf2_combo_bear
+
+// Master toggle gate
+bool _anyHVRank = baseRank > 0 or h1Rank > 0 or h2Rank > 0 or isHEV
+bool _masterGate = not master_firstBarOnly or (_isGapBar and _anyHVRank)
+
+
+// ╔════════════════════════════════════════════════════════════════════════════╗
+// ║  PIPELINES B + C: USE ALARM 1293                                         ║
+// ║  Engine 6 (PBJ) terminal outputs = PIPELINE B                            ║
+// ║  All signal booleans = PIPELINE C                                        ║
+// ║  This code knows NOTHING about Pipeline A (volume rank, HV+D disp).      ║
+// ╚════════════════════════════════════════════════════════════════════════════╝
+
+// === HARDCODED — RVOL ===
+bb_avgLength = 30, bb_smaLength = 20
+reg_anchorTimeframe = "", reg_length = 30, reg_calculationMode = "Cumulative", reg_adjustRealtime = true
+// === HARDCODED — FAUNA NRA ===
+fauna_gg_master = true, fauna_gg_body = 0.80
+
+// === SIGNAL TOGGLES ===
+bool show_BullUUUU = true, bool show_BearUUUU = false
+bool show_BullUUU = true, bool show_BearUUU = false
+bool show_BullUU = true, bool show_BearUU = false
+bool show_AlphaStrikeB = true, bool show_AlphaStrikeR = false
+bool show_FoxtrotB = true, bool show_FoxtrotR = false
+bool show_OmegaLong = false, bool show_OmegaLongA = true
+bool show_ODBull = true, bool show_ODBear = false
+bool show_DispConsBull2 = true, bool show_DispConsBear2 = false
+bool show_DispConsBull3 = true, bool show_DispConsBear3 = false
+bool show_GolfBull = true, bool show_GolfBear = false
+bool show_PAFBull = true, bool show_PAFBear = false
+bool show_CS1B = true, bool show_CS1R = false
+bool show_CS2B = true, bool show_CS2R = false
+bool show_CS3B = true, bool show_CS3R = false
+bool show_CCBull = true, bool show_CCBear = false
+bool show_LSCBull = true, bool show_LSCBear = false
+bool show_BullFloor = true, bool show_Bull2ndFloor = true
+bool show_BearRooftop = false, bool show_BearPenthouse = false
+bool show_HWBull = true, bool show_HWBear = false
+bool show_SuperBull = true, bool show_SuperBear = false
+bool show_SDuperBull = true, bool show_SDuperBear = false
+
+// === INPUTS — USE DISPLACEMENT ===
+grp_disp = "Displacement"
+i_disp_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp)
+i_std_len   = input.int(100, "Std Dev Length", minval=1, group=grp_disp)
+i_std_min   = input.float(3.0, "Min Mult", minval=0, step=0.5, group=grp_disp)
+i_std_max   = input.float(100.0, "Max Mult", minval=0, step=0.5, group=grp_disp)
+i_req_fvg   = input.bool(true, "Require FVG", group=grp_disp)
+
+grp_disp2 = "Displacement 2+"
+i_disp2_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp2)
+i_disp2_std_len = input.int(100, "Std Dev Length", minval=1, group=grp_disp2)
+i_disp2_std_min = input.float(3.0, "Min Mult", minval=0, step=0.5, group=grp_disp2)
+i_disp2_std_max = input.float(100.0, "Max Mult", minval=0, step=0.5, group=grp_disp2)
+i_disp2_req_fvg = input.bool(true, "Require FVG", group=grp_disp2)
+
+grp_disp3 = "Displacement 3+"
+i_disp3_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp3)
+i_disp3_std_len = input.int(100, "Std Dev Length", minval=1, group=grp_disp3)
+i_disp3_std_min = input.float(3.0, "Min Mult", minval=0, step=0.5, group=grp_disp3)
+i_disp3_std_max = input.float(100.0, "Max Mult", minval=0, step=0.5, group=grp_disp3)
+i_disp3_req_fvg = input.bool(true, "Require FVG", group=grp_disp3)
+
+// === INPUTS — GZ1 / HV FVG ===
+grp_fvg = "GZ1 & HV FVG"
+gz1_auto   = input.bool(true, "Auto Threshold", group=grp_fvg)
+gz1_thresh = input.float(2, "FVG Threshold %", minval=0, step=0.1, group=grp_fvg)
+gz1_dist   = input.int(7, "GZ1 Max Bar Distance", minval=1, group=grp_fvg)
+
+grp_hv = "HV Settings"
+hv150_len = input.int(150, "Hotspot Lookback", minval=10, group=grp_hv)
+
+// Hardcoded constants
+pp_barSize=3.0, pp_lookback=10
+zoo_ma_type="VWMA", zoo_ma_len=5, zoo_price_src=close, enable_PB=true
+zoo_pbj_ma_period=20, zoo_pbj_atr_period=14, zoo_pbj_hh_ll=25, zoo_pbj_atr_mult=3.0, zoo_pbj_vol_period=20, zoo_pbj_vol_mult=0.1
+zoo_use_st=true, zoo_st_period=10, zoo_st_mult=2.0
+pp_min_candles=2, pp_buffer_ticks=10, pp_atr_mult=2.0, pp_trend_cnt=1, pp_max_levels=50
+pp_trust_mode="Trusted Only", pp_min_count=3
+
+grp_swing = "Swingin (Pivot)"
+sw_leftBars = input.int(3, "Left Bars", minval=1, group=grp_swing)
+sw_rightBars = input.int(2, "Right Bars", minval=1, group=grp_swing)
+sw_useAtr = input.bool(true, "Use ATR Filter", group=grp_swing)
+sw_atrMult = input.float(2.0, "ATR Multiplier", step=0.1, group=grp_swing)
+pp_atr_len = input.int(100, "ATR Length", group=grp_swing)
+
+grp_od = "Opening Drive"
+od_max_bars = input.int(1, "Max Bars Into Session", minval=1, maxval=10, group=grp_od)
+
+grp_neo = "Matrix Number (Neo)"
+neo_len = input.int(67, "Matrix Number Lookback", minval=1, group=grp_neo)
+
+grp_m1 = "Momentum 1"
+ls_reg1=input.float(7.0,"Reg Floor",minval=0.5,step=0.1,group=grp_m1), ls_cum1=input.float(3.5,"Cum Floor",minval=0.5,step=0.1,group=grp_m1), ls_body1=input.float(0.60,"Body Ratio",minval=0.0,maxval=1.0,step=0.05,group=grp_m1)
+grp_m2 = "Momentum 2"
+ls_reg2=input.float(5.0,"Reg Floor",minval=0.5,step=0.1,group=grp_m2), ls_cum2=input.float(2.5,"Cum Floor",minval=0.5,step=0.1,group=grp_m2), ls_body2=input.float(0.75,"Body Ratio",minval=0.0,maxval=1.0,step=0.05,group=grp_m2)
+
+grp_cs_set = "Combo Set Settings"
+cs_bodyPct_FVG=input.float(0.85,"Min Body% FVG",minval=0.0,maxval=1.0,step=0.05,group=grp_cs_set)
+cs_bodyPct_MAT=input.float(0.85,"Min Body% Matrix",minval=0.0,maxval=1.0,step=0.05,group=grp_cs_set)
+cs_inc_pentagon_FVG=input.bool(true,"Pentagon in FVG Sets",group=grp_cs_set)
+cs_inc_pentagon_MAT=input.bool(true,"Pentagon in Matrix Sets",group=grp_cs_set)
+
+grp_cc = "Combo Chain"
+cc_min_hits=input.int(2,"Min Hits",minval=1,group=grp_cc), cc_window=input.int(2,"Within Bars",minval=1,group=grp_cc)
+
+grp_lsc = "Long/Short Chain"
+lsc_min_hits=input.int(2,"Min Hits",minval=1,group=grp_lsc), lsc_window=input.int(2,"Within Bars",minval=1,group=grp_lsc)
+grp_lsc_m1 = "LS Chain Mom 1"
+lsc_reg1=input.float(7.0,"Reg",minval=0.5,step=0.1,group=grp_lsc_m1), lsc_cum1=input.float(3.5,"Cum",minval=0.5,step=0.1,group=grp_lsc_m1), lsc_body1=input.float(0.60,"Body",minval=0.0,maxval=1.0,step=0.05,group=grp_lsc_m1)
+grp_lsc_m2 = "LS Chain Mom 2"
+lsc_reg2=input.float(5.0,"Reg",minval=0.5,step=0.1,group=grp_lsc_m2), lsc_cum2=input.float(2.5,"Cum",minval=0.5,step=0.1,group=grp_lsc_m2), lsc_body2=input.float(0.75,"Body",minval=0.0,maxval=1.0,step=0.05,group=grp_lsc_m2)
+
+// Boom Hunter hardcoded
+bh_LPPeriod=6, bh_K1=0, bh_trigno=2, bh_LPPeriod2=27, bh_K12=0.8, bh_K22=0.3
+bh_LPPeriod3=11, bh_n1=9, bh_n2=6, bh_n3=3, bh_n4=21, bh_n5=0, bh_lsmaline=200
+bh_leftBars=1, bh_rightBars=1, bh_leftBars2=5, bh_rightBars2=5, bh_greyDist=30
+
+// === USE SHARED ===
+pp_atr = ta.atr(pp_atr_len)
+bb_spike=math.abs(close-open), bb_avgSpikeDenom=ta.sma(bb_spike,bb_avgLength)[1], bb_normalizedPrice=bb_spike/nz(bb_avgSpikeDenom,1.0)
+bb_avgVolDenom=ta.sma(volume,bb_avgLength)[1], bb_normalizedVolume=volume/nz(bb_avgVolDenom,1.0)
+bb_diff=bb_normalizedPrice-bb_normalizedVolume, bb_positiveDiff=bb_diff>0?bb_diff:na, bb_smaDiff=ta.sma(bb_positiveDiff,bb_smaLength)
+bb_baseBullish=(close>open) and (bb_positiveDiff>bb_smaDiff), bb_baseBearish=(close<open) and (bb_positiveDiff>bb_smaDiff)
+bb_inRange(v,lo,hi) => v>=lo and v<hi
+
+// === ENGINE 1: RVOL ===
+f_rvol_1x_threshold(_s) => _s<=10?38.0:_s<=15?33.0:_s<=30?28.0:_s<=45?23.0:_s<=60?20.0:_s<=120?18.0:_s<=300?13.0:_s<=360?13.0:_s<=540?11.0:_s<=600?10.0:_s<=660?9.0:_s<=900?7.5:_s<=1560?6.5:_s<=2340?6.0:_s<=3600?4.5:_s<=9000?4.0:_s<=11700?3.5:_s<259200?1.8:1.0
+f_gs_moab_threshold(_s) => _s<60?f_rvol_1x_threshold(_s)*3.0:_s<=300?35.0:_s<=600?25.0:_s<=1500?20.0:_s<=3000?20.0:_s<=7260?10.0:_s<=11700?8.0:_s<=86400?7.5:_s<=259200?3.5:3.0
+f_saab_kratos_threshold(_s) => f_rvol_1x_threshold(_s) * 0.56
+f_wtc_threshold(_s) => f_rvol_1x_threshold(_s) * 2.0
+f_hiroshima_threshold(_s) => _s<60?f_rvol_1x_threshold(_s)*3.0:_s<=300?35.0:_s<=600?25.0:_s<=1500?25.0:_s<=3060?20.0:_s<=7260?10.0:_s<=11700?8.0:_s<=86400?7.5:_s<=259200?5:3.5
+
+th_saab_kratos=f_saab_kratos_threshold(tfSec), th_1x=f_rvol_1x_threshold(tfSec), th_gs_moab=f_gs_moab_threshold(tfSec), th_wtc=f_wtc_threshold(tfSec), th_hiroshima=f_hiroshima_threshold(tfSec)
+
+sigSAAB=conf and bb_baseBullish and bb_inRange(bb_normalizedPrice,th_saab_kratos,th_1x)
+sigKratos=conf and bb_baseBearish and bb_inRange(bb_normalizedPrice,th_saab_kratos,th_1x)
+sigGrandSlam=conf and bb_baseBullish and (bb_normalizedPrice>=th_gs_moab)
+sigMOAB=conf and bb_baseBearish and (bb_normalizedPrice>=th_gs_moab)
+sigBullRVOL1x=conf and bb_baseBullish and bb_inRange(bb_normalizedPrice,th_1x,th_gs_moab) and not sigGrandSlam
+sigBearRVOL1x=conf and bb_baseBearish and bb_inRange(bb_normalizedPrice,th_1x,th_gs_moab) and not sigMOAB
+
+[currentVolume_reg,pastVolume_reg,_unused]=_rvol(reg_length, reg_calculationMode=="Cumulative")
+relVolRatio=currentVolume_reg/pastVolume_reg
+sigWTC=conf and (relVolRatio>th_wtc) and (relVolRatio<=th_hiroshima)
+sigHiroshima=conf and (relVolRatio>th_hiroshima)
+sigPentagon=conf and (relVolRatio>=th_1x) and (relVolRatio<=th_wtc)
+
+var float maxVol=0.0
+bool isNagasaki=false
+if bar_index==0
+    maxVol:=volume
+else if volume>maxVol
+    isNagasaki:=true
+    maxVol:=volume
+sigNagasaki=isNagasaki
+
+// === SESSION TRACKING ===
+bool is_new_day=ta.change(_dayKey())!=0
+var int sessionBarCount=0, var int lastCountedBar=-1
+if is_new_day and bar_index!=lastCountedBar
+    sessionBarCount:=1
+    lastCountedBar:=bar_index
+else if bar_index!=lastCountedBar
+    sessionBarCount+=1
+    lastCountedBar:=bar_index
+
+// === ENGINE 2: FAUNA ===
+fauna_atr=atr14, fauna_avgVol=ta.sma(volume,20), fauna_avgBody=ta.sma(math.abs(close-open),20)
+fauna_avgDelta=ta.sma(math.abs(close-close[1]),10), fauna_trendMA=ta.sma(close,50)
+fauna_body=close-open, fauna_rng=high-low, fauna_bodySz=math.abs(fauna_body)
+fauna_bodyRat=fauna_rng==0?0.0:fauna_bodySz/fauna_rng
+fauna_up=fauna_body>0, fauna_dn=fauna_body<0
+fauna_prev_body=close[1]-open[1], fauna_prev_range=high[1]-low[1]
+
+MB_b=fauna_up and fauna_bodySz>1.6*fauna_atr and fauna_bodyRat>0.70 and volume>1.8*fauna_avgVol
+RE_b=fauna_up and fauna_rng>2.2*fauna_atr and (high-close)<0.15*fauna_rng and volume>1.8*fauna_avgVol
+TA_b=fauna_trendMA>fauna_trendMA[1] and (close-close[1])>1.6*fauna_avgDelta and fauna_up and volume>1.8*fauna_avgVol
+GG_b=(open-close[1])>0.9*fauna_atr and fauna_up and low>close[1] and volume>1.8*fauna_avgVol
+StrongBear=close[1]<open[1] and math.abs(fauna_prev_body)>1.5*fauna_avgBody[1] and volume[1]>1.5*fauna_avgVol[1]
+WeakBear=close[1]<open[1] and (fauna_prev_range==0?0.0:math.abs(fauna_prev_body)/fauna_prev_range)<=0.2
+TR_b=WeakBear and (MB_b or RE_b or TA_b), ES_b=StrongBear and (MB_b or RE_b or TA_b), GDR_b=close[1]<open[1] and GG_b
+int b_core_cnt=(MB_b?1:0)+(RE_b?1:0)+(TA_b?1:0)
+bool b_gg_pass=fauna_gg_master and (b_core_cnt>=2) and (fauna_bodyRat>=fauna_gg_body)
+bool b_gg_exc=GG_b and not b_gg_pass
+excluded_bull=TR_b or ES_b or GDR_b or b_gg_exc
+sigFAUNABull=conf and (MB_b or RE_b or TA_b) and not excluded_bull
+
+MB_r=fauna_dn and fauna_bodySz>1.6*fauna_atr and fauna_bodyRat>0.70 and volume>1.8*fauna_avgVol
+RE_r=fauna_dn and fauna_rng>2.2*fauna_atr and (close-low)<0.15*fauna_rng and volume>1.8*fauna_avgVol
+TA_r=fauna_trendMA<fauna_trendMA[1] and (close[1]-close)>1.6*fauna_avgDelta and fauna_dn and volume>1.8*fauna_avgVol
+GG_r=(close[1]-open)>0.9*fauna_atr and fauna_dn and high<close[1] and volume>1.8*fauna_avgVol
+StrongBull=close[1]>open[1] and math.abs(fauna_prev_body)>1.5*fauna_avgBody[1] and volume[1]>1.5*fauna_avgVol[1]
+WeakBull=close[1]>open[1] and (fauna_prev_range==0?0.0:math.abs(fauna_prev_body)/fauna_prev_range)<=0.2
+TR_r=WeakBull and (MB_r or RE_r or TA_r), ES_r=StrongBull and (MB_r or RE_r or TA_r), GDR_r=close[1]>open[1] and GG_r
+int s_core_cnt=(MB_r?1:0)+(RE_r?1:0)+(TA_r?1:0)
+bool s_gg_pass=fauna_gg_master and (s_core_cnt>=2) and (fauna_bodyRat>=fauna_gg_body)
+bool s_gg_exc=GG_r and not s_gg_pass
+excluded_bear=TR_r or ES_r or GDR_r or s_gg_exc
+sigFAUNABear=conf and (MB_r or RE_r or TA_r) and not excluded_bear
+
+// === ENGINE 3: USE DISPLACEMENT ===
+float disp_rng=i_disp_type=="Open to Close"?math.abs(open-close):high-low
+float disp_std=ta.stdev(disp_rng,i_std_len)
+float disp_thresh_min=disp_std*i_std_min, float disp_thresh_max=disp_std*i_std_max
+bool disp_prevDisp=disp_rng[1]>disp_thresh_min[1] and disp_rng[1]<=disp_thresh_max[1]
+bool disp_currDisp=disp_rng[0]>disp_thresh_min[0] and disp_rng[0]<=disp_thresh_max[0]
+bool disp_bullFVG=low>high[2] and close[1]>open[1], bool disp_bearFVG=high<low[2] and close[1]<open[1]
+sigDISPBull=conf and (i_req_fvg?(disp_prevDisp and disp_bullFVG):(disp_currDisp and close>open))
+sigDISPBear=conf and (i_req_fvg?(disp_prevDisp and disp_bearFVG):(disp_currDisp and close<open))
+float disp5_thresh=disp_std*5.0
+bool disp5_bull=conf and disp_std>0 and disp_rng>disp5_thresh and close>open
+bool disp5_bear=conf and disp_std>0 and disp_rng>disp5_thresh and close<open
+
+// Disp 2+
+float disp2_rng=i_disp2_type=="Open to Close"?math.abs(open-close):high-low
+float disp2_std=ta.stdev(disp2_rng,i_disp2_std_len)
+bool sigDISP2Bull=conf and (i_disp2_req_fvg?(disp2_rng[1]>disp2_std[1]*i_disp2_std_min and disp2_rng[1]<=disp2_std[1]*i_disp2_std_max and low>high[2] and close[1]>open[1]):(disp2_rng>disp2_std*i_disp2_std_min and disp2_rng<=disp2_std*i_disp2_std_max and close>open))
+bool sigDISP2Bear=conf and (i_disp2_req_fvg?(disp2_rng[1]>disp2_std[1]*i_disp2_std_min and disp2_rng[1]<=disp2_std[1]*i_disp2_std_max and high<low[2] and close[1]<open[1]):(disp2_rng>disp2_std*i_disp2_std_min and disp2_rng<=disp2_std*i_disp2_std_max and close<open))
+var int disp2_bullStreak=0, var int disp2_bearStreak=0
+if sigDISP2Bull
+    disp2_bullStreak:=disp2_bullStreak+1
+else
+    disp2_bullStreak:=0
+if sigDISP2Bear
+    disp2_bearStreak:=disp2_bearStreak+1
+else
+    disp2_bearStreak:=0
+// D2+/D3+ FAUNA check: bar[1] and bar[2] (displacement candles), NOT bar[0]
+bool sigDispConsBull2=sigDISP2Bull and disp2_bullStreak>=2 and nz(sigFAUNABull[1]) and nz(sigFAUNABull[2])
+bool sigDispConsBear2=sigDISP2Bear and disp2_bearStreak>=2 and nz(sigFAUNABear[1]) and nz(sigFAUNABear[2])
+
+// Disp 3+
+float disp3_rng=i_disp3_type=="Open to Close"?math.abs(open-close):high-low
+float disp3_std=ta.stdev(disp3_rng,i_disp3_std_len)
+bool sigDISP3Bull=conf and (i_disp3_req_fvg?(disp3_rng[1]>disp3_std[1]*i_disp3_std_min and disp3_rng[1]<=disp3_std[1]*i_disp3_std_max and low>high[2] and close[1]>open[1]):(disp3_rng>disp3_std*i_disp3_std_min and disp3_rng<=disp3_std*i_disp3_std_max and close>open))
+bool sigDISP3Bear=conf and (i_disp3_req_fvg?(disp3_rng[1]>disp3_std[1]*i_disp3_std_min and disp3_rng[1]<=disp3_std[1]*i_disp3_std_max and high<low[2] and close[1]<open[1]):(disp3_rng>disp3_std*i_disp3_std_min and disp3_rng<=disp3_std*i_disp3_std_max and close<open))
+var int disp3_bullStreak=0, var int disp3_bearStreak=0
+if sigDISP3Bull
+    disp3_bullStreak:=disp3_bullStreak+1
+else
+    disp3_bullStreak:=0
+if sigDISP3Bear
+    disp3_bearStreak:=disp3_bearStreak+1
+else
+    disp3_bearStreak:=0
+// D3+ FAUNA: bar[1], bar[2], bar[3] (displacement candles)
+bool sigDispConsBull3=sigDISP3Bull and disp3_bullStreak>=3 and nz(sigFAUNABull[1]) and nz(sigFAUNABull[2]) and nz(sigFAUNABull[3])
+bool sigDispConsBear3=sigDISP3Bear and disp3_bearStreak>=3 and nz(sigFAUNABear[1]) and nz(sigFAUNABear[2]) and nz(sigFAUNABear[3])
+
+// === ENGINE 4: GZ1/HV FVG ===
+type fvg_struct
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+
+float gz_v1=volume[1], float _hv5000=ta.highest(volume,5000)[1], float _hv252=ta.highest(volume,252)[1], float _hv63=ta.highest(volume,63)[1]
+bool gz_isHV=(gz_v1==_hv5000) or (gz_v1==_hv252) or (gz_v1==_hv63)
+float gz_thresh=gz1_auto?ta.cum((high-low)/low)/bar_index:gz1_thresh/100
+bool gz_bFVG=low>high[2] and close[1]>high[2] and (low-high[2])/high[2]>gz_thresh
+bool gz_sFVG=high<low[2] and close[1]<low[2] and (low[2]-high)/high>gz_thresh
+
+var gz_fvgs=array.new<fvg_struct>(0)
+var int gz_lastT=0
+bool gz_bullGZI=false, bool gz_bearGZI=false, bool gz_bullHV=false, bool gz_bearHV=false
+
+if conf and gz_bFVG and time!=gz_lastT
+    float mx=low, float mn=high[2]
+    if gz_isHV
+        gz_bullHV:=true
+    if gz_fvgs.size()>0
+        for i=0 to gz_fvgs.size()-1
+            fvg_struct e=gz_fvgs.get(i)
+            if e.bull and bar_index-e.idx<=gz1_dist
+                if math.max(e.mn,mn)<math.min(e.mx,mx) or (math.max(e.mn,mn)<=math.min(e.mx,mx) and e.hv and gz_isHV)
+                    gz_bullGZI:=true
+                    break
+    gz_fvgs.unshift(fvg_struct.new(mx,mn,true,time,bar_index,gz_isHV))
+    gz_lastT:=time
+
+if conf and gz_sFVG and time!=gz_lastT
+    float mx=low[2], float mn=high
+    if gz_isHV
+        gz_bearHV:=true
+    if gz_fvgs.size()>0
+        for i=0 to gz_fvgs.size()-1
+            fvg_struct e=gz_fvgs.get(i)
+            if not e.bull and bar_index-e.idx<=gz1_dist
+                if math.max(e.mn,mn)<math.min(e.mx,mx) or (math.max(e.mn,mn)<=math.min(e.mx,mx) and e.hv and gz_isHV)
+                    gz_bearGZI:=true
+                    break
+    gz_fvgs.unshift(fvg_struct.new(mx,mn,false,time,bar_index,gz_isHV))
+    gz_lastT:=time
+
+if gz_fvgs.size()>0
+    for i=gz_fvgs.size()-1 to 0
+        fvg_struct g=gz_fvgs.get(i)
+        if g.bull and close<g.mn
+            gz_fvgs.remove(i)
+        else if not g.bull and close>g.mx
+            gz_fvgs.remove(i)
+if gz_fvgs.size()>50
+    gz_fvgs.pop()
+
+// === ENGINE 5: PUP/PPD ===
+float pp_redVol=close<open?volume:0.0, float pp_greenVol=close>open?volume:0.0
+float pp_hiRedVol=ta.highest(pp_redVol[1],pp_lookback), float pp_hiGreenVol=ta.highest(pp_greenVol[1],pp_lookback)
+bool pp_priceUp=((close-open)/open)*100>pp_barSize, bool pp_priceDn=((open-close)/open)*100>pp_barSize
+bool sigPUP=conf and pp_priceUp and volume>pp_hiRedVol
+bool sigPPD=conf and pp_priceDn and volume>pp_hiGreenVol
+
+// ┌──────────────────────────────────────────────────────────────────────────┐
+// │  ENGINE 6: PBJ — THIS IS PIPELINE B                                    │
+// └──────────────────────────────────────────────────────────────────────────┘
+type lvl
+    float upper
+    float lower
+    float vol
+    bool approached
+
+float atr_pb=atr14*2.0
+f_ma(src,len,t) => switch t
+    "EMA"=>ta.ema(src,len)
+    "SMA"=>ta.sma(src,len)
+    "WMA"=>ta.wma(src,len)
+    "HMA"=>ta.hma(src,len)
+    "VWMA"=>ta.vwma(src,len)
+    =>ta.sma(src,len)
+
+float base_ma=f_ma(zoo_price_src,zoo_ma_len,zoo_ma_type)
+float zoo_st_atr=zoo_st_mult*ta.atr(zoo_st_period)
+var int st_dir=1
+float curr_long=0.0
+curr_long:=base_ma>nz(curr_long[1],base_ma-zoo_st_atr)?math.max(base_ma-zoo_st_atr,nz(curr_long[1])):base_ma-zoo_st_atr
+float curr_short=0.0
+curr_short:=base_ma<nz(curr_short[1],base_ma+zoo_st_atr)?math.min(base_ma+zoo_st_atr,nz(curr_short[1])):base_ma+zoo_st_atr
+float sig_line=0.0
+if zoo_use_st
+    if nz(st_dir[1])==-1 and zoo_price_src>nz(curr_short[1])
+        st_dir:=1
+    else if nz(st_dir[1])==1 and zoo_price_src<nz(curr_long[1])
+        st_dir:=-1
+    sig_line:=st_dir==1?curr_long:curr_short
+else
+    sig_line:=base_ma
+
+bool buy_cross=ta.crossover(zoo_price_src,sig_line), bool sell_cross=ta.crossunder(zoo_price_src,sig_line)
+bool bull_reaccel=st_dir==1 and sig_line>nz(sig_line[1]) and nz(sig_line[1])==nz(sig_line[2])
+bool bear_reaccel=st_dir==-1 and sig_line<nz(sig_line[1]) and nz(sig_line[1])==nz(sig_line[2])
+
+float pbj_ma=ta.ema(close,zoo_pbj_ma_period), float pbj_atr=ta.atr(zoo_pbj_atr_period)
+float zoo_avg_vol=ta.sma(volume,zoo_pbj_vol_period)
+float zoo_thresh=close==0?0:(pbj_atr/close*zoo_pbj_atr_mult)
+bool pbj_buy=low<pbj_ma*(1-zoo_thresh) and low==ta.lowest(low,zoo_pbj_hh_ll) and volume>zoo_avg_vol*zoo_pbj_vol_mult
+bool pbj_sell=high>pbj_ma*(1+zoo_thresh) and high==ta.highest(high,zoo_pbj_hh_ll) and volume>zoo_avg_vol*zoo_pbj_vol_mult
+
+var bull_lvls=array.new<lvl>(), var bear_lvls=array.new<lvl>()
+f_add_lvl(arr,up,lo,v)=>
+    if math.abs(up-lo)>=syminfo.mintick
+        array.push(arr,lvl.new(up,lo,v,false))
+f_add_lander(is_bull,cross_sig,arr)=>
+    if cross_sig
+        float up=0.0, float lo=0.0
+        if is_bull
+            up:=math.max(open[1],close[1]), lo:=low[1]
+            if up-lo<atr_pb*0.5
+                up:=lo+atr_pb*0.5
+        else
+            up:=high[1], lo:=math.min(open[1],close[1])
+            if up-lo<atr_pb*0.5
+                lo:=up-atr_pb*0.5
+        f_add_lvl(arr,up,lo,volume[1])
+f_add_reaccel(is_bull,sig,arr)=>
+    if sig and not na(sig_line)
+        float p1=sig_line, float p2=is_bull?math.min(open,close):math.max(open,close)
+        f_add_lvl(arr,math.max(p1,p2),math.min(p1,p2),volume)
+f_check_approach(arr,is_bull)=>
+    bool approached=false
+    if array.size(arr)>0
+        for i=array.size(arr)-1 to 0
+            if i>=array.size(arr)
+                continue
+            l=array.get(arr,i)
+            if is_bull and close<l.lower
+                array.remove(arr,i)
+                continue
+            if not is_bull and close>l.upper
+                array.remove(arr,i)
+                continue
+            float ap=is_bull?l.upper*1.005:l.lower*0.995
+            if is_bull
+                if not l.approached and low<=ap
+                    approached:=true
+                    l.approached:=true
+                else if l.approached and low>l.upper
+                    l.approached:=false
+            else
+                if not l.approached and high>=ap
+                    approached:=true
+                    l.approached:=true
+                else if l.approached and high<l.lower
+                    l.approached:=false
+    approached
+
+f_add_lander(true,buy_cross,bull_lvls), f_add_lander(false,sell_cross,bear_lvls)
+f_add_reaccel(true,bull_reaccel,bull_lvls), f_add_reaccel(false,bear_reaccel,bear_lvls)
+
+var bool wait_buy=false, var bool wait_sell=false, var bool wait_pbj_buy=false, var bool wait_pbj_sell=false
+if conf
+    if f_check_approach(bull_lvls,true)
+        wait_buy:=true
+    if f_check_approach(bear_lvls,false)
+        wait_sell:=true
+if pbj_buy
+    wait_pbj_buy:=true
+if pbj_sell
+    wait_pbj_sell:=true
+while array.size(bull_lvls)>30
+    array.shift(bull_lvls)
+while array.size(bear_lvls)>30
+    array.shift(bear_lvls)
+
+bool sig_pbj_buy=buy_cross and wait_pbj_buy, bool sig_pb_buy=buy_cross and wait_buy
+bool sig_pbj_sell=sell_cross and wait_pbj_sell, bool sig_pb_sell=sell_cross and wait_sell
+if sig_pb_buy
+    wait_buy:=false
+if sig_pbj_buy
+    wait_pbj_buy:=false
+if sig_pb_sell
+    wait_sell:=false
+if sig_pbj_sell
+    wait_pbj_sell:=false
+
+// PIPELINE B TERMINAL OUTPUTS
+bool sigBullPBJ=conf and sig_pbj_buy, bool sigBullPB=conf and enable_PB and sig_pb_buy and not sig_pbj_buy
+bool sigBearPBJ=conf and sig_pbj_sell, bool sigBearPB=conf and enable_PB and sig_pb_sell and not sig_pbj_sell
+
+// === ENGINE 7: PING PONG SR ===
+type srLevel
+    float price
+    int levelType
+    int originType
+    int state
+    int count
+    line lnID
+
+var srLevels=array.new<srLevel>(0)
+var int last_bounce_side=0, var string lastBreakType=na
+float sig_bull_break=na, float sig_bear_break=na, float sig_res_bounce=na, float sig_sup_bounce=na
+float sig_piv_bull=na, float sig_piv_bear=na, float sig_res_reject=na, float sig_sup_reject=na
+bool bullRegime=false, bool bearRegime=false
+
+float body_top=math.max(open,close), float body_bot=math.min(open,close)
+float price_tolerance=math.max(syminfo.mintick*pp_buffer_ticks,syminfo.mintick/10)
+bool is_new_flat_res=true, bool is_new_flat_sup=true
+for i=0 to pp_min_candles-1
+    if math.abs(math.max(open[i],close[i])-body_top)>price_tolerance
+        is_new_flat_res:=false
+    if math.abs(math.min(open[i],close[i])-body_bot)>price_tolerance
+        is_new_flat_sup:=false
+
+rawHigh=ta.pivothigh(high,sw_leftBars,sw_rightBars), rawLow=ta.pivotlow(low,sw_leftBars,sw_rightBars)
+var float lastValidSwingLevel=na
+thresholdSwing=sw_useAtr?(pp_atr*sw_atrMult):0
+
+bool validSwingHigh=false
+if not na(rawHigh)
+    if na(lastValidSwingLevel) or math.abs(rawHigh-lastValidSwingLevel)>=thresholdSwing
+        validSwingHigh:=true
+        lastValidSwingLevel:=rawHigh
+bool validSwingLow=false
+if not na(rawLow)
+    if na(lastValidSwingLevel) or math.abs(rawLow-lastValidSwingLevel)>=thresholdSwing
+        validSwingLow:=true
+        lastValidSwingLevel:=rawLow
+
+has_level(price,type_val)=>
+    bool found=false
+    if array.size(srLevels)>0
+        for i=0 to array.size(srLevels)-1
+            lv=array.get(srLevels,i)
+            if math.abs(lv.price-price)<=price_tolerance and lv.levelType==type_val
+                found:=true
+                break
+    found
+
+if is_new_flat_res and not has_level(body_top,1)
+    ln=line.new(bar_index-pp_min_candles+1,body_top,bar_index,body_top,color=color.new(color.white,100),style=line.style_dashed)
+    array.push(srLevels,srLevel.new(body_top,1,0,0,0,ln))
+if is_new_flat_sup and not has_level(body_bot,-1)
+    ln=line.new(bar_index-pp_min_candles+1,body_bot,bar_index,body_bot,color=color.new(color.white,100),style=line.style_dashed)
+    array.push(srLevels,srLevel.new(body_bot,-1,0,0,0,ln))
+if validSwingHigh
+    ln=line.new(bar_index-sw_rightBars,rawHigh,bar_index,rawHigh,color=color.new(color.white,100),width=1,style=line.style_solid)
+    array.push(srLevels,srLevel.new(rawHigh,1,1,1,0,ln))
+if validSwingLow
+    ln=line.new(bar_index-sw_rightBars,rawLow,bar_index,rawLow,color=color.new(color.white,100),width=1,style=line.style_solid)
+    array.push(srLevels,srLevel.new(rawLow,-1,1,1,0,ln))
+
+if array.size(srLevels)>0
+    for i=array.size(srLevels)-1 to 0
+        lv=array.get(srLevels,i)
+        bool remove_lv=false
+        if lv.levelType==1
+            if close>lv.price
+                if lv.state==1 or lv.originType==1
+                    sig_bull_break:=high
+                    if lastBreakType=="BD"
+                        bullRegime:=true
+                    lastBreakType:="BO"
+                remove_lv:=true
+            else
+                line.set_x2(lv.lnID,bar_index)
+                if (lv.state==1 or lv.originType==1) and high>=lv.price
+                    sig_res_reject:=high
+                    lv.count:=0
+                if lv.state==0 or (lv.state==1 and lv.count>=0)
+                    if close<open
+                        lv.count+=1
+                    if (lv.price-close)>(pp_atr*pp_atr_mult) and lv.count>=pp_trend_cnt
+                        if lv.state==0
+                            lv.state:=1
+                            line.set_style(lv.lnID,line.style_solid)
+                            line.set_width(lv.lnID,2)
+                        lv.count:=-1
+                        sig_res_bounce:=high
+                        if last_bounce_side==1
+                            sig_piv_bear:=high
+                        last_bounce_side:=-1
+        else if lv.levelType==-1
+            if close<lv.price
+                if lv.state==1 or lv.originType==1
+                    sig_bear_break:=low
+                    if lastBreakType=="BO"
+                        bearRegime:=true
+                    lastBreakType:="BD"
+                remove_lv:=true
+            else
+                line.set_x2(lv.lnID,bar_index)
+                if (lv.state==1 or lv.originType==1) and low<=lv.price
+                    sig_sup_reject:=low
+                    lv.count:=0
+                if lv.state==0 or (lv.state==1 and lv.count>=0)
+                    if close>open
+                        lv.count+=1
+                    if (close-lv.price)>(pp_atr*pp_atr_mult) and lv.count>=pp_trend_cnt
+                        if lv.state==0
+                            lv.state:=1
+                            line.set_style(lv.lnID,line.style_solid)
+                            line.set_width(lv.lnID,2)
+                        lv.count:=-1
+                        sig_sup_bounce:=low
+                        if last_bounce_side==-1
+                            sig_piv_bull:=low
+                        last_bounce_side:=1
+        if remove_lv
+            line.set_x2(lv.lnID,bar_index)
+            array.remove(srLevels,i)
+
+while array.size(srLevels)>pp_max_levels
+    oldLv=array.get(srLevels,0)
+    line.delete(oldLv.lnID)
+    array.remove(srLevels,0)
+
+int bull_state=(validSwingLow?32:0)+(not na(sig_piv_bull)?16:0)+(bullRegime?8:0)+(not na(sig_sup_bounce)?4:0)+(not na(sig_bull_break)?2:0)+(not na(sig_res_reject)?1:0)
+int bull_cnt=(validSwingLow?1:0)+(not na(sig_piv_bull)?1:0)+(bullRegime?1:0)+(not na(sig_sup_bounce)?1:0)+(not na(sig_bull_break)?1:0)+(not na(sig_res_reject)?1:0)
+bool bull_has_floor_gravity=(bull_state%8>=4) or (bull_state%32>=16) or (bull_state>=32)
+int bear_state=(validSwingHigh?32:0)+(not na(sig_piv_bear)?16:0)+(bearRegime?8:0)+(not na(sig_res_bounce)?4:0)+(not na(sig_bear_break)?2:0)+(not na(sig_sup_reject)?1:0)
+int bear_cnt=(validSwingHigh?1:0)+(not na(sig_piv_bear)?1:0)+(bearRegime?1:0)+(not na(sig_res_bounce)?1:0)+(not na(sig_bear_break)?1:0)+(not na(sig_sup_reject)?1:0)
+bool bear_has_ceiling_gravity=(bear_state%8>=4) or (bear_state%32>=16) or (bear_state>=32)
+
+bool bull_pp=bull_cnt>=pp_min_count and bull_has_floor_gravity and bull_state>0
+bool bear_pp=bear_cnt>=pp_min_count and bear_has_ceiling_gravity and bear_state>0
+
+// === ENGINE 8: UU / UUU / UUUU — UNIFIED STREAK ===
+bool u_qual_bull = conf and bb_baseBullish and bb_normalizedPrice >= 0.5
+bool u_qual_bear = conf and bb_baseBearish and bb_normalizedPrice >= 0.5
+
+var int u_bull_streak = 0, var int u_bear_streak = 0
+var bool u_bull_hasDay1 = false, var bool u_bear_hasDay1 = false
+
+if conf
+    if u_qual_bull
+        u_bull_streak += 1
+        u_bull_hasDay1 := u_bull_hasDay1 or is_new_day
+    else
+        u_bull_streak := 0
+        u_bull_hasDay1 := false
+    if u_qual_bear
+        u_bear_streak += 1
+        u_bear_hasDay1 := u_bear_hasDay1 or is_new_day
+    else
+        u_bear_streak := 0
+        u_bear_hasDay1 := false
+
+bool rawBullUU = conf and u_bull_streak == 2
+bool rawBullUUU = conf and u_bull_streak == 3
+bool rawBullUUUU = conf and u_bull_streak >= 4
+bool rawBearUU = conf and u_bear_streak == 2
+bool rawBearUUU = conf and u_bear_streak == 3
+bool rawBearUUUU = conf and u_bear_streak >= 4
+
+// ─── BULL UUUU (≥4 bars) ───
+bool sigP21BullUUUU = false
+bool sigP21BullUUUU_indep = false
+if conf and u_bull_streak >= 4
+    int _n = math.min(u_bull_streak, 4)
+    bool _has_pbj = false, bool _has_pb = false, bool _has_hvd = false
+    bool _has_disp = false, bool _has_fauna = false
+    bool _all_disp = true, bool _all_saab_df = true
+    bool _df_not_pbj = false, bool _pbj_not_df = false
+    bool _has_sa = false, bool _has_r1 = false, bool _has_gs = false
+    for i = 0 to _n - 1
+        bool bpbj = nz(sigBullPBJ[i])
+        bool bpb = nz(sigBullPB[i])
+        bool bhvd = i >= 1 ? nz(hvd_fire_bull[i - 1]) : false
+        bool bdisp = nz(sigDISPBull[i]) or bhvd
+        bool bfauna = nz(sigFAUNABull[i])
+        bool bsaab = nz(sigSAAB[i]) or nz(sigBullRVOL1x[i]) or nz(sigGrandSlam[i])
+        bool bsa = nz(sigSAAB[i]), bool br1 = nz(sigBullRVOL1x[i]), bool bgs = nz(sigGrandSlam[i])
+        bool bdf = bdisp or bfauna
+        if bpbj
+            _has_pbj := true
+        if bpb
+            _has_pb := true
+        if bhvd
+            _has_hvd := true
+        if bdisp
+            _has_disp := true
+        if bfauna
+            _has_fauna := true
+        if bsa
+            _has_sa := true
+        if br1
+            _has_r1 := true
+        if bgs
+            _has_gs := true
+        if not bdisp
+            _all_disp := false
+        if not bsaab or not bdf
+            _all_saab_df := false
+        if bdf and not bpbj
+            _df_not_pbj := true
+        if bpbj and not bdf
+            _pbj_not_df := true
+    bool pA = u_bull_hasDay1 and _has_pbj
+    bool pB = _all_disp
+    bool pC = _all_saab_df
+    bool pD = _has_hvd
+    bool pE = (_df_not_pbj and _has_pbj) or (_pbj_not_df and (_has_disp or _has_fauna))
+    bool pF = (_has_fauna or _has_disp) and _has_pbj
+    // v2 pG path: ≥4 distinct qualifiers in streak (PBJ/DISP/FAUNA/SAAB/RVOL1x/GS).
+    int _qcnt = (_has_pbj?1:0)+(_has_disp?1:0)+(_has_fauna?1:0)+(_has_sa?1:0)+(_has_r1?1:0)+(_has_gs?1:0)
+    bool pG = _qcnt >= 4
+    float _sum4 = bb_normalizedPrice + nz(bb_normalizedPrice[1]) + nz(bb_normalizedPrice[2]) + nz(bb_normalizedPrice[3])
+    bool _pbj4 = nz(sigBullPBJ) or nz(sigBullPBJ[1]) or nz(sigBullPBJ[2]) or nz(sigBullPBJ[3])
+    bool _sub2min_ok_4 = tfSec > 120 or (_sum4 >= th_saab_kratos and (_sum4 >= th_1x or _pbj4))
+    sigP21BullUUUU := (pA or pB or pC or pD or pE or pF or pG) and _sub2min_ok_4
+    sigP21BullUUUU_indep := (pA or pB or pC or pE or pF or pG) and _sub2min_ok_4
+
+// ─── BULL UUU (exactly 3) ───
+bool sigP21BullUUU = false
+bool sigP21BullUUU_indep = false
+if conf and u_bull_streak == 3
+    bool _has_pbj = false, bool _has_pb = false, bool _has_hvd = false
+    bool _has_disp = false, bool _has_fauna = false
+    bool _all_disp = true, bool _all_saab_df = true
+    bool _df_not_pbj = false, bool _pbj_not_df = false
+    bool _has_sa = false, bool _has_r1 = false, bool _has_gs = false
+    for i = 0 to 2
+        bool bpbj = nz(sigBullPBJ[i])
+        bool bpb = nz(sigBullPB[i])
+        bool bhvd = i >= 1 ? nz(hvd_fire_bull[i - 1]) : false
+        bool bdisp = nz(sigDISPBull[i]) or bhvd
+        bool bfauna = nz(sigFAUNABull[i])
+        bool bsaab = nz(sigSAAB[i]) or nz(sigBullRVOL1x[i]) or nz(sigGrandSlam[i])
+        bool bsa = nz(sigSAAB[i]), bool br1 = nz(sigBullRVOL1x[i]), bool bgs = nz(sigGrandSlam[i])
+        bool bdf = bdisp or bfauna
+        if bpbj
+            _has_pbj := true
+        if bpb
+            _has_pb := true
+        if bhvd
+            _has_hvd := true
+        if bdisp
+            _has_disp := true
+        if bfauna
+            _has_fauna := true
+        if bsa
+            _has_sa := true
+        if br1
+            _has_r1 := true
+        if bgs
+            _has_gs := true
+        if not bdisp
+            _all_disp := false
+        if not bsaab or not bdf
+            _all_saab_df := false
+        if bdf and not bpbj
+            _df_not_pbj := true
+        if bpbj and not bdf
+            _pbj_not_df := true
+    bool pA = u_bull_hasDay1 and _has_pbj
+    bool pB = _all_disp
+    bool pC = _all_saab_df
+    bool pD = _has_hvd
+    bool pE = (_df_not_pbj and _has_pbj) or (_pbj_not_df and (_has_disp or _has_fauna))
+    int _qcnt = (_has_pbj?1:0)+(_has_disp?1:0)+(_has_fauna?1:0)+(_has_sa?1:0)+(_has_r1?1:0)+(_has_gs?1:0)
+    bool pG = _qcnt >= 3
+    float _sum3 = bb_normalizedPrice + nz(bb_normalizedPrice[1]) + nz(bb_normalizedPrice[2])
+    bool _pbj3 = nz(sigBullPBJ) or nz(sigBullPBJ[1]) or nz(sigBullPBJ[2])
+    bool _sub2min_ok_3 = tfSec > 120 or (_sum3 >= th_saab_kratos and (_sum3 >= th_1x or _pbj3))
+    sigP21BullUUU := (pA or pB or pC or pD or pE or pG) and _sub2min_ok_3
+    sigP21BullUUU_indep := (pA or pB or pC or pE or pG) and _sub2min_ok_3
+
+// ─── BULL UU (exactly 2) ───
+bool sigUUBull = false
+bool sigUUBull_indep = false
+if conf and u_bull_streak == 2
+    bool _has_pbj = false, bool _has_pb = false, bool _has_hvd = false
+    bool _has_disp = false, bool _has_fauna = false
+    bool _all_disp = true, bool _all_saab_df = true
+    bool _df_not_pbj = false, bool _pbj_not_df = false
+    bool _has_sa = false, bool _has_r1 = false, bool _has_gs = false
+    for i = 0 to 1
+        bool bpbj = nz(sigBullPBJ[i])
+        bool bpb = nz(sigBullPB[i])
+        bool bhvd = i >= 1 ? nz(hvd_fire_bull[i - 1]) : false
+        bool bdisp = nz(sigDISPBull[i]) or bhvd
+        bool bfauna = nz(sigFAUNABull[i])
+        bool bsaab = nz(sigSAAB[i]) or nz(sigBullRVOL1x[i]) or nz(sigGrandSlam[i])
+        bool bsa = nz(sigSAAB[i]), bool br1 = nz(sigBullRVOL1x[i]), bool bgs = nz(sigGrandSlam[i])
+        bool bdf = bdisp or bfauna
+        if bpbj
+            _has_pbj := true
+        if bpb
+            _has_pb := true
+        if bhvd
+            _has_hvd := true
+        if bdisp
+            _has_disp := true
+        if bfauna
+            _has_fauna := true
+        if bsa
+            _has_sa := true
+        if br1
+            _has_r1 := true
+        if bgs
+            _has_gs := true
+        if not bdisp
+            _all_disp := false
+        if not bsaab or not bdf
+            _all_saab_df := false
+        if bdf and not bpbj
+            _df_not_pbj := true
+        if bpbj and not bdf
+            _pbj_not_df := true
+    bool pA = u_bull_hasDay1 and _has_pbj
+    bool pB = _all_disp
+    bool pC = _all_saab_df
+    bool pD = _has_hvd and (_has_pb or _has_pbj)
+    bool pE = (_df_not_pbj and _has_pbj) or (_pbj_not_df and (_has_disp or _has_fauna))
+    int _qcnt = (_has_pbj?1:0)+(_has_disp?1:0)+(_has_fauna?1:0)+(_has_sa?1:0)+(_has_r1?1:0)+(_has_gs?1:0)
+    bool pG = _qcnt >= 2
+    float _sum2 = bb_normalizedPrice + nz(bb_normalizedPrice[1])
+    bool _pbj2 = nz(sigBullPBJ) or nz(sigBullPBJ[1])
+    bool _sub2min_ok_2 = tfSec > 120 or (_sum2 >= th_saab_kratos and (_sum2 >= th_1x or _pbj2))
+    sigUUBull := (pA or pB or pC or pD or pE or pG) and _sub2min_ok_2
+    sigUUBull_indep := (pA or pB or pC or pE or pG) and _sub2min_ok_2
+
+// ─── BEAR DDDD (≥4) ───
+bool sigP21BearUUUU = false, bool sigP21BearUUUU_indep = false
+if conf and u_bear_streak >= 4
+    int _n = math.min(u_bear_streak, 4)
+    bool _has_pbj = false, bool _has_pb = false, bool _has_hvd = false, bool _has_disp = false, bool _has_fauna = false
+    bool _all_disp = true, bool _all_saab_df = true, bool _df_not_pbj = false, bool _pbj_not_df = false
+    bool _has_sa = false, bool _has_r1 = false, bool _has_gs = false
+    for i = 0 to _n - 1
+        bool bpbj = nz(sigBearPBJ[i]), bool bpb = nz(sigBearPB[i])
+        bool bhvd = i >= 1 ? nz(hvd_fire_bear[i - 1]) : false
+        bool bdisp = nz(sigDISPBear[i]) or bhvd, bool bfauna = nz(sigFAUNABear[i])
+        bool bsaab = nz(sigKratos[i]) or nz(sigBearRVOL1x[i]) or nz(sigMOAB[i])
+        bool bsa = nz(sigKratos[i]), bool br1 = nz(sigBearRVOL1x[i]), bool bgs = nz(sigMOAB[i])
+        bool bdf = bdisp or bfauna
+        if bpbj
+            _has_pbj := true
+        if bpb
+            _has_pb := true
+        if bhvd
+            _has_hvd := true
+        if bdisp
+            _has_disp := true
+        if bfauna
+            _has_fauna := true
+        if bsa
+            _has_sa := true
+        if br1
+            _has_r1 := true
+        if bgs
+            _has_gs := true
+        if not bdisp
+            _all_disp := false
+        if not bsaab or not bdf
+            _all_saab_df := false
+        if bdf and not bpbj
+            _df_not_pbj := true
+        if bpbj and not bdf
+            _pbj_not_df := true
+    bool pA = u_bear_hasDay1 and _has_pbj, bool pB = _all_disp, bool pC = _all_saab_df
+    bool pD = _has_hvd, bool pE = (_df_not_pbj and _has_pbj) or (_pbj_not_df and (_has_disp or _has_fauna))
+    bool pF = (_has_fauna or _has_disp) and _has_pbj
+    int _qcnt = (_has_pbj?1:0)+(_has_disp?1:0)+(_has_fauna?1:0)+(_has_sa?1:0)+(_has_r1?1:0)+(_has_gs?1:0)
+    bool pG = _qcnt >= 4
+    sigP21BearUUUU := pA or pB or pC or pD or pE or pF or pG
+    sigP21BearUUUU_indep := pA or pB or pC or pE or pF or pG
+
+// ─── BEAR DDD (exactly 3) ───
+bool sigP21BearUUU = false, bool sigP21BearUUU_indep = false
+if conf and u_bear_streak == 3
+    bool _has_pbj = false, bool _has_pb = false, bool _has_hvd = false, bool _has_disp = false, bool _has_fauna = false
+    bool _all_disp = true, bool _all_saab_df = true, bool _df_not_pbj = false, bool _pbj_not_df = false
+    bool _has_sa = false, bool _has_r1 = false, bool _has_gs = false
+    for i = 0 to 2
+        bool bpbj = nz(sigBearPBJ[i]), bool bpb = nz(sigBearPB[i])
+        bool bhvd = i >= 1 ? nz(hvd_fire_bear[i - 1]) : false
+        bool bdisp = nz(sigDISPBear[i]) or bhvd, bool bfauna = nz(sigFAUNABear[i])
+        bool bsaab = nz(sigKratos[i]) or nz(sigBearRVOL1x[i]) or nz(sigMOAB[i])
+        bool bsa = nz(sigKratos[i]), bool br1 = nz(sigBearRVOL1x[i]), bool bgs = nz(sigMOAB[i])
+        bool bdf = bdisp or bfauna
+        if bpbj
+            _has_pbj := true
+        if bpb
+            _has_pb := true
+        if bhvd
+            _has_hvd := true
+        if bdisp
+            _has_disp := true
+        if bfauna
+            _has_fauna := true
+        if bsa
+            _has_sa := true
+        if br1
+            _has_r1 := true
+        if bgs
+            _has_gs := true
+        if not bdisp
+            _all_disp := false
+        if not bsaab or not bdf
+            _all_saab_df := false
+        if bdf and not bpbj
+            _df_not_pbj := true
+        if bpbj and not bdf
+            _pbj_not_df := true
+    bool pA = u_bear_hasDay1 and _has_pbj, bool pB = _all_disp, bool pC = _all_saab_df
+    bool pD = _has_hvd, bool pE = (_df_not_pbj and _has_pbj) or (_pbj_not_df and (_has_disp or _has_fauna))
+    int _qcnt = (_has_pbj?1:0)+(_has_disp?1:0)+(_has_fauna?1:0)+(_has_sa?1:0)+(_has_r1?1:0)+(_has_gs?1:0)
+    bool pG = _qcnt >= 3
+    sigP21BearUUU := pA or pB or pC or pD or pE or pG
+    sigP21BearUUU_indep := pA or pB or pC or pE or pG
+
+// ─── BEAR DD (exactly 2) ───
+bool sigUUBear = false, bool sigUUBear_indep = false
+if conf and u_bear_streak == 2
+    bool _has_pbj = false, bool _has_pb = false, bool _has_hvd = false, bool _has_disp = false, bool _has_fauna = false
+    bool _all_disp = true, bool _all_saab_df = true, bool _df_not_pbj = false, bool _pbj_not_df = false
+    bool _has_sa = false, bool _has_r1 = false, bool _has_gs = false
+    for i = 0 to 1
+        bool bpbj = nz(sigBearPBJ[i]), bool bpb = nz(sigBearPB[i])
+        bool bhvd = i >= 1 ? nz(hvd_fire_bear[i - 1]) : false
+        bool bdisp = nz(sigDISPBear[i]) or bhvd, bool bfauna = nz(sigFAUNABear[i])
+        bool bsaab = nz(sigKratos[i]) or nz(sigBearRVOL1x[i]) or nz(sigMOAB[i])
+        bool bsa = nz(sigKratos[i]), bool br1 = nz(sigBearRVOL1x[i]), bool bgs = nz(sigMOAB[i])
+        bool bdf = bdisp or bfauna
+        if bpbj
+            _has_pbj := true
+        if bpb
+            _has_pb := true
+        if bhvd
+            _has_hvd := true
+        if bdisp
+            _has_disp := true
+        if bfauna
+            _has_fauna := true
+        if bsa
+            _has_sa := true
+        if br1
+            _has_r1 := true
+        if bgs
+            _has_gs := true
+        if not bdisp
+            _all_disp := false
+        if not bsaab or not bdf
+            _all_saab_df := false
+        if bdf and not bpbj
+            _df_not_pbj := true
+        if bpbj and not bdf
+            _pbj_not_df := true
+    bool pA = u_bear_hasDay1 and _has_pbj, bool pB = _all_disp, bool pC = _all_saab_df
+    bool pD = _has_hvd and (_has_pb or _has_pbj), bool pE = (_df_not_pbj and _has_pbj) or (_pbj_not_df and (_has_disp or _has_fauna))
+    int _qcnt = (_has_pbj?1:0)+(_has_disp?1:0)+(_has_fauna?1:0)+(_has_sa?1:0)+(_has_r1?1:0)+(_has_gs?1:0)
+    bool pG = _qcnt >= 2
+    sigUUBear := pA or pB or pC or pD or pE or pG
+    sigUUBear_indep := pA or pB or pC or pE or pG
+
+bool is_matrix_number=volume==ta.highest(volume,neo_len)
+bool sigNeoBull=conf and is_matrix_number and sigFAUNABull, bool sigNeoBear=conf and is_matrix_number and sigFAUNABear
+bool sigTrinityBull=conf and is_matrix_number and not sigFAUNABull and close>open, bool sigTrinityBear=conf and is_matrix_number and not sigFAUNABear and close<open
+
+// === ENGINE 9: SESSION + ALPHA STRIKE ===
+var bool daySignalFired=false
+if is_new_day
+    daySignalFired:=false
+bool firstOfDay=not daySignalFired
+
+bool sigFoxtrotBull=conf and sigFAUNABull and nz(sigFAUNABull[1]) and nz(sigFAUNABull[2]) and nz(sigFAUNABull[3])
+bool sigFoxtrotBear=conf and sigFAUNABear and nz(sigFAUNABear[1]) and nz(sigFAUNABear[2]) and nz(sigFAUNABear[3])
+
+// === ENGINE 11: LONG/SHORT ===
+[currentVol_r,pastVol_r,_r2]=_rvol(reg_length, false)
+[currentVol_c,pastVol_c,_c2]=_rvol(reg_length, true)
+float ls_regRatio=nz(currentVol_r/pastVol_r), float ls_cumRatio=nz(currentVol_c/pastVol_c)
+float ls_bodyRat=(high-low)==0?0.0:math.abs(close-open)/(high-low)
+bool sigLong1=conf and ls_regRatio>ls_reg1 and ls_cumRatio>ls_cum1 and close>open and ls_bodyRat>=ls_body1
+bool sigShort1=conf and ls_regRatio>ls_reg1 and ls_cumRatio>ls_cum1 and close<open and ls_bodyRat>=ls_body1
+bool sigLong2=conf and ls_regRatio>ls_reg2 and ls_cumRatio>ls_cum2 and close>open and ls_bodyRat>=ls_body2
+bool sigShort2=conf and ls_regRatio>ls_reg2 and ls_cumRatio>ls_cum2 and close<open and ls_bodyRat>=ls_body2
+
+bool neo_bull_aligned=sigNeoBull and (sigLong1 or sigLong2), bool neo_bear_aligned=sigNeoBear and (sigShort1 or sigShort2)
+bool trinity_bull_aligned=sigTrinityBull and (sigLong1 or sigLong2), bool trinity_bear_aligned=sigTrinityBear and (sigShort1 or sigShort2)
+
+// === COMBO SETS ===
+float cs_bp1=high[1]-low[1]==0?0.0:math.abs(close[1]-open[1])/(high[1]-low[1])
+bool cs_vb=cs_bp1>=cs_bodyPct_FVG
+bool comboSet1_Bull=conf and cs_vb and (gz_bullHV or gz_bullGZI) and (sigSAAB[1] or sigBullRVOL1x[1] or sigGrandSlam[1])
+bool comboSet1_Bear=conf and cs_vb and (gz_bearHV or gz_bearGZI) and (sigKratos[1] or sigBearRVOL1x[1] or sigMOAB[1])
+bool comboSet2_Bull=conf and cs_vb and (gz_bullHV or gz_bullGZI) and ((cs_inc_pentagon_FVG and sigPentagon[1]) or sigWTC[1] or sigHiroshima[1] or sigNagasaki[1])
+bool comboSet2_Bear=conf and cs_vb and (gz_bearHV or gz_bearGZI) and ((cs_inc_pentagon_FVG and sigPentagon[1]) or sigWTC[1] or sigHiroshima[1] or sigNagasaki[1])
+bool cs_vm=ls_bodyRat>=cs_bodyPct_MAT
+bool matrix_any_bull=sigNeoBull or sigTrinityBull or neo_bull_aligned or trinity_bull_aligned
+bool matrix_any_bear=sigNeoBear or sigTrinityBear or neo_bear_aligned or trinity_bear_aligned
+bool comboSet3_Bull=cs_vm and matrix_any_bull and (sigSAAB or sigBullRVOL1x or sigGrandSlam)
+bool comboSet3_Bear=cs_vm and matrix_any_bear and (sigKratos or sigBearRVOL1x or sigMOAB)
+bool comboSet4_Bull=cs_vm and matrix_any_bull and ((cs_inc_pentagon_MAT and sigPentagon) or sigWTC or sigHiroshima or sigNagasaki)
+bool comboSet4_Bear=cs_vm and matrix_any_bear and ((cs_inc_pentagon_MAT and sigPentagon) or sigWTC or sigHiroshima or sigNagasaki)
+
+bool csNew1_Bull=comboSet1_Bull or comboSet2_Bull, bool csNew1_Bear=comboSet1_Bear or comboSet2_Bear
+bool csNew2_Bull=comboSet3_Bull or comboSet4_Bull, bool csNew2_Bear=comboSet3_Bear or comboSet4_Bear
+bool csNew3_Bull=csNew1_Bull and nz(csNew2_Bull[1]), bool csNew3_Bear=csNew1_Bear and nz(csNew2_Bear[1])
+
+// Alpha Strike — FIX: PBJ ONLY (PB removed per spec)
+bool as_fauna_bull=sigFAUNABull or sigLong1 or sigDISPBull or sigPUP or sigWTC or sigHiroshima or sigNagasaki
+bool as_fauna_bear=sigFAUNABear or sigShort1 or sigDISPBear or sigPPD or sigWTC or sigHiroshima or sigNagasaki
+bool sigAlphaStrikeBull=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and as_fauna_bull
+bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearRVOL1x) and sigBearPBJ and as_fauna_bear
+
+// Opening Drive — FIX: offset -1 (disp_prevDisp+FVG). PUP/PBJ at [1].
+bool od_fvg_bull=gz_bullGZI or comboSet1_Bull or comboSet2_Bull or comboSet3_Bull or comboSet4_Bull
+bool od_fvg_bear=gz_bearGZI or comboSet1_Bear or comboSet2_Bear or comboSet3_Bear or comboSet4_Bear
+bool sigODBull=conf and sessionBarCount<=(od_max_bars+1) and od_fvg_bull and disp_prevDisp and nz(sigPUP[1]) and nz(sigBullPBJ[1])
+bool sigODBear=conf and sessionBarCount<=(od_max_bars+1) and od_fvg_bear and disp_prevDisp and nz(sigPPD[1]) and nz(sigBearPBJ[1])
+
+// HV 75-1000
+bool sigHV75=conf and volume>=ta.highest(volume,75)[1], bool sigHV150=conf and volume>=ta.highest(volume,hv150_len)[1]
+bool sigHV500=conf and volume>=ta.highest(volume,500)[1], bool sigHV1000=conf and volume>=ta.highest(volume,1000)[1]
+
+// Golf + PAF
+bool sigGolfBull=conf and sigDISPBull and nz(sigFAUNABull[1]) and nz(sigPUP[1]) and nz(sigDISPBull[1]) and nz(sigFAUNABull[2]) and nz(sigPUP[2])
+bool sigGolfBear=conf and sigDISPBear and nz(sigFAUNABear[1]) and nz(sigPPD[1]) and nz(sigDISPBear[1]) and nz(sigFAUNABear[2]) and nz(sigPPD[2])
+bool sigPAFBull=conf and sigPUP and sigFAUNABull and nz(sigPUP[1]) and nz(sigFAUNABull[1])
+bool sigPAFBear=conf and sigPPD and sigFAUNABear and nz(sigPPD[1]) and nz(sigFAUNABear[1])
+
+// Combo Chain
+int cc_win_bull=0, bool cc_pbj_bull=false
+for i=0 to cc_window-1
+    if nz(csNew1_Bull[i]) or nz(csNew2_Bull[i])
+        cc_win_bull+=1
+    if nz(sigBullPBJ[i]) or nz(sigBullPB[i])
+        cc_pbj_bull:=true
+for i=0 to math.max(cc_window-2, 0)
+    if i+1 <= cc_window-1 and nz(csNew3_Bull[i])
+        cc_win_bull-=1
+int cc_win_bear=0, bool cc_pbj_bear=false
+for i=0 to cc_window-1
+    if nz(csNew1_Bear[i]) or nz(csNew2_Bear[i])
+        cc_win_bear+=1
+    if nz(sigBearPBJ[i]) or nz(sigBearPB[i])
+        cc_pbj_bear:=true
+for i=0 to math.max(cc_window-2, 0)
+    if i+1 <= cc_window-1 and nz(csNew3_Bear[i])
+        cc_win_bear-=1
+
+var bool cc_bull_active=false, var bool cc_bear_active=false
+if conf
+    if not (csNew1_Bull or csNew2_Bull)
+        cc_bull_active:=false
+    else if not cc_bull_active and cc_win_bull>=cc_min_hits and cc_pbj_bull
+        cc_bull_active:=true
+if conf
+    if not (csNew1_Bear or csNew2_Bear)
+        cc_bear_active:=false
+    else if not cc_bear_active and cc_win_bear>=cc_min_hits and cc_pbj_bear
+        cc_bear_active:=true
+bool sigCCBull=conf and cc_bull_active, bool sigCCBear=conf and cc_bear_active
+
+// LS Chain
+bool lsc_L1=conf and ls_regRatio>lsc_reg1 and ls_cumRatio>lsc_cum1 and close>open and ls_bodyRat>=lsc_body1
+bool lsc_S1=conf and ls_regRatio>lsc_reg1 and ls_cumRatio>lsc_cum1 and close<open and ls_bodyRat>=lsc_body1
+bool lsc_L2=conf and ls_regRatio>lsc_reg2 and ls_cumRatio>lsc_cum2 and close>open and ls_bodyRat>=lsc_body2
+bool lsc_S2=conf and ls_regRatio>lsc_reg2 and ls_cumRatio>lsc_cum2 and close<open and ls_bodyRat>=lsc_body2
+int lsc_wb=0, bool lsc_pbj_bull=false
+for i=0 to lsc_window-1
+    if nz(lsc_L1[i]) or nz(lsc_L2[i])
+        lsc_wb+=1
+    if nz(sigBullPBJ[i]) or nz(sigBullPB[i])
+        lsc_pbj_bull:=true
+int lsc_ws=0, bool lsc_pbj_bear=false
+for i=0 to lsc_window-1
+    if nz(lsc_S1[i]) or nz(lsc_S2[i])
+        lsc_ws+=1
+    if nz(sigBearPBJ[i]) or nz(sigBearPB[i])
+        lsc_pbj_bear:=true
+var bool lsc_bull_active=false, var bool lsc_bear_active=false
+if conf
+    if not (lsc_L1 or lsc_L2)
+        lsc_bull_active:=false
+    else if not lsc_bull_active and lsc_wb>=lsc_min_hits and lsc_pbj_bull
+        lsc_bull_active:=true
+if conf
+    if not (lsc_S1 or lsc_S2)
+        lsc_bear_active:=false
+    else if not lsc_bear_active and lsc_ws>=lsc_min_hits and lsc_pbj_bear
+        lsc_bear_active:=true
+bool sigLSCBull=conf and lsc_bull_active, bool sigLSCBear=conf and lsc_bear_active
+
+// Nagasaki directional
+bool nag_dir_bull=sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI
+bool nag_dir_bear=sigBearRVOL1x or sigMOAB or sigFAUNABear or sigDISPBear or sigBearPBJ or sigPPD or gz_bearHV or gz_bearGZI
+
+// Floor / Rooftop / 2F / PH
+bool bull_hw_slot=sigBullRVOL1x or sigGrandSlam or sigWTC or sigHiroshima or (sigNagasaki and nag_dir_bull)
+bool bear_hw_slot=sigBearRVOL1x or sigMOAB or sigWTC or sigHiroshima or (sigNagasaki and nag_dir_bear)
+bool anyBullFloor=conf and bull_pp and sigBullPBJ and bull_hw_slot
+bool anyBull2nd=conf and bull_pp and sigBullPB and bull_hw_slot
+bool anyBearRoof=conf and bear_pp and sigBearPBJ and bear_hw_slot
+bool anyBearPent=conf and bear_pp and sigBearPB and bear_hw_slot
+
+// HW — disp5 is NOT displacement (no FVG). Offset=0. Protocol Common Mistake #6.
+bool hwBull=(close>open) and disp5_bull and sigBullPBJ and (sigGrandSlam or sigWTC or sigHiroshima or (sigNagasaki and nag_dir_bull)) and (anyBullFloor or anyBull2nd)
+bool hwBear=(close<open) and disp5_bear and sigBearPBJ and (sigMOAB or sigWTC or sigHiroshima or (sigNagasaki and nag_dir_bear)) and (anyBearRoof or anyBearPent)
+
+// ════════════════════════════════════════════════════════════════════════════
+// TNT PROPULSION BLOCK ENGINE
+// ════════════════════════════════════════════════════════════════════════════
+grpTNT = "TNT Engine"
+int SENS = input.int(100, "TNT Sensitivity", minval=1, group=grpTNT)
+int SWING_LEN = input.int(10, "TNT Swing Length", minval=3, group=grpTNT)
+string DISP_TYPE_T = input.string("Open to Close", "TNT Range Type", options=["Open to Close","High to Low"], group=grpTNT)
+int DISP_STD_LEN_T = input.int(100, "TNT Std Dev Len", minval=1, group=grpTNT)
+int DISP_STD_X_T = input.int(5, "TNT Std Dev Mult", minval=0, group=grpTNT)
+float RET_TNT_PCT = input.float(100.0, "Return to TNT %", minval=-10, step=0.1, group=grpTNT)
+int SUDDEN_PROX = input.int(10, "Sudden Change Max Bars", minval=1, group=grpTNT)
+int maxZones_t = 15, int maxSuperZones_t = 8
+int EMA_FAST_T=SENS, int EMA_SLOW_T=SENS+13
+float ATR_VAL_T=ta.atr(200), float ATR14_T=ta.atr(14), float ATR_MULT_T=3.5, float ATR_MIN_T=0.5
+int MIN_SIG_GAP_T=EMA_SLOW_T
+type tZone
+    int oi
+    int ci
+    float u
+    float l
+    float lv
+    float v
+    bool ib
+    bool ia=true
+    bool rf=false
+type tCL
+    float lv
+    bool ib
+    int bi
+    bool vi=false
+type tSP
+    float v=na
+    int i=na
+    bool c=false
+type tBBE
+    int bi
+    float lv
+    float u
+    float l
+    bool ib
+    bool it
+
+float ema_f_t=ta.ema(close,EMA_FAST_T), float ema_s_t=ta.ema(close,EMA_SLOW_T)
+bool vob_bc=ta.crossover(ema_f_t,ema_s_t) and barstate.isconfirmed
+bool vob_sc=ta.crossunder(ema_f_t,ema_s_t) and barstate.isconfirmed
+var float vbu=na, var float vbl=na, var int vbo=na, var float vbv=na, var bool vbn=false
+var float vsu=na, var float vsl=na, var int vso=na, var float vsv=na, var bool vsn=false
+float atr_hi_t=ta.highest(ATR_VAL_T,200)*2.0
+if vob_bc
+    float cv=0.0, int ob=bar_index, float ol=low
+    for i=1 to EMA_SLOW_T
+        if low[i]<=ol
+            ol:=low[i], ob:=bar_index-i
+        cv+=volume[i]
+    float s=math.min(open[bar_index-ob],close[bar_index-ob])
+    s:=(s-ol)<atr_hi_t*0.5?ol+atr_hi_t*0.5:s
+    vbu:=s, vbl:=ol, vbo:=ob, vbv:=cv, vbn:=true
+else
+    vbn:=false
+if vob_sc
+    float cv=0.0, int ob=bar_index, float oh=high
+    for i=1 to EMA_SLOW_T
+        if high[i]>=oh
+            oh:=high[i], ob:=bar_index-i
+        cv+=volume[i]
+    float s=math.max(open[bar_index-ob],close[bar_index-ob])
+    s:=(oh-s)<atr_hi_t*0.5?oh-atr_hi_t*0.5:s
+    vsu:=oh, vsl:=s, vso:=ob, vsv:=cv, vsn:=true
+else
+    vsn:=false
+
+var int swSt_t=0
+var tSP swH_t=tSP.new(na,na), var tSP swL_t=tSP.new(na,na)
+float swU_t=ta.highest(high,SWING_LEN), float swLL_t=ta.lowest(low,SWING_LEN)
+swSt_t:=high[SWING_LEN]>swU_t?0:low[SWING_LEN]<swLL_t?1:swSt_t
+if swSt_t==0 and swSt_t[1]!=0
+    swH_t:=tSP.new(high[SWING_LEN],bar_index[SWING_LEN])
+if swSt_t==1 and swSt_t[1]!=1
+    swL_t:=tSP.new(low[SWING_LEN],bar_index[SWING_LEN])
+
+var float abu=na, var float abl=na, var int abi=na, var float apu=na, var float apl=na, var int api=na, var bool abn=false
+var float asu=na, var float asl=na, var int asi=na, var float aspu=na, var float aspl=na, var int aspi=na, var bool asn=false
+if close>swH_t.v and not swH_t.c and barstate.isconfirmed and not na(swH_t.v)
+    swH_t.c:=true
+    float oL=low[1], float oH=high[1], int oI=bar_index-1
+    int lb=bar_index-swH_t.i
+    if lb>1
+        for i=1 to lb-1
+            if open[i]>close[i] and low[i]<=oL
+                oL:=low[i], oH:=high[i], oI:=bar_index-i
+    apu:=abu, apl:=abl, api:=abi
+    abu:=oH, abl:=oL, abi:=oI
+    abn:=not na(apu) and oI<=nz(api,0)+EMA_SLOW_T and oH>nz(apl,na) and oL<nz(apu,na)
+else
+    abn:=false
+if close<swL_t.v and not swL_t.c and barstate.isconfirmed and not na(swL_t.v)
+    swL_t.c:=true
+    float oL=low[1], float oH=high[1], int oI=bar_index-1
+    int lb=bar_index-swL_t.i
+    if lb>1
+        for i=1 to lb-1
+            if open[i]<close[i] and high[i]>=oH
+                oH:=high[i], oL:=low[i], oI:=bar_index-i
+    aspu:=asu, aspl:=asl, aspi:=asi
+    asu:=oH, asl:=oL, asi:=oI
+    asn:=not na(aspl) and oI<=nz(aspi,0)+EMA_SLOW_T and oL<nz(aspu,na) and oH>nz(aspl,na)
+else
+    asn:=false
+
+var float fbu=na, var float fbl=na, var int fbt=na, var bool fba=false, var bool fbpn=false, var int fbpi=na
+var float fsu=na, var float fsl=na, var int fst=na, var bool fsa=false, var bool fspn=false, var int fspi=na
+var tSP fswH=tSP.new(na,na), var tSP fswL=tSP.new(na,na)
+if swSt_t==0 and swSt_t[1]!=0
+    fswH:=tSP.new(high[SWING_LEN],bar_index[SWING_LEN])
+if swSt_t==1 and swSt_t[1]!=1
+    fswL:=tSP.new(low[SWING_LEN],bar_index[SWING_LEN])
+if close>fswH.v and not fswH.c and barstate.isconfirmed and not na(fswH.v)
+    fswH.c:=true
+    float bB=math.min(open[1],close[1]), float bT=math.max(open[1],close[1]), int bI=bar_index-1
+    int lb=bar_index-fswH.i
+    if lb>1
+        for i=1 to lb-1
+            if math.min(open[i],close[i])<bB
+                bB:=math.min(open[i],close[i]), bT:=math.max(open[i],close[i]), bI:=bar_index-i
+    float os=math.abs(bT-bB)
+    if os<=ATR_VAL_T*ATR_MULT_T and os>ATR_VAL_T*ATR_MIN_T
+        fbu:=bT, fbl:=bB, fbt:=bI, fba:=true
+if close<fswL.v and not fswL.c and barstate.isconfirmed and not na(fswL.v)
+    fswL.c:=true
+    float bT=math.max(open[1],close[1]), float bB=math.min(open[1],close[1]), int bI=bar_index-1
+    int lb=bar_index-fswL.i
+    if lb>1
+        for i=1 to lb-1
+            if math.max(open[i],close[i])>bT
+                bT:=math.max(open[i],close[i]), bB:=math.min(open[i],close[i]), bI:=bar_index-i
+    float os=math.abs(bT-bB)
+    if os<=ATR_VAL_T*ATR_MULT_T and os>ATR_VAL_T*ATR_MIN_T
+        fsu:=bT, fsl:=bB, fst:=bI, fsa:=true
+fbpn:=false
+if fba and barstate.isconfirmed
+    if close<fbl
+        fba:=false
+    else if low[1]<fbu and low[1]>fbl and close>open and close>high[1]
+        fbpn:=true, fbpi:=fbt
+fspn:=false
+if fsa and barstate.isconfirmed
+    if close>fsu
+        fsa:=false
+    else if high[1]>fsl and high[1]<fsu and close<open and close<low[1]
+        fspn:=true, fspi:=fst
+
+int CW_T=EMA_SLOW_T*2
+var int vcb=0, var int acb=0, var int fcb=0, var int vcs=0, var int acs=0, var int fcs=0
+var float vcu=na, var float vcl=na, var float vdu=na, var float vdl=na
+if vbn
+    vcb:=bar_index, vcu:=vbu, vcl:=vbl
+if vsn
+    vcs:=bar_index, vdu:=vsu, vdl:=vsl
+if abn
+    acb:=bar_index
+if asn
+    acs:=bar_index
+if fbpn
+    fcb:=bar_index
+if fspn
+    fcs:=bar_index
+f_tok(int a,int b,int c)=>int mn=math.min(a,math.min(b,c)), int mx=math.max(a,math.max(b,c)), mx-mn<=CW_T and mn>0
+f_zov(float u1,float l1,float u2,float l2)=>not na(u1) and not na(u2) and u1>=l2 and u2>=l1
+float vMed_t=ta.median(volume,EMA_SLOW_T), float eSl_t=ema_f_t-ema_f_t[5], float rsi_t=ta.rsi(close,14)
+f_sb(float vV,float vU,float vL,float aU,float aL)=>vV>vMed_t*EMA_SLOW_T*0.5 and eSl_t>0 and rsi_t<80 and (math.min(vU-vL,aU-aL)>0?math.max(0,math.min(vU,aU)-math.max(vL,aL))/math.min(vU-vL,aU-aL)>0.3:false)
+f_ss(float vV,float vU,float vL,float aU,float aL)=>vV>vMed_t*EMA_SLOW_T*0.5 and eSl_t<0 and rsi_t>20 and (math.min(vU-vL,aU-aL)>0?math.max(0,math.min(vU,aU)-math.max(vL,aL))/math.min(vU-vL,aU-aL)>0.3:false)
+var tnt_z=array.new<tZone>(0)
+var int lBSB=0, var int lSSB=0
+bool bConf_t=f_tok(vcb,acb,fcb) and f_zov(vcu,vcl,abu,abl)
+bool sConf_t=f_tok(vcs,acs,fcs) and f_zov(vdu,vdl,asu,asl)
+bool raw_bullTNT=bConf_t and f_sb(nz(vbv),nz(vcu),nz(vcl),nz(abu),nz(abl)) and barstate.isconfirmed and (bar_index-lBSB)>MIN_SIG_GAP_T
+bool raw_bearTNT=sConf_t and f_ss(nz(vsv),nz(vdu),nz(vdl),nz(asu),nz(asl)) and barstate.isconfirmed and (bar_index-lSSB)>MIN_SIG_GAP_T
+
+f_bl_t()=>math.avg(math.min(nz(vcu,high),nz(abu,high)),math.max(nz(vcl,low),nz(abl,low)))
+f_sl_t()=>math.avg(math.min(nz(vdu,high),nz(asu,high)),math.max(nz(vdl,low),nz(asl,low)))
+f_bo_t()=>int o=math.min(nz(vbo,bar_index),math.min(nz(abi,bar_index),nz(fbpi,bar_index))), o>0?o:bar_index
+f_so_t()=>int o=math.min(nz(vso,bar_index),math.min(nz(asi,bar_index),nz(fspi,bar_index))), o>0?o:bar_index
+var cl_t=array.new<tCL>(0)
+if raw_bullTNT
+    lBSB:=bar_index
+    float oU=math.min(nz(vcu,high),nz(abu,high)), float oL=math.max(nz(vcl,low),nz(abl,low)), float lv=math.avg(oU,oL)
+    tnt_z.push(tZone.new(f_bo_t(),bar_index,oU,oL,lv,nz(vbv),true))
+    cl_t.push(tCL.new(lv,true,bar_index))
+if raw_bearTNT
+    lSSB:=bar_index
+    float oU=math.min(nz(vdu,high),nz(asu,high)), float oL=math.max(nz(vdl,low),nz(asl,low)), float lv=math.avg(oU,oL)
+    tnt_z.push(tZone.new(f_so_t(),bar_index,oU,oL,lv,nz(vsv),false))
+    cl_t.push(tCL.new(lv,false,bar_index))
+
+bool raw_retBullTNT=false, bool raw_retBearTNT=false
+if tnt_z.size()>0
+    for i=tnt_z.size()-1 to 0
+        tZone z=tnt_z.get(i)
+        if z.ia
+            if z.ib and close<z.l
+                z.ia:=false
+            if not z.ib and close>z.u
+                z.ia:=false
+            if z.ia and not z.rf and barstate.isconfirmed and bar_index>z.ci
+                float zH=z.u-z.l
+                if z.ib
+                    float rL=z.l+zH*(RET_TNT_PCT/100.0)
+                    if low<=rL and close>z.l
+                        z.rf:=true, raw_retBullTNT:=true
+                if not z.ib
+                    float rL=z.u-zH*(RET_TNT_PCT/100.0)
+                    if high>=rL and close<z.u
+                        z.rf:=true, raw_retBearTNT:=true
+    while tnt_z.size()>maxZones_t
+        tnt_z.shift()
+
+float dr_t=DISP_TYPE_T=="Open to Close"?math.abs(open-close):high-low
+float ds_t=ta.stdev(dr_t,DISP_STD_LEN_T), float dt_t=ds_t*DISP_STD_X_T
+bool iBFVG_t=low>high[2] and open[1]<close[1], bool iSFVG_t=high<low[2] and open[1]>close[1]
+bool pBD_t=dr_t[1]>dt_t[1]
+bool dispBull_t=pBD_t and iBFVG_t and barstate.isconfirmed, bool dispBear_t=pBD_t and iSFVG_t and barstate.isconfirmed
+
+bool raw_napalmBull=false, bool raw_napalmBear=false
+if barstate.isconfirmed and tnt_z.size()>0
+    if dispBull_t
+        for i=tnt_z.size()-1 to 0
+            tZone z=tnt_z.get(i)
+            if not z.ib and z.ia and low[1]>z.lv
+                raw_napalmBull:=true
+                break
+    if dispBear_t
+        for i=tnt_z.size()-1 to 0
+            tZone z=tnt_z.get(i)
+            if z.ib and z.ia and high[1]<z.lv
+                raw_napalmBear:=true
+                break
+
+bool raw_bullCharge=false, bool raw_bearCharge=false
+if barstate.isconfirmed and cl_t.size()>0
+    if dispBull_t
+        for i=cl_t.size()-1 to 0
+            tCL c=cl_t.get(i)
+            if not c.ib and not c.vi and close[1]>c.lv
+                c.vi:=true, raw_bullCharge:=true
+                cl_t.push(tCL.new(low[1],true,bar_index))
+                break
+    if dispBear_t
+        for i=cl_t.size()-1 to 0
+            tCL c=cl_t.get(i)
+            if c.ib and not c.vi and close[1]<c.lv
+                c.vi:=true, raw_bearCharge:=true
+                cl_t.push(tCL.new(high[1],false,bar_index))
+                break
+while cl_t.size()>100
+    cl_t.shift()
+
+var bull_ev=array.new<tBBE>(0), var bear_ev=array.new<tBBE>(0)
+bool eBullCh=raw_bullCharge and not raw_bearTNT, bool eBearCh=raw_bearCharge and not raw_bullTNT
+bool anyBullEv=raw_bullTNT or raw_napalmBull or eBullCh, bool anyBearEv=raw_bearTNT or raw_napalmBear or eBearCh
+if anyBullEv
+    float eLv=raw_bullTNT?f_bl_t():low[1], float eU=high[1], float eL=low[1]
+    int eB=raw_bullTNT?bar_index:bar_index-1
+    bull_ev.push(tBBE.new(eB,eLv,eU,eL,true,raw_bullTNT))
+    bear_ev.clear()
+    while bull_ev.size()>20
+        bull_ev.shift()
+if anyBearEv and not anyBullEv
+    float eLv=raw_bearTNT?f_sl_t():high[1], float eU=high[1], float eL=low[1]
+    int eB=raw_bearTNT?bar_index:bar_index-1
+    bear_ev.push(tBBE.new(eB,eLv,eU,eL,false,raw_bearTNT))
+    bull_ev.clear()
+    while bear_ev.size()>20
+        bear_ev.shift()
+var int lSBB=0, var int lSSBB=0
+bool raw_bullTNT2=false, bool raw_bearTNT2=false
+if bull_ev.size()>=2 and anyBullEv and barstate.isconfirmed and (bar_index-lSBB)>MIN_SIG_GAP_T
+    raw_bullTNT2:=true, lSBB:=bar_index
+if bear_ev.size()>=2 and anyBearEv and not anyBullEv and barstate.isconfirmed and (bar_index-lSSBB)>MIN_SIG_GAP_T
+    raw_bearTNT2:=true, lSSBB:=bar_index
+
+var int scBC=na, var int scSC=na, var int scRB=na, var int scRS=na
+var int scBT=na, var int scST=na, var int scBT2=na, var int scST2=na
+bool raw_contBull=(raw_bullCharge and not na(scRB) and (bar_index-1-scRB)<=SUDDEN_PROX) or ((raw_bullTNT or raw_bullTNT2) and not na(scBC) and (bar_index-scBC)<=SUDDEN_PROX) or (raw_bullCharge and ((not na(scBT) and (bar_index-1-scBT)<=SUDDEN_PROX) or (not na(scBT2) and (bar_index-1-scBT2)<=SUDDEN_PROX)))
+bool raw_contBear=(raw_bearCharge and not na(scRS) and (bar_index-1-scRS)<=SUDDEN_PROX) or ((raw_bearTNT or raw_bearTNT2) and not na(scSC) and (bar_index-scSC)<=SUDDEN_PROX) or (raw_bearCharge and ((not na(scST) and (bar_index-1-scST)<=SUDDEN_PROX) or (not na(scST2) and (bar_index-1-scST2)<=SUDDEN_PROX)))
+if raw_bullCharge
+    scBC:=bar_index-1
+if raw_bearCharge
+    scSC:=bar_index-1
+if raw_retBullTNT
+    scRB:=bar_index
+if raw_retBearTNT
+    scRS:=bar_index
+if raw_bullTNT
+    scBT:=bar_index
+if raw_bearTNT
+    scST:=bar_index
+if raw_bullTNT2
+    scBT2:=bar_index
+if raw_bearTNT2
+    scST2:=bar_index
+
+bool det_bullNapalmCons=raw_napalmBull or raw_bullCharge
+bool det_bearNapalmCons=raw_napalmBear or raw_bearCharge
+bool det_b2bBullNapalm=det_bullNapalmCons and nz(det_bullNapalmCons[1])
+bool det_b2bBearNapalm=det_bearNapalmCons and nz(det_bearNapalmCons[1])
+bool det_npmTntBull=raw_napalmBull and nz(raw_bullTNT[1])
+// ┌──────────────────────────────────────────────────────────────────────────┐
+// │  SUPER/SD! — OFFSET -1 (sigDISPBull = displacement+FVG in chain)       │
+// │  Per Protocol RULE 2: disp+FVG at any depth → offset -1.               │
+// │  Per Protocol RULE 5: offset-0 booleans at [1], offset-1 at [0].       │
+// │  csNew1 stays [0] (its two-bar FVG pattern already describes bar[1]).   │
+// │  csNew2 shifted to [1] (single-bar matrix event describes bar[0]).      │
+// │  All offset-0 signals (PBJ/FAUNA/PUP/RVOL/Floor) shifted to [1].      │
+// └──────────────────────────────────────────────────────────────────────────┘
+bool super_combo_b = csNew1_Bull or nz(csNew2_Bull[1])
+bool super_combo_s = csNew1_Bear or nz(csNew2_Bear[1])
+bool super_hw_b = nz(sigBullRVOL1x[1]) or nz(sigGrandSlam[1]) or nz(sigWTC[1]) or nz(sigHiroshima[1]) or nz(sigNagasaki[1])
+bool super_hw_s = nz(sigBearRVOL1x[1]) or nz(sigMOAB[1]) or nz(sigWTC[1]) or nz(sigHiroshima[1]) or nz(sigNagasaki[1])
+bool super_hw_bull = sigBullRVOL1x or sigGrandSlam or sigWTC or sigHiroshima or sigNagasaki
+bool super_hw_bear = sigBearRVOL1x or sigMOAB or sigWTC or sigHiroshima or sigNagasaki
+bool super_comboAny_bull=csNew1_Bull or csNew2_Bull, bool super_comboAny_bear=csNew1_Bear or csNew2_Bear
+
+// SUPER and SDUPER — REDEFINED v2 per Anish:
+//   SUPER  = UC (Unified Combo) + Napalm (consolidated)
+//   SDUPER = UC + Napalm + PUP
+// UC = csNew3 (CS1[0] AND CS2[1]) — both events on visual bar 1, offset -1.
+// Napalm (det_*NapalmCons) is offset -1, visual bar 1. PUP is offset 0; align with [1].
+bool superBull = conf and csNew3_Bull and det_bullNapalmCons
+bool superBear = conf and csNew3_Bear and det_bearNapalmCons
+bool sduperBull = conf and csNew3_Bull and det_bullNapalmCons and nz(sigPUP[1])
+bool sduperBear = conf and csNew3_Bear and det_bearNapalmCons and nz(sigPPD[1])
+
+// === BOOM HUNTER + OMEGA ===
+float bh_K2=0.3, float bh_pi=2*math.asin(1)
+float bh_alpha1=(math.cos(.707*2*bh_pi/100)+math.sin(.707*2*bh_pi/100)-1)/math.cos(.707*2*bh_pi/100)
+float bh_HP=0.0
+bh_HP:=(1-bh_alpha1/2)*(1-bh_alpha1/2)*(close-2*nz(close[1])+nz(close[2]))+2*(1-bh_alpha1)*nz(bh_HP[1])-(1-bh_alpha1)*(1-bh_alpha1)*nz(bh_HP[2])
+float bh_a1=math.exp(-1.414*bh_pi/bh_LPPeriod), float bh_b1=2*bh_a1*math.cos(1.414*bh_pi/bh_LPPeriod)
+float bh_c2=bh_b1, float bh_c3=-bh_a1*bh_a1, float bh_c1=1-bh_c2-bh_c3
+float bh_Filt=0.0
+bh_Filt:=bh_c1*(bh_HP+nz(bh_HP[1]))/2+bh_c2*nz(bh_Filt[1])+bh_c3*nz(bh_Filt[2])
+float bh_Peak=0.0
+bh_Peak:=.991*nz(bh_Peak[1])
+if math.abs(bh_Filt)>bh_Peak
+    bh_Peak:=math.abs(bh_Filt)
+float bh_X=bh_Peak!=0?bh_Filt/bh_Peak:0.0
+float bh_Quotient1=(bh_X+bh_K1)/(bh_K1*bh_X+1), float bh_Quotient2=(bh_X+bh_K2)/(bh_K2*bh_X+1)
+
+float bh_HP2=0.0
+bh_HP2:=(1-bh_alpha1/2)*(1-bh_alpha1/2)*(close-2*nz(close[1])+nz(close[2]))+2*(1-bh_alpha1)*nz(bh_HP2[1])-(1-bh_alpha1)*(1-bh_alpha1)*nz(bh_HP2[2])
+float bh_a12=math.exp(-1.414*bh_pi/bh_LPPeriod2), float bh_b12=2*bh_a12*math.cos(1.414*bh_pi/bh_LPPeriod2)
+float bh_c22=bh_b12, float bh_c32=-bh_a12*bh_a12, float bh_c12=1-bh_c22-bh_c32
+float bh_Filt2=0.0
+bh_Filt2:=bh_c12*(bh_HP2+nz(bh_HP2[1]))/2+bh_c22*nz(bh_Filt2[1])+bh_c32*nz(bh_Filt2[2])
+float bh_Peak2=0.0
+bh_Peak2:=.991*nz(bh_Peak2[1])
+if math.abs(bh_Filt2)>bh_Peak2
+    bh_Peak2:=math.abs(bh_Filt2)
+float bh_X2=bh_Peak2!=0?bh_Filt2/bh_Peak2:0.0
+float bh_Quotient3=(bh_X2+bh_K12)/(bh_K12*bh_X2+1)
+
+float bh_HP3=0.0
+bh_HP3:=(1-bh_alpha1/3)*(1-bh_alpha1/2)*(close-2*nz(close[1])+nz(close[2]))+2*(1-bh_alpha1)*nz(bh_HP3[1])-(1-bh_alpha1)*(1-bh_alpha1)*nz(bh_HP3[2])
+float bh_a13=math.exp(-1.414*bh_pi/bh_LPPeriod3), float bh_b13=2*bh_a13*math.cos(1.414*bh_pi/bh_LPPeriod3)
+float bh_c33x=bh_b13, float bh_c333=-bh_a13*bh_a13, float bh_c13=1-bh_c33x-bh_c333
+float bh_Filt3=0.0
+bh_Filt3:=bh_c13*(bh_HP3+nz(bh_HP3[1]))/2+bh_c33x*nz(bh_Filt3[1])+bh_c333*nz(bh_Filt3[2])
+float bh_Peak3=0.0
+bh_Peak3:=.991*nz(bh_Peak3[1])
+if math.abs(bh_Filt3)>bh_Peak3
+    bh_Peak3:=math.abs(bh_Filt3)
+float bh_X3=bh_Peak3!=0?bh_Filt3/bh_Peak3:0.0
+float bh_Quotient5=(bh_X3+0.9999)/(0.9999*bh_X3+1)
+
+bh_src5=hlc3
+bh_tci(src)=>ta.ema((src-ta.ema(src,bh_n1))/(0.025*ta.ema(math.abs(src-ta.ema(src,bh_n1)),bh_n1)),bh_n2)+50
+bh_mf(src)=>100.0-100.0/(1.0+math.sum(volume*(ta.change(src)<=0?0:src),bh_n3)/math.sum(volume*(ta.change(src)>=0?0:src),bh_n3))
+bh_tradition(src)=>math.avg(bh_tci(src),bh_mf(src),ta.rsi(src,bh_n3))
+
+float bh_wt1=bh_tradition(bh_src5), float bh_wt2=ta.sma(bh_wt1,6), float bh_wt3=ta.linreg(bh_wt1,bh_n4,bh_n5)
+bool bh_bounceUp=ta.barssince(ta.crossunder(bh_wt2,20))<=1 and ta.crossover(bh_wt2,20)
+bool bh_bounceDown=ta.barssince(ta.crossover(bh_wt2,80))<=1 and ta.crossunder(bh_wt2,80)
+
+float bh_q1=bh_Quotient1*60+50, float bh_trigger2=ta.sma(bh_q1,bh_trigno)
+float bh_highUsePivot=fixnan(ta.pivothigh(bh_q1,bh_leftBars,bh_rightBars)[1])
+float bh_lowUsePivot=fixnan(ta.pivotlow(bh_q1,bh_leftBars2,bh_rightBars2)[1])
+bool bh_crossover2=ta.crossover(bh_q1,bh_trigger2), bool bh_crossunder2=ta.crossunder(bh_q1,bh_trigger2)
+bool bh_entry=ta.crossunder(bh_Quotient2,-0.9)
+
+var int bh_ubreak=0, var int bh_dbreak=0
+if bh_entry
+    bh_dbreak:=0, bh_ubreak:=0
+if ta.crossunder(bh_q1,bh_lowUsePivot)
+    bh_dbreak+=1
+if ta.crossover(bh_q1,bh_highUsePivot) and bh_dbreak>=1
+    bh_ubreak+=1
+
+bool bh_warn2=ta.crossover(bh_Quotient1,-0.9), bool bh_warn3=ta.crossunder(bh_Quotient1,0.9)
+bool bh_enter3=bh_Quotient3<=-0.9 and ta.crossover(bh_q1,bh_trigger2) and ta.barssince(bh_warn2)<=7 and bh_q1<=20 and ta.barssince(ta.crossover(bh_q1,20))<=21
+bool bh_enter5=ta.barssince(bh_q1<=0 and ta.crossunder(bh_q1,bh_trigger2))<=5 and ta.crossover(bh_q1,bh_trigger2)
+bool bh_enter6=ta.barssince(bh_q1<=20 and ta.crossunder(bh_q1,bh_trigger2))<=11 and ta.crossover(bh_q1,bh_trigger2)
+bool bh_enter7=bh_Quotient3<=-0.9 and ta.crossover(bh_q1,bh_trigger2)
+bool bh_greyFired=bh_enter6 and bh_q1<=60
+bool bh_loneLimeOnly=bh_enter3 and not bh_enter5 and not bh_enter7 and not bh_greyFired
+bool bh_anyOmega=(bh_enter3 and bh_enter5 and bh_enter7) or bh_loneLimeOnly or bh_bounceUp or bh_bounceDown
+
+bool bh_senter3=bh_Quotient3>=-0.9 and ta.crossunder(bh_q1,bh_trigger2) and ta.barssince(bh_warn3)<=7 and bh_q1>=99 and ta.barssince(ta.crossover(bh_q1,80))<=21
+bool sigShortPlusPress=conf and bh_senter3 and bh_wt2>=80 and bh_crossunder2
+
+// Omega cosignal
+bool omega_cosignal=(tfSec>=45?(sigSAAB or sigPentagon):false) or sigBullRVOL1x or sigGrandSlam or (tfSec>=60?sigBullPBJ:false) or (tfSec>=300?sigBullPB:false) or sigPUP or (tfSec>=300?(gz_bullGZI or gz_bullHV):false) or sigLong1 or sigLong2 or sigP21BullUUUU or sigP21BullUUU or sigUUBull or sigNeoBull or (tfSec>=300?sigTrinityBull:false) or (tfSec>=120?sigHV500:false) or (tfSec>=60?sigHV1000:false) or sigWTC or sigHiroshima or sigNagasaki or sigAlphaStrikeBull or sigFoxtrotBull or comboSet1_Bull or comboSet2_Bull or comboSet3_Bull or comboSet4_Bull or sigDispConsBull2 or sigDispConsBull3 or sigODBull or sigCCBull or sigLSCBull or sigGolfBull or sigPAFBull or anyBullFloor or anyBull2nd or hwBull or superBull or sduperBull
+bool sigOmegaLong=conf and bh_anyOmega and omega_cosignal and not sigMOAB and not sigDISPBear
+
+bool omega_cosignal_A=(tfSec>=60?sigBullPBJ:false) or sigP21BullUUUU or anyBullFloor or anyBull2nd or hwBull or superBull or sduperBull or sigAlphaStrikeBull or sigFoxtrotBull or sigODBull or sigDispConsBull3 or sigGolfBull or sigGrandSlam or (sigBullRVOL1x and sigDISPBull)
+bool sigOmegaLongA=conf and bh_anyOmega and omega_cosignal_A and not sigMOAB and not sigDISPBear
+
+// TF Gate
+int tf_req=(tfSec<=1800?2:tfSec<=3000?1:0)
+int bull_ec=(sigFAUNABull?1:0)+(sigDISPBull?1:0)+(sigPUP?1:0)+(gz_bullGZI?1:0)+(gz_bullHV?1:0)+(sigBullRVOL1x?1:0)+(sigGrandSlam?1:0)+(sigLong1?1:0)+(sigLong2?1:0)+(sigHV75?1:0)+(sigHV150?1:0)+(sigHV500?1:0)+(sigHV1000?1:0)+(sigWTC?1:0)+(sigHiroshima?1:0)+(sigNagasaki?1:0)+(is_matrix_number?1:0)+(rawBullUU or rawBullUUU or rawBullUUUU?1:0)+(sigOmegaLong?1:0)+(sigBullPBJ?1:0)+(sigCCBull?1:0)+(sigLSCBull?1:0)
+int bear_ec=(sigFAUNABear?1:0)+(sigDISPBear?1:0)+(sigPPD?1:0)+(gz_bearGZI?1:0)+(gz_bearHV?1:0)+(sigBearRVOL1x?1:0)+(sigMOAB?1:0)+(sigShort1?1:0)+(sigShort2?1:0)+(sigHV75?1:0)+(sigHV150?1:0)+(sigHV500?1:0)+(sigHV1000?1:0)+(sigWTC?1:0)+(sigHiroshima?1:0)+(sigNagasaki?1:0)+(is_matrix_number?1:0)+(rawBearUU or rawBearUUU or rawBearUUUU?1:0)+(sigShortPlusPress?1:0)+(sigBearPBJ?1:0)+(sigCCBear?1:0)+(sigLSCBear?1:0)
+bool tf_bull_ok=bull_ec>=(tf_req+1), bool tf_bear_ok=bear_ec>=(tf_req+1)
+
+// First-of-day tracker
+if conf and (sigP21BullUUUU or sigP21BearUUUU or sigP21BullUUU or sigP21BearUUU or sigUUBull or sigUUBear or sigAlphaStrikeBull or sigAlphaStrikeBear or sigFoxtrotBull or sigFoxtrotBear or sigOmegaLong or sigOmegaLongA or sigODBull or sigODBear or sigDispConsBull2 or sigDispConsBear2 or sigDispConsBull3 or sigDispConsBear3 or csNew1_Bull or csNew1_Bear or csNew2_Bull or csNew2_Bear or csNew3_Bull or csNew3_Bear or anyBullFloor or anyBull2nd or anyBearRoof or anyBearPent or hwBull or hwBear or sigCCBull or sigCCBear or sigLSCBull or sigLSCBear or sigGolfBull or sigGolfBear or sigPAFBull or sigPAFBear or superBull or superBear or sduperBull or sduperBear)
+    daySignalFired:=true
+
+// PIPELINE C TERMINAL OUTPUTS
+bool fire_BullUUUU=show_BullUUUU and sigP21BullUUUU, bool fire_BullUUU=show_BullUUU and sigP21BullUUU
+bool fire_BullUU=show_BullUU and sigUUBull
+bool fire_AlphaStrikeB=show_AlphaStrikeB and sigAlphaStrikeBull, bool fire_FoxtrotB=show_FoxtrotB and sigFoxtrotBull
+bool fire_OmegaLong=show_OmegaLong and sigOmegaLong, bool fire_OmegaLongA=show_OmegaLongA and sigOmegaLongA, bool fire_ODBull=show_ODBull and sigODBull
+bool fire_DispConsBull2=show_DispConsBull2 and sigDispConsBull2, bool fire_DispConsBull3=show_DispConsBull3 and sigDispConsBull3
+bool fire_GolfBull=show_GolfBull and sigGolfBull, bool fire_PAFBull=show_PAFBull and sigPAFBull
+bool fire_CS1B=show_CS1B and csNew1_Bull, bool fire_CS2B=show_CS2B and csNew2_Bull, bool fire_CS3B=show_CS3B and csNew3_Bull
+bool fire_CCBull=show_CCBull and sigCCBull, bool fire_LSCBull=show_LSCBull and sigLSCBull
+bool fire_BullFloor=show_BullFloor and anyBullFloor, bool fire_Bull2ndFloor=show_Bull2ndFloor and anyBull2nd
+bool fire_HWBull=show_HWBull and hwBull, bool fire_SuperBull=show_SuperBull and superBull, bool fire_SDuperBull=show_SDuperBull and sduperBull
+
+bool fire_BearUUUU=show_BearUUUU and sigP21BearUUUU, bool fire_BearUUU=show_BearUUU and sigP21BearUUU, bool fire_BearUU=show_BearUU and sigUUBear
+bool fire_AlphaStrikeR=show_AlphaStrikeR and sigAlphaStrikeBear, bool fire_FoxtrotR=show_FoxtrotR and sigFoxtrotBear
+bool fire_ODBear=show_ODBear and sigODBear
+bool fire_DispConsBear2=show_DispConsBear2 and sigDispConsBear2, bool fire_DispConsBear3=show_DispConsBear3 and sigDispConsBear3
+bool fire_GolfBear=show_GolfBear and sigGolfBear, bool fire_PAFBear=show_PAFBear and sigPAFBear
+bool fire_CS1R=show_CS1R and csNew1_Bear, bool fire_CS2R=show_CS2R and csNew2_Bear, bool fire_CS3R=show_CS3R and csNew3_Bear
+bool fire_CCBear=show_CCBear and sigCCBear, bool fire_LSCBear=show_LSCBear and sigLSCBear
+bool fire_BearRooftop=show_BearRooftop and anyBearRoof, bool fire_BearPent=show_BearPenthouse and anyBearPent
+bool fire_HWBear=show_HWBear and hwBear, bool fire_SuperBear=show_SuperBear and superBear, bool fire_SDuperBear=show_SDuperBear and sduperBear
+
+// HV+D named bools
+bool hvd_pb_bull  = hvd_fire_bull and nz(sigBullPB[1])
+bool hvd_pbj_bull = hvd_fire_bull and nz(sigBullPBJ[1])
+bool hvd_pb_bear  = hvd_fire_bear and nz(sigBearPB[1])
+bool hvd_pbj_bear = hvd_fire_bear and nz(sigBearPBJ[1])
+
+// Pipeline D CO-occurrence
+grp_co = "★★★ PIPELINE D: TRIPLE CO-OCCURRENCE ★★★"
+bool co_en_bullPBJ = input.bool(true, "Bull PBJ co-occurrence", group=grp_co, inline="co1")
+bool co_en_bullPB  = input.bool(true, "Bull PB co-occurrence",  group=grp_co, inline="co1")
+bool co_en_bearPBJ = true, bool co_en_bearPB = true
+
+bool use_any_bull = sigP21BullUUUU_indep or sigP21BullUUU_indep or sigUUBull_indep or sigAlphaStrikeBull or sigFoxtrotBull or sigOmegaLong or sigOmegaLongA or sigODBull or sigDispConsBull2 or sigDispConsBull3 or sigGolfBull or sigPAFBull or csNew1_Bull or csNew2_Bull or csNew3_Bull or sigCCBull or sigLSCBull or anyBullFloor or anyBull2nd or hwBull or superBull or sduperBull
+bool use_any_bear = sigP21BearUUUU_indep or sigP21BearUUU_indep or sigUUBear_indep or sigAlphaStrikeBear or sigFoxtrotBear or sigODBear or sigDispConsBear2 or sigDispConsBear3 or sigGolfBear or sigPAFBear or csNew1_Bear or csNew2_Bear or csNew3_Bear or sigCCBear or sigLSCBear or anyBearRoof or anyBearPent or hwBear or superBear or sduperBear
+
+// v2: CO restructured per Anish — must include UC (Unified Combo) OR FVG Combo Set,
+//     not just any bullish/bearish signal. Old `use_any_bull/bear[1]` gate replaced.
+bool co_uc_or_fvg_bull = csNew3_Bull or csNew1_Bull
+bool co_uc_or_fvg_bear = csNew3_Bear or csNew1_Bear
+bool co_bull_pbj = hvd_fire_bull and co_en_bullPBJ and nz(sigBullPBJ[1]) and co_uc_or_fvg_bull
+bool co_bull_pb  = hvd_fire_bull and co_en_bullPB  and nz(sigBullPB[1])  and co_uc_or_fvg_bull
+bool co_bear_pbj = hvd_fire_bear and co_en_bearPBJ and nz(sigBearPBJ[1]) and co_uc_or_fvg_bear
+bool co_bear_pb  = hvd_fire_bear and co_en_bearPB  and nz(sigBearPB[1])  and co_uc_or_fvg_bear
+bool co_any = co_bull_pbj or co_bull_pb or co_bear_pbj or co_bear_pb
+
+// B2B HV+D
+bool b2b_bull_raw = hvd_fire_bull and nz(hvd_fire_bull[1])
+bool b2b_bear_raw = hvd_fire_bear and nz(hvd_fire_bear[1])
+bool b2b_bull_pbj = b2b_bull_raw and (nz(sigBullPBJ[1]) or nz(sigBullPBJ[2]))
+bool b2b_bear_pbj = b2b_bear_raw and (nz(sigBearPBJ[1]) or nz(sigBearPBJ[2]))
+bool b2b_bull_pb  = b2b_bull_raw and (nz(sigBullPB[1]) or nz(sigBullPB[2])) and not b2b_bull_pbj
+bool b2b_bear_pb  = b2b_bear_raw and (nz(sigBearPB[1]) or nz(sigBearPB[2])) and not b2b_bear_pbj
+bool b2b_bull_nopb = b2b_bull_raw and not b2b_bull_pbj and not b2b_bull_pb
+bool b2b_bear_nopb = b2b_bear_raw and not b2b_bear_pbj and not b2b_bear_pb
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// ULTRA 57 FAUNA COMBOS
+// ════════════════════════════════════════════════════════════════════════════
+bool u57_inSession=not na(time(timeframe.period,"0930-1600","America/New_York"))
+var bool u57_newDay=false
+if ta.change(dayofmonth)!=0
+    u57_newDay:=true
+var int u57_sessBar=0
+if u57_newDay and u57_inSession
+    u57_sessBar:=1, u57_newDay:=false
+else if u57_inSession and u57_sessBar>0
+    u57_sessBar+=1
+else if not u57_inSession
+    u57_sessBar:=0
+bool u57_bMB=conf and MB_b, bool u57_bRE=conf and RE_b, bool u57_bTA=conf and TA_b
+bool u57_sMB=conf and MB_r, bool u57_sRE=conf and RE_r, bool u57_sTA=conf and TA_r
+bool sBullF2=conf and u57_sessBar==2 and u57_bMB and u57_bMB[1]
+bool sBearF2=conf and u57_sessBar==2 and u57_sMB and u57_sMB[1]
+bool u57_bEv=u57_bMB or u57_bRE or u57_bTA, bool u57_sEv=u57_sMB or u57_sRE or u57_sTA
+bool sBullE3=conf and u57_sessBar==3 and u57_bEv and u57_bEv[1] and u57_bEv[2]
+bool sBearE3=conf and u57_sessBar==3 and u57_sEv and u57_sEv[1] and u57_sEv[2]
+
+// FC Cluster Bull
+var int b1_s1=0
+b1_s1:=u57_bMB?b1_s1+1:0
+bool b1_ind1=u57_bMB and b1_s1>=2
+var int b1_s2=0
+if ta.change(dayofmonth)!=0
+    b1_s2:=0
+else if not u57_bEv
+    b1_s2:=0
+if u57_bEv
+    b1_s2+=1
+bool b1_ind2=u57_bEv and b1_s2>=2
+bool b1_ev3=(u57_bMB or u57_bRE) and u57_inSession
+var int b1_s3=0
+b1_s3:=b1_ev3?b1_s3+1:0
+bool b1_ind3=b1_ev3 and b1_s3>=2
+bool b1_2of3=(b1_ind1?1:0)+(b1_ind2?1:0)+(b1_ind3?1:0)>=2
+float b1_spk=math.abs(close-open), float b1_avgSpk=ta.sma(b1_spk,30)[1], float b1_rvolP=b1_spk/nz(b1_avgSpk,1)
+float b1_avgVolD=ta.sma(volume,30)[1], float b1_rvolV=volume/nz(b1_avgVolD,1)
+float b1_diff=b1_rvolP-b1_rvolV, float b1_pos=b1_diff>0?b1_diff:na, float b1_smaP=ta.sma(b1_pos,20)
+bool b1_base=close>open and nz(b1_pos)>nz(b1_smaP)
+b1_inRng(v)=>v>2.9 and v<1000000.0
+bool b1_thEv=b1_base and b1_inRng(b1_rvolP) and conf
+bool b1_uBar=b1_base and b1_inRng(b1_rvolP)
+var float b1_sum=0.0, var int b1_len=0
+if b1_uBar
+    b1_len+=1, b1_sum+=b1_rvolP
+else
+    b1_len:=0, b1_sum:=0.0
+bool b1_seqEv=(b1_len>=2 and b1_sum>=0.1) and conf
+var int[] b1_thIdx=array.new_int(), var float[] b1_thHi=array.new_float(), var float[] b1_thLo=array.new_float()
+var int[] b1_sqIdx=array.new_int(), var float[] b1_sqHi=array.new_float(), var float[] b1_sqLo=array.new_float()
+bool b1_ovlp=false
+if array.size(b1_thIdx)>0
+    while bar_index-array.get(b1_thIdx,0)>20
+        array.shift(b1_thIdx), array.shift(b1_thHi), array.shift(b1_thLo)
+        if array.size(b1_thIdx)==0
+            break
+if array.size(b1_sqIdx)>0
+    while bar_index-array.get(b1_sqIdx,0)>20
+        array.shift(b1_sqIdx), array.shift(b1_sqHi), array.shift(b1_sqLo)
+        if array.size(b1_sqIdx)==0
+            break
+b1_chk(loA,hiA,loB,hiB)=>loA<=hiB and loB<=hiA
+if b1_thEv
+    array.push(b1_thIdx,bar_index), array.push(b1_thHi,high), array.push(b1_thLo,low)
+    if array.size(b1_sqIdx)>0
+        for i=0 to array.size(b1_sqIdx)-1
+            if b1_chk(low,high,array.get(b1_sqLo,i),array.get(b1_sqHi,i))
+                b1_ovlp:=true
+                break
+if b1_seqEv and not b1_ovlp
+    array.push(b1_sqIdx,bar_index), array.push(b1_sqHi,high), array.push(b1_sqLo,low)
+    if array.size(b1_thIdx)>0
+        for i=0 to array.size(b1_thIdx)-1
+            if b1_chk(low,high,array.get(b1_thLo,i),array.get(b1_thHi,i))
+                b1_ovlp:=true
+                break
+bool sBullFC=conf and b1_2of3 and b1_ovlp
+
+// FC Cluster Bear
+var int b4_s1=0
+b4_s1:=u57_sMB?b4_s1+1:0
+bool b4_ind1=u57_sMB and b4_s1>=2
+var int b4_s2=0
+if ta.change(dayofmonth)!=0
+    b4_s2:=0
+else if not u57_sEv
+    b4_s2:=0
+if u57_sEv
+    b4_s2+=1
+bool b4_ind2=u57_sEv and b4_s2>=2
+bool b4_ev3=(u57_sMB or u57_sRE) and u57_inSession
+var int b4_s3=0
+b4_s3:=b4_ev3?b4_s3+1:0
+bool b4_ind3=b4_ev3 and b4_s3>=2
+bool b4_2of3=(b4_ind1?1:0)+(b4_ind2?1:0)+(b4_ind3?1:0)>=2
+float b4_spk=math.abs(close-open), float b4_avgSpk=ta.sma(b4_spk,30)[1], float b4_rvolP=b4_spk/nz(b4_avgSpk,1)
+float b4_avgVolD=ta.sma(volume,30)[1], float b4_rvolV=volume/nz(b4_avgVolD,1)
+float b4_diff=b4_rvolP-b4_rvolV, float b4_neg=(b4_diff>0 and close<open)?b4_diff:na, float b4_smaN=ta.sma(b4_neg,20)
+bool b4_base=close<open and nz(b4_neg)>nz(b4_smaN)
+b4_inRng(v)=>v>2.9 and v<1000000.0
+bool b4_thEv=b4_base and b4_inRng(b4_rvolP) and conf
+bool b4_dBar=b4_base and b4_inRng(b4_rvolP)
+var float b4_sum=0.0, var int b4_len=0
+if b4_dBar
+    b4_len+=1, b4_sum+=b4_rvolP
+else
+    b4_len:=0, b4_sum:=0.0
+bool b4_seqEv=(b4_len>=2 and b4_sum>=0.1) and conf
+var int[] b4_thIdx=array.new_int(), var float[] b4_thHi=array.new_float(), var float[] b4_thLo=array.new_float()
+var int[] b4_sqIdx=array.new_int(), var float[] b4_sqHi=array.new_float(), var float[] b4_sqLo=array.new_float()
+bool b4_ovlp=false
+if array.size(b4_thIdx)>0
+    while bar_index-array.get(b4_thIdx,0)>20
+        array.shift(b4_thIdx), array.shift(b4_thHi), array.shift(b4_thLo)
+        if array.size(b4_thIdx)==0
+            break
+if array.size(b4_sqIdx)>0
+    while bar_index-array.get(b4_sqIdx,0)>20
+        array.shift(b4_sqIdx), array.shift(b4_sqHi), array.shift(b4_sqLo)
+        if array.size(b4_sqIdx)==0
+            break
+b4_chk(loA,hiA,loB,hiB)=>loA<=hiB and loB<=hiA
+if b4_thEv
+    array.push(b4_thIdx,bar_index), array.push(b4_thHi,high), array.push(b4_thLo,low)
+    if array.size(b4_sqIdx)>0
+        for i=0 to array.size(b4_sqIdx)-1
+            if b4_chk(low,high,array.get(b4_sqLo,i),array.get(b4_sqHi,i))
+                b4_ovlp:=true
+                break
+if b4_seqEv and not b4_ovlp
+    array.push(b4_sqIdx,bar_index), array.push(b4_sqHi,high), array.push(b4_sqLo,low)
+    if array.size(b4_thIdx)>0
+        for i=0 to array.size(b4_thIdx)-1
+            if b4_chk(low,high,array.get(b4_thLo,i),array.get(b4_thHi,i))
+                b4_ovlp:=true
+                break
+bool sBearFC=conf and b4_2of3 and b4_ovlp
+
+// B2B Days
+bool _dayChg=ta.change(dayofmonth)!=0
+f_hadYesterday(bool sig)=>
+    bool found=false
+    if _dayChg
+        for i=1 to 500
+            if i>1 and dayofmonth[i]!=dayofmonth[i+1]
+                break
+            if sig[i]
+                found:=true
+                break
+    found
+bool comboF2_B2BDays_Bull=sBullF2 and f_hadYesterday(sBullF2)
+bool comboE3_B2BDays_Bull=sBullE3 and f_hadYesterday(sBullE3)
+bool comboF2E3_Consec_Bull=sBullE3 and f_hadYesterday(sBullF2)
+bool comboCluster_B2BDays_Bull=sBullFC and f_hadYesterday(sBullFC)
+bool comboPBJ_F2_Bull=sigBullPBJ and sBullF2, bool comboPBJ_E3_Bull=sigBullPBJ and sBullE3
+bool comboPBJ_Cluster_Bull=sigBullPBJ and sBullFC
+bool comboF2Cluster_E3_Bull=sBullF2[1] and sBullFC[1] and sBullE3
+
+bool det_b2bPUP=sigPUP and nz(sigPUP[1]), bool det_b2bPPD=sigPPD and nz(sigPPD[1])
+bool comboF2ClusterB2B_Bull=sBullF2 and sBullFC and det_b2bPUP
+bool comboB2B_F2_Bull=det_b2bPUP and sBullF2
+int pupCntE3=(sigPUP?1:0)+(nz(sigPUP[1])?1:0)+(nz(sigPUP[2])?1:0)
+bool comboE3_2of3PUP_Bull=sBullE3 and pupCntE3>=2
+
+// Foster
+var bool fosterWindowOpen=false, var int fosterWindowCount=0
+if u57_bMB
+    fosterWindowOpen:=true, fosterWindowCount:=0
+bool fosterSignal=false, bool fosterPBJSignal=false
+if fosterWindowOpen
+    fosterWindowCount+=1
+    if fosterWindowCount>1
+        fosterWindowOpen:=false
+    else if sigBullPBJ
+        fosterPBJSignal:=true, fosterWindowOpen:=false
+    else if fosterWindowCount>1
+        fosterWindowOpen:=false
+
+// ════════════════════════════════════════════════════════════════════════════
+// HEAVY PENTAGON COMBOS + WBUSH (replaces WMD in v2)
+// ────────────────────────────────────────────────────────────────────────────
+// 5 Heavy Combo families × 3 directions = 15 sub-signals.
+// WBUSH = any of the 15 fired, OR'd by direction.
+// Direction classifier: sigDISPBull / sigDISPBear / noDisp (FVG-confirmed disp).
+// ════════════════════════════════════════════════════════════════════════════
+bool hp_groupA_Bull = sigBullRVOL1x or sigGrandSlam
+bool hp_groupA_Bear = sigBearRVOL1x or sigMOAB
+bool hp_groupB      = sigPentagon or sigWTC or sigHiroshima
+
+bool hp_baseYinYang   = (hp_groupA_Bull or hp_groupA_Bear) and hp_groupB
+bool hp_baseNagasaki  = sigNagasaki and (hp_groupA_Bull or hp_groupA_Bear)
+bool hp_baseNagasakiV = sigNagasaki and hp_groupB
+bool hp_baseTrident   = sigNagasaki and (hp_groupA_Bull or hp_groupA_Bear) and hp_groupB
+bool hp_baseNHx2      = (sigPentagon and sigWTC) or (sigPentagon and sigHiroshima) or (sigWTC and sigHiroshima)
+
+bool hp_noDisp = (not sigDISPBull) and (not sigDISPBear)
+
+// Heavy Yin-Yang (P1 + P2)
+bool hp_HYYBull    = hp_baseYinYang and sigDISPBull
+bool hp_HYYBear    = hp_baseYinYang and sigDISPBear
+bool hp_HYYNeutral = hp_baseYinYang and hp_noDisp
+// Heavy Nagasaki (P3 + P1)
+bool hp_HNBull     = hp_baseNagasaki and sigDISPBull
+bool hp_HNBear     = hp_baseNagasaki and sigDISPBear
+bool hp_HNNeutral  = hp_baseNagasaki and hp_noDisp
+// Heavy Nagasaki Vol (P3 + P2)
+bool hp_HNVBull    = hp_baseNagasakiV and sigDISPBull
+bool hp_HNVBear    = hp_baseNagasakiV and sigDISPBear
+bool hp_HNVNeutral = hp_baseNagasakiV and hp_noDisp
+// Heavy Trident (P1 + P2 + P3)
+bool hp_HTBull     = hp_baseTrident and sigDISPBull
+bool hp_HTBear     = hp_baseTrident and sigDISPBear
+bool hp_HTNeutral  = hp_baseTrident and hp_noDisp
+// Neutral Heavy x2 (P2 × 2)
+bool hp_NHx2Bull    = hp_baseNHx2 and sigDISPBull
+bool hp_NHx2Bear    = hp_baseNHx2 and sigDISPBear
+bool hp_NHx2Neutral = hp_baseNHx2 and hp_noDisp
+
+// WBUSH aggregates — any of the 15 fired
+bool sig_WBUSH_Bull    = hp_HYYBull    or hp_HNBull    or hp_HNVBull    or hp_HTBull    or hp_NHx2Bull
+bool sig_WBUSH_Bear    = hp_HYYBear    or hp_HNBear    or hp_HNVBear    or hp_HTBear    or hp_NHx2Bear
+bool sig_WBUSH_Neutral = hp_HYYNeutral or hp_HNNeutral or hp_HNVNeutral or hp_HTNeutral or hp_NHx2Neutral
+
+// Backward-compat: sigWMD aliased to sig_WBUSH_Bull (old WMD = bullish heavy weapons; WBUSH supersedes).
+bool sigWMD = sig_WBUSH_Bull
+
+// UC NAGASAKI — Unified Combo + Nagasaki same visual bar
+// csNew3 (UC) at bar[0] = visual bar 1; sigNagasaki[1] = visual bar 1. Offset = -1.
+bool sig_UCNagasakiBull = csNew3_Bull and nz(sigNagasaki[1])
+bool sig_UCNagasakiBear = csNew3_Bear and nz(sigNagasaki[1])
+
+bool comboAnyB2B_F2E3=det_b2bPUP and (sBullF2 or sBullE3)
+
+// ════════════════════════════════════════════════════════════════════════════
+// B2B PUP COMBINATION SIGNALS + CHECKBOX + ONE-OF-THESE + CORRECTED FUSIONS
+// ════════════════════════════════════════════════════════════════════════════
+
+bool b2b_fauna_bull=det_b2bPUP and sigFAUNABull and nz(sigFAUNABull[1])
+bool b2b_disp_bull=nz(sigPUP[1]) and nz(sigPUP[2]) and sigDISPBull and nz(sigDISPBull[1])
+bool b2b_hvd_disp_bull=nz(sigPUP[1]) and nz(sigPUP[2]) and hvd_fire_bull and nz(hvd_fire_bull[1])
+bool b2b_disp_any_bull=b2b_disp_bull or b2b_hvd_disp_bull
+bool b2b_fauna_disp_bull=nz(sigPUP[1]) and nz(sigPUP[2]) and nz(sigFAUNABull[1]) and nz(sigFAUNABull[2]) and sigDISPBull and nz(sigDISPBull[1])
+bool b2b_fauna_hvd_bull=nz(sigPUP[1]) and nz(sigPUP[2]) and nz(sigFAUNABull[1]) and nz(sigFAUNABull[2]) and hvd_fire_bull and nz(hvd_fire_bull[1])
+bool b2b_fauna_disp_any=b2b_fauna_disp_bull or b2b_fauna_hvd_bull
+bool saab_c0=sigSAAB or sigBullRVOL1x or sigGrandSlam, bool saab_c1=nz(sigSAAB[1]) or nz(sigBullRVOL1x[1]) or nz(sigGrandSlam[1])
+bool b2b_saab_bull=det_b2bPUP and saab_c0 and saab_c1
+bool b2b_anyB2B=det_b2bPUP or b2b_fauna_bull or b2b_disp_any_bull or b2b_fauna_disp_any or b2b_saab_bull
+bool b2b_pbj_bull=b2b_anyB2B and (sigBullPBJ or nz(sigBullPBJ[1]))
+bool b2b_combo_bull=det_b2bPUP and (csNew3_Bull or nz(csNew3_Bull[1]))
+bool b2b_cc_bull=det_b2bPUP and (sigCCBull or nz(sigCCBull[1]))
+bool b2b_uu_bull=det_b2bPUP and (sigP21BullUUUU or sigP21BullUUU or sigUUBull or nz(sigP21BullUUUU[1]) or nz(sigP21BullUUU[1]) or nz(sigUUBull[1]))
+bool b2b_npm_b2b_pup=det_b2bPUP and (det_b2bBullNapalm or nz(det_b2bBullNapalm[1]))
+bool b2b_tnt_bull=det_b2bPUP and (raw_bullTNT or nz(raw_bullTNT[1]))
+bool b2b_npm_pup=det_b2bPUP and (det_bullNapalmCons or nz(det_bullNapalmCons[1]))
+bool b2b_heavy_bull=b2b_tnt_bull or b2b_npm_pup
+bool b2b_cont_pup=det_b2bPUP and (raw_contBull or nz(raw_contBull[1]))
+bool b2b_hvdpbj_pup=det_b2bPUP and (hvd_pbj_bull or nz(hvd_pbj_bull[1]))
+bool b2b_long1=sigLong1 and nz(sigLong1[1])
+bool b2b_long1_pup=det_b2bPUP and b2b_long1
+
+// ONE-OF-THESE gates
+bool oneOfThese=sigP21BullUUUU or sigP21BullUUU or sigUUBull or sigOmegaLongA or det_bullNapalmCons or det_b2bBullNapalm or csNew3_Bull or (csNew1_Bull or csNew2_Bull) or sigWMD
+bool oneOfThese_forUU=sigP21BullUUUU or sigP21BullUUU or sigOmegaLongA or det_bullNapalmCons or det_b2bBullNapalm or csNew3_Bull or (csNew1_Bull or csNew2_Bull) or sigWMD or sigDISPBull or hvd_fire_bull or sigFAUNABull or sigPUP or sigBullPBJ or sigLong1 or sigGrandSlam or sigBullRVOL1x
+// oneOfThese aligned to bar[1] for SUPER (displacement candle visual)
+bool oneOfThese_p1=nz(sigP21BullUUUU[1]) or nz(sigP21BullUUU[1]) or nz(sigUUBull[1]) or nz(sigOmegaLongA[1]) or det_bullNapalmCons or det_b2bBullNapalm or csNew3_Bull or csNew1_Bull or nz(csNew2_Bull[1]) or nz(sigWMD[1])
+
+// CHECKBOX SYSTEM
+grpCB="Checkbox Qualifiers"
+bool cb1_uu=input.bool(true,"UU family",group=grpCB), bool cb1_combo=input.bool(true,"Uni.Combo",group=grpCB)
+bool cb1_d9=input.bool(true,"Disp (9 strength)",group=grpCB), bool cb1_pup=input.bool(true,"PUP",group=grpCB)
+bool cb1_pbj=input.bool(true,"PBJ",group=grpCB), bool cb1_l1=input.bool(true,"Long1",group=grpCB), bool cb1_wmd=input.bool(true,"WMD",group=grpCB)
+bool cb2_uu=input.bool(true,"UU family (2)",group=grpCB), bool cb2_combo=input.bool(true,"Uni.Combo (2)",group=grpCB)
+bool cb2_d9=input.bool(true,"Disp 9 (2)",group=grpCB), bool cb2_pup=input.bool(true,"PUP (2)",group=grpCB)
+bool cb2_pbj=input.bool(true,"PBJ (2)",group=grpCB), bool cb2_l1=input.bool(true,"Long1 (2)",group=grpCB), bool cb2_wmd=input.bool(true,"WMD (2)",group=grpCB)
+bool cb3_uu=input.bool(true,"UU family (3)",group=grpCB), bool cb3_combo=input.bool(true,"Uni.Combo (3)",group=grpCB)
+bool cb3_d9=input.bool(true,"Disp 9 (3)",group=grpCB), bool cb3_pup=input.bool(true,"PUP (3)",group=grpCB)
+bool cb3_pbj=input.bool(true,"PBJ (3)",group=grpCB), bool cb3_l1=input.bool(true,"Long1 (3)",group=grpCB), bool cb3_wmd=input.bool(true,"WMD (3)",group=grpCB)
+
+float d9_thresh=disp_std*9.0
+bool d9_bull=conf and disp_rng>d9_thresh and close>open
+
+bool uu_any=sigP21BullUUUU or sigP21BullUUU or sigUUBull
+bool disp_or_hvd=sigDISPBull or hvd_fire_bull
+bool pbj_or_hvdpbj=sigBullPBJ or hvd_pbj_bull
+
+// Standard checkbox (bar[0] signals — for non-displacement combos)
+f_cb(bool e_uu,bool e_co,bool e_d9,bool e_pup,bool e_pbj,bool e_l1,bool e_wmd)=>
+    (e_uu and uu_any) or (e_co and csNew3_Bull) or (e_d9 and d9_bull) or (e_pup and sigPUP) or (e_pbj and pbj_or_hvdpbj) or (e_l1 and sigLong1) or (e_wmd and sigWMD)
+bool cb1_pass=f_cb(cb1_uu,cb1_combo,cb1_d9,cb1_pup,cb1_pbj,cb1_l1,cb1_wmd)
+bool cb1_pass_floor=f_cb(cb1_uu,cb1_combo,cb1_d9,cb1_pup,false,cb1_l1,cb1_wmd)
+bool cb2_pass=f_cb(cb2_uu,cb2_combo,cb2_d9,cb2_pup,cb2_pbj,cb2_l1,cb2_wmd)
+bool cb3_pass=f_cb(cb3_uu,cb3_combo,cb3_d9,cb3_pup,cb3_pbj,cb3_l1,cb3_wmd)
+
+// Napalm-aligned checkbox (bar[1] signals — for displacement+FVG combos)
+f_cb_npm(bool e_uu,bool e_co,bool e_d9,bool e_pup,bool e_pbj,bool e_l1,bool e_wmd)=>
+    (e_uu and (nz(sigP21BullUUUU[1]) or nz(sigP21BullUUU[1]) or nz(sigUUBull[1]))) or (e_co and csNew3_Bull) or (e_d9 and nz(d9_bull[1])) or (e_pup and nz(sigPUP[1])) or (e_pbj and (nz(sigBullPBJ[1]) or hvd_pbj_bull)) or (e_l1 and nz(sigLong1[1])) or (e_wmd and nz(sigWMD[1]))
+bool cb1_pass_npm=f_cb_npm(cb1_uu,cb1_combo,cb1_d9,cb1_pup,cb1_pbj,cb1_l1,cb1_wmd)
+bool cb2_pass_npm=f_cb_npm(cb2_uu,cb2_combo,cb2_d9,cb2_pup,cb2_pbj,cb2_l1,cb2_wmd)
+bool cb3_pass_npm=f_cb_npm(cb3_uu,cb3_combo,cb3_d9,cb3_pup,cb3_pbj,cb3_l1,cb3_wmd)
+
+// Alpha Strike expanded FAUNA slot
+bool as_fauna_expanded=sigFAUNABull or sigLong1 or disp_or_hvd or sigPUP or det_bullNapalmCons or sigWTC or sigHiroshima or sigNagasaki
+bool sigAlphaStrikeBull_sq=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and as_fauna_expanded
+
+// Super with bar[1]-aligned oneOfThese gate
+bool superBull_sq=superBull and oneOfThese_p1
+
+// Floor/2F with checkbox + one-of-these
+bool floor_sq=anyBullFloor and oneOfThese and cb1_pass_floor
+bool floor2_sq=anyBull2nd and oneOfThese and cb1_pass
+bool uu_gated=sigUUBull and oneOfThese_forUU
+bool foxtrot_sq=sigFoxtrotBull and (hvd_pbj_bull or oneOfThese)
+
+// NPM12/NPM3 — FIX: use napalm-aligned checkbox (bar[1] signals)
+bool npm12=det_bullNapalmCons and (cb1_pass_npm or cb2_pass_npm)
+bool npm3=det_bullNapalmCons and cb3_pass_npm
+
+// ┌──────────────────────────────────────────────────────────────────────────┐
+// │  CROSS-INDICATOR FUSIONS — OFFSET-CORRECTED                            │
+// │  All napalm combos: offset -1 (displacement+FVG in TNT engine).        │
+// │  Per RULE 5: AND'd offset-0 booleans shifted to [1].                   │
+// │  csNew3_Bull stays [0] (two-bar pattern already describes bar[1]).      │
+// └──────────────────────────────────────────────────────────────────────────┘
+
+// Signal 38 NPM+: PBJ/HW/WMD shifted to [1]
+bool sig38=det_bullNapalmCons and ((nz(sigBullPBJ[1]) and (csNew3_Bull or nz(hwBull[1]) or nz(sigWMD[1]))) or nz(sigWMD[1]))
+
+// Signal 49 GRAIL: PBJ/PUP shifted to [1]
+bool holy_grail=det_bullNapalmCons and nz(sigBullPBJ[1]) and nz(sigPUP[1]) and csNew3_Bull
+
+// Signal 50 FLR+NPM: Floor shifted to [1]
+bool floor_npm=nz(anyBullFloor[1]) and det_bullNapalmCons
+
+// Signal 51 NPM+PBJ+PUP: PBJ/PUP shifted to [1]
+bool npm_pbj_pup=det_bullNapalmCons and nz(sigBullPBJ[1]) and nz(sigPUP[1])
+
+// Signal 52 NAG+
+bool nag_any_bull=sigNagasaki and (sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI)
+
+// Signal 53 UU+HVD: UU shifted to [1] (hvd_pbj_bull is offset -1)
+bool uu_hvdpbj=(nz(sigP21BullUUUU[1]) or nz(sigP21BullUUU[1]) or nz(sigUUBull[1])) and hvd_pbj_bull
+
+// Signal 54 UU+NPM: UU shifted to [1] (napalm is offset -1)
+bool uu_npm=(nz(sigP21BullUUUU[1]) or nz(sigP21BullUUU[1]) or nz(sigUUBull[1])) and det_bullNapalmCons
+
+// Signal 55 FLR+UU (both offset 0 — no displacement in chain)
+bool floor_uu=(anyBullFloor or anyBull2nd) and uu_any
+
+// Signal 56 FOS+PUP+1x
+bool foster_pup_rvol=fosterPBJSignal and sigPUP and (sigBullRVOL1x or det_bullNapalmCons)
+
+// Signal 57 B2B+NPM+PBJ: B2B PUP and PBJ shifted to [1]
+bool b2b_npm_pbj=nz(det_b2bPUP[1]) and det_bullNapalmCons and nz(sigBullPBJ[1])
+
+// Signal 60 NPM+UC: Both describe bar[1]. No shift needed.
+bool sig_npm_combo=det_bullNapalmCons and csNew3_Bull
+
+// Signal 63 NPM+UC+PBJ: PBJ shifted to [1]
+bool sig_npm_combo_pbj=det_bullNapalmCons and csNew3_Bull and nz(sigBullPBJ[1])
+
+// Signal 48 UU+UC
+bool sig_uu_combo=uu_any and csNew3_Bull
+
+// Signal 61 WMD (already offset 0)
+// Signal 64 WMD+BULL
+bool wmd_any_bull=sigWMD and (sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI or uu_any or det_bullNapalmCons or anyBullFloor or anyBull2nd or sigLong1)
+
+// Signal 62 L1²+B2B (offset 0)
+// (b2b_long1_pup already defined above)
+
+// ════════════════════════════════════════════════════════════════════════════
+// 46 BULLISH/BEARISH PLOTSHAPES — every plot is a buy/sell trigger
+// v2: 64 → 46 contiguous. B2B-overlap removals (kept GOLF), reserved removed,
+// CONT removed, WMD replaced with WBUSH (3), UC NAGASAKI added (Bull/Bear).
+// Offset: -1 = displacement+FVG in chain (visual on bar[1])
+//          0 = single-bar event (visual on bar[0])
+// ════════════════════════════════════════════════════════════════════════════
+
+// USE STANDALONE (1-13)
+plotshape(_masterGate and en_1 and sduperBull, "1 SD!",shape.flag,location.bottom,#FFD700,text="SD!",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_masterGate and en_2 and superBull and not sduperBull, "2 SUPER",shape.flag,location.top,#00FF00,text="SUPER",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_masterGate and en_3 and hwBull, "3 HW",shape.xcross,location.abovebar,#FF6D00,text="HW",textcolor=color.white,size=size.large)
+plotshape(_masterGate and en_4 and floor_sq, "4 FLOOR",shape.circle,location.belowbar,#00E5FF,text="FLOOR",textcolor=color.white,size=size.large)
+plotshape(_masterGate and en_5 and floor2_sq and not floor_sq, "5 2F",shape.cross,location.belowbar,#80DEEA,text="2F",textcolor=color.white,size=size.normal)
+plotshape(_masterGate and en_6 and sigP21BullUUUU, "6 UUUU",shape.labelup,location.belowbar,#00FF00,text="UUUU",textcolor=color.white,size=size.large)
+plotshape(_masterGate and en_7 and sigP21BullUUU and not sigP21BullUUUU, "7 UUU",shape.labelup,location.belowbar,#76FF03,text="UUU",textcolor=color.white,size=size.normal)
+plotshape(_masterGate and en_8 and uu_gated and not sigP21BullUUU and not sigP21BullUUUU, "8 UU",shape.labelup,location.belowbar,#A5D6A7,text="UU",textcolor=color.white,size=size.small)
+plotshape(_masterGate and en_9 and sigAlphaStrikeBull_sq, "9 A★",shape.flag,location.belowbar,#00E676,text="A★",textcolor=color.white,size=size.huge)
+plotshape(_masterGate and en_10 and sigOmegaLongA, "10 ΩA",shape.circle,location.abovebar,#FFD700,text="ΩA",textcolor=color.white,size=size.huge)
+plotshape(_masterGate and en_11 and foxtrot_sq, "11 FOX",shape.triangleup,location.top,#1B5E20,text="FOX",textcolor=color.white,size=size.large)
+plotshape(_masterGate and en_12 and sigODBull, "12 OD",shape.flag,location.bottom,#00FFFF,text="OD",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_masterGate and en_13 and sigGolfBull, "13 GOLF",shape.labelup,location.bottom,color.new(#00FF00,25),text="GOLF",textcolor=color.white,size=size.huge,offset=-1)
+
+// ULTRA 57 (14-21)
+plotshape(_masterGate and en_28 and (comboPBJ_F2_Bull or comboPBJ_E3_Bull), "14 PBJ+F2/E3",shape.labelup,location.belowbar,color.lime,text="PBJ\nF2E3",textcolor=color.white,size=size.large)
+plotshape(_masterGate and en_29 and comboPBJ_Cluster_Bull, "15 PBJ+CL",shape.labelup,location.top,color.lime,text="PBJ\nCL",textcolor=color.white,size=size.large)
+plotshape(_masterGate and en_30 and comboF2Cluster_E3_Bull, "16 F2CL→E3",shape.diamond,location.top,color.aqua,text="F2CL\n→E3",textcolor=color.white,size=size.large)
+plotshape(_masterGate and en_33 and comboE3_2of3PUP_Bull, "17 E3⅔PP",shape.diamond,location.abovebar,color.teal,text="E3\n⅔PP",textcolor=color.white,size=size.normal)
+plotshape(_masterGate and en_34 and comboF2_B2BDays_Bull, "18 F2×2D",shape.flag,location.top,color.lime,text="F2×2D",textcolor=color.white,size=size.huge)
+plotshape(_masterGate and en_35 and comboE3_B2BDays_Bull, "19 E3×2D",shape.flag,location.top,#76FF03,text="E3×2D",textcolor=color.white,size=size.huge)
+plotshape(_masterGate and en_36 and comboF2E3_Consec_Bull, "20 F2E3seq",shape.flag,location.top,#FFFF00,text="F2E3\nseq",textcolor=color.black,size=size.huge)
+plotshape(_masterGate and en_37 and comboCluster_B2BDays_Bull, "21 CL×2D",shape.flag,location.bottom,#FFFF00,text="CL×2D",textcolor=color.black,size=size.huge)
+
+// NPM (22-26)
+plotshape(_masterGate and en_38 and sig38, "22 NPM+",shape.labelup,location.bottom,#00FFAA,text="NPM+",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_masterGate and en_39 and npm12, "23 NPM12",shape.triangleup,location.belowbar,#00BCD4,text="NPM12",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(_masterGate and en_41 and npm3 and not npm12, "24 NPM3",shape.triangleup,location.top,#0097A7,text="NPM3",textcolor=color.white,size=size.small,offset=-1)
+plotshape(_masterGate and en_42 and det_b2bBullNapalm, "25 B2BNPM",shape.labelup,location.bottom,#1DE9B6,text="B2B\nNPM",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_masterGate and en_43 and det_npmTntBull, "26 NPM+TNT",shape.labelup,location.belowbar,#089981,text="NPM\nTNT",textcolor=color.white,size=size.large,offset=-1)
+
+// HV+D (27-31)
+plotshape(_masterGate and en_44 and co_bull_pbj, "27 CO",shape.diamond,location.belowbar,#FFD700,text="CO",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_masterGate and en_45 and hvd_pbj_bull and not co_bull_pbj and (tfSec>=180 or cb1_pass_npm), "28 HVD+PBJ",shape.diamond,location.bottom,color.new(color.yellow,25),text="HVD\nPBJ",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(_masterGate and en_46 and b2b_bull_pbj, "29 B2BHVD+PBJ",shape.flag,location.bottom,#E040FB,text="B2B\nHVD\nPBJ",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_masterGate and en_47 and b2b_bull_nopb and not b2b_bull_pbj, "30 B2BHVD",shape.flag,location.belowbar,#4CAF50,text="B2B\nHVD",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_masterGate and en_48 and sig_uu_combo, "31 UU+UC",shape.labelup,location.bottom,#7C4DFF,text="UU\nUC",textcolor=color.white,size=size.huge,offset=-1)
+
+// FUSIONS (32-39)
+plotshape(_masterGate and en_49 and holy_grail, "32 GRAIL",shape.labelup,location.bottom,#FFD700,text="GRAIL",textcolor=color.black,size=size.huge,offset=-1)
+plotshape(_masterGate and en_50 and floor_npm, "33 FLR+NPM",shape.circle,location.bottom,#00FFFF,text="FLR\nNPM",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_masterGate and en_51 and npm_pbj_pup and not holy_grail, "34 NPM+PBJ+PUP",shape.labelup,location.belowbar,#00E676,text="NPM\nPBJ\nPUP",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_masterGate and en_52 and nag_any_bull, "35 NAG+",shape.labelup,location.abovebar,#FF00FF,text="NAG+",textcolor=color.white,size=size.huge)
+plotshape(_masterGate and en_53 and uu_hvdpbj, "36 UU+HVD",shape.labelup,location.belowbar,#7C4DFF,text="UU\nHVD",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_masterGate and en_54 and uu_npm, "37 UU+NPM",shape.labelup,location.abovebar,#00BCD4,text="UU\nNPM",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(_masterGate and en_55 and floor_uu, "38 FLR+UU",shape.square,location.belowbar,#00E5FF,text="FLR\nUU",textcolor=color.white,size=size.huge)
+plotshape(_masterGate and en_56 and foster_pup_rvol, "39 FOS+PUP+1x",shape.labelup,location.bottom,#88FF00,text="FOS\nPUP\n1x",textcolor=color.black,size=size.huge)
+
+// NPM+UC (40)
+plotshape(_masterGate and en_60 and sig_npm_combo and not sig_npm_combo_pbj, "40 NPM+UC",shape.labelup,location.belowbar,#00E5FF,text="NPM\nUC",textcolor=color.white,size=size.large,offset=-1)
+
+// WBUSH (41-43) — replaces WMD slot
+plotshape(_masterGate and en_wbushBull and sig_WBUSH_Bull, "41 WBUSH+ANY Bull",shape.diamond,location.belowbar,#00BFA5,text="WBUSH",textcolor=color.white,size=size.huge)
+plotshape(_masterGate and en_wbushBear and sig_WBUSH_Bear, "42 WBUSH+ANY Bear",shape.diamond,location.abovebar,#C2185B,text="WBUSH",textcolor=color.white,size=size.huge)
+plotshape(_masterGate and en_wbushNeutral and sig_WBUSH_Neutral, "43 WBUSH Neutral",shape.diamond,location.top,#9E9E9E,text="WBUSH N",textcolor=color.white,size=size.normal)
+
+// NPM+UC+PBJ (44)
+plotshape(_masterGate and en_63 and sig_npm_combo_pbj, "44 NPM+UC+PBJ",shape.labelup,location.bottom,#FFC107,text="NPM\nUC\nPBJ",textcolor=color.black,size=size.huge,offset=-1)
+
+// UC NAGASAKI (45-46) — new
+plotshape(_masterGate and en_ucNagBull and sig_UCNagasakiBull, "45 UC NAGASAKI Bull",shape.labelup,location.belowbar,#FF00FF,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_masterGate and en_ucNagBear and sig_UCNagasakiBear, "46 UC NAGASAKI Bear",shape.labeldown,location.abovebar,#9C27B0,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
+
+// ════════════════════════════════════════════════════════════════════════════
+// ALERT AGGREGATOR — Bloomberg format
+// Format: BULL | FIRST !!!/FIRST XXX/NOT !!! | signal_names
+// NEVER ticker/exchange/timeframe — TradingView adds those automatically.
+// ════════════════════════════════════════════════════════════════════════════
+if conf and _masterGate
+    string s=""
+    if en_1 and sduperBull
+        s:=f_add(s,"SD!")
+    if en_2 and superBull and not sduperBull
+        s:=f_add(s,"SUPER")
+    if en_3 and hwBull
+        s:=f_add(s,"HW")
+    if en_4 and floor_sq
+        s:=f_add(s,"FLOOR")
+    if en_5 and floor2_sq
+        s:=f_add(s,"2F")
+    if en_6 and sigP21BullUUUU
+        s:=f_add(s,"UUUU")
+    if en_7 and sigP21BullUUU and not sigP21BullUUUU
+        s:=f_add(s,"UUU")
+    if en_8 and uu_gated and not sigP21BullUUU and not sigP21BullUUUU
+        s:=f_add(s,"UU")
+    if en_9 and sigAlphaStrikeBull_sq
+        s:=f_add(s,"A★")
+    if en_10 and sigOmegaLongA
+        s:=f_add(s,"ΩA")
+    if en_11 and foxtrot_sq
+        s:=f_add(s,"FOX")
+    if en_12 and sigODBull
+        s:=f_add(s,"OD")
+    if en_13 and sigGolfBull
+        s:=f_add(s,"GOLF")
+    if en_28 and comboPBJ_F2_Bull
+        s:=f_add(s,"PBJ+F2")
+    if en_28 and comboPBJ_E3_Bull
+        s:=f_add(s,"PBJ+E3")
+    if en_29 and comboPBJ_Cluster_Bull
+        s:=f_add(s,"PBJ+CL")
+    if en_30 and comboF2Cluster_E3_Bull
+        s:=f_add(s,"F2CL→E3")
+    if en_33 and comboE3_2of3PUP_Bull
+        s:=f_add(s,"E3⅔PP")
+    if en_34 and comboF2_B2BDays_Bull
+        s:=f_add(s,"F2×2D")
+    if en_35 and comboE3_B2BDays_Bull
+        s:=f_add(s,"E3×2D")
+    if en_36 and comboF2E3_Consec_Bull
+        s:=f_add(s,"F2E3seq")
+    if en_37 and comboCluster_B2BDays_Bull
+        s:=f_add(s,"CL×2D")
+    if en_38 and sig38
+        s:=f_add(s,"NPM+"+(csNew3_Bull?"UC":nz(hwBull[1])?"HW":"WBUSH"))
+    if en_39 and npm12
+        s:=f_add(s,"NPM12")
+    if en_41 and npm3 and not npm12
+        s:=f_add(s,"NPM3")
+    if en_42 and det_b2bBullNapalm
+        s:=f_add(s,"B2BNPM")
+    if en_43 and det_npmTntBull
+        s:=f_add(s,"NPM+TNT")
+    if en_44 and co_bull_pbj
+        s:=f_add(s,"CO")
+    if en_45 and hvd_pbj_bull and not co_bull_pbj and (tfSec>=180 or cb1_pass_npm)
+        s:=f_add(s,"HVD+PBJ")
+    if en_46 and b2b_bull_pbj
+        s:=f_add(s,"B2BHVD+PBJ")
+    if en_47 and b2b_bull_nopb and not b2b_bull_pbj
+        s:=f_add(s,"B2BHVD")
+    if en_48 and sig_uu_combo
+        s:=f_add(s,"UU+UC")
+    if en_49 and holy_grail
+        s:=f_add(s,"GRAIL")
+    if en_50 and floor_npm
+        s:=f_add(s,"FLR+NPM")
+    if en_51 and npm_pbj_pup and not holy_grail
+        s:=f_add(s,"NPM+PBJ+PUP")
+    if en_52 and nag_any_bull
+        s:=f_add(s,"NAG+")
+    if en_53 and uu_hvdpbj
+        s:=f_add(s,"UU+HVD")
+    if en_54 and uu_npm
+        s:=f_add(s,"UU+NPM")
+    if en_55 and floor_uu
+        s:=f_add(s,"FLR+UU")
+    if en_56 and foster_pup_rvol
+        s:=f_add(s,"FOS+PUP+1x")
+    if en_60 and sig_npm_combo and not sig_npm_combo_pbj
+        s:=f_add(s,"NPM+UC")
+    if en_wbushBull and sig_WBUSH_Bull
+        s:=f_add(s,"WBUSH+ANY")
+    if en_wbushNeutral and sig_WBUSH_Neutral
+        s:=f_add(s,"WBUSH-N")
+    if en_63 and sig_npm_combo_pbj
+        s:=f_add(s,"NPM+UC+PBJ")
+    if en_ucNagBull and sig_UCNagasakiBull
+        s:=f_add(s,"UC NAGASAKI")
+    if str.length(s)>0
+        if master_aggAlerts
+            alert("BULL | " + _gapQual + " | " + s, alert.freq_once_per_bar_close)
+    // Bear aggregator (WBUSH bear + UC NAGASAKI bear — bear-side new in v2)
+    string sb=""
+    if en_wbushBear and sig_WBUSH_Bear
+        sb:=f_add(sb,"WBUSH+ANY")
+    if en_ucNagBear and sig_UCNagasakiBear
+        sb:=f_add(sb,"UC NAGASAKI")
+    if str.length(sb)>0
+        if master_aggAlerts
+            alert("BEAR | " + _gapQual + " | " + sb, alert.freq_once_per_bar_close)
+
+// ════════════════════════════════════════════════════════════════════════════
+// BACKTEST LAYER — NAG+ AND B2B BULL NAPALM ENTRY/EXIT
+// ════════════════════════════════════════════════════════════════════════════
+// Three modes (selected via input):
+//   NAG_PLUS         → Nagasaki + any qualifying bull signal, fires any candle
+//   B2B_NPM_FIRST2   → Back-to-back Bull Napalm only on candle 1 or 2 of session
+//   B2B_NPM_AFTER2   → Back-to-back Bull Napalm only after candle 2
+//
+// Entries are LONG-ONLY. Exit is fixed-bar hold (default 20 bars).
+// Equity = 100% per trade, commission = 0.05%, no pyramiding.
+
+string bt_mode  = input.string("NAG_PLUS", "Backtest Mode",
+     options=["NAG_PLUS", "B2B_NPM_FIRST2", "B2B_NPM_AFTER2"], group="★ BACKTEST ★")
+int    bt_hold  = input.int(20, "Hold N Bars Then Exit", minval=1, group="★ BACKTEST ★",
+     tooltip="Bars to hold each long trade before exit. 20 = ~100 minutes on 5m, ~5 hours on 15m.")
+
+// Session bar counter — resets on day change, counts confirmed bars.
+var int bt_sessBar = 0
+if ta.change(_dayKey()) != 0
+    bt_sessBar := 1
+else if barstate.isconfirmed
+    bt_sessBar += 1
+bool bt_isFirst2 = bt_sessBar <= 2
+
+// Entry triggers per mode. nag_any_bull is offset 0 (current bar); det_b2bBullNapalm
+// is offset -1 (describes bar[1]) so we fire on the next bar.
+bool bt_entry_nagPlus     = nag_any_bull
+bool bt_entry_b2bFirst2   = det_b2bBullNapalm and bt_isFirst2
+bool bt_entry_b2bAfter2   = det_b2bBullNapalm and not bt_isFirst2
+
+bool bt_fire = (bt_mode == "NAG_PLUS"        and bt_entry_nagPlus)
+             or (bt_mode == "B2B_NPM_FIRST2" and bt_entry_b2bFirst2)
+             or (bt_mode == "B2B_NPM_AFTER2" and bt_entry_b2bAfter2)
+
+if bt_fire and strategy.position_size == 0 and barstate.isconfirmed
+    strategy.entry("L", strategy.long)
+
+if strategy.position_size > 0 and (bar_index - strategy.opentrades.entry_bar_index(0)) >= bt_hold
+    strategy.close("L", comment="hold_exit")
+
+// Visual marker for backtest entries (overlays a tag at entry bar)
+plotshape(bt_fire, "BT Entry", shape.triangleup, location.belowbar, color.new(color.lime, 0),
+     size=size.small, text="BT", textcolor=color.lime)
+

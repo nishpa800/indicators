@@ -15,7 +15,13 @@ Every indicator in this folder is a 1:1 fork of the canonical version with those
 
 ### Mapping
 
-| Source (canonical) | Tick-safe fork |
+Every `.pine` source in the repo is covered. Canonical versions are forked
+by hand; non-canonical versions (dated backups, prior versions, backtests) are
+forked by `/tmp/tick_safe_fork.py` using the same shim contract.
+
+**Canonical forks** (per CLAUDE.md):
+
+| Source | Tick-safe fork |
 | --- | --- |
 | `b2b-pup/versions/B2B_PUP_v4.32.pine` | `tick-compatible/b2b-pup/B2B_PUP_v4.32_tick.pine` |
 | `tnt-od/versions/TNT_OD_v2.pine` | `tick-compatible/tnt-od/TNT_OD_v2_tick.pine` |
@@ -23,7 +29,31 @@ Every indicator in this folder is a 1:1 fork of the canonical version with those
 | `hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine` | `tick-compatible/hvd-pbj-ppd/HVDPBJPPD_4.26_tick.pine` |
 | `heavy-combo-toggles/versions/HEAVY_COMBO_TOGGLES_v1.pine` | `tick-compatible/heavy-combo-toggles/HEAVY_COMBO_TOGGLES_v1_tick.pine` |
 | `vob/versions/VOB_Asym_T3x6_MutEx_Claude_v9_2026-05-12.pine` | `tick-compatible/vob/VOB_v9_tick.pine` |
-| `proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine` | (no crash sites — no fork needed) |
+
+**Non-canonical forks** (older / dated / backtest variants — included so every
+script in the repo loads on tick charts):
+
+| Source | Tick-safe fork |
+| --- | --- |
+| `b2b-pup/versions/B2B_PUP_Combined_v4.32_2026-05-04.pine` | `tick-compatible/b2b-pup/B2B_PUP_Combined_v4.32_2026-05-04_tick.pine` |
+| `squarify/backtests/SQUARIFY_v2_BT.pine` | `tick-compatible/squarify/SQUARIFY_v2_BT_tick.pine` |
+| `squarify/backtests/SQUARIFY_v2_STATS.pine` | `tick-compatible/squarify/SQUARIFY_v2_STATS_tick.pine` |
+| `squarify/versions/SQUARIFY_46_v2_2026-05-04.pine` | `tick-compatible/squarify/SQUARIFY_46_v2_2026-05-04_tick.pine` |
+| `squarify/versions/SQUARIFY_ATOMS_v1.pine` | `tick-compatible/squarify/SQUARIFY_ATOMS_v1_tick.pine` |
+| `squarify/versions/SQUARIFY_v1.pine` | `tick-compatible/squarify/SQUARIFY_v1_tick.pine` |
+| `tnt-od/versions/TNT_OD_v1.pine` | `tick-compatible/tnt-od/TNT_OD_v1_tick.pine` |
+| `tnt-od/versions/TNT_OD_v3.pine` | `tick-compatible/tnt-od/TNT_OD_v3_tick.pine` |
+| `tnt-od/versions/TNT_Opening_Drive_OD_v3_2026-05-04.pine` | `tick-compatible/tnt-od/TNT_Opening_Drive_OD_v3_2026-05-04_tick.pine` |
+| `vob/versions/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02.pine` | `tick-compatible/vob/VOB_Asym_T3x6_MutEx_Claude_v8_2026-05-02_tick.pine` |
+
+**No fork needed** (no `time(tf)` / `tv_ta.relativeVolume()` call sites — load
+on tick charts as-is):
+
+| Source | Reason |
+| --- | --- |
+| `proximity-gzi-hv/versions/PROXIMITY_GZI_HV_v1.pine` | Uses `request.security` with user-supplied `tf`; defaults to chart TF (tick-safe). |
+| `vob/versions/VOB_LADDER_WATCH_v1.pine` | Only reads `time` (timestamp, not anchor) and `timeframe.period` (string). |
+| `hvd-pbj-ppd/versions/HVDPBJPPD_v1.pine` | Audit stub — no executable code. |
 
 ### Behavior notes
 
