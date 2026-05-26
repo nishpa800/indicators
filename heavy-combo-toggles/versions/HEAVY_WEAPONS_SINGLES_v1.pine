@@ -79,7 +79,7 @@ reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg)
 
 groupHybrid = "RVOL - Hybrid Regime Settings"
 
-hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Momentum thresholds from Hiroshima ladder", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and auto-computed from the current TF's Hiroshima threshold:\n\n  • REG floor: linear ramp from H×2.85 (M1) down to H×1.1875 (M5)\n  • CUM floor: 30% / 25% / 15% / 15% / 15% of each tier's Reg\n  • BODY ratio: 0.69 / 0.72 / 0.75 / 0.78 / 0.81\n\nWhen OFF, the manual values below are used. See the live info panel for what's actually being applied.")
+hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Momentum thresholds from Hiroshima ladder", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and auto-computed from the current TF's Hiroshima threshold:\n\n  • REG floor: linear ramp from H×2.85 (M1) down to H×1.1875 (M5)\n  • CUM floor: quantum decoherence model — 1.86 × √(ln(REG))\n  • BODY ratio: 0.69 / 0.72 / 0.75 / 0.78 / 0.81\n\nWhen OFF, the manual values below are used. See the live info panel for what's actually being applied.")
 
 hyb_addReg1 = input.float(5.0, "Momentum 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
 hyb_addCum1 = input.float(3.0, "Momentum 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1", tooltip="MOMENTUM 1 (LONG 1 / SHORT 1) — bar AND session both hot.\n\nREG FLOOR (bar must EXCEED):\n▸ 1.2 = VERY LOOSE (many signals)\n▸ 1.5 = LOOSE\n▸ 2.0 = NORMAL ★\n▸ 3.0 = TIGHT (strong bar confirmation)\n▸ 5.0+ = EXTREME\n\nCUM FLOOR (session must EXCEED):\n▸ 1.0 = VERY LOOSE (session just at average)\n▸ 1.2 = LOOSE\n▸ 1.5 = NORMAL ★ (session 50% above average)\n▸ 2.0 = TIGHT (session 2x historical)\n▸ 3.0+ = EXTREME (rare blow-off sessions)\n\nBoth values are FLOORS — bar hot AND session hot = trend continuation. Raise both for fewer, higher-conviction signals.")
@@ -218,12 +218,13 @@ hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep
 hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep
 hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep
 
-// Cum: % of that tier's own Reg floor
-hybAutoCum1 = hybAutoReg1 * 0.30
-hybAutoCum2 = hybAutoReg2 * 0.25
-hybAutoCum3 = hybAutoReg3 * 0.15
-hybAutoCum4 = hybAutoReg4 * 0.15
-hybAutoCum5 = hybAutoReg5 * 0.15
+// Cum: quantum decoherence — CUM = φ × √(ln(REG)) × 1.33
+float hybCumPhi = 1.398 * 1.33
+hybAutoCum1 = hybCumPhi * math.sqrt(math.log(hybAutoReg1))
+hybAutoCum2 = hybCumPhi * math.sqrt(math.log(hybAutoReg2))
+hybAutoCum3 = hybCumPhi * math.sqrt(math.log(hybAutoReg3))
+hybAutoCum4 = hybCumPhi * math.sqrt(math.log(hybAutoReg4))
+hybAutoCum5 = hybCumPhi * math.sqrt(math.log(hybAutoReg5))
 
 // Body ratio: +0.03 per tier
 float hybAutoBody1 = 0.69
