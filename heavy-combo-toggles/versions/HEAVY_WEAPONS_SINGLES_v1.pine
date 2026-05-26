@@ -1,0 +1,1014 @@
+//@version=5
+indicator("Heavy Weapons w saab kratos x 2 long shorts NON REPAINTING NRA ****SINGLES**** NOT NOT STREAMLINED BUT YES FOR HTF", shorttitle="heavy uncap oG", overlay=true, max_labels_count=500, max_bars_back=2000)
+
+import TradingView/ta/7 as tv_ta
+
+// =============================================================================
+// GLOBAL PLOT/ALERT TOGGLES
+// =============================================================================
+grp_global = "★ GLOBAL PLOT/ALERT TOGGLES ★"
+
+show_SAAB       = input.bool(true, "SAAB", group=grp_global, inline="rv1")
+show_Kratos     = input.bool(true, "Kratos", group=grp_global, inline="rv1")
+show_BullRVOL1x = input.bool(true, "Bull RVOL 1x", group=grp_global, inline="rv1")
+show_BearRVOL1x = input.bool(true, "Bear RVOL 1x", group=grp_global, inline="rv1")
+show_GrandSlam  = input.bool(true, "Grand Slam", group=grp_global, inline="rv2")
+show_MOAB       = input.bool(false, "MOAB", group=grp_global, inline="rv2")
+show_WTC        = input.bool(true, "WTC", group=grp_global, inline="rv2")
+show_Hiroshima  = input.bool(true, "Hiroshima", group=grp_global, inline="rv2")
+show_Nagasaki   = input.bool(true, "Nagasaki", group=grp_global, inline="rv3")
+
+show_Long1      = input.bool(true, "LONG 1", group=grp_global, inline="hy1")
+show_Short1     = input.bool(true, "SHORT 1", group=grp_global, inline="hy1")
+show_Long2      = input.bool(true, "LONG 2", group=grp_global, inline="hy2")
+show_Short2     = input.bool(true, "SHORT 2", group=grp_global, inline="hy2")
+show_Long3      = input.bool(true, "LONG 3", group=grp_global, inline="hy3")
+show_Long4      = input.bool(true, "LONG 4", group=grp_global, inline="hy3")
+show_Long5      = input.bool(true, "LONG 5", group=grp_global, inline="hy3")
+
+show_HV75       = input.bool(true, "HV 75", group=grp_global, inline="hv1")
+show_HV150      = input.bool(true, "HV 150", group=grp_global, inline="hv1")
+show_HV250      = input.bool(true, "HV 250", group=grp_global, inline="hv1")
+show_HV500      = input.bool(true, "HV 500", group=grp_global, inline="hv2")
+show_HV1000     = input.bool(true, "HV 1000", group=grp_global, inline="hv2")
+show_HotSpot    = input.bool(true, "Hot Spot", group=grp_global, inline="hv2")
+
+grp_global2 = "★ GLOBAL TOGGLES — DISP / SEQ / B2B ★"
+
+show_DispBull        = input.bool(true, "Disp Bull", group=grp_global2, inline="di1")
+show_DispBear        = input.bool(true, "Disp Bear", group=grp_global2, inline="di1")
+show_CDispBull2      = input.bool(true, "Consec Disp Bull 2+", group=grp_global2, inline="di2")
+show_CDispBear2      = input.bool(true, "Consec Disp Bear 2+", group=grp_global2, inline="di2")
+show_CDispBull3      = input.bool(true, "Consec Disp Bull 3+", group=grp_global2, inline="di3")
+show_CDispBear3      = input.bool(true, "Consec Disp Bear 3+", group=grp_global2, inline="di3")
+
+show_UU   = input.bool(true, "UU", group=grp_global2, inline="sq1")
+show_UUU  = input.bool(true, "UUU", group=grp_global2, inline="sq1")
+show_UUUU = input.bool(true, "UUUU", group=grp_global2, inline="sq1")
+show_DD   = input.bool(true, "DD", group=grp_global2, inline="sq2")
+show_DDD  = input.bool(true, "DDD", group=grp_global2, inline="sq2")
+show_DDDD = input.bool(true, "DDDD", group=grp_global2, inline="sq2")
+
+show_B2B_2xSAAB       = input.bool(true, "2x SAAB", group=grp_global2, inline="b2b1")
+show_B2B_2xKratos     = input.bool(true, "2x Kratos", group=grp_global2, inline="b2b1")
+show_B2B_2xBull1x     = input.bool(true, "2x Bull 1x", group=grp_global2, inline="b2b2")
+show_B2B_2xBear1x     = input.bool(true, "2x Bear 1x", group=grp_global2, inline="b2b2")
+show_B2B_MidBull      = input.bool(true, "B2B Mid Bull", group=grp_global2, inline="b2b3")
+show_B2B_MidBear      = input.bool(true, "B2B Mid Bear", group=grp_global2, inline="b2b3")
+
+show_FaunaBull = input.bool(true, "FAUNA Bullish", group=grp_global2, inline="fn1")
+show_FaunaBear = input.bool(true, "FAUNA Bearish", group=grp_global2, inline="fn1")
+
+grp_info = "★ INFO PANEL (Live Threshold Values) ★"
+show_InfoPanel     = input.bool(true,           "Show Info Panel",   group=grp_info, inline="ip1")
+infoPanelPosition  = input.string("Bottom Right","Position",         group=grp_info, inline="ip1", options=["Top Right","Bottom Right","Top Left","Bottom Left","Middle Right","Middle Left"])
+infoPanelTextSize  = input.string("Small",      "Text Size",         group=grp_info, inline="ip2", options=["Tiny","Small","Normal","Large"])
+
+// =============================================================================
+// RVOL 0.56 SETTINGS
+// =============================================================================
+groupBullBear = "RVOL - Bull/Bear Calculation"
+bb_avgLength  = input.int(30, "Lookback Length", minval=1, group=groupBullBear)
+bb_smaLength  = input.int(20, "SMA Length", minval=1, group=groupBullBear)
+
+groupReg = "RVOL - Reg @ Time Calculation"
+reg_anchorTimeframe  = input.timeframe("", "Anchor Timeframe (blank = chart)", group=groupReg)
+reg_length           = input.int(30, "Length", minval=1, group=groupReg)
+reg_calculationMode  = input.string("Cumulative", "Calculation Mode", options=["Cumulative", "Regular"], group=groupReg)
+reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg)
+
+groupHybrid = "RVOL - Hybrid Regime Settings"
+
+hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Momentum thresholds from Hiroshima ladder", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and auto-computed from the current TF's Hiroshima threshold:\n\n  • REG floor: linear ramp from H×2.85 (M1) down to H×1.1875 (M5)\n  • CUM floor: 30% / 25% / 15% / 15% / 15% of each tier's Reg\n  • BODY ratio: 0.69 / 0.72 / 0.75 / 0.78 / 0.81\n\nWhen OFF, the manual values below are used. See the live info panel for what's actually being applied.")
+
+hyb_addReg1 = input.float(5.0, "Momentum 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_addCum1 = input.float(3.0, "Momentum 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1", tooltip="MOMENTUM 1 (LONG 1 / SHORT 1) — bar AND session both hot.\n\nREG FLOOR (bar must EXCEED):\n▸ 1.2 = VERY LOOSE (many signals)\n▸ 1.5 = LOOSE\n▸ 2.0 = NORMAL ★\n▸ 3.0 = TIGHT (strong bar confirmation)\n▸ 5.0+ = EXTREME\n\nCUM FLOOR (session must EXCEED):\n▸ 1.0 = VERY LOOSE (session just at average)\n▸ 1.2 = LOOSE\n▸ 1.5 = NORMAL ★ (session 50% above average)\n▸ 2.0 = TIGHT (session 2x historical)\n▸ 3.0+ = EXTREME (rare blow-off sessions)\n\nBoth values are FLOORS — bar hot AND session hot = trend continuation. Raise both for fewer, higher-conviction signals.")
+hyb_bodyRat1   = input.float(0.65, "Momentum 1 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid, tooltip="CONVICTION FILTER FOR MOMENTUM 1 — body size as % of bar range.\n\n▸ 0.0 = OFF (any bar, including dojis)\n▸ 0.3 = LOOSE (allows wicky, contested bars)\n▸ 0.5 = MODERATE (body controls half the range)\n▸ 0.6 = NORMAL ★ (default — solid directional bar)\n▸ 0.7 = TIGHT (strong conviction, fewer signals)\n▸ 0.85+ = EXTREME (near-marubozu only, very rare)\n\nIndependent from Momentum 2 body ratio.")
+
+hyb_addReg2 = input.float(5.0, "Momentum 2 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_addCum2 = input.float(3.0, "Momentum 2 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2", tooltip="MOMENTUM 2 (LONG 2 / SHORT 2) — independent second set.\n\nSame logic as Momentum 1 with its own thresholds.\n\nREG FLOOR (bar must EXCEED):\n▸ 1.2 = VERY LOOSE\n▸ 1.5 = LOOSE\n▸ 2.0 = NORMAL ★\n▸ 3.0 = TIGHT\n▸ 5.0+ = EXTREME\n\nCUM FLOOR (session must EXCEED):\n▸ 1.0 = VERY LOOSE\n▸ 1.2 = LOOSE\n▸ 1.5 = NORMAL ★\n▸ 2.0 = TIGHT\n▸ 3.0+ = EXTREME")
+hyb_bodyRat2   = input.float(0.65, "Momentum 2 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid, tooltip="CONVICTION FILTER FOR MOMENTUM 2 — body size as % of bar range.\n\n▸ 0.0 = OFF (any bar, including dojis)\n▸ 0.3 = LOOSE (allows wicky, contested bars)\n▸ 0.5 = MODERATE (body controls half the range)\n▸ 0.6 = NORMAL ★ (default — solid directional bar)\n▸ 0.7 = TIGHT (strong conviction, fewer signals)\n▸ 0.85+ = EXTREME (near-marubozu only, very rare)\n\nIndependent from Momentum 1 body ratio.")
+
+hyb_addReg3 = input.float(5.0, "Momentum 3 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_addCum3 = input.float(3.0, "Momentum 3 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3", tooltip="MOMENTUM 3 (LONG 3 only) — independent third long-only set.")
+hyb_bodyRat3   = input.float(0.65, "Momentum 3 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+
+hyb_addReg4 = input.float(5.0, "Momentum 4 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_addCum4 = input.float(3.0, "Momentum 4 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4", tooltip="MOMENTUM 4 (LONG 4 only) — independent fourth long-only set.")
+hyb_bodyRat4   = input.float(0.65, "Momentum 4 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+
+hyb_addReg5 = input.float(5.0, "Momentum 5 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_addCum5 = input.float(3.0, "Momentum 5 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5", tooltip="MOMENTUM 5 (LONG 5 only) — independent fifth long-only set.")
+hyb_bodyRat5   = input.float(0.65, "Momentum 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+
+groupNaga = "RVOL - Nagasaki"
+enableNagasaki = input.bool(true, "Enable Nagasaki", group=groupNaga)
+
+// =============================================================================
+// RVOL SEQUENCE — INDEPENDENT PER-PAIR SETTINGS (IPSF)
+// =============================================================================
+grp_bar_UU   = "UU / DD — Single Bar Lower Threshold"
+grp_bar_UUU  = "UUU / DDD — Single Bar Lower Threshold"
+grp_bar_UUUU = "UUUU / DDDD — Single Bar Lower Threshold"
+
+th_low_UU_DD     = input.float(1.0, step=0.1, title="Lower Threshold (UU / DD)",     group=grp_bar_UU)
+th_low_UUU_DDD   = input.float(1.0, step=0.1, title="Lower Threshold (UUU / DDD)",   group=grp_bar_UUU)
+th_low_UUUU_DDDD = input.float(1.0, step=0.1, title="Lower Threshold (UUUU / DDDD)", group=grp_bar_UUUU)
+
+grp_seq_UU   = "UU / DD — Sequence Sum Threshold"
+grp_seq_UUU  = "UUU / DDD — Sequence Sum Threshold"
+grp_seq_UUUU = "UUUU / DDDD — Sequence Sum Threshold"
+
+seqTh_UU_DD     = input.float(0.1, step=0.1, title="Sequence Sum Threshold (UU / DD)",     group=grp_seq_UU)
+seqTh_UUU_DDD   = input.float(0.1, step=0.1, title="Sequence Sum Threshold (UUU / DDD)",   group=grp_seq_UUU)
+seqTh_UUUU_DDDD = input.float(0.1, step=0.1, title="Sequence Sum Threshold (UUUU / DDDD)", group=grp_seq_UUUU)
+
+seq_th_high = input.float(50.0, "Max RVOL Price (High Threshold)", minval=0.5, step=0.5, group=grp_bar_UU, tooltip="Bar's normalized price must be BELOW this to qualify. Filters out extreme outliers. Shared across all pairs.")
+
+// =============================================================================
+// DISPLACEMENT SETTINGS
+// =============================================================================
+grp_disp = "Displacement Settings"
+i_disp_type = input.string("Open to Close", "Displacement Range Type", options = ['Open to Close', 'High to Low'], group=grp_disp)
+i_std_len   = input.int(100, minval = 1, title = "Std Dev Length", group=grp_disp)
+i_std_min   = input.float(3.0, minval = 0, step = 0.5, title = "Std Dev Multiplier (Min)", group=grp_disp)
+i_std_max   = input.float(7.0, minval = 0, step = 0.5, title = "Std Dev Multiplier (Max)", group=grp_disp)
+
+// =============================================================================
+// FAUNA SETTINGS — COLORS ONLY (all families + combos hardcoded ON)
+// =============================================================================
+fn_grp_global   = "FAUNA — Colors"
+fn_bullColor    = input.color(color.new(#00C800, 0), "▲ Bull Color", group=fn_grp_global)
+fn_bearColor    = input.color(color.new(#FF2020, 0), "▼ Bear Color", group=fn_grp_global)
+
+// =============================================================================
+// RVOL 0.56 CALCULATIONS
+// =============================================================================
+tfSec = timeframe.in_seconds(timeframe.period)
+
+f_rvol_1x_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10   ? 38.0 :
+               s <= 15   ? 33.0 :
+               s <= 30   ? 28.0 :
+               s <= 45   ? 23.0 :
+               s <= 60   ? 20.0 :
+               s <= 120  ? 19.0 :
+               s <= 180  ? 17.0 :
+               s <= 240  ? 16.0 :
+               s <= 300  ? 15.0 :
+               s <= 360  ? 14.0 :
+               s <= 420  ? 12.0 :
+               s <= 480  ? 11.0 :
+               s <= 540  ? 10.0 :
+               s <= 600  ? 10.0 :
+               s <= 900  ? 8.4 :
+               s <= 1800 ? 6.9 :
+               s <= 3600 ? 5.9 :
+               s <= 7200 ? 3.0 :
+               1.8
+    th
+
+f_saab_kratos_threshold(_tfSec) =>
+    f_rvol_1x_threshold(_tfSec) * 0.56
+
+f_gs_moab_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10   ? 114.0 :
+               s <= 15   ? 99.0 :
+               s <= 30   ? 84.0 :
+               s <= 45   ? 69.0 :
+               s <= 60   ? 35.0 :
+               s <= 300  ? 35.0 :
+               s <= 600  ? 25.0 :
+               s <= 900  ? 20.0 :
+               s <= 3600 ? 10.0 :
+               8.0
+    th
+
+f_wtc_threshold(_tfSec) =>
+    f_rvol_1x_threshold(_tfSec) * 2.0
+
+f_hiroshima_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10   ? 114.0 :
+               s <= 15   ? 99.0 :
+               s <= 30   ? 84.0 :
+               s <= 45   ? 69.0 :
+               s <= 60   ? 35.0 :
+               s <= 300  ? 35.0 :
+               s <= 600  ? 25.0 :
+               s <= 900  ? 20.0 :
+               s <= 3600 ? 10.0 :
+               8.0
+    th
+
+th_saab_kratos = f_saab_kratos_threshold(tfSec)
+th_1x          = f_rvol_1x_threshold(tfSec)
+th_gs_moab     = f_gs_moab_threshold(tfSec)
+th_wtc         = f_wtc_threshold(tfSec)
+th_hiroshima   = f_hiroshima_threshold(tfSec)
+
+// ── HYBRID MOMENTUM AUTO-DERIVE LADDER (from Hiroshima) ──────────────────────
+// Reg: linear ramp H×2.85 (M1) → H×1.1875 (M5)  [5% trim from 3.00/1.25]
+hybAutoReg1 = th_hiroshima * 2.85
+hybAutoReg5 = th_hiroshima * 1.1875
+hybAutoStep = (hybAutoReg1 - hybAutoReg5) / 4.0
+hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep
+hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep
+hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep
+
+// Cum: % of that tier's own Reg floor
+hybAutoCum1 = hybAutoReg1 * 0.30
+hybAutoCum2 = hybAutoReg2 * 0.25
+hybAutoCum3 = hybAutoReg3 * 0.15
+hybAutoCum4 = hybAutoReg4 * 0.15
+hybAutoCum5 = hybAutoReg5 * 0.15
+
+// Body ratio: +0.03 per tier
+float hybAutoBody1 = 0.69
+float hybAutoBody2 = 0.72
+float hybAutoBody3 = 0.75
+float hybAutoBody4 = 0.78
+float hybAutoBody5 = 0.81
+
+// Effective values: auto-derived if master toggle ON, otherwise manual input
+hybReg1Eff  = hyb_autoDerive ? hybAutoReg1  : hyb_addReg1
+hybReg2Eff  = hyb_autoDerive ? hybAutoReg2  : hyb_addReg2
+hybReg3Eff  = hyb_autoDerive ? hybAutoReg3  : hyb_addReg3
+hybReg4Eff  = hyb_autoDerive ? hybAutoReg4  : hyb_addReg4
+hybReg5Eff  = hyb_autoDerive ? hybAutoReg5  : hyb_addReg5
+
+hybCum1Eff  = hyb_autoDerive ? hybAutoCum1  : hyb_addCum1
+hybCum2Eff  = hyb_autoDerive ? hybAutoCum2  : hyb_addCum2
+hybCum3Eff  = hyb_autoDerive ? hybAutoCum3  : hyb_addCum3
+hybCum4Eff  = hyb_autoDerive ? hybAutoCum4  : hyb_addCum4
+hybCum5Eff  = hyb_autoDerive ? hybAutoCum5  : hyb_addCum5
+
+hybBody1Eff = hyb_autoDerive ? hybAutoBody1 : hyb_bodyRat1
+hybBody2Eff = hyb_autoDerive ? hybAutoBody2 : hyb_bodyRat2
+hybBody3Eff = hyb_autoDerive ? hybAutoBody3 : hyb_bodyRat3
+hybBody4Eff = hyb_autoDerive ? hybAutoBody4 : hyb_bodyRat4
+hybBody5Eff = hyb_autoDerive ? hybAutoBody5 : hyb_bodyRat5
+
+bb_spike = math.abs(close - open)
+bb_avgSpikeDenom = ta.sma(bb_spike, bb_avgLength)[1]
+bb_normalizedPrice = bb_spike / nz(bb_avgSpikeDenom, 1.0)
+
+bb_avgVolDenom = ta.sma(volume, bb_avgLength)[1]
+bb_normalizedVolume = volume / nz(bb_avgVolDenom, 1.0)
+
+bb_diff = bb_normalizedPrice - bb_normalizedVolume
+bb_positiveDiff = bb_diff > 0 ? bb_diff : na
+bb_smaDiff = ta.sma(bb_positiveDiff, bb_smaLength)
+
+bb_baseBullish = (close > open) and (bb_positiveDiff > bb_smaDiff)
+bb_baseBearish = (close < open) and (bb_positiveDiff > bb_smaDiff)
+
+bb_inRange(v, lowTh, highTh) => v >= lowTh and v < highTh
+
+conf = barstate.isconfirmed
+
+sigSAAB = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigKratos = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigBullRVOL1x = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigBearRVOL1x = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigGrandSlam = conf and bb_baseBullish and (bb_normalizedPrice >= th_gs_moab)
+sigMOAB = conf and bb_baseBearish and (bb_normalizedPrice >= th_gs_moab)
+
+// =============================================================================
+// RVOL REG @ TIME — WTC / Hiroshima
+// =============================================================================
+[currentVolume_reg, pastVolume_reg, _] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, reg_calculationMode == "Cumulative", reg_adjustRealtime)
+relVolRatio = currentVolume_reg / pastVolume_reg
+
+sigWTC = conf and (relVolRatio > th_wtc) and (relVolRatio <= th_hiroshima)
+sigHiroshima = conf and (relVolRatio > th_hiroshima)
+
+// =============================================================================
+// HYBRID RVOL — MOMENTUM REGIMES
+// =============================================================================
+[hybRegCur, hybRegPast, _hr] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, false, reg_adjustRealtime)
+[hybCumCur, hybCumPast, _hc] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, true, reg_adjustRealtime)
+
+hybRegRatio = hybRegCur / hybRegPast
+hybCumRatio = hybCumCur / hybCumPast
+
+hybBodySz  = math.abs(close - open)
+hybRange   = high - low
+hybBodyRat = hybRange == 0 ? 0.0 : hybBodySz / hybRange
+
+hybConvict1  = hybBodyRat >= hybBody1Eff
+hybBull1     = (close > open) and hybConvict1
+hybBear1     = (close < open) and hybConvict1
+hybMom1      = conf and (hybRegRatio > hybReg1Eff) and (hybCumRatio > hybCum1Eff)
+sigAddLong1  = hybMom1 and hybBull1
+sigAddShort1 = hybMom1 and hybBear1
+
+hybConvict2  = hybBodyRat >= hybBody2Eff
+hybBull2     = (close > open) and hybConvict2
+hybBear2     = (close < open) and hybConvict2
+hybMom2      = conf and (hybRegRatio > hybReg2Eff) and (hybCumRatio > hybCum2Eff)
+sigAddLong2  = hybMom2 and hybBull2
+sigAddShort2 = hybMom2 and hybBear2
+
+hybConvict3  = hybBodyRat >= hybBody3Eff
+hybBull3     = (close > open) and hybConvict3
+hybMom3      = conf and (hybRegRatio > hybReg3Eff) and (hybCumRatio > hybCum3Eff)
+sigAddLong3  = hybMom3 and hybBull3
+
+hybConvict4  = hybBodyRat >= hybBody4Eff
+hybBull4     = (close > open) and hybConvict4
+hybMom4      = conf and (hybRegRatio > hybReg4Eff) and (hybCumRatio > hybCum4Eff)
+sigAddLong4  = hybMom4 and hybBull4
+
+hybConvict5  = hybBodyRat >= hybBody5Eff
+hybBull5     = (close > open) and hybConvict5
+hybMom5      = conf and (hybRegRatio > hybReg5Eff) and (hybCumRatio > hybCum5Eff)
+sigAddLong5  = hybMom5 and hybBull5
+
+// =============================================================================
+// NAGASAKI
+// =============================================================================
+vol = volume
+var float maxVol = 0.0
+bool isNagasaki = false
+
+if conf
+    if bar_index == 0
+        maxVol := vol
+    else if vol > maxVol
+        isNagasaki := true
+        maxVol := vol
+
+sigNagasaki = enableNagasaki and isNagasaki
+
+// =============================================================================
+// RVOL SEQUENCE — INDEPENDENT PER-PAIR TRACKING (IPSF)
+// =============================================================================
+seq_inRange_pair(v, th_low) => v > th_low and v < seq_th_high
+
+// --- Per-pair bull bar qualifiers ---
+is_u_bar_UU   = bb_baseBullish and seq_inRange_pair(bb_normalizedPrice, th_low_UU_DD)
+is_u_bar_UUU  = bb_baseBullish and seq_inRange_pair(bb_normalizedPrice, th_low_UUU_DDD)
+is_u_bar_UUUU = bb_baseBullish and seq_inRange_pair(bb_normalizedPrice, th_low_UUUU_DDDD)
+
+// --- Per-pair bear bar qualifiers ---
+is_d_bar_DD   = bb_baseBearish and seq_inRange_pair(bb_normalizedPrice, th_low_UU_DD)
+is_d_bar_DDD  = bb_baseBearish and seq_inRange_pair(bb_normalizedPrice, th_low_UUU_DDD)
+is_d_bar_DDDD = bb_baseBearish and seq_inRange_pair(bb_normalizedPrice, th_low_UUUU_DDDD)
+
+// --- UU / DD pair ---
+var float bull_seq_sum_UU = 0.0
+var int   bull_seq_len_UU = 0
+var float bear_seq_sum_DD = 0.0
+var int   bear_seq_len_DD = 0
+if conf
+    if is_u_bar_UU
+        bull_seq_len_UU += 1
+        bull_seq_sum_UU += bb_normalizedPrice
+    else
+        bull_seq_len_UU := 0
+        bull_seq_sum_UU := 0.0
+    if is_d_bar_DD
+        bear_seq_len_DD += 1
+        bear_seq_sum_DD += bb_normalizedPrice
+    else
+        bear_seq_len_DD := 0
+        bear_seq_sum_DD := 0.0
+
+// --- UUU / DDD pair ---
+var float bull_seq_sum_UUU = 0.0
+var int   bull_seq_len_UUU = 0
+var float bear_seq_sum_DDD = 0.0
+var int   bear_seq_len_DDD = 0
+if conf
+    if is_u_bar_UUU
+        bull_seq_len_UUU += 1
+        bull_seq_sum_UUU += bb_normalizedPrice
+    else
+        bull_seq_len_UUU := 0
+        bull_seq_sum_UUU := 0.0
+    if is_d_bar_DDD
+        bear_seq_len_DDD += 1
+        bear_seq_sum_DDD += bb_normalizedPrice
+    else
+        bear_seq_len_DDD := 0
+        bear_seq_sum_DDD := 0.0
+
+// --- UUUU / DDDD pair ---
+var float bull_seq_sum_UUUU = 0.0
+var int   bull_seq_len_UUUU = 0
+var float bear_seq_sum_DDDD = 0.0
+var int   bear_seq_len_DDDD = 0
+if conf
+    if is_u_bar_UUUU
+        bull_seq_len_UUUU += 1
+        bull_seq_sum_UUUU += bb_normalizedPrice
+    else
+        bull_seq_len_UUUU := 0
+        bull_seq_sum_UUUU := 0.0
+    if is_d_bar_DDDD
+        bear_seq_len_DDDD += 1
+        bear_seq_sum_DDDD += bb_normalizedPrice
+    else
+        bear_seq_len_DDDD := 0
+        bear_seq_sum_DDDD := 0.0
+
+sig_bull_UU   = conf and bull_seq_len_UU   == 2 and bull_seq_sum_UU   >= seqTh_UU_DD
+sig_bull_UUU  = conf and bull_seq_len_UUU  == 3 and bull_seq_sum_UUU  >= seqTh_UUU_DDD
+sig_bull_UUUU = conf and bull_seq_len_UUUU == 4 and bull_seq_sum_UUUU >= seqTh_UUUU_DDDD
+
+sig_bear_DD   = conf and bear_seq_len_DD   == 2 and bear_seq_sum_DD   >= seqTh_UU_DD
+sig_bear_DDD  = conf and bear_seq_len_DDD  == 3 and bear_seq_sum_DDD  >= seqTh_UUU_DDD
+sig_bear_DDDD = conf and bear_seq_len_DDDD == 4 and bear_seq_sum_DDDD >= seqTh_UUUU_DDDD
+
+// =============================================================================
+// BACK-TO-BACK SIGNAL CALCULATIONS
+// =============================================================================
+sig_B2B_2xSAAB   = conf and sigSAAB[1]       and sigSAAB
+sig_B2B_2xKratos = conf and sigKratos[1]      and sigKratos
+sig_B2B_2xBull1x = conf and sigBullRVOL1x[1]  and sigBullRVOL1x
+sig_B2B_2xBear1x = conf and sigBearRVOL1x[1]  and sigBearRVOL1x
+
+sig_B2B_MidBull = conf and not sig_B2B_2xSAAB and not sig_B2B_2xBull1x and ((sigSAAB[1] and sigBullRVOL1x) or (sigBullRVOL1x[1] and sigSAAB))
+sig_B2B_MidBear = conf and not sig_B2B_2xKratos and not sig_B2B_2xBear1x and ((sigKratos[1] and sigBearRVOL1x) or (sigBearRVOL1x[1] and sigKratos))
+
+// =============================================================================
+// FAUNA CALCULATIONS — ALL FAMILIES + COMBOS HARDCODED ON
+// =============================================================================
+// Hardcoded parameters (former inputs, now constants)
+float fn_alpha_MB  = 1.6
+float fn_beta_MB   = 0.70
+float fn_delta_MB  = 1.8
+int   fn_atr_MB    = 14
+int   fn_vol_MB    = 20
+
+float fn_gamma_RE   = 2.2
+float fn_epsilon_RE = 0.15
+float fn_delta_RE   = 1.8
+int   fn_atr_RE     = 14
+int   fn_vol_RE     = 20
+
+float fn_zeta_GG  = 0.9
+float fn_delta_GG = 1.8
+int   fn_atr_GG   = 14
+int   fn_vol_GG   = 20
+
+float fn_theta_TA      = 1.6
+float fn_delta_TA      = 1.8
+int   fn_trend_ma_len  = 50
+int   fn_avg_delta_len = 10
+int   fn_atr_TA        = 14
+int   fn_vol_TA        = 20
+
+float fn_alpha_SB   = 1.5
+float fn_delta_SB   = 1.5
+float fn_weak_ratio = 0.2
+int   fn_body_avg   = 20
+int   fn_range_avg  = 20
+
+fn_ATR      = ta.atr(fn_atr_MB)
+fn_AvgVol   = ta.sma(volume, fn_vol_MB)
+fn_AvgBody  = ta.sma(math.abs(close - open), fn_body_avg)
+fn_AvgRange = ta.sma(high - low, fn_range_avg)
+fn_AvgDelta = ta.sma(math.abs(close - close[1]), fn_avg_delta_len)
+fn_TrendMA  = ta.sma(close, fn_trend_ma_len)
+
+fn_body        = close - open
+fn_candleRange = high - low
+fn_body_up     = fn_body > 0
+fn_body_dn     = fn_body < 0
+fn_body_size   = math.abs(fn_body)
+fn_body_ratio  = fn_candleRange == 0 ? 0.0 : fn_body_size / fn_candleRange
+
+// Momentum Blast
+fn_MB_bull = fn_body_up and fn_body_size > fn_alpha_MB * fn_ATR and fn_body_ratio > fn_beta_MB and volume > fn_delta_MB * fn_AvgVol
+fn_MB_bear = fn_body_dn and fn_body_size > fn_alpha_MB * fn_ATR and fn_body_ratio > fn_beta_MB and volume > fn_delta_MB * fn_AvgVol
+
+// Range Expansion
+fn_wide    = fn_candleRange > fn_gamma_RE * ta.atr(fn_atr_RE)
+fn_RE_bull = fn_body_up and fn_wide and (high - close) < fn_epsilon_RE * fn_candleRange and volume > fn_delta_RE * fn_AvgVol
+fn_RE_bear = fn_body_dn and fn_wide and (close - low) < fn_epsilon_RE * fn_candleRange and volume > fn_delta_RE * fn_AvgVol
+
+// Gap & Go
+fn_GG_bull = (open - close[1]) > fn_zeta_GG * ta.atr(fn_atr_GG) and fn_body_up and low > close[1] and volume > fn_delta_GG * fn_AvgVol
+fn_GG_bear = (close[1] - open) > fn_zeta_GG * ta.atr(fn_atr_GG) and fn_body_dn and high < close[1] and volume > fn_delta_GG * fn_AvgVol
+
+// Trend Accelerant
+fn_up_trend = fn_TrendMA > fn_TrendMA[1]
+fn_dn_trend = fn_TrendMA < fn_TrendMA[1]
+fn_TA_bull = fn_up_trend and fn_body_up and (close - close[1]) > fn_theta_TA * fn_AvgDelta and volume > fn_delta_TA * fn_AvgVol
+fn_TA_bear = fn_dn_trend and fn_body_dn and (close[1] - close) > fn_theta_TA * fn_AvgDelta and volume > fn_delta_TA * fn_AvgVol
+
+// Preceding candle characteristics
+fn_prev_body  = close[1] - open[1]
+fn_prev_range = high[1] - low[1]
+
+fn_StrongBear_pre = close[1] < open[1] and math.abs(fn_prev_body) > fn_alpha_SB * fn_AvgBody[1] and volume[1] > fn_delta_SB * fn_AvgVol[1]
+fn_WeakBear_pre   = close[1] < open[1] and (fn_prev_range == 0 ? 0.0 : math.abs(fn_prev_body) / fn_prev_range) <= fn_weak_ratio
+fn_StrongBull_pre = close[1] > open[1] and math.abs(fn_prev_body) > fn_alpha_SB * fn_AvgBody[1] and volume[1] > fn_delta_SB * fn_AvgVol[1]
+fn_WeakBull_pre   = close[1] > open[1] and (fn_prev_range == 0 ? 0.0 : math.abs(fn_prev_body) / fn_prev_range) <= fn_weak_ratio
+
+// Reversal signals
+fn_TR_bull  = fn_WeakBear_pre   and (fn_MB_bull or fn_RE_bull or fn_TA_bull)
+fn_ES_bull  = fn_StrongBear_pre and (fn_MB_bull or fn_RE_bull or fn_TA_bull)
+fn_GDR_bull = close[1] < open[1] and fn_GG_bull
+
+fn_TR_bear  = fn_WeakBull_pre   and (fn_MB_bear or fn_RE_bear or fn_TA_bear)
+fn_ES_bear  = fn_StrongBull_pre and (fn_MB_bear or fn_RE_bear or fn_TA_bear)
+fn_GDR_bear = close[1] > open[1] and fn_GG_bear
+
+// Hierarchical Signal Resolution — Bullish (all combos hardcoded ON)
+var string fn_bullText = ""
+fn_bullText := ""
+
+if show_FaunaBull
+    if   fn_GG_bull and fn_MB_bull and fn_RE_bull and fn_TA_bull
+        fn_bullText := "GG+MB+RE+TA"
+    else if fn_MB_bull and fn_TA_bull and fn_RE_bull
+        fn_bullText := "MB+TA+RE"
+    else if fn_GG_bull and fn_TA_bull and fn_MB_bull
+        fn_bullText := "GG+TA+MB"
+    else if fn_GG_bull and fn_TA_bull and fn_RE_bull
+        fn_bullText := "GG+TA+RE"
+    else if fn_GDR_bull and fn_RE_bull and fn_MB_bull
+        fn_bullText := "GDR+RE+MB"
+    else if fn_MB_bull and fn_RE_bull
+        fn_bullText := "MB+RE"
+    else if fn_MB_bull and fn_GG_bull
+        fn_bullText := "MB+GG"
+    else if fn_MB_bull and fn_TA_bull
+        fn_bullText := "MB+TA"
+    else if fn_MB_bull and fn_TR_bull
+        fn_bullText := "MB+TR"
+    else if fn_MB_bull and fn_ES_bull
+        fn_bullText := "MB+ES"
+    else if fn_MB_bull and fn_GDR_bull
+        fn_bullText := "MB+GDR"
+    else if fn_RE_bull and fn_GG_bull
+        fn_bullText := "RE+GG"
+    else if fn_RE_bull and fn_TA_bull
+        fn_bullText := "RE+TA"
+    else if fn_RE_bull and fn_TR_bull
+        fn_bullText := "RE+TR"
+    else if fn_RE_bull and fn_ES_bull
+        fn_bullText := "RE+ES"
+    else if fn_RE_bull and fn_GDR_bull
+        fn_bullText := "RE+GDR"
+    else if fn_GG_bull and fn_TA_bull
+        fn_bullText := "GG+TA"
+    else if fn_GG_bull and fn_TR_bull
+        fn_bullText := "GG+TR"
+    else if fn_GG_bull and fn_ES_bull
+        fn_bullText := "GG+ES"
+    else if fn_GG_bull and fn_GDR_bull
+        fn_bullText := "GG+GDR"
+    else if fn_TA_bull and fn_TR_bull
+        fn_bullText := "TA+TR"
+    else if fn_TA_bull and fn_ES_bull
+        fn_bullText := "TA+ES"
+    else if fn_TA_bull and fn_GDR_bull
+        fn_bullText := "TA+GDR"
+    else if fn_GDR_bull
+        fn_bullText := "GDR"
+    else if fn_ES_bull
+        fn_bullText := "ES"
+    else if fn_TR_bull
+        fn_bullText := "TR"
+    else if fn_MB_bull
+        fn_bullText := "MB"
+    else if fn_RE_bull
+        fn_bullText := "RE"
+    else if fn_GG_bull
+        fn_bullText := "GG"
+    else if fn_TA_bull
+        fn_bullText := "TA"
+
+// Hierarchical Signal Resolution — Bearish (all combos hardcoded ON)
+var string fn_bearText = ""
+fn_bearText := ""
+
+if show_FaunaBear
+    if   fn_GG_bear and fn_MB_bear and fn_RE_bear and fn_TA_bear
+        fn_bearText := "GG+MB+RE+TA"
+    else if fn_MB_bear and fn_TA_bear and fn_RE_bear
+        fn_bearText := "MB+TA+RE"
+    else if fn_GG_bear and fn_TA_bear and fn_MB_bear
+        fn_bearText := "GG+TA+MB"
+    else if fn_GG_bear and fn_TA_bear and fn_RE_bear
+        fn_bearText := "GG+TA+RE"
+    else if fn_GDR_bear and fn_RE_bear and fn_MB_bear
+        fn_bearText := "GDR+RE+MB"
+    else if fn_MB_bear and fn_RE_bear
+        fn_bearText := "MB+RE"
+    else if fn_MB_bear and fn_GG_bear
+        fn_bearText := "MB+GG"
+    else if fn_MB_bear and fn_TA_bear
+        fn_bearText := "MB+TA"
+    else if fn_MB_bear and fn_TR_bear
+        fn_bearText := "MB+TR"
+    else if fn_MB_bear and fn_ES_bear
+        fn_bearText := "MB+ES"
+    else if fn_MB_bear and fn_GDR_bear
+        fn_bearText := "MB+GDR"
+    else if fn_RE_bear and fn_GG_bear
+        fn_bearText := "RE+GG"
+    else if fn_RE_bear and fn_TA_bear
+        fn_bearText := "RE+TA"
+    else if fn_RE_bear and fn_TR_bear
+        fn_bearText := "RE+TR"
+    else if fn_RE_bear and fn_ES_bear
+        fn_bearText := "RE+ES"
+    else if fn_RE_bear and fn_GDR_bear
+        fn_bearText := "RE+GDR"
+    else if fn_GG_bear and fn_TA_bear
+        fn_bearText := "GG+TA"
+    else if fn_GG_bear and fn_TR_bear
+        fn_bearText := "GG+TR"
+    else if fn_GG_bear and fn_ES_bear
+        fn_bearText := "GG+ES"
+    else if fn_GG_bear and fn_GDR_bear
+        fn_bearText := "GG+GDR"
+    else if fn_TA_bear and fn_TR_bear
+        fn_bearText := "TA+TR"
+    else if fn_TA_bear and fn_ES_bear
+        fn_bearText := "TA+ES"
+    else if fn_TA_bear and fn_GDR_bear
+        fn_bearText := "TA+GDR"
+    else if fn_GDR_bear
+        fn_bearText := "GDR"
+    else if fn_ES_bear
+        fn_bearText := "ES"
+    else if fn_TR_bear
+        fn_bearText := "TR"
+    else if fn_MB_bear
+        fn_bearText := "MB"
+    else if fn_RE_bear
+        fn_bearText := "RE"
+    else if fn_GG_bear
+        fn_bearText := "GG"
+    else if fn_TA_bear
+        fn_bearText := "TA"
+
+fn_bullActive = show_FaunaBull and fn_bullText != "" and conf
+fn_bearActive = show_FaunaBear and fn_bearText != "" and conf
+
+// =============================================================================
+// DISPLACEMENT CALCULATIONS
+// =============================================================================
+disp_isBullishFVG = low > high[2] and open[1] < close[1]
+disp_isBearishFVG = high < low[2] and open[1] > close[1]
+
+disp_candle_range = i_disp_type == "Open to Close" ? math.abs(open - close) : high - low
+disp_std_dev = ta.stdev(disp_candle_range, i_std_len)
+disp_threshold_min = disp_std_dev * i_std_min
+disp_threshold_max = disp_std_dev * i_std_max
+
+disp_isPrevBarDisplaced = disp_candle_range[1] > disp_threshold_min[1] and disp_candle_range[1] <= disp_threshold_max[1]
+
+sigDispBull = disp_isPrevBarDisplaced and disp_isBullishFVG
+sigDispBear = disp_isPrevBarDisplaced and disp_isBearishFVG
+
+var int disp_bullStreak = 0
+var int disp_bearStreak = 0
+
+if sigDispBull
+    disp_bullStreak := disp_bullStreak + 1
+else
+    disp_bullStreak := 0
+
+if sigDispBear
+    disp_bearStreak := disp_bearStreak + 1
+else
+    disp_bearStreak := 0
+
+sigCDispBull2 = sigDispBull and disp_bullStreak >= 2
+sigCDispBear2 = sigDispBear and disp_bearStreak >= 2
+sigCDispBull3 = sigDispBull and disp_bullStreak >= 3
+sigCDispBear3 = sigDispBear and disp_bearStreak >= 3
+
+// =============================================================================
+// HV (75/150/250/500/1K/HOT SPOT) CALCULATIONS — NRA via [1]
+// =============================================================================
+bool is75Bar   = volume[1] == ta.highest(volume, 75)[1]
+bool is150Bar  = volume[1] == ta.highest(volume, 150)[1]
+bool is250Bar  = volume[1] == ta.highest(volume, 250)[1]
+bool is500Bar  = volume[1] == ta.highest(volume, 500)[1]
+bool is1000Bar = volume[1] == ta.highest(volume, 1000)[1]
+
+opExWindow = dayofmonth[1] >= 10 and dayofmonth[1] <= 17 and dayofweek[1] >= dayofweek.monday and dayofweek[1] <= dayofweek.wednesday
+qtrEndWindow = (month[1] == 3 or month[1] == 6 or month[1] == 9 or month[1] == 12) and dayofmonth[1] >= 23 and dayofmonth[1] <= 27
+russellWindow = month[1] == 6 and dayofmonth[1] >= 19 and dayofmonth[1] <= 24
+taxLossWindow = month[1] == 12 and dayofmonth[1] >= 21 and dayofmonth[1] <= 26
+janEffectWindow = month[1] == 12 and dayofmonth[1] >= 27 and dayofmonth[1] <= 30
+hfRedemptionWindow = (month[1] == 5 or month[1] == 11) and dayofmonth[1] >= 10 and dayofmonth[1] <= 13
+
+bool isHotSpot = opExWindow or qtrEndWindow or russellWindow or taxLossWindow or janEffectWindow or hfRedemptionWindow
+
+bool plot_HV1000 = show_HV1000 and is1000Bar
+bool plot_HV500  = show_HV500  and is500Bar  and not is1000Bar
+bool plot_HV250  = show_HV250  and is250Bar  and not is500Bar  and not is1000Bar
+bool plot_HV150  = show_HV150  and is150Bar  and not is250Bar  and not is500Bar  and not is1000Bar
+bool plot_HV75   = show_HV75   and is75Bar   and not is150Bar  and not is250Bar  and not is500Bar  and not is1000Bar
+bool plot_HS     = show_HotSpot and isHotSpot
+
+// =============================================================================
+// PLOTS - RVOL 0.56
+// =============================================================================
+plotshape(show_SAAB and sigSAAB, title="SAAB", style=shape.square, location=location.belowbar, size=size.tiny, color=color.lime, text="SAAB")
+plotshape(show_Kratos and sigKratos, title="Kratos", style=shape.square, location=location.abovebar, size=size.tiny, color=color.orange, text="Krat")
+plotshape(show_BullRVOL1x and sigBullRVOL1x, title="Bull RVOL 1x", style=shape.xcross, location=location.belowbar, size=size.small, color=color.green, text="RV1x+")
+plotshape(show_BearRVOL1x and sigBearRVOL1x, title="Bear RVOL 1x", style=shape.xcross, location=location.abovebar, size=size.small, color=color.red, text="RV1x-")
+plotshape(show_GrandSlam and sigGrandSlam, title="Grand Slam", style=shape.triangleup, location=location.belowbar, size=size.normal, color=color.aqua, text="DINGER")
+plotshape(show_MOAB and sigMOAB, title="MOAB", style=shape.triangledown, location=location.abovebar, size=size.normal, color=color.fuchsia, text="MOAB")
+plotshape(show_WTC and sigWTC, title="WTC", style=shape.diamond, location=location.top, size=size.normal, color=color.yellow, text="WTC")
+plotshape(show_Hiroshima and sigHiroshima, title="Hiroshima", style=shape.diamond, location=location.top, size=size.normal, color=color.white, text="H")
+plotshape(show_Nagasaki and sigNagasaki, title="Nagasaki (HEV)", style=shape.flag, location=location.top, size=size.normal, color=color.purple, text="N")
+
+// =============================================================================
+// PLOTS - RVOL SEQUENCE (IPSF)
+// =============================================================================
+plotshape(show_UU   and sig_bull_UU,   title="UU Signal",   location=location.belowbar, style=shape.triangleup, size=size.small, color=color.lime,   text="UU")
+plotshape(show_UUU  and sig_bull_UUU,  title="UUU Signal",  location=location.belowbar, style=shape.triangleup, size=size.small, color=color.blue,   text="UUU")
+plotshape(show_UUUU and sig_bull_UUUU, title="UUUU Signal", location=location.belowbar, style=shape.triangleup, size=size.small, color=color.orange, text="4U")
+plotshape(show_DD   and sig_bear_DD,   title="DD Signal",   location=location.abovebar, style=shape.triangledown, size=size.small, color=color.red,    text="DD")
+plotshape(show_DDD  and sig_bear_DDD,  title="DDD Signal",  location=location.abovebar, style=shape.triangledown, size=size.small, color=color.purple, text="DDD")
+plotshape(show_DDDD and sig_bear_DDDD, title="DDDD Signal", location=location.abovebar, style=shape.triangledown, size=size.small, color=color.maroon, text="4D")
+
+// =============================================================================
+// PLOTS - BACK-TO-BACK SIGNALS
+// =============================================================================
+plotshape(show_B2B_2xSAAB   and sig_B2B_2xSAAB,   title="2x SAAB",       location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.lime, 0),    text="2xSAAB",   textcolor=color.black)
+plotshape(show_B2B_2xKratos and sig_B2B_2xKratos,  title="2x Kratos",     location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.orange, 0),  text="2xKrat",   textcolor=color.black)
+plotshape(show_B2B_2xBull1x and sig_B2B_2xBull1x,  title="2x Bull 1x",    location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.green, 0),   text="2xRV1x+",  textcolor=color.white)
+plotshape(show_B2B_2xBear1x and sig_B2B_2xBear1x,  title="2x Bear 1x",    location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.red, 0),     text="2xRV1x-",  textcolor=color.white)
+plotshape(show_B2B_MidBull  and sig_B2B_MidBull,    title="B2B Mid Bull",  location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.teal, 0),    text="B2B Mid+", textcolor=color.white)
+plotshape(show_B2B_MidBear  and sig_B2B_MidBear,    title="B2B Mid Bear",  location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.maroon, 0),  text="B2B Mid-", textcolor=color.white)
+
+// =============================================================================
+// PLOTS - FAUNA (Dynamic Labels)
+// =============================================================================
+if show_FaunaBull and fn_bullActive
+    label.new(bar_index, na, text=fn_bullText, yloc=yloc.belowbar, color=fn_bullColor, textcolor=color.white, style=label.style_label_up, size=size.normal)
+
+if show_FaunaBear and fn_bearActive
+    label.new(bar_index, na, text=fn_bearText, yloc=yloc.abovebar, color=fn_bearColor, textcolor=color.white, style=label.style_label_down, size=size.normal)
+
+// =============================================================================
+// PLOTS - DISPLACEMENT (offset=-1 to mark the displaced bar)
+// =============================================================================
+plotshape(show_DispBull   and sigDispBull,   title="Disp Bull",           location=location.belowbar, color=color.new(color.green, 40),   style=shape.triangleup,   size=size.tiny, offset=-1)
+plotshape(show_DispBear   and sigDispBear,   title="Disp Bear",           location=location.abovebar, color=color.new(color.red, 40),     style=shape.triangledown, size=size.tiny, offset=-1)
+plotshape(show_CDispBull2 and sigCDispBull2, title="Consec Disp Bull 2+", location=location.belowbar, color=color.new(color.lime, 0),     style=shape.diamond,      size=size.small, offset=-1)
+plotshape(show_CDispBear2 and sigCDispBear2, title="Consec Disp Bear 2+", location=location.abovebar, color=color.new(color.fuchsia, 0),  style=shape.diamond,      size=size.small, offset=-1)
+plotshape(show_CDispBull3 and sigCDispBull3, title="Consec Disp Bull 3+", location=location.belowbar, color=color.new(color.aqua, 0),     style=shape.square,       size=size.small, offset=-1)
+plotshape(show_CDispBear3 and sigCDispBear3, title="Consec Disp Bear 3+", location=location.abovebar, color=color.new(color.orange, 0),   style=shape.square,       size=size.small, offset=-1)
+
+// =============================================================================
+// PLOTS - MOMENTUM 1 — "LONG 1" / "SHORT 1"
+// =============================================================================
+plotshape(show_Long1 and sigAddLong1,  title="LONG 1",  style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.blue, 10), text="LONG 1", textcolor=color.yellow)
+plotshape(show_Short1 and sigAddShort1, title="SHORT 1", style=shape.labeldown, location=location.abovebar, size=size.tiny, color=color.new(color.red, 10), text="SHORT 1", textcolor=color.white)
+
+// =============================================================================
+// PLOTS - MOMENTUM 2 — "LONG 2" / "SHORT 2"
+// =============================================================================
+plotshape(show_Long2 and sigAddLong2,  title="LONG 2",  style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.teal, 10), text="LONG 2", textcolor=color.yellow)
+plotshape(show_Short2 and sigAddShort2, title="SHORT 2", style=shape.labeldown, location=location.abovebar, size=size.tiny, color=color.new(color.maroon, 10), text="SHORT 2", textcolor=color.white)
+
+// =============================================================================
+// PLOTS - MOMENTUM 3/4/5 — "LONG 3" / "LONG 4" / "LONG 5" (long only)
+// =============================================================================
+plotshape(show_Long3 and sigAddLong3, title="LONG 3", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.purple, 10), text="LONG 3", textcolor=color.yellow)
+plotshape(show_Long4 and sigAddLong4, title="LONG 4", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.orange, 10), text="LONG 4", textcolor=color.white)
+plotshape(show_Long5 and sigAddLong5, title="LONG 5", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.fuchsia, 10), text="LONG 5", textcolor=color.white)
+
+// =============================================================================
+// PLOTS - HV (offset=-1 to land on confirmed bar)
+// =============================================================================
+plotshape(plot_HV1000, title="HV 1000", style=shape.circle, location=location.top, color=color.new(color.blue, 0), size=size.normal, text="1K", textcolor=color.yellow, offset=-1)
+plotshape(plot_HV500,  title="HV 500",  style=shape.circle, location=location.top, color=color.new(color.red, 0), size=size.normal, text="500", textcolor=color.silver, offset=-1)
+plotshape(plot_HV250,  title="HV 250",  style=shape.circle, location=location.top, color=color.new(color.yellow, 0), size=size.small, text="250", textcolor=color.teal, offset=-1)
+plotshape(plot_HV150,  title="HV 150",  style=shape.triangledown, location=location.bottom, color=color.new(color.aqua, 0), size=size.tiny, text="150", textcolor=color.orange, offset=-1)
+plotshape(plot_HV75,   title="HV 75",   style=shape.triangledown, location=location.bottom, color=color.new(color.purple, 0), size=size.tiny, text="75", textcolor=color.yellow, offset=-1)
+plotshape(plot_HS,     title="Hot Spot", style=shape.cross, location=location.bottom, color=color.new(color.red, 0), size=size.tiny, offset=-1)
+
+// =============================================================================
+// AGGREGATED ALERT — ONE alert() per bar, all signals in priority order
+// Every alert line is gated by its checkbox: no checkbox = no alert. Period.
+// =============================================================================
+f_add(existing, addition) =>
+    existing == "" ? addition : existing + " | " + addition
+
+if conf
+    string msg = ""
+
+    // ── TIER 1: Volume Extremes (direction-agnostic) ─────────────────
+    if show_Nagasaki  and sigNagasaki
+        msg := f_add(msg, "NAGASAKI (Highest Ever Vol)")
+    if show_Hiroshima and sigHiroshima
+        msg := f_add(msg, "HIROSHIMA (RVOL Reg MAX)")
+    if show_WTC       and sigWTC
+        msg := f_add(msg, "WTC (RVOL Reg 2x)")
+
+    // ── TIER 2: RVOL MAX (directional) ───────────────────────────────
+    if show_GrandSlam and sigGrandSlam
+        msg := f_add(msg, "GRAND SLAM (Bull RVOL MAX)")
+    if show_MOAB      and sigMOAB
+        msg := f_add(msg, "MOAB (Bear RVOL MAX)")
+
+    // ── TIER 3: Back-to-Back Heavyweights ────────────────────────────
+    if show_B2B_2xSAAB   and sig_B2B_2xSAAB
+        msg := f_add(msg, "2x SAAB (B2B Bull 56%)")
+    if show_B2B_2xKratos and sig_B2B_2xKratos
+        msg := f_add(msg, "2x KRATOS (B2B Bear 56%)")
+    if show_B2B_2xBull1x and sig_B2B_2xBull1x
+        msg := f_add(msg, "2x BULL 1x (B2B Bull 1x)")
+    if show_B2B_2xBear1x and sig_B2B_2xBear1x
+        msg := f_add(msg, "2x BEAR 1x (B2B Bear 1x)")
+    if show_B2B_MidBull  and sig_B2B_MidBull
+        msg := f_add(msg, "B2B MID BULL (SAAB+1x)")
+    if show_B2B_MidBear  and sig_B2B_MidBear
+        msg := f_add(msg, "B2B MID BEAR (Krat+1x)")
+
+    // ── TIER 4: RVOL 1x (directional) ───────────────────────────────
+    if show_BullRVOL1x and sigBullRVOL1x
+        msg := f_add(msg, "BULL RVOL 1x")
+    if show_BearRVOL1x and sigBearRVOL1x
+        msg := f_add(msg, "BEAR RVOL 1x")
+
+    // ── TIER 5: RVOL 0.56x (directional) ────────────────────────────
+    if show_SAAB   and sigSAAB
+        msg := f_add(msg, "SAAB (Bull 56%)")
+    if show_Kratos and sigKratos
+        msg := f_add(msg, "KRATOS (Bear 56%)")
+
+    // ── TIER 6: RVOL Sequences (longest first) ──────────────────────
+    if show_UUUU and sig_bull_UUUU
+        msg := f_add(msg, "UUUU (4 Bull Seq)")
+    if show_DDDD and sig_bear_DDDD
+        msg := f_add(msg, "DDDD (4 Bear Seq)")
+    if show_UUU  and sig_bull_UUU
+        msg := f_add(msg, "UUU (3 Bull Seq)")
+    if show_DDD  and sig_bear_DDD
+        msg := f_add(msg, "DDD (3 Bear Seq)")
+    if show_UU   and sig_bull_UU
+        msg := f_add(msg, "UU (2 Bull Seq)")
+    if show_DD   and sig_bear_DD
+        msg := f_add(msg, "DD (2 Bear Seq)")
+
+    // ── TIER 7: Momentum (Hybrid RVOL) ──────────────────────────────
+    if show_Long1  and sigAddLong1
+        msg := f_add(msg, "LONG 1 (Bar+Session Hot S1)")
+    if show_Short1 and sigAddShort1
+        msg := f_add(msg, "SHORT 1 (Bar+Session Hot S1)")
+    if show_Long2  and sigAddLong2
+        msg := f_add(msg, "LONG 2 (Bar+Session Hot S2)")
+    if show_Short2 and sigAddShort2
+        msg := f_add(msg, "SHORT 2 (Bar+Session Hot S2)")
+    if show_Long3  and sigAddLong3
+        msg := f_add(msg, "LONG 3 (Bar+Session Hot S3)")
+    if show_Long4  and sigAddLong4
+        msg := f_add(msg, "LONG 4 (Bar+Session Hot S4)")
+    if show_Long5  and sigAddLong5
+        msg := f_add(msg, "LONG 5 (Bar+Session Hot S5)")
+
+    // ── TIER 8: HV (highest period first) ───────────────────────────
+    if show_HV1000 and plot_HV1000
+        msg := f_add(msg, "HV 1000")
+    if show_HV500 and plot_HV500
+        msg := f_add(msg, "HV 500")
+    if show_HV250 and plot_HV250
+        msg := f_add(msg, "HV 250")
+    if show_HV150 and plot_HV150
+        msg := f_add(msg, "HV 150")
+    if show_HV75 and plot_HV75
+        msg := f_add(msg, "HV 75")
+    if show_HotSpot and plot_HS
+        msg := f_add(msg, "HOT SPOT")
+
+    // ── TIER 9: Displacement (highest streak first) ─────────────────
+    if show_CDispBull3 and sigCDispBull3
+        msg := f_add(msg, "DISP BULL 3+ (Consec FVG)")
+    if show_CDispBear3 and sigCDispBear3
+        msg := f_add(msg, "DISP BEAR 3+ (Consec FVG)")
+    if show_CDispBull2 and sigCDispBull2
+        msg := f_add(msg, "DISP BULL 2+ (Consec FVG)")
+    if show_CDispBear2 and sigCDispBear2
+        msg := f_add(msg, "DISP BEAR 2+ (Consec FVG)")
+    if show_DispBull    and sigDispBull
+        msg := f_add(msg, "DISP BULL (FVG+StdDev)")
+    if show_DispBear    and sigDispBear
+        msg := f_add(msg, "DISP BEAR (FVG+StdDev)")
+
+    // ── TIER 10: FAUNA ──────────────────────────────────────────────
+    if show_FaunaBull and fn_bullActive
+        msg := f_add(msg, "FAUNA BULL " + fn_bullText)
+    if show_FaunaBear and fn_bearActive
+        msg := f_add(msg, "FAUNA BEAR " + fn_bearText)
+
+    // ── FIRE ONE ALERT ──────────────────────────────────────────────
+    if msg != ""
+        alert("{{ticker}} {{interval}} — " + msg, alert.freq_once_per_bar_close)
+
+// =============================================================================
+// INFO PANEL — live threshold values for current TF
+// =============================================================================
+f_panelPos(s) =>
+    s == "Top Right"     ? position.top_right    :
+     s == "Top Left"      ? position.top_left     :
+     s == "Bottom Left"   ? position.bottom_left  :
+     s == "Middle Right"  ? position.middle_right :
+     s == "Middle Left"   ? position.middle_left  :
+     position.bottom_right
+
+f_panelSize(s) =>
+    s == "Tiny"   ? size.tiny   :
+     s == "Normal" ? size.normal :
+     s == "Large"  ? size.large  :
+     size.small
+
+var table infoTbl = na
+if show_InfoPanel and barstate.islast
+    if na(infoTbl)
+        infoTbl := table.new(f_panelPos(infoPanelPosition), 5, 9, bgcolor=color.new(color.black, 15), border_width=1, border_color=color.new(color.gray, 50))
+
+    sz       = f_panelSize(infoPanelTextSize)
+    modeTxt  = hyb_autoDerive ? "AUTO" : "MANUAL"
+    modeBg   = hyb_autoDerive ? color.new(color.green, 60) : color.new(color.orange, 60)
+
+    table.cell(infoTbl, 0, 0, "HEAVY WEAPONS  —  " + timeframe.period + "  —  Hiroshima = " + str.tostring(th_hiroshima, "#.##") + "  —  " + modeTxt, text_color=color.yellow, text_size=sz, bgcolor=modeBg)
+    table.merge_cells(infoTbl, 0, 0, 4, 0)
+
+    table.cell(infoTbl, 0, 1, "Tier", text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+    table.cell(infoTbl, 1, 1, "Side", text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+    table.cell(infoTbl, 2, 1, "Reg",  text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+    table.cell(infoTbl, 3, 1, "Cum",  text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+    table.cell(infoTbl, 4, 1, "Body", text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+
+    fireBg1 = (sigAddLong1 or sigAddShort1) ? color.new(color.lime, 50) : color.new(color.black, 80)
+    fireBg2 = (sigAddLong2 or sigAddShort2) ? color.new(color.lime, 50) : color.new(color.black, 80)
+    fireBg3 = sigAddLong3 ? color.new(color.lime, 50) : color.new(color.black, 80)
+    fireBg4 = sigAddLong4 ? color.new(color.lime, 50) : color.new(color.black, 80)
+    fireBg5 = sigAddLong5 ? color.new(color.lime, 50) : color.new(color.black, 80)
+
+    table.cell(infoTbl, 0, 2, "M1", text_color=color.aqua,  text_size=sz, bgcolor=fireBg1)
+    table.cell(infoTbl, 1, 2, "L/S", text_color=color.white, text_size=sz, bgcolor=fireBg1)
+    table.cell(infoTbl, 2, 2, str.tostring(hybReg1Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg1)
+    table.cell(infoTbl, 3, 2, str.tostring(hybCum1Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg1)
+    table.cell(infoTbl, 4, 2, str.tostring(hybBody1Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg1)
+
+    table.cell(infoTbl, 0, 3, "M2", text_color=color.aqua,  text_size=sz, bgcolor=fireBg2)
+    table.cell(infoTbl, 1, 3, "L/S", text_color=color.white, text_size=sz, bgcolor=fireBg2)
+    table.cell(infoTbl, 2, 3, str.tostring(hybReg2Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg2)
+    table.cell(infoTbl, 3, 3, str.tostring(hybCum2Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg2)
+    table.cell(infoTbl, 4, 3, str.tostring(hybBody2Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg2)
+
+    table.cell(infoTbl, 0, 4, "M3", text_color=color.aqua,  text_size=sz, bgcolor=fireBg3)
+    table.cell(infoTbl, 1, 4, "L",   text_color=color.white, text_size=sz, bgcolor=fireBg3)
+    table.cell(infoTbl, 2, 4, str.tostring(hybReg3Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg3)
+    table.cell(infoTbl, 3, 4, str.tostring(hybCum3Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg3)
+    table.cell(infoTbl, 4, 4, str.tostring(hybBody3Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg3)
+
+    table.cell(infoTbl, 0, 5, "M4", text_color=color.aqua,  text_size=sz, bgcolor=fireBg4)
+    table.cell(infoTbl, 1, 5, "L",   text_color=color.white, text_size=sz, bgcolor=fireBg4)
+    table.cell(infoTbl, 2, 5, str.tostring(hybReg4Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg4)
+    table.cell(infoTbl, 3, 5, str.tostring(hybCum4Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg4)
+    table.cell(infoTbl, 4, 5, str.tostring(hybBody4Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg4)
+
+    table.cell(infoTbl, 0, 6, "M5", text_color=color.aqua,  text_size=sz, bgcolor=fireBg5)
+    table.cell(infoTbl, 1, 6, "L",   text_color=color.white, text_size=sz, bgcolor=fireBg5)
+    table.cell(infoTbl, 2, 6, str.tostring(hybReg5Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg5)
+    table.cell(infoTbl, 3, 6, str.tostring(hybCum5Eff,  "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg5)
+    table.cell(infoTbl, 4, 6, str.tostring(hybBody5Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg5)
+
+    table.cell(infoTbl, 0, 7, "Bar RegRatio: " + str.tostring(hybRegRatio, "#.##") + "   Sess CumRatio: " + str.tostring(hybCumRatio, "#.##") + "   BodyRat: " + str.tostring(hybBodyRat, "0.00"), text_color=color.yellow, text_size=sz, bgcolor=color.new(color.navy, 60))
+    table.merge_cells(infoTbl, 0, 7, 4, 7)
+
+    table.cell(infoTbl, 0, 8, "Reg=bar must EXCEED | Cum=session must EXCEED | Body=body/range | green row = fired this bar", text_color=color.gray, text_size=sz, bgcolor=color.new(color.black, 30))
+    table.merge_cells(infoTbl, 0, 8, 4, 8)
+
+// =============================================================================
+// DATA WINDOW — silent diagnostics (hover any bar to inspect)
+// =============================================================================
+plot(th_hiroshima, "Hiroshima Threshold (TF)", display=display.data_window)
+plot(hybRegRatio,  "Bar RegRatio (live)",      display=display.data_window)
+plot(hybCumRatio,  "Sess CumRatio (live)",     display=display.data_window)
+plot(hybBodyRat,   "Bar BodyRat (live)",       display=display.data_window)
+
+plot(hybReg1Eff,  "M1 Reg (eff)",  display=display.data_window)
+plot(hybCum1Eff,  "M1 Cum (eff)",  display=display.data_window)
+plot(hybBody1Eff, "M1 Body (eff)", display=display.data_window)
+plot(hybReg2Eff,  "M2 Reg (eff)",  display=display.data_window)
+plot(hybCum2Eff,  "M2 Cum (eff)",  display=display.data_window)
+plot(hybBody2Eff, "M2 Body (eff)", display=display.data_window)
+plot(hybReg3Eff,  "M3 Reg (eff)",  display=display.data_window)
+plot(hybCum3Eff,  "M3 Cum (eff)",  display=display.data_window)
+plot(hybBody3Eff, "M3 Body (eff)", display=display.data_window)
+plot(hybReg4Eff,  "M4 Reg (eff)",  display=display.data_window)
+plot(hybCum4Eff,  "M4 Cum (eff)",  display=display.data_window)
+plot(hybBody4Eff, "M4 Body (eff)", display=display.data_window)
+plot(hybReg5Eff,  "M5 Reg (eff)",  display=display.data_window)
+plot(hybCum5Eff,  "M5 Cum (eff)",  display=display.data_window)
+plot(hybBody5Eff, "M5 Body (eff)", display=display.data_window)
