@@ -1008,38 +1008,34 @@ bool sigODBear=conf and sessionBarCount<=od_max_bars and od_fvg_bear and disp_pr
 bool sigHV75=conf and volume>=ta.highest(volume,75)[1], bool sigHV150=conf and volume>=ta.highest(volume,hv150_len)[1]
 bool sigHV500=conf and volume>=ta.highest(volume,500)[1], bool sigHV1000=conf and volume>=ta.highest(volume,1000)[1]
 
-// Combo Chain
-int cc_win_bull=0
-bool cc_pbj_bull=false
+// Combo Chain — aligned with SQUARIFY reference (fixes off-by-one on FVG combo events)
+int cc_win_bull=0, bool cc_pbj_bull=false
 for i=0 to cc_window-1
-    bool hv2=nz(comboSet3_Bull[i]) or nz(comboSet4_Bull[i])
-    if i>=1
-        if nz(comboSet1_Bull[i-1]) or nz(comboSet2_Bull[i-1])
-            hv2:=true
-    if hv2
+    if nz(csNew1_Bull[i]) or nz(csNew2_Bull[i])
         cc_win_bull+=1
     if nz(sigBullPBJ[i]) or nz(sigBullPB[i])
         cc_pbj_bull:=true
-int cc_win_bear=0
-bool cc_pbj_bear=false
+for i=0 to math.max(cc_window-2, 0)
+    if i+1 <= cc_window-1 and nz(csNew3_Bull[i])
+        cc_win_bull-=1
+int cc_win_bear=0, bool cc_pbj_bear=false
 for i=0 to cc_window-1
-    bool hv2=nz(comboSet3_Bear[i]) or nz(comboSet4_Bear[i])
-    if i>=1
-        if nz(comboSet1_Bear[i-1]) or nz(comboSet2_Bear[i-1])
-            hv2:=true
-    if hv2
+    if nz(csNew1_Bear[i]) or nz(csNew2_Bear[i])
         cc_win_bear+=1
     if nz(sigBearPBJ[i]) or nz(sigBearPB[i])
         cc_pbj_bear:=true
+for i=0 to math.max(cc_window-2, 0)
+    if i+1 <= cc_window-1 and nz(csNew3_Bear[i])
+        cc_win_bear-=1
 
 var bool cc_bull_active=false, var bool cc_bear_active=false
 if conf
-    if not (comboSet1_Bull or comboSet2_Bull or comboSet3_Bull or comboSet4_Bull)
+    if not (csNew1_Bull or csNew2_Bull)
         cc_bull_active:=false
     else if not cc_bull_active and cc_win_bull>=cc_min_hits and cc_pbj_bull
         cc_bull_active:=true
 if conf
-    if not (comboSet1_Bear or comboSet2_Bear or comboSet3_Bear or comboSet4_Bear)
+    if not (csNew1_Bear or csNew2_Bear)
         cc_bear_active:=false
     else if not cc_bear_active and cc_win_bear>=cc_min_hits and cc_pbj_bear
         cc_bear_active:=true
