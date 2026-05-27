@@ -8,55 +8,55 @@ import TradingView/ta/7 as tv_ta
 // =============================================================================
 grp_global = "★ GLOBAL PLOT/ALERT TOGGLES ★"
 
-show_SAAB       = input.bool(true, "SAAB", group=grp_global, inline="rv1")
-show_Kratos     = input.bool(true, "Kratos", group=grp_global, inline="rv1")
-show_BullRVOL1x = input.bool(true, "Bull RVOL 1x", group=grp_global, inline="rv1")
-show_BearRVOL1x = input.bool(true, "Bear RVOL 1x", group=grp_global, inline="rv1")
-show_GrandSlam  = input.bool(true, "Grand Slam", group=grp_global, inline="rv2")
-show_MOAB       = input.bool(false, "MOAB", group=grp_global, inline="rv2")
-show_WTC        = input.bool(true, "WTC", group=grp_global, inline="rv2")
-show_Hiroshima  = input.bool(true, "Hiroshima", group=grp_global, inline="rv2")
-show_Nagasaki   = input.bool(true, "Nagasaki", group=grp_global, inline="rv3")
+show_SAAB       = input.bool(true, "SAAB", group=grp_global, inline="rv1", tooltip="SAAB: Bullish RVOL 0.56.\nConditions: bar[0] close > open, normalizedPrice spike > SMA diff, normalizedPrice ∈ [0.56×RVOL1x_th, RVOL1x_th).\nGate: requires LONG on same bar.")
+show_Kratos     = input.bool(true, "Kratos", group=grp_global, inline="rv1", tooltip="Kratos: Bearish RVOL 0.56.\nConditions: bar[0] close < open, normalizedPrice spike > SMA diff, normalizedPrice ∈ [0.56×RVOL1x_th, RVOL1x_th).\nGate: requires SHORT on same bar.")
+show_BullRVOL1x = input.bool(true, "Bull RVOL 1x", group=grp_global, inline="rv1", tooltip="Bull RVOL 1x: Bullish RVOL 1x.\nConditions: close > open, spike > SMA, normalizedPrice ∈ [RVOL1x_th, GS/MOAB_th).\nGate: requires LONG on same bar.")
+show_BearRVOL1x = input.bool(true, "Bear RVOL 1x", group=grp_global, inline="rv1", tooltip="Bear RVOL 1x: Bearish RVOL 1x.\nConditions: close < open, spike > SMA, normalizedPrice ∈ [RVOL1x_th, GS/MOAB_th).\nGate: requires SHORT on same bar.")
+show_GrandSlam  = input.bool(true, "Grand Slam", group=grp_global, inline="rv2", tooltip="Grand Slam: Bullish RVOL extreme.\nConditions: close > open, spike > SMA, normalizedPrice ≥ GS/MOAB_th.\nGate: requires LONG on same bar.")
+show_MOAB       = input.bool(false, "MOAB", group=grp_global, inline="rv2", tooltip="MOAB: Bearish RVOL extreme.\nConditions: close < open, spike > SMA, normalizedPrice ≥ GS/MOAB_th.\nGate: requires SHORT on same bar.")
+show_WTC        = input.bool(true, "WTC", group=grp_global, inline="rv2", tooltip="WTC: RVOL Reg@Time mid-tier.\nConditions: relVolRatio ∈ (WTC_th, Hiroshima_th].\nGate: requires LONG or SHORT on same bar.")
+show_Hiroshima  = input.bool(true, "Hiroshima", group=grp_global, inline="rv2", tooltip="Hiroshima: RVOL Reg@Time top-tier.\nConditions: relVolRatio > Hiroshima_th.\nGate: requires LONG or SHORT on same bar.")
+show_Nagasaki   = input.bool(true, "Nagasaki", group=grp_global, inline="rv3", tooltip="Nagasaki: All-time high volume.\nConditions: bar[0] volume > all prior bars' max volume.\nGate: requires LONG or SHORT on same bar.")
 
-show_Long1      = input.bool(true, "LONG 1", group=grp_global, inline="hy1")
-show_Short1     = input.bool(true, "SHORT 1", group=grp_global, inline="hy1")
-show_Long2      = input.bool(true, "LONG 2", group=grp_global, inline="hy2")
-show_Short2     = input.bool(true, "SHORT 2", group=grp_global, inline="hy2")
-show_Long3      = input.bool(true, "LONG 3", group=grp_global, inline="hy3")
-show_Long4      = input.bool(true, "LONG 4", group=grp_global, inline="hy3")
-show_Long5      = input.bool(true, "LONG 5", group=grp_global, inline="hy3")
+show_Long1      = input.bool(true, "LONG 1", group=grp_global, inline="hy1", tooltip="LONG 1 (Momentum tier 1): Bullish hybrid RVOL.\nConditions: close > open, hybRegRatio ≥ M1_Reg, hybCumRatio ≥ M1_Cum, hybBodyRat ≥ M1_Body.\nNo gate — this IS the gate for other signals.")
+show_Short1     = input.bool(true, "SHORT 1", group=grp_global, inline="hy1", tooltip="SHORT 1 (Momentum tier 1): Bearish hybrid RVOL.\nConditions: close < open, hybRegRatio ≥ M1_Reg, hybCumRatio ≥ M1_Cum, hybBodyRat ≥ M1_Body.\nNo gate — this IS the gate for other signals.")
+show_Long2      = input.bool(true, "LONG 2", group=grp_global, inline="hy2", tooltip="LONG 2 (Momentum tier 2): Bullish hybrid RVOL.\nConditions: close > open, hybRegRatio ≥ M2_Reg, hybCumRatio ≥ M2_Cum, hybBodyRat ≥ M2_Body, AND NOT LONG 1.\nNo gate.")
+show_Short2     = input.bool(true, "SHORT 2", group=grp_global, inline="hy2", tooltip="SHORT 2 (Momentum tier 2): Bearish hybrid RVOL.\nConditions: close < open, hybRegRatio ≥ M2_Reg, hybCumRatio ≥ M2_Cum, hybBodyRat ≥ M2_Body, AND NOT SHORT 1.\nNo gate.")
+show_Long3      = input.bool(true, "LONG 3", group=grp_global, inline="hy3", tooltip="LONG 3 (Momentum tier 3): Bullish hybrid RVOL.\nConditions: close > open, hybRegRatio ≥ M3_Reg, hybCumRatio ≥ M3_Cum, hybBodyRat ≥ M3_Body, AND NOT LONG 1/2.\nNo gate.")
+show_Long4      = input.bool(true, "LONG 4", group=grp_global, inline="hy3", tooltip="LONG 4 (Momentum tier 4): Bullish only.\nConditions: hybRegRatio ≥ M4_Reg, hybCumRatio ≥ M4_Cum, hybBodyRat ≥ M4_Body, AND NOT LONG 1/2/3.\nNo gate.")
+show_Long5      = input.bool(true, "LONG 5", group=grp_global, inline="hy3", tooltip="LONG 5 (Momentum tier 5): Bullish only.\nConditions: hybRegRatio ≥ M5_Reg, hybCumRatio ≥ M5_Cum, hybBodyRat ≥ M5_Body, AND NOT LONG 1/2/3/4.\nNo gate.")
 
-show_HV150      = input.bool(true, "HV 150", group=grp_global, inline="hv1")
-show_HV250      = input.bool(true, "HV 250", group=grp_global, inline="hv1")
-show_HV350      = input.bool(true, "HV 350", group=grp_global, inline="hv1")
-show_HV500      = input.bool(true, "HV 500", group=grp_global, inline="hv2")
-show_HV1000     = input.bool(true, "HV 1000", group=grp_global, inline="hv2")
+show_HV150      = input.bool(true, "HV 150", group=grp_global, inline="hv1", tooltip="HV 150: High Volume 150.\nConditions: volume[1] == highest(volume, 150)[1], NOT HV250+.\nGate: requires LONG[1].\nOffset: −1 (plots on bar[1]).")
+show_HV250      = input.bool(true, "HV 250", group=grp_global, inline="hv1", tooltip="HV 250: High Volume 250.\nConditions: volume[1] == highest(volume, 250)[1], NOT HV350+.\nGate: requires LONG[1].\nOffset: −1.")
+show_HV350      = input.bool(true, "HV 350", group=grp_global, inline="hv1", tooltip="HV 350: High Volume 350.\nConditions: volume[1] == highest(volume, 350)[1], NOT HV500+.\nGate: requires LONG[1].\nOffset: −1.")
+show_HV500      = input.bool(true, "HV 500", group=grp_global, inline="hv2", tooltip="HV 500: High Volume 500.\nConditions: volume[1] == highest(volume, 500)[1], NOT HV1000.\nGate: requires LONG[1].\nOffset: −1.")
+show_HV1000     = input.bool(true, "HV 1000", group=grp_global, inline="hv2", tooltip="HV 1000: High Volume 1000.\nConditions: volume[1] == highest(volume, 1000)[1].\nGate: requires LONG[1].\nOffset: −1.")
 
 grp_global2 = "★ GLOBAL TOGGLES — DISP / SEQ / B2B ★"
 
-show_DispBull        = input.bool(true, "Disp Bull", group=grp_global2, inline="di1")
-show_DispBear        = input.bool(true, "Disp Bear", group=grp_global2, inline="di1")
-show_CDispBull2      = input.bool(true, "Consec Disp Bull 2+", group=grp_global2, inline="di2")
-show_CDispBear2      = input.bool(true, "Consec Disp Bear 2+", group=grp_global2, inline="di2")
-show_CDispBull3      = input.bool(true, "Consec Disp Bull 3+", group=grp_global2, inline="di3")
-show_CDispBear3      = input.bool(true, "Consec Disp Bear 3+", group=grp_global2, inline="di3")
+show_DispBull        = input.bool(true, "Disp Bull", group=grp_global2, inline="di1", tooltip="Displacement Bull: Large bullish bar[1] + bullish FVG bar[0].\nConditions: bar[1] range > StdDev × standalone multiplier, close[1] > open[1], low > high[2].\nOffset: −1.")
+show_DispBear        = input.bool(true, "Disp Bear", group=grp_global2, inline="di1", tooltip="Displacement Bear: Large bearish bar[1] + bearish FVG bar[0].\nConditions: bar[1] range > StdDev × standalone multiplier, close[1] < open[1], high < low[2].\nOffset: −1.")
+show_CDispBull2      = input.bool(true, "Consec Disp Bull 2+", group=grp_global2, inline="di2", tooltip="Consecutive Displacement Bull 2+: 2 or more back-to-back bullish displacements.\nConditions: same as Disp Bull but StdDev × CDisp2 multiplier, streak ≥ 2.\nOffset: −1.")
+show_CDispBear2      = input.bool(true, "Consec Disp Bear 2+", group=grp_global2, inline="di2", tooltip="Consecutive Displacement Bear 2+: 2 or more back-to-back bearish displacements.\nConditions: same as Disp Bear but StdDev × CDisp2 multiplier, streak ≥ 2.\nOffset: −1.")
+show_CDispBull3      = input.bool(true, "Consec Disp Bull 3+", group=grp_global2, inline="di3", tooltip="Consecutive Displacement Bull 3+: 3 or more back-to-back bullish displacements.\nConditions: StdDev × CDisp3 multiplier, streak ≥ 3.\nOffset: −1.")
+show_CDispBear3      = input.bool(true, "Consec Disp Bear 3+", group=grp_global2, inline="di3", tooltip="Consecutive Displacement Bear 3+: 3 or more back-to-back bearish displacements.\nConditions: StdDev × CDisp3 multiplier, streak ≥ 3.\nOffset: −1.")
 
-show_UU   = input.bool(true, "UU", group=grp_global2, inline="sq1")
-show_UUU  = input.bool(true, "UUU", group=grp_global2, inline="sq1")
-show_UUUU = input.bool(true, "UUUU", group=grp_global2, inline="sq1")
-show_DD   = input.bool(true, "DD", group=grp_global2, inline="sq2")
-show_DDD  = input.bool(true, "DDD", group=grp_global2, inline="sq2")
-show_DDDD = input.bool(true, "DDDD", group=grp_global2, inline="sq2")
+show_UU   = input.bool(true, "UU", group=grp_global2, inline="sq1", tooltip="UU: 2 consecutive LONG bars.\nConditions: LONG fired on bar[0] AND bar[1], running sum ≥ SAAB/Kratos threshold.\nGate: requires displacement (StdDev × Seq multiplier) on bar[0] or bar[1].")
+show_UUU  = input.bool(true, "UUU", group=grp_global2, inline="sq1", tooltip="UUU: 3 consecutive LONG bars.\nConditions: LONG on bar[0..2], sum ≥ SAAB/Krat threshold OR 2+ displacements in streak.\nGate: requires displacement.")
+show_UUUU = input.bool(true, "UUUU", group=grp_global2, inline="sq1", tooltip="UUUU: 4 consecutive LONG bars.\nConditions: LONG on bar[0..3], sum ≥ SAAB/Krat threshold OR 2+ displacements in streak.\nGate: requires displacement.")
+show_DD   = input.bool(true, "DD", group=grp_global2, inline="sq2", tooltip="DD: 2 consecutive SHORT bars.\nConditions: SHORT fired on bar[0] AND bar[1], sum ≥ SAAB/Krat threshold.\nGate: requires displacement (StdDev × Seq multiplier).")
+show_DDD  = input.bool(true, "DDD", group=grp_global2, inline="sq2", tooltip="DDD: 3 consecutive SHORT bars.\nConditions: SHORT on bar[0..2], sum ≥ threshold OR 2+ displacements.\nGate: requires displacement.")
+show_DDDD = input.bool(true, "DDDD", group=grp_global2, inline="sq2", tooltip="DDDD: 4 consecutive SHORT bars.\nConditions: SHORT on bar[0..3], sum ≥ threshold OR 2+ displacements.\nGate: requires displacement.")
 
-show_B2B_2xSAAB       = input.bool(true, "2x SAAB", group=grp_global2, inline="b2b1")
-show_B2B_2xKratos     = input.bool(true, "2x Kratos", group=grp_global2, inline="b2b1")
-show_B2B_2xBull1x     = input.bool(true, "2x Bull 1x", group=grp_global2, inline="b2b2")
-show_B2B_2xBear1x     = input.bool(true, "2x Bear 1x", group=grp_global2, inline="b2b2")
-show_B2B_MidBull      = input.bool(true, "B2B Mid Bull", group=grp_global2, inline="b2b3")
-show_B2B_MidBear      = input.bool(true, "B2B Mid Bear", group=grp_global2, inline="b2b3")
+show_B2B_2xSAAB       = input.bool(true, "2x SAAB", group=grp_global2, inline="b2b1", tooltip="2x SAAB: Back-to-back SAAB.\nConditions: SAAB on bar[0] AND SAAB on bar[1].\nGate: requires HV150+ or displacement on bar[0] or bar[1].")
+show_B2B_2xKratos     = input.bool(true, "2x Kratos", group=grp_global2, inline="b2b1", tooltip="2x Kratos: Back-to-back Kratos.\nConditions: Kratos on bar[0] AND Kratos on bar[1].\nGate: requires HV150+ or displacement.")
+show_B2B_2xBull1x     = input.bool(true, "2x Bull 1x", group=grp_global2, inline="b2b2", tooltip="2x Bull RVOL 1x: Back-to-back Bull RVOL 1x.\nConditions: BullRVOL1x on bar[0] AND bar[1].\nGate: requires HV150+ or displacement.")
+show_B2B_2xBear1x     = input.bool(true, "2x Bear 1x", group=grp_global2, inline="b2b2", tooltip="2x Bear RVOL 1x: Back-to-back Bear RVOL 1x.\nConditions: BearRVOL1x on bar[0] AND bar[1].\nGate: requires HV150+ or displacement.")
+show_B2B_MidBull      = input.bool(true, "B2B Mid Bull", group=grp_global2, inline="b2b3", tooltip="B2B Mid Bull: Two different bullish RVOL tiers on consecutive bars (e.g. SAAB+BullRVOL1x).\nGate: requires HV150+ or displacement.")
+show_B2B_MidBear      = input.bool(true, "B2B Mid Bear", group=grp_global2, inline="b2b3", tooltip="B2B Mid Bear: Two different bearish RVOL tiers on consecutive bars (e.g. Kratos+BearRVOL1x).\nGate: requires HV150+ or displacement.")
 
-show_FaunaBull = input.bool(true, "FAUNA Bullish", group=grp_global2, inline="fn1")
-show_FaunaBear = input.bool(true, "FAUNA Bearish", group=grp_global2, inline="fn1")
+show_FaunaBull = input.bool(true, "FAUNA Bullish", group=grp_global2, inline="fn1", tooltip="FAUNA Bull: Named bullish pattern combo (MadBull+TA/GG/TR/ES/GDR, MB+TA/GG/TR/ES/GDR, etc.).\nGate: requires displacement (StdDev × Seq multiplier) AND LONG on same bar.")
+show_FaunaBear = input.bool(true, "FAUNA Bearish", group=grp_global2, inline="fn1", tooltip="FAUNA Bear: Named bearish pattern combo.\nGate: requires displacement (StdDev × Seq multiplier) AND SHORT on same bar.")
 
 grp_info = "★ INFO PANEL (Live Threshold Values) ★"
 show_InfoPanel     = input.bool(true,           "Show Info Panel",   group=grp_info, inline="ip1")
@@ -67,14 +67,14 @@ infoPanelTextSize  = input.string("Small",      "Text Size",         group=grp_i
 // RVOL 0.56 SETTINGS
 // =============================================================================
 groupBullBear = "RVOL - Bull/Bear Calculation"
-bb_avgLength  = input.int(30, "Lookback Length", minval=1, group=groupBullBear)
-bb_smaLength  = input.int(20, "SMA Length", minval=1, group=groupBullBear)
+bb_avgLength  = input.int(30, "Lookback Length", minval=1, group=groupBullBear, tooltip="Lookback for normalizing price spike and volume. Used by SAAB/Kratos/RVOL1x/GrandSlam/MOAB.")
+bb_smaLength  = input.int(20, "SMA Length", minval=1, group=groupBullBear, tooltip="SMA period for the positive diff filter. Bar's normalized diff must exceed this SMA to qualify.")
 
 groupReg = "RVOL - Reg @ Time Calculation"
-reg_anchorTimeframe  = input.timeframe("", "Anchor Timeframe (blank = chart)", group=groupReg)
-reg_length           = input.int(30, "Length", minval=1, group=groupReg)
-reg_calculationMode  = input.string("Cumulative", "Calculation Mode", options=["Cumulative", "Regular"], group=groupReg)
-reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg)
+reg_anchorTimeframe  = input.timeframe("", "Anchor Timeframe (blank = chart)", group=groupReg, tooltip="Anchor timeframe for RVOL Reg@Time. Blank = chart timeframe. Used by Pentagon/WTC/Hiroshima and Hybrid Momentum.")
+reg_length           = input.int(30, "Length", minval=1, group=groupReg, tooltip="Lookback length for tv_ta.relativeVolume() — how many anchor-period sessions to average.")
+reg_calculationMode  = input.string("Cumulative", "Calculation Mode", options=["Cumulative", "Regular"], group=groupReg, tooltip="Cumulative: volume since session open vs avg. Regular: per-bar volume vs avg at same time.")
+reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg, tooltip="When ON, adjusts the current unconfirmed bar's volume estimate for partial-bar comparison.")
 
 groupHybrid = "RVOL - Hybrid Regime Settings"
 
@@ -101,22 +101,22 @@ hyb_addCum5 = input.float(3.0, "Momentum 5 Cum Floor", minval=0.5, step=0.1, gro
 hyb_bodyRat5   = input.float(0.65, "Momentum 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
 
 groupNaga = "RVOL - Nagasaki"
-enableNagasaki = input.bool(true, "Enable Nagasaki", group=groupNaga)
+enableNagasaki = input.bool(true, "Enable Nagasaki", group=groupNaga, tooltip="Nagasaki: fires when current bar's volume exceeds ALL prior bars' volume (all-time high). Gated by LONG or SHORT.")
 
 // =============================================================================
 // SEQUENCE — BAR LOWER THRESHOLDS (min 0.5, no max)
 // =============================================================================
 grp_seq = "Sequence — Bar Lower Thresholds"
-th_low_UU_DD     = input.float(0.5, step=0.1, title="Lower Threshold (UU / DD)",     minval=0.5, group=grp_seq)
-th_low_UUU_DDD   = input.float(0.5, step=0.1, title="Lower Threshold (UUU / DDD)",   minval=0.5, group=grp_seq)
-th_low_UUUU_DDDD = input.float(0.5, step=0.1, title="Lower Threshold (UUUU / DDDD)", minval=0.5, group=grp_seq)
+th_low_UU_DD     = input.float(0.5, step=0.1, title="Lower Threshold (UU / DD)",     minval=0.5, group=grp_seq, tooltip="Minimum bar lower bound for each bar in a UU/DD sequence. Bars with normalizedPrice below this are excluded from the streak.")
+th_low_UUU_DDD   = input.float(0.5, step=0.1, title="Lower Threshold (UUU / DDD)",   minval=0.5, group=grp_seq, tooltip="Minimum bar lower bound for UUU/DDD sequences.")
+th_low_UUUU_DDDD = input.float(0.5, step=0.1, title="Lower Threshold (UUUU / DDDD)", minval=0.5, group=grp_seq, tooltip="Minimum bar lower bound for UUUU/DDDD sequences.")
 
 // =============================================================================
 // DISPLACEMENT — PER-CONSUMER StdDev THRESHOLDS
 // =============================================================================
 grp_disp = "Displacement — StdDev Thresholds"
-i_disp_type          = input.string("Open to Close", "Range Type", options = ['Open to Close', 'High to Low'], group=grp_disp)
-i_std_len            = input.int(100, minval = 1, title = "Std Dev Length", group=grp_disp)
+i_disp_type          = input.string("Open to Close", "Range Type", options = ['Open to Close', 'High to Low'], group=grp_disp, tooltip="How bar range is measured for Singles displacement: |open−close| or high−low.")
+i_std_len            = input.int(100, minval = 1, title = "Std Dev Length", group=grp_disp, tooltip="Lookback length for standard deviation of bar ranges in Singles displacement engine.")
 i_disp_std_standalone = input.float(7.5, "Disp Bull/Bear — StdDev Min",     minval=0, step=0.1, group=grp_disp, tooltip="StdDev multiplier for standalone Displacement Bull/Bear plots. Higher = fewer signals.")
 i_disp_std_cdisp2    = input.float(5.0, "Consec Disp 2+ — StdDev Min",     minval=0, step=0.1, group=grp_disp, tooltip="StdDev multiplier for consecutive displacement 2+ streak.")
 i_disp_std_cdisp3    = input.float(3.0, "Consec Disp 3+ — StdDev Min",     minval=0, step=0.1, group=grp_disp, tooltip="StdDev multiplier for consecutive displacement 3+ streak.")
@@ -133,25 +133,30 @@ fn_bearColor    = input.color(color.new(#FF2020, 0), "▼ Bear Color", group=fn_
 // HCT COMBO ELIGIBILITY (15) — No-Disp combos route to Bull/Bear by direction
 // =============================================================================
 grp_hct = "★ HCT COMBO ELIGIBILITY (15) ★"
-en_HYYBull    = input.bool(true, "HYY Bull",     group=grp_hct, inline="hyy")
-en_HYYBear    = input.bool(true, "HYY Bear",     group=grp_hct, inline="hyy")
-en_HYYNoDisp  = input.bool(true, "HYY No-Disp",  group=grp_hct, inline="hyy")
-en_HNBull     = input.bool(true, "HN Bull",      group=grp_hct, inline="hn")
-en_HNBear     = input.bool(true, "HN Bear",      group=grp_hct, inline="hn")
-en_HNNoDisp   = input.bool(true, "HN No-Disp",   group=grp_hct, inline="hn")
-en_HNVBull    = input.bool(true, "HNV Bull",     group=grp_hct, inline="hnv")
-en_HNVBear    = input.bool(true, "HNV Bear",     group=grp_hct, inline="hnv")
-en_HNVNoDisp  = input.bool(true, "HNV No-Disp",  group=grp_hct, inline="hnv")
-en_HTBull     = input.bool(true, "HT Bull",      group=grp_hct, inline="ht")
-en_HTBear     = input.bool(true, "HT Bear",      group=grp_hct, inline="ht")
-en_HTNoDisp   = input.bool(true, "HT No-Disp",   group=grp_hct, inline="ht")
-en_NHx2Bull   = input.bool(true, "NHx2 Bull",    group=grp_hct, inline="nhx")
-en_NHx2Bear   = input.bool(true, "NHx2 Bear",    group=grp_hct, inline="nhx")
-en_NHx2NoDisp = input.bool(true, "NHx2 No-Disp", group=grp_hct, inline="nhx")
+en_HYYBull    = input.bool(true, "HYY Bull",     group=grp_hct, inline="hyy", tooltip="Heavy Yin-Yang Bull: (BullRVOL1x OR GrandSlam OR BearRVOL1x OR MOAB) AND (Pentagon OR WTC OR Hiroshima) AND HCT bullish displacement.\nMaster gate: must coincide with any Singles signal.")
+en_HYYBear    = input.bool(true, "HYY Bear",     group=grp_hct, inline="hyy", tooltip="Heavy Yin-Yang Bear: (BullRVOL1x OR GrandSlam OR BearRVOL1x OR MOAB) AND (Pentagon OR WTC OR Hiroshima) AND HCT bearish displacement.\nMaster gate: must coincide with any Singles signal.")
+en_HYYNoDisp  = input.bool(true, "HYY No-Disp",  group=grp_hct, inline="hyy", tooltip="Heavy Yin-Yang No-Disp: Same base as HYY but NO HCT displacement.\nDirection: routes to Bull if groupA_Bull (BullRVOL1x/GrandSlam), Bear if groupA_Bear (BearRVOL1x/MOAB).\nMaster gate: coincident Singles signal.")
+en_HNBull     = input.bool(true, "HN Bull",      group=grp_hct, inline="hn", tooltip="Heavy Nagasaki Bull: Nagasaki AND (BullRVOL1x OR GrandSlam OR BearRVOL1x OR MOAB) AND HCT bullish displacement.\nMaster gate: coincident Singles signal.")
+en_HNBear     = input.bool(true, "HN Bear",      group=grp_hct, inline="hn", tooltip="Heavy Nagasaki Bear: Nagasaki AND (BullRVOL1x OR GrandSlam OR BearRVOL1x OR MOAB) AND HCT bearish displacement.\nMaster gate: coincident Singles signal.")
+en_HNNoDisp   = input.bool(true, "HN No-Disp",   group=grp_hct, inline="hn", tooltip="Heavy Nagasaki No-Disp: Nagasaki AND groupA, NO HCT displacement.\nDirection: groupA_Bull → Bull, groupA_Bear → Bear.\nMaster gate: coincident Singles signal.")
+en_HNVBull    = input.bool(true, "HNV Bull",     group=grp_hct, inline="hnv", tooltip="Heavy Nagasaki Vol Bull: Nagasaki AND (Pentagon OR WTC OR Hiroshima) AND HCT bullish displacement.\nMaster gate: coincident Singles signal.")
+en_HNVBear    = input.bool(true, "HNV Bear",     group=grp_hct, inline="hnv", tooltip="Heavy Nagasaki Vol Bear: Nagasaki AND (Pentagon OR WTC OR Hiroshima) AND HCT bearish displacement.\nMaster gate: coincident Singles signal.")
+en_HNVNoDisp  = input.bool(true, "HNV No-Disp",  group=grp_hct, inline="hnv", tooltip="Heavy Nagasaki Vol No-Disp: Nagasaki AND groupB, NO HCT displacement.\nDirection: close > open → Bull, close < open → Bear.\nMaster gate: coincident Singles signal.")
+en_HTBull     = input.bool(true, "HT Bull",      group=grp_hct, inline="ht", tooltip="Heavy Trident Bull: Nagasaki AND groupA AND (Pentagon OR WTC OR Hiroshima) AND HCT bullish displacement.\nMaster gate: coincident Singles signal.")
+en_HTBear     = input.bool(true, "HT Bear",      group=grp_hct, inline="ht", tooltip="Heavy Trident Bear: Nagasaki AND groupA AND groupB AND HCT bearish displacement.\nMaster gate: coincident Singles signal.")
+en_HTNoDisp   = input.bool(true, "HT No-Disp",   group=grp_hct, inline="ht", tooltip="Heavy Trident No-Disp: Nagasaki AND groupA AND groupB, NO HCT displacement.\nDirection: groupA_Bull → Bull, groupA_Bear → Bear.\nMaster gate: coincident Singles signal.")
+en_NHx2Bull   = input.bool(true, "NHx2 Bull",    group=grp_hct, inline="nhx", tooltip="Neutral Heavy x2 Bull: 2+ of (Pentagon, WTC, Hiroshima) AND HCT bullish displacement.\nMaster gate: coincident Singles signal.")
+en_NHx2Bear   = input.bool(true, "NHx2 Bear",    group=grp_hct, inline="nhx", tooltip="Neutral Heavy x2 Bear: 2+ of (Pentagon, WTC, Hiroshima) AND HCT bearish displacement.\nMaster gate: coincident Singles signal.")
+en_NHx2NoDisp = input.bool(true, "NHx2 No-Disp", group=grp_hct, inline="nhx", tooltip="Neutral Heavy x2 No-Disp: 2+ of (Pentagon, WTC, Hiroshima), NO HCT displacement.\nDirection: close > open → Bull, close < open → Bear.\nMaster gate: coincident Singles signal.")
+
+show_HCTBull      = input.bool(true, "HCT Bull",   group=grp_hct, inline="hctm", tooltip="Master HCT Bull plot: OR of all eligible bull HCT combos (including no-disp routed bull).\nGate: must have ANY Singles detection signal on same bar.")
+show_HCTBear      = input.bool(true, "HCT Bear",   group=grp_hct, inline="hctm", tooltip="Master HCT Bear plot: OR of all eligible bear HCT combos (including no-disp routed bear).\nGate: must have ANY Singles detection signal on same bar.")
+show_PentHV1K     = input.bool(true, "Pent+HV1K",  group=grp_hct, inline="pent", tooltip="Pentagon + HV1K: RVOL Reg@Time in Pentagon range (≥ 1x_th AND ≤ WTC_th) AND bar[0] volume == highest(volume, 1000).\nSame candle. No additional gate.")
+show_PentHV500D   = input.bool(true, "Pent+HV500+D", group=grp_hct, inline="pent", tooltip="Pentagon + HV500+ + Disp: Pentagon AND volume == highest(volume, 500) AND bar[0] range > 5× StdDev of recent ranges.\nSame candle. No additional gate.")
 
 grp_hctd = "★ HCT DISPLACEMENT ★"
-hct_disp_strength = input.float(6.0, "Strength (σ multiplier)", minval=1.0, step=0.5, group=grp_hctd)
-hct_disp_lookback = input.int(100, "Lookback Length", minval=10, group=grp_hctd)
+hct_disp_strength = input.float(6.0, "Strength (σ multiplier)", minval=1.0, step=0.5, group=grp_hctd, tooltip="Bar[1] range must exceed this many standard deviations of recent bar ranges to qualify as a HCT displacement candle.")
+hct_disp_lookback = input.int(100, "Lookback Length", minval=10, group=grp_hctd, tooltip="Number of bars for bar-range standard deviation calculation in HCT displacement engine.")
 hct_threshPct     = input.float(2, "FVG Threshold %", minval=0, maxval=100, step=0.1, group=grp_hctd)
 hct_auto          = input.bool(true, "Auto FVG Threshold", group=grp_hctd)
 
@@ -938,14 +943,14 @@ plotshape(plot_HV150,  title="HV 150",  style=shape.triangledown, location=locat
 // =============================================================================
 // PLOTS — HCT COMBOS (gated by coincident Singles signal)
 // =============================================================================
-plotshape(hctGatedBull,  title="HCT Bull",  style=shape.circle, location=location.top, size=size.huge, color=color.lime,    text="HC▲", textcolor=color.black)
-plotshape(hctGatedBear,  title="HCT Bear",  style=shape.circle, location=location.top, size=size.huge, color=color.red,     text="HC▼", textcolor=color.white)
+plotshape(show_HCTBull and hctGatedBull,  title="HCT Bull",  style=shape.circle, location=location.top, size=size.huge, color=color.lime,    text="HC▲", textcolor=color.black)
+plotshape(show_HCTBear and hctGatedBear,  title="HCT Bear",  style=shape.circle, location=location.top, size=size.huge, color=color.red,     text="HC▼", textcolor=color.white)
 
 // =============================================================================
 // PLOTS — PENTAGON SPECIALS
 // =============================================================================
-plotshape(sigPentHV1K,   title="Pent+HV1K",       style=shape.diamond, location=location.top, size=size.huge, color=color.new(#FFD700, 0), text="P+1K",  textcolor=color.black)
-plotshape(sigPentHV500D, title="Pent+HV500+Disp",  style=shape.diamond, location=location.top, size=size.huge, color=color.new(#FF4500, 0), text="P+5D",  textcolor=color.white)
+plotshape(show_PentHV1K   and sigPentHV1K,   title="Pent+HV1K",       style=shape.diamond, location=location.top, size=size.huge, color=color.new(#FFD700, 0), text="P+1K",  textcolor=color.black)
+plotshape(show_PentHV500D and sigPentHV500D, title="Pent+HV500+Disp",  style=shape.diamond, location=location.top, size=size.huge, color=color.new(#FF4500, 0), text="P+5D",  textcolor=color.white)
 
 // =============================================================================
 // AGGREGATED ALERT
