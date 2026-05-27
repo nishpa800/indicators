@@ -130,6 +130,32 @@ fn_bullColor    = input.color(color.new(#00C800, 0), "▲ Bull Color", group=fn_
 fn_bearColor    = input.color(color.new(#FF2020, 0), "▼ Bear Color", group=fn_grp_global)
 
 // =============================================================================
+// HCT COMBO ELIGIBILITY (15) — No-Disp combos route to Bull/Bear by direction
+// =============================================================================
+grp_hct = "★ HCT COMBO ELIGIBILITY (15) ★"
+en_HYYBull    = input.bool(true, "HYY Bull",     group=grp_hct, inline="hyy")
+en_HYYBear    = input.bool(true, "HYY Bear",     group=grp_hct, inline="hyy")
+en_HYYNoDisp  = input.bool(true, "HYY No-Disp",  group=grp_hct, inline="hyy")
+en_HNBull     = input.bool(true, "HN Bull",      group=grp_hct, inline="hn")
+en_HNBear     = input.bool(true, "HN Bear",      group=grp_hct, inline="hn")
+en_HNNoDisp   = input.bool(true, "HN No-Disp",   group=grp_hct, inline="hn")
+en_HNVBull    = input.bool(true, "HNV Bull",     group=grp_hct, inline="hnv")
+en_HNVBear    = input.bool(true, "HNV Bear",     group=grp_hct, inline="hnv")
+en_HNVNoDisp  = input.bool(true, "HNV No-Disp",  group=grp_hct, inline="hnv")
+en_HTBull     = input.bool(true, "HT Bull",      group=grp_hct, inline="ht")
+en_HTBear     = input.bool(true, "HT Bear",      group=grp_hct, inline="ht")
+en_HTNoDisp   = input.bool(true, "HT No-Disp",   group=grp_hct, inline="ht")
+en_NHx2Bull   = input.bool(true, "NHx2 Bull",    group=grp_hct, inline="nhx")
+en_NHx2Bear   = input.bool(true, "NHx2 Bear",    group=grp_hct, inline="nhx")
+en_NHx2NoDisp = input.bool(true, "NHx2 No-Disp", group=grp_hct, inline="nhx")
+
+grp_hctd = "★ HCT DISPLACEMENT ★"
+hct_disp_strength = input.float(6.0, "Strength (σ multiplier)", minval=1.0, step=0.5, group=grp_hctd)
+hct_disp_lookback = input.int(100, "Lookback Length", minval=10, group=grp_hctd)
+hct_threshPct     = input.float(2, "FVG Threshold %", minval=0, maxval=100, step=0.1, group=grp_hctd)
+hct_auto          = input.bool(true, "Auto FVG Threshold", group=grp_hctd)
+
+// =============================================================================
 // RVOL 0.56 CALCULATIONS
 // =============================================================================
 tfSec = timeframe.in_seconds(timeframe.period)
@@ -272,6 +298,7 @@ relVolRatio = currentVolume_reg / pastVolume_reg
 
 sigWTC = conf and (relVolRatio > th_wtc) and (relVolRatio <= th_hiroshima)
 sigHiroshima = conf and (relVolRatio > th_hiroshima)
+sigPentagon  = conf and (relVolRatio >= th_1x) and (relVolRatio <= th_wtc)
 
 // =============================================================================
 // HYBRID RVOL — MOMENTUM REGIMES (LONG/SHORT signals)
@@ -341,6 +368,95 @@ anyMom   = anyLong or anyShort
 anyLong_1 = sigAddLong1[1] or sigAddLong2[1] or sigAddLong3[1] or sigAddLong4[1] or sigAddLong5[1]
 
 anyHV_cur = conf and (volume == ta.highest(volume, 150))
+
+// =============================================================================
+// HCT DISPLACEMENT ENGINE (verbatim from Heavy PENTAGON)
+// =============================================================================
+float hct_thresh     = hct_auto ? ta.cum((high - low) / low) / bar_index : hct_threshPct / 100
+bool  hct_bFVG       = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > hct_thresh
+bool  hct_sFVG       = high < low[2] and close[1] < low[2] and (low[2] - high) / high > hct_thresh
+float hct_barRange   = high[1] - low[1]
+float hct_rangeStdev = ta.stdev(high - low, hct_disp_lookback)
+bool  hct_dispMet    = hct_barRange > hct_disp_strength * nz(hct_rangeStdev[1])
+
+bool hct_dispBull = conf and hct_dispMet and (close[1] > open[1]) and hct_bFVG
+bool hct_dispBear = conf and hct_dispMet and (close[1] < open[1]) and hct_sFVG
+bool hct_noDisp   = not hct_dispBull and not hct_dispBear
+
+// =============================================================================
+// HCT COMBO BUILDING BLOCKS — 15 combos, neutral→directional
+// =============================================================================
+bool groupA_Bull = sigBullRVOL1x or sigGrandSlam
+bool groupA_Bear = sigBearRVOL1x or sigMOAB
+bool groupB      = sigPentagon or sigWTC or sigHiroshima
+
+bool baseYinYang   = (groupA_Bull or groupA_Bear) and groupB
+bool baseNagasaki  = sigNagasaki and (groupA_Bull or groupA_Bear)
+bool baseNagasakiV = sigNagasaki and groupB
+bool baseTrident   = sigNagasaki and (groupA_Bull or groupA_Bear) and groupB
+bool baseNHx2      = (sigPentagon and sigWTC) or (sigPentagon and sigHiroshima) or (sigWTC and sigHiroshima)
+
+// 10 displacement-directional combos
+bool sigHYYBull  = baseYinYang   and hct_dispBull
+bool sigHYYBear  = baseYinYang   and hct_dispBear
+bool sigHNBull   = baseNagasaki  and hct_dispBull
+bool sigHNBear   = baseNagasaki  and hct_dispBear
+bool sigHNVBull  = baseNagasakiV and hct_dispBull
+bool sigHNVBear  = baseNagasakiV and hct_dispBear
+bool sigHTBull   = baseTrident   and hct_dispBull
+bool sigHTBear   = baseTrident   and hct_dispBear
+bool sigNHx2Bull = baseNHx2      and hct_dispBull
+bool sigNHx2Bear = baseNHx2      and hct_dispBear
+
+// 5 no-disp combos → routed bull/bear (groupA direction or candle direction)
+bool sigHYYNDBull  = baseYinYang   and hct_noDisp and groupA_Bull
+bool sigHYYNDBear  = baseYinYang   and hct_noDisp and groupA_Bear
+bool sigHNNDBull   = baseNagasaki  and hct_noDisp and groupA_Bull
+bool sigHNNDBear   = baseNagasaki  and hct_noDisp and groupA_Bear
+bool sigHNVNDBull  = baseNagasakiV and hct_noDisp and (close > open)
+bool sigHNVNDBear  = baseNagasakiV and hct_noDisp and (close < open)
+bool sigHTNDBull   = baseTrident   and hct_noDisp and groupA_Bull
+bool sigHTNDBear   = baseTrident   and hct_noDisp and groupA_Bear
+bool sigNHx2NDBull = baseNHx2      and hct_noDisp and (close > open)
+bool sigNHx2NDBear = baseNHx2      and hct_noDisp and (close < open)
+
+// Per-combo fire booleans (toggle AND signal)
+bool f_HYYBull  = en_HYYBull   and sigHYYBull
+bool f_HYYBear  = en_HYYBear   and sigHYYBear
+bool f_HNBull   = en_HNBull    and sigHNBull
+bool f_HNBear   = en_HNBear    and sigHNBear
+bool f_HNVBull  = en_HNVBull   and sigHNVBull
+bool f_HNVBear  = en_HNVBear   and sigHNVBear
+bool f_HTBull   = en_HTBull    and sigHTBull
+bool f_HTBear   = en_HTBear    and sigHTBear
+bool f_NHx2Bull = en_NHx2Bull  and sigNHx2Bull
+bool f_NHx2Bear = en_NHx2Bear  and sigNHx2Bear
+bool f_HYYNDBull  = en_HYYNoDisp  and sigHYYNDBull
+bool f_HYYNDBear  = en_HYYNoDisp  and sigHYYNDBear
+bool f_HNNDBull   = en_HNNoDisp   and sigHNNDBull
+bool f_HNNDBear   = en_HNNoDisp   and sigHNNDBear
+bool f_HNVNDBull  = en_HNVNoDisp  and sigHNVNDBull
+bool f_HNVNDBear  = en_HNVNoDisp  and sigHNVNDBear
+bool f_HTNDBull   = en_HTNoDisp   and sigHTNDBull
+bool f_HTNDBear   = en_HTNoDisp   and sigHTNDBear
+bool f_NHx2NDBull = en_NHx2NoDisp and sigNHx2NDBull
+bool f_NHx2NDBear = en_NHx2NoDisp and sigNHx2NDBear
+
+// HCT Master OR-gates: Bull + Bear only (no neutral)
+bool hctMasterBull = f_HYYBull or f_HNBull or f_HNVBull or f_HTBull or f_NHx2Bull or f_HYYNDBull or f_HNNDBull or f_HNVNDBull or f_HTNDBull or f_NHx2NDBull
+bool hctMasterBear = f_HYYBear or f_HNBear or f_HNVBear or f_HTBear or f_NHx2Bear or f_HYYNDBear or f_HNNDBear or f_HNVNDBear or f_HTNDBear or f_NHx2NDBear
+
+// Gate HCT: must coincide with any Singles detection signal
+bool anySinglesRaw = sigSAAB or sigKratos or sigBullRVOL1x or sigBearRVOL1x or sigGrandSlam or sigMOAB or sigWTC or sigHiroshima or sigNagasaki or anyLong or anyShort
+bool hctGatedBull  = hctMasterBull and anySinglesRaw
+bool hctGatedBear  = hctMasterBear and anySinglesRaw
+
+// =============================================================================
+// PENTAGON SPECIAL SIGNALS
+// =============================================================================
+bool pentDisp5       = (high - low) > nz(hct_rangeStdev) * 5.0
+bool sigPentHV1K     = conf and sigPentagon and (volume == ta.highest(volume, 1000))
+bool sigPentHV500D   = conf and sigPentagon and (volume == ta.highest(volume, 500)) and pentDisp5
 
 // =============================================================================
 // DISPLACEMENT ENGINE — PER-CONSUMER THRESHOLDS (no max cap)
@@ -820,6 +936,18 @@ plotshape(plot_HV250,  title="HV 250",  style=shape.circle,       location=locat
 plotshape(plot_HV150,  title="HV 150",  style=shape.triangledown, location=location.bottom, color=color.new(color.aqua, 0),   size=size.tiny,   text="150", textcolor=color.orange, offset=-1)
 
 // =============================================================================
+// PLOTS — HCT COMBOS (gated by coincident Singles signal)
+// =============================================================================
+plotshape(hctGatedBull,  title="HCT Bull",  style=shape.circle, location=location.top, size=size.huge, color=color.lime,    text="HC▲", textcolor=color.black)
+plotshape(hctGatedBear,  title="HCT Bear",  style=shape.circle, location=location.top, size=size.huge, color=color.red,     text="HC▼", textcolor=color.white)
+
+// =============================================================================
+// PLOTS — PENTAGON SPECIALS
+// =============================================================================
+plotshape(sigPentHV1K,   title="Pent+HV1K",       style=shape.diamond, location=location.top, size=size.huge, color=color.new(#FFD700, 0), text="P+1K",  textcolor=color.black)
+plotshape(sigPentHV500D, title="Pent+HV500+Disp",  style=shape.diamond, location=location.top, size=size.huge, color=color.new(#FF4500, 0), text="P+5D",  textcolor=color.white)
+
+// =============================================================================
 // AGGREGATED ALERT
 // =============================================================================
 f_add(existing, addition) =>
@@ -919,6 +1047,15 @@ if conf
         msg := f_add(msg, "FAUNA BULL " + fn_bullText)
     if show_FaunaBear and fn_bearActive
         msg := f_add(msg, "FAUNA BEAR " + fn_bearText)
+
+    if hctGatedBull
+        msg := f_add(msg, "HCT BULL")
+    if hctGatedBear
+        msg := f_add(msg, "HCT BEAR")
+    if sigPentHV1K
+        msg := f_add(msg, "PENT+HV1K")
+    if sigPentHV500D
+        msg := f_add(msg, "PENT+HV500+DISP")
 
     if msg != ""
         alert("{{ticker}} {{interval}} — " + msg, alert.freq_once_per_bar_close)
@@ -1025,11 +1162,7 @@ plot(hybCum3Eff,  "M3 Cum (eff)",  display=display.data_window)
 plot(hybBody3Eff, "M3 Body (eff)", display=display.data_window)
 plot(hybReg4Eff,  "M4 Reg (eff)",  display=display.data_window)
 plot(hybCum4Eff,  "M4 Cum (eff)",  display=display.data_window)
-plot(hybBody4Eff, "M4 Body (eff)", display=display.data_window)
 plot(hybReg5Eff,  "M5 Reg (eff)",  display=display.data_window)
 plot(hybCum5Eff,  "M5 Cum (eff)",  display=display.data_window)
-plot(hybBody5Eff, "M5 Body (eff)", display=display.data_window)
 
-plot(disp_th_standalone, "Disp Th Standalone",  display=display.data_window)
-plot(disp_th_seq,        "Disp Th Seq/FAUNA",   display=display.data_window)
-plot(th_saab_kratos,     "SAAB/Krat Threshold",  display=display.data_window)
+plot(th_saab_kratos, "SAAB/Krat Threshold", display=display.data_window)
