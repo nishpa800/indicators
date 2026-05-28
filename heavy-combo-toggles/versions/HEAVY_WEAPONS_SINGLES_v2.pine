@@ -8,6 +8,8 @@ import TradingView/ta/7 as tv_ta
 // =============================================================================
 grp_global = "★ GLOBAL PLOT/ALERT TOGGLES ★"
 
+input.bool(false, "ⓘⓘⓘ GATE REFERENCE — hover here for ALL gates ⓘⓘⓘ", group=grp_global, tooltip="GATE = what else must fire on the bar for the plot to show.\n\n— RVOL 0.56 —\nSAAB → +LONG\nKratos → +SHORT\nBull RVOL 1x → +LONG\nBear RVOL 1x → +SHORT\nGrand Slam → +LONG\nMOAB → +SHORT\nWTC → +LONG or +SHORT\nHiroshima → +LONG or +SHORT\nNagasaki → +LONG or +SHORT\n\n— MOMENTUM —\nLONG 1-5, SHORT 1-2 → NO GATE (these ARE the gate)\n\n— HIGH VOLUME —\nHV 150/250/350/500/1000 → +LONG[1]\n\n— DISPLACEMENT —\nDisp Bull/Bear → NO GATE\nConsec Disp 2+/3+ → NO GATE\n\n— SEQUENCES —\nUU/UUU/UUUU → displacement in streak\nDD/DDD/DDDD → displacement in streak\n\n— B2B —\n2x SAAB/Kratos/Bull1x/Bear1x → HV150+ or displacement\nB2B Mid Bull/Bear → HV150+ or displacement\n\n— FAUNA —\nFAUNA Bull → displacement + LONG\nFAUNA Bear → displacement + SHORT\n\n— HCT COMBOS —\nHCT Bull → ANY coincident Singles signal\nHCT Bear → ANY coincident Singles signal\n\n— PENTAGON —\nPent+HV1K → NO GATE (Pentagon + HV1000, same candle)\nPent+HV500+D → NO GATE (Pentagon + HV500 + disp, same candle)")
+
 show_SAAB       = input.bool(true, "SAAB", group=grp_global, inline="rv1")
 show_Kratos     = input.bool(true, "Kratos", group=grp_global, inline="rv1")
 show_BullRVOL1x = input.bool(true, "Bull RVOL 1x", group=grp_global, inline="rv1")
