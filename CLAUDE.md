@@ -51,3 +51,27 @@ indicators/
 ## Verification
 
 Use [Verification Protocol v3.2](~/.claude/projects/-Users-anishpatel/memory/verification_protocol.md) for ALL audit/translation/delivery work. Vocabulary: `bar[N]` only — no "signal" / "current bar."
+
+---
+
+## 📄 PDF / Office / Audio → Markdown — ALWAYS use `markitdown` FIRST
+
+For ANY non-text document (PDF, DOCX, PPTX, XLSX, HTML, image, audio file, YouTube URL),
+convert to Markdown with `markitdown` BEFORE reading. Do NOT `Read` a PDF/DOCX/PPTX directly —
+binary Read produces noise or fails.
+
+    markitdown <path-or-url> > /tmp/<name>.md     # then Read /tmp/<name>.md
+
+**MCP also available** in BOTH Claude Code and Codex CLI: server name `markitdown`,
+tool `convert_to_markdown`, pass `uri="file:///abs/path"` or `uri="https://..."`.
+
+Covers ~99% of vendor PDFs, hedge-fund letters, protocol PDFs, earnings transcripts,
+papers, slide decks, transcripts.
+
+**EXCEPTIONS — do NOT use markitdown for:**
+- 13F native EDGAR XML → use `sec-edgar-13f` skill + `edgartools`
+- Massive REST/WS JSON or S3 parquet → use Massive MCP / DuckDB directly
+- Heavy-table PDFs where row/column alignment matters → use `pdfplumber` or `camelot`
+
+Full doctrine + install state + failure modes:
+`~/.claude/projects/-Users-anishpatel/memory/pdf_conversion_markitdown.md`
