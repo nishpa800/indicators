@@ -1136,24 +1136,3 @@ if show_InfoPanel and barstate.islast
     table.cell(infoTbl, 0, 10, "GATES — RVOL: +LONG/SHORT | HV: +LONG[1] | B2B: +HV/DISP | SEQ: +DISP+SUM | FAUNA: +DISP+LONG/SHORT", text_color=color.gray, text_size=sz, bgcolor=color.new(color.black, 30))
     table.merge_cells(infoTbl, 0, 10, 4, 10)
 
-// =============================================================================
-// DATA WINDOW
-// =============================================================================
-plot(th_hiroshima, "Hiroshima Threshold (TF)", display=display.data_window)
-plot(hybRegRatio,  "Bar RegRatio (live)",      display=display.data_window)
-plot(hybCumRatio,  "Sess CumRatio (live)",     display=display.data_window)
-plot(hybBodyRat,   "Bar BodyRat (live)",       display=display.data_window)
-
-plot(hybReg1Eff,  "M1 Reg (eff)",  display=display.data_window)
-plot(hybCum1Eff,  "M1 Cum (eff)",  display=display.data_window)
-plot(hybBody1Eff, "M1 Body (eff)", display=display.data_window)
-plot(hybReg2Eff,  "M2 Reg (eff)",  display=display.data_window)
-plot(hybCum2Eff,  "M2 Cum (eff)",  display=display.data_window)
-plot(hybReg3Eff,  "M3 Reg (eff)",  display=display.data_window)
-plot(hybCum3Eff,  "M3 Cum (eff)",  display=display.data_window)
-plot(hybReg4Eff,  "M4 Reg (eff)",  display=display.data_window)
-plot(hybCum4Eff,  "M4 Cum (eff)",  display=display.data_window)
-plot(hybReg5Eff,  "M5 Reg (eff)",  display=display.data_window)
-plot(hybCum5Eff,  "M5 Cum (eff)",  display=display.data_window)
-
-plot(th_saab_kratos, "SAAB/Krat Threshold", display=display.data_window)
