@@ -1,0 +1,1172 @@
+//@version=5
+indicator("Heavy Weapons Singles v2", shorttitle="HW Singles v2", overlay=true, max_bars_back=2000)
+
+import TradingView/ta/7 as tv_ta
+
+// =============================================================================
+// GLOBAL PLOT/ALERT TOGGLES
+// =============================================================================
+grp_global = "★ GLOBAL PLOT/ALERT TOGGLES ★"
+
+show_SAAB       = input.bool(true, "SAAB", group=grp_global, inline="rv1")
+show_Kratos     = input.bool(true, "Kratos", group=grp_global, inline="rv1")
+show_BullRVOL1x = input.bool(true, "Bull RVOL 1x", group=grp_global, inline="rv1")
+show_BearRVOL1x = input.bool(true, "Bear RVOL 1x", group=grp_global, inline="rv1", tooltip="★ GATE REFERENCE — every detection plot and what gates it ★\n(GATE = what else must fire on the same bar for the plot to show.)\n\n— RVOL 0.56 —\nSAAB → +LONG\nKratos → +SHORT\nBull RVOL 1x → +LONG\nBear RVOL 1x → +SHORT\nGrand Slam → +LONG\nMOAB → +SHORT\nWTC → +LONG or +SHORT\nHiroshima → +LONG or +SHORT\nNagasaki → +LONG or +SHORT\n\n— MOMENTUM —\nLONG 1-5, SHORT 1-2 → NO GATE (these ARE the gate)\n\n— HIGH VOLUME —\nHV 150/250/350/500/1000 → +LONG[1]\n\n— DISPLACEMENT —\nDisp Bull/Bear → NO GATE\nConsec Disp 2+/3+ → NO GATE\n\n— SEQUENCES —\nUU/UUU/UUUU → displacement in streak\nDD/DDD/DDDD → displacement in streak\n\n— B2B —\n2x SAAB/Kratos/Bull1x/Bear1x → HV150+ or displacement\nB2B Mid Bull/Bear → HV150+ or displacement\n\n— FAUNA —\nFAUNA Bull → displacement + LONG\nFAUNA Bear → displacement + SHORT\n\n— HCT COMBOS —\nHCT Bull → ANY coincident Singles signal\nHCT Bear → ANY coincident Singles signal\n\n— PENTAGON —\nPent+HV1K → NO GATE (Pentagon + HV1000, same candle)\nPent+HV500+D → NO GATE (Pentagon + HV500 + disp, same candle)")
+show_GrandSlam  = input.bool(true, "Grand Slam", group=grp_global, inline="rv2")
+show_MOAB       = input.bool(false, "MOAB", group=grp_global, inline="rv2")
+show_WTC        = input.bool(true, "WTC", group=grp_global, inline="rv2")
+show_Hiroshima  = input.bool(true, "Hiroshima", group=grp_global, inline="rv2", tooltip="RVOL EXTREMES + REG@TIME (this row):\n\n• Grand Slam — Bullish extreme. normalizedPrice ≥ GS/MOAB_th. GATE: +LONG.\n• MOAB — Bearish extreme. normalizedPrice ≥ GS/MOAB_th. GATE: +SHORT.\n• WTC — RVOL Reg@Time mid-tier. relVolRatio ∈ (WTC_th, Hiroshima_th]. GATE: +LONG or +SHORT.\n• Hiroshima — RVOL Reg@Time top-tier. relVolRatio > Hiroshima_th. GATE: +LONG or +SHORT.\n\nAll bar[0], confirmed only.")
+show_Nagasaki   = input.bool(true, "Nagasaki", group=grp_global, inline="rv3", tooltip="Nagasaki: All-time high volume. bar[0] volume exceeds ALL prior bars' max volume ever. GATE: +LONG or +SHORT.")
+
+show_Long1      = input.bool(true, "LONG 1", group=grp_global, inline="hy1")
+show_Short1     = input.bool(true, "SHORT 1", group=grp_global, inline="hy1", tooltip="MOMENTUM TIER 1 (this row):\n\n• LONG 1 — Bullish. close > open, hybRegRatio ≥ M1_Reg, hybCumRatio ≥ M1_Cum, hybBodyRat ≥ M1_Body. No gate — LONG IS the gate for SAAB/RVOL1x/GS/WTC/H/N/HV.\n• SHORT 1 — Bearish. close < open, same 3 thresholds. No gate — SHORT IS the gate for Kratos/BearRVOL1x/MOAB/WTC/H/N.")
+show_Long2      = input.bool(true, "LONG 2", group=grp_global, inline="hy2")
+show_Short2     = input.bool(true, "SHORT 2", group=grp_global, inline="hy2", tooltip="MOMENTUM TIER 2 (this row):\n\n• LONG 2 — Bullish. M2 thresholds, AND NOT LONG 1. Fires only if weaker than tier 1.\n• SHORT 2 — Bearish. M2 thresholds, AND NOT SHORT 1.")
+show_Long3      = input.bool(true, "LONG 3", group=grp_global, inline="hy3")
+show_Long4      = input.bool(true, "LONG 4", group=grp_global, inline="hy3")
+show_Long5      = input.bool(true, "LONG 5", group=grp_global, inline="hy3", tooltip="MOMENTUM TIERS 3-5 (this row):\n\n• LONG 3 — Bullish. M3 thresholds, NOT LONG 1/2.\n• LONG 4 — Bullish. M4 thresholds, NOT LONG 1/2/3.\n• LONG 5 — Bullish. M5 thresholds, NOT LONG 1/2/3/4.\nLong-only tiers (no SHORT 3-5). Each tier = hybRegRatio ≥ Reg floor AND hybCumRatio ≥ Cum floor AND hybBodyRat ≥ Body ratio.")
+
+show_HV150      = input.bool(true, "HV 150", group=grp_global, inline="hv1")
+show_HV250      = input.bool(true, "HV 250", group=grp_global, inline="hv1")
+show_HV350      = input.bool(true, "HV 350", group=grp_global, inline="hv1", tooltip="HIGH VOLUME 150/250/350 (this row):\n\n• HV 150 — volume[1] == highest(volume, 150)[1], NOT HV250+.\n• HV 250 — volume[1] == highest(volume, 250)[1], NOT HV350+.\n• HV 350 — volume[1] == highest(volume, 350)[1], NOT HV500+.\n\nAll GATE: +LONG[1]. Offset: −1 (plots on bar[1]). Exclusive tiers — only the highest fires.")
+show_HV500      = input.bool(true, "HV 500", group=grp_global, inline="hv2")
+show_HV1000     = input.bool(true, "HV 1000", group=grp_global, inline="hv2", tooltip="HIGH VOLUME 500/1000 (this row):\n\n• HV 500 — volume[1] == highest(volume, 500)[1], NOT HV1000.\n• HV 1000 — volume[1] == highest(volume, 1000)[1].\n\nAll GATE: +LONG[1]. Offset: −1. Exclusive tiers.")
+
+grp_global2 = "★ GLOBAL TOGGLES — DISP / SEQ / B2B ★"
+
+show_DispBull        = input.bool(true, "Disp Bull", group=grp_global2, inline="di1")
+show_DispBear        = input.bool(true, "Disp Bear", group=grp_global2, inline="di1", tooltip="DISPLACEMENT (this row):\n\n• Disp Bull — bar[1] range > StdDev × standalone multiplier, close[1] > open[1], bullish FVG on bar[0] (low > high[2]). Offset: −1.\n• Disp Bear — bar[1] range > StdDev × standalone multiplier, close[1] < open[1], bearish FVG (high < low[2]). Offset: −1.\n\nNo additional gate. Range type configurable (Open-Close or High-Low).")
+show_CDispBull2      = input.bool(true, "Consec Disp Bull 2+", group=grp_global2, inline="di2")
+show_CDispBear2      = input.bool(true, "Consec Disp Bear 2+", group=grp_global2, inline="di2", tooltip="CONSECUTIVE DISPLACEMENT 2+ (this row):\n\n• CDisp Bull 2+ — 2+ back-to-back bullish displacements. StdDev × CDisp2 multiplier.\n• CDisp Bear 2+ — 2+ back-to-back bearish displacements. StdDev × CDisp2 multiplier.\n\nOffset: −1. Streak resets on direction change or gap.")
+show_CDispBull3      = input.bool(true, "Consec Disp Bull 3+", group=grp_global2, inline="di3")
+show_CDispBear3      = input.bool(true, "Consec Disp Bear 3+", group=grp_global2, inline="di3", tooltip="CONSECUTIVE DISPLACEMENT 3+ (this row):\n\n• CDisp Bull 3+ — 3+ back-to-back bullish displacements. StdDev × CDisp3 multiplier.\n• CDisp Bear 3+ — 3+ back-to-back bearish displacements. StdDev × CDisp3 multiplier.\n\nOffset: −1.")
+
+show_UU   = input.bool(true, "UU", group=grp_global2, inline="sq1")
+show_UUU  = input.bool(true, "UUU", group=grp_global2, inline="sq1")
+show_UUUU = input.bool(true, "UUUU", group=grp_global2, inline="sq1", tooltip="BULLISH SEQUENCES (this row):\n\n• UU — 2 consecutive LONGs. Sum of normalizedPrices ≥ SAAB/Krat threshold.\n• UUU — 3 consecutive LONGs. Sum ≥ threshold OR 2+ displacements in streak.\n• UUUU — 4 consecutive LONGs. Sum ≥ threshold OR 2+ displacements.\n\nAll GATE: displacement (StdDev × Seq multiplier) must occur within the streak. Each bar must also pass the lower threshold floor.")
+show_DD   = input.bool(true, "DD", group=grp_global2, inline="sq2")
+show_DDD  = input.bool(true, "DDD", group=grp_global2, inline="sq2")
+show_DDDD = input.bool(true, "DDDD", group=grp_global2, inline="sq2", tooltip="BEARISH SEQUENCES (this row):\n\n• DD — 2 consecutive SHORTs. Sum ≥ SAAB/Krat threshold.\n• DDD — 3 consecutive SHORTs. Sum ≥ threshold OR 2+ displacements.\n• DDDD — 4 consecutive SHORTs. Sum ≥ threshold OR 2+ displacements.\n\nAll GATE: displacement (StdDev × Seq multiplier) within the streak. Lower threshold floor applies per bar.")
+
+show_B2B_2xSAAB       = input.bool(true, "2x SAAB", group=grp_global2, inline="b2b1")
+show_B2B_2xKratos     = input.bool(true, "2x Kratos", group=grp_global2, inline="b2b1", tooltip="B2B SAME-TIER (this row):\n\n• 2x SAAB — SAAB on bar[0] AND bar[1].\n• 2x Kratos — Kratos on bar[0] AND bar[1].\n\nGATE: HV150+ or displacement on bar[0] or bar[1].")
+show_B2B_2xBull1x     = input.bool(true, "2x Bull 1x", group=grp_global2, inline="b2b2")
+show_B2B_2xBear1x     = input.bool(true, "2x Bear 1x", group=grp_global2, inline="b2b2", tooltip="B2B SAME-TIER 1x (this row):\n\n• 2x Bull 1x — BullRVOL1x on bar[0] AND bar[1].\n• 2x Bear 1x — BearRVOL1x on bar[0] AND bar[1].\n\nGATE: HV150+ or displacement.")
+show_B2B_MidBull      = input.bool(true, "B2B Mid Bull", group=grp_global2, inline="b2b3")
+show_B2B_MidBear      = input.bool(true, "B2B Mid Bear", group=grp_global2, inline="b2b3", tooltip="B2B MIXED-TIER (this row):\n\n• B2B Mid Bull — Two different bullish RVOL tiers on consecutive bars (e.g. SAAB bar[1] + BullRVOL1x bar[0]).\n• B2B Mid Bear — Two different bearish RVOL tiers on consecutive bars.\n\nGATE: HV150+ or displacement.")
+
+show_FaunaBull = input.bool(true, "FAUNA Bullish", group=grp_global2, inline="fn1")
+show_FaunaBear = input.bool(true, "FAUNA Bearish", group=grp_global2, inline="fn1", tooltip="FAUNA (this row):\n\n• FAUNA Bull — Named bullish pattern combo (MadBull+TA, MadBull+GG, MadBull+TR, MadBull+ES, MadBull+GDR, MB+TA, MB+GG, MB+TR, MB+ES, MB+GDR). Label shows which pair hit.\n• FAUNA Bear — Same 10 named bearish combos.\n\nGATE: displacement (StdDev × Seq multiplier) AND LONG (bull) or SHORT (bear) on same bar.")
+
+grp_info = "★ INFO PANEL (Live Threshold Values) ★"
+show_InfoPanel     = input.bool(true,           "Show Info Panel",   group=grp_info, inline="ip1")
+infoPanelPosition  = input.string("Bottom Right","Position",         group=grp_info, inline="ip1", options=["Top Right","Bottom Right","Top Left","Bottom Left","Middle Right","Middle Left"])
+infoPanelTextSize  = input.string("Small",      "Text Size",         group=grp_info, inline="ip2", options=["Tiny","Small","Normal","Large"])
+
+// =============================================================================
+// RVOL 0.56 SETTINGS
+// =============================================================================
+groupBullBear = "RVOL - Bull/Bear Calculation"
+bb_avgLength  = input.int(30, "Lookback Length", minval=1, group=groupBullBear, tooltip="Lookback for normalizing price spike and volume. Used by SAAB/Kratos/RVOL1x/GrandSlam/MOAB.")
+bb_smaLength  = input.int(20, "SMA Length", minval=1, group=groupBullBear, tooltip="SMA period for the positive diff filter. Bar's normalized diff must exceed this SMA to qualify.")
+
+groupReg = "RVOL - Reg @ Time Calculation"
+reg_anchorTimeframe  = input.timeframe("", "Anchor Timeframe (blank = chart)", group=groupReg, tooltip="Anchor timeframe for RVOL Reg@Time. Blank = chart timeframe. Used by Pentagon/WTC/Hiroshima and Hybrid Momentum.")
+reg_length           = input.int(30, "Length", minval=1, group=groupReg, tooltip="Lookback length for tv_ta.relativeVolume() — how many anchor-period sessions to average.")
+reg_calculationMode  = input.string("Cumulative", "Calculation Mode", options=["Cumulative", "Regular"], group=groupReg, tooltip="Cumulative: volume since session open vs avg. Regular: per-bar volume vs avg at same time.")
+reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg, tooltip="When ON, adjusts the current unconfirmed bar's volume estimate for partial-bar comparison.")
+
+groupHybrid = "RVOL - Hybrid Regime Settings"
+
+hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Momentum thresholds from Hiroshima ladder", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and auto-computed from the current TF's Hiroshima threshold:\n\n  • REG floor: linear ramp from H×2.85 (M1) down to H×1.1875 (M5)\n  • CUM floor: quantum decoherence model — 1.86 × √(ln(REG))\n  • BODY ratio: 0.69 / 0.72 / 0.75 / 0.78 / 0.81\n\nWhen OFF, the manual values below are used. See the live info panel for what's actually being applied.")
+
+hyb_addReg1 = input.float(5.0, "Momentum 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_addCum1 = input.float(3.0, "Momentum 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_bodyRat1   = input.float(0.65, "Momentum 1 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+
+hyb_addReg2 = input.float(5.0, "Momentum 2 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_addCum2 = input.float(3.0, "Momentum 2 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_bodyRat2   = input.float(0.65, "Momentum 2 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+
+hyb_addReg3 = input.float(5.0, "Momentum 3 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_addCum3 = input.float(3.0, "Momentum 3 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_bodyRat3   = input.float(0.65, "Momentum 3 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+
+hyb_addReg4 = input.float(5.0, "Momentum 4 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_addCum4 = input.float(3.0, "Momentum 4 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_bodyRat4   = input.float(0.65, "Momentum 4 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+
+hyb_addReg5 = input.float(5.0, "Momentum 5 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_addCum5 = input.float(3.0, "Momentum 5 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_bodyRat5   = input.float(0.65, "Momentum 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+
+groupNaga = "RVOL - Nagasaki"
+enableNagasaki = input.bool(true, "Enable Nagasaki", group=groupNaga, tooltip="Nagasaki: fires when current bar's volume exceeds ALL prior bars' volume (all-time high). Gated by LONG or SHORT.")
+
+// =============================================================================
+// SEQUENCE — BAR LOWER THRESHOLDS (min 0.5, no max)
+// =============================================================================
+grp_seq = "Sequence — Bar Lower Thresholds"
+th_low_UU_DD     = input.float(0.5, step=0.1, title="Lower Threshold (UU / DD)",     minval=0.5, group=grp_seq, tooltip="Minimum bar lower bound for each bar in a UU/DD sequence. Bars with normalizedPrice below this are excluded from the streak.")
+th_low_UUU_DDD   = input.float(0.5, step=0.1, title="Lower Threshold (UUU / DDD)",   minval=0.5, group=grp_seq, tooltip="Minimum bar lower bound for UUU/DDD sequences.")
+th_low_UUUU_DDDD = input.float(0.5, step=0.1, title="Lower Threshold (UUUU / DDDD)", minval=0.5, group=grp_seq, tooltip="Minimum bar lower bound for UUUU/DDDD sequences.")
+
+// =============================================================================
+// DISPLACEMENT — PER-CONSUMER StdDev THRESHOLDS
+// =============================================================================
+grp_disp = "Displacement — StdDev Thresholds"
+i_disp_type          = input.string("Open to Close", "Range Type", options = ['Open to Close', 'High to Low'], group=grp_disp, tooltip="How bar range is measured for Singles displacement: |open−close| or high−low.")
+i_std_len            = input.int(100, minval = 1, title = "Std Dev Length", group=grp_disp, tooltip="Lookback length for standard deviation of bar ranges in Singles displacement engine.")
+i_disp_std_standalone = input.float(7.5, "Disp Bull/Bear — StdDev Min",     minval=0, step=0.1, group=grp_disp, tooltip="StdDev multiplier for standalone Displacement Bull/Bear plots. Higher = fewer signals.")
+i_disp_std_cdisp2    = input.float(5.0, "Consec Disp 2+ — StdDev Min",     minval=0, step=0.1, group=grp_disp, tooltip="StdDev multiplier for consecutive displacement 2+ streak.")
+i_disp_std_cdisp3    = input.float(3.0, "Consec Disp 3+ — StdDev Min",     minval=0, step=0.1, group=grp_disp, tooltip="StdDev multiplier for consecutive displacement 3+ streak.")
+i_disp_std_seq       = input.float(5.0, "Sequences & FAUNA — StdDev Min",  minval=0, step=0.1, group=grp_disp, tooltip="StdDev multiplier for displacement gating on sequences (U2-U4, D2-D4) and FAUNA signals.")
+
+// =============================================================================
+// FAUNA SETTINGS — COLORS ONLY
+// =============================================================================
+fn_grp_global   = "FAUNA — Colors"
+fn_bullColor    = input.color(color.new(#00C800, 0), "▲ Bull Color", group=fn_grp_global)
+fn_bearColor    = input.color(color.new(#FF2020, 0), "▼ Bear Color", group=fn_grp_global)
+
+// =============================================================================
+// HCT COMBO ELIGIBILITY (15) — No-Disp combos route to Bull/Bear by direction
+// =============================================================================
+grp_hct = "★ HCT COMBO ELIGIBILITY (15) ★"
+hct_ref = input.bool(true, "ⓘ HCT Master Reference (all 15 combos)", group=grp_hct, tooltip="ALL 15 HCT COMBOS — MASTER REFERENCE\n\ngroupA_Bull = BullRVOL1x OR GrandSlam\ngroupA_Bear = BearRVOL1x OR MOAB\ngroupB = Pentagon OR WTC OR Hiroshima\nPentagon = RVOL Reg@Time ratio ∈ [1x_th, WTC_th]\n\n1. HYY Bull: groupA AND groupB AND HCT bullish disp\n2. HYY Bear: groupA AND groupB AND HCT bearish disp\n3. HYY No-Disp: groupA AND groupB, no disp → Bull if groupA_Bull, Bear if groupA_Bear\n4. HN Bull: Nagasaki AND groupA AND HCT bull disp\n5. HN Bear: Nagasaki AND groupA AND HCT bear disp\n6. HN No-Disp: Nag AND groupA, no disp → direction from groupA\n7. HNV Bull: Nag AND groupB AND HCT bull disp\n8. HNV Bear: Nag AND groupB AND HCT bear disp\n9. HNV No-Disp: Nag AND groupB, no disp → close>open=Bull, close<open=Bear\n10. HT Bull: Nag AND groupA AND groupB AND bull disp\n11. HT Bear: Nag AND groupA AND groupB AND bear disp\n12. HT No-Disp: Nag AND groupA AND groupB, no disp → direction from groupA\n13. NHx2 Bull: 2+ of (Pentagon,WTC,Hiroshima) AND bull disp\n14. NHx2 Bear: 2+ of (Pentagon,WTC,Hiroshima) AND bear disp\n15. NHx2 No-Disp: 2+ of groupB, no disp → candle direction\n\nMASTER GATE: all HCT plots require ANY coincident Singles signal (SAAB/Kratos/RVOL1x/GS/MOAB/WTC/H/N/LONG/SHORT).")
+en_HYYBull    = input.bool(true, "HYY Bull",     group=grp_hct, inline="hyy")
+en_HYYBear    = input.bool(true, "HYY Bear",     group=grp_hct, inline="hyy")
+en_HYYNoDisp  = input.bool(true, "HYY No-Disp",  group=grp_hct, inline="hyy", tooltip="HEAVY YIN-YANG (this row):\nBase: groupA (BullRVOL1x/GS/BearRVOL1x/MOAB) AND groupB (Pentagon/WTC/Hiroshima).\n\n• Bull — base AND HCT bullish displacement.\n• Bear — base AND HCT bearish displacement.\n• No-Disp — base, NO displacement. Routes to Bull if groupA_Bull fired, Bear if groupA_Bear fired.")
+en_HNBull     = input.bool(true, "HN Bull",      group=grp_hct, inline="hn")
+en_HNBear     = input.bool(true, "HN Bear",      group=grp_hct, inline="hn")
+en_HNNoDisp   = input.bool(true, "HN No-Disp",   group=grp_hct, inline="hn", tooltip="HEAVY NAGASAKI (this row):\nBase: Nagasaki (ATH volume) AND groupA.\n\n• Bull — base AND HCT bullish displacement.\n• Bear — base AND HCT bearish displacement.\n• No-Disp — base, NO disp. Routes via groupA direction.")
+en_HNVBull    = input.bool(true, "HNV Bull",     group=grp_hct, inline="hnv")
+en_HNVBear    = input.bool(true, "HNV Bear",     group=grp_hct, inline="hnv")
+en_HNVNoDisp  = input.bool(true, "HNV No-Disp",  group=grp_hct, inline="hnv", tooltip="HEAVY NAGASAKI VOL (this row):\nBase: Nagasaki AND groupB (Pentagon/WTC/Hiroshima).\n\n• Bull — base AND HCT bullish displacement.\n• Bear — base AND HCT bearish displacement.\n• No-Disp — base, NO disp. Routes via candle direction (close > open → Bull).")
+en_HTBull     = input.bool(true, "HT Bull",      group=grp_hct, inline="ht")
+en_HTBear     = input.bool(true, "HT Bear",      group=grp_hct, inline="ht")
+en_HTNoDisp   = input.bool(true, "HT No-Disp",   group=grp_hct, inline="ht", tooltip="HEAVY TRIDENT (this row):\nBase: Nagasaki AND groupA AND groupB — the full trifecta.\n\n• Bull — base AND HCT bullish displacement.\n• Bear — base AND HCT bearish displacement.\n• No-Disp — base, NO disp. Routes via groupA direction.")
+en_NHx2Bull   = input.bool(true, "NHx2 Bull",    group=grp_hct, inline="nhx")
+en_NHx2Bear   = input.bool(true, "NHx2 Bear",    group=grp_hct, inline="nhx")
+en_NHx2NoDisp = input.bool(true, "NHx2 No-Disp", group=grp_hct, inline="nhx", tooltip="NEUTRAL HEAVY x2 (this row):\nBase: 2+ of (Pentagon, WTC, Hiroshima) firing simultaneously.\n\n• Bull — base AND HCT bullish displacement.\n• Bear — base AND HCT bearish displacement.\n• No-Disp — base, NO disp. Routes via candle direction (close > open → Bull).")
+
+show_HCTBull      = input.bool(true, "HCT Bull",   group=grp_hct, inline="hctm")
+show_HCTBear      = input.bool(true, "HCT Bear",   group=grp_hct, inline="hctm", tooltip="HCT MASTER PLOTS (this row):\n\n• HCT Bull — OR of all eligible bull combos (disp-bull + no-disp routed bull). Plots HC▲.\n• HCT Bear — OR of all eligible bear combos (disp-bear + no-disp routed bear). Plots HC▼.\n\nMASTER GATE: must have ANY coincident Singles signal (SAAB/Kratos/RVOL1x/GS/MOAB/WTC/H/N/LONG/SHORT) on the same bar.")
+show_PentHV1K     = input.bool(true, "Pent+HV1K",  group=grp_hct, inline="pent")
+show_PentHV500D   = input.bool(true, "Pent+HV500+D", group=grp_hct, inline="pent", tooltip="PENTAGON SPECIALS (this row):\n\nPentagon = RVOL Reg@Time ratio ∈ [1x_th, WTC_th] (between 1x and WTC).\n\n• Pent+HV1K — Pentagon AND bar[0] volume == highest(volume, 1000). Same candle.\n• Pent+HV500+D — Pentagon AND volume == highest(volume, 500) AND bar[0] range > 5× StdDev. Same candle.\n\nNo additional gate required.")
+
+grp_hctd = "★ HCT DISPLACEMENT ★"
+hct_disp_strength = input.float(6.0, "Strength (σ multiplier)", minval=1.0, step=0.5, group=grp_hctd, tooltip="Bar[1] range must exceed this many standard deviations of recent bar ranges to qualify as a HCT displacement candle.")
+hct_disp_lookback = input.int(100, "Lookback Length", minval=10, group=grp_hctd, tooltip="Number of bars for bar-range standard deviation calculation in HCT displacement engine.")
+hct_threshPct     = input.float(2, "FVG Threshold %", minval=0, maxval=100, step=0.1, group=grp_hctd)
+hct_auto          = input.bool(true, "Auto FVG Threshold", group=grp_hctd)
+
+// =============================================================================
+// RVOL 0.56 CALCULATIONS
+// =============================================================================
+tfSec = timeframe.in_seconds(timeframe.period)
+
+f_rvol_1x_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10   ? 38.0 :
+               s <= 15   ? 33.0 :
+               s <= 30   ? 28.0 :
+               s <= 45   ? 23.0 :
+               s <= 60   ? 20.0 :
+               s <= 120  ? 19.0 :
+               s <= 180  ? 17.0 :
+               s <= 240  ? 16.0 :
+               s <= 300  ? 15.0 :
+               s <= 360  ? 14.0 :
+               s <= 420  ? 12.0 :
+               s <= 480  ? 11.0 :
+               s <= 540  ? 10.0 :
+               s <= 600  ? 10.0 :
+               s <= 900  ? 8.4 :
+               s <= 1800 ? 6.9 :
+               s <= 3600 ? 5.9 :
+               s <= 7200 ? 3.0 :
+               1.8
+    th
+
+f_saab_kratos_threshold(_tfSec) =>
+    f_rvol_1x_threshold(_tfSec) * 0.56
+
+f_gs_moab_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10   ? 114.0 :
+               s <= 15   ? 99.0 :
+               s <= 30   ? 84.0 :
+               s <= 45   ? 69.0 :
+               s <= 60   ? 35.0 :
+               s <= 300  ? 35.0 :
+               s <= 600  ? 25.0 :
+               s <= 900  ? 20.0 :
+               s <= 3600 ? 10.0 :
+               8.0
+    th
+
+f_wtc_threshold(_tfSec) =>
+    f_rvol_1x_threshold(_tfSec) * 2.0
+
+f_hiroshima_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10   ? 114.0 :
+               s <= 15   ? 99.0 :
+               s <= 30   ? 84.0 :
+               s <= 45   ? 69.0 :
+               s <= 60   ? 35.0 :
+               s <= 300  ? 35.0 :
+               s <= 600  ? 25.0 :
+               s <= 900  ? 20.0 :
+               s <= 3600 ? 10.0 :
+               8.0
+    th
+
+th_saab_kratos = f_saab_kratos_threshold(tfSec)
+th_1x          = f_rvol_1x_threshold(tfSec)
+th_gs_moab     = f_gs_moab_threshold(tfSec)
+th_wtc         = f_wtc_threshold(tfSec)
+th_hiroshima   = f_hiroshima_threshold(tfSec)
+
+// ── HYBRID MOMENTUM AUTO-DERIVE LADDER (from Hiroshima) ──────────────────────
+hybAutoReg1 = th_hiroshima * 2.85
+hybAutoReg5 = th_hiroshima * 1.1875
+hybAutoStep = (hybAutoReg1 - hybAutoReg5) / 4.0
+hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep
+hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep
+hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep
+
+float hybCumPhi = 1.398 * 1.33
+hybAutoCum1 = hybCumPhi * math.sqrt(math.log(hybAutoReg1))
+hybAutoCum2 = hybCumPhi * math.sqrt(math.log(hybAutoReg2))
+hybAutoCum3 = hybCumPhi * math.sqrt(math.log(hybAutoReg3))
+hybAutoCum4 = hybCumPhi * math.sqrt(math.log(hybAutoReg4))
+hybAutoCum5 = hybCumPhi * math.sqrt(math.log(hybAutoReg5))
+
+float hybAutoBody1 = 0.69
+float hybAutoBody2 = 0.72
+float hybAutoBody3 = 0.75
+float hybAutoBody4 = 0.78
+float hybAutoBody5 = 0.81
+
+hybReg1Eff  = hyb_autoDerive ? hybAutoReg1  : hyb_addReg1
+hybReg2Eff  = hyb_autoDerive ? hybAutoReg2  : hyb_addReg2
+hybReg3Eff  = hyb_autoDerive ? hybAutoReg3  : hyb_addReg3
+hybReg4Eff  = hyb_autoDerive ? hybAutoReg4  : hyb_addReg4
+hybReg5Eff  = hyb_autoDerive ? hybAutoReg5  : hyb_addReg5
+
+hybCum1Eff  = hyb_autoDerive ? hybAutoCum1  : hyb_addCum1
+hybCum2Eff  = hyb_autoDerive ? hybAutoCum2  : hyb_addCum2
+hybCum3Eff  = hyb_autoDerive ? hybAutoCum3  : hyb_addCum3
+hybCum4Eff  = hyb_autoDerive ? hybAutoCum4  : hyb_addCum4
+hybCum5Eff  = hyb_autoDerive ? hybAutoCum5  : hyb_addCum5
+
+hybBody1Eff = hyb_autoDerive ? hybAutoBody1 : hyb_bodyRat1
+hybBody2Eff = hyb_autoDerive ? hybAutoBody2 : hyb_bodyRat2
+hybBody3Eff = hyb_autoDerive ? hybAutoBody3 : hyb_bodyRat3
+hybBody4Eff = hyb_autoDerive ? hybAutoBody4 : hyb_bodyRat4
+hybBody5Eff = hyb_autoDerive ? hybAutoBody5 : hyb_bodyRat5
+
+// =============================================================================
+// RVOL 0.56 — BULL/BEAR SIGNALS
+// =============================================================================
+bb_spike = math.abs(close - open)
+bb_avgSpikeDenom = ta.sma(bb_spike, bb_avgLength)[1]
+bb_normalizedPrice = bb_spike / nz(bb_avgSpikeDenom, 1.0)
+
+bb_avgVolDenom = ta.sma(volume, bb_avgLength)[1]
+bb_normalizedVolume = volume / nz(bb_avgVolDenom, 1.0)
+
+bb_diff = bb_normalizedPrice - bb_normalizedVolume
+bb_positiveDiff = bb_diff > 0 ? bb_diff : na
+bb_smaDiff = ta.sma(bb_positiveDiff, bb_smaLength)
+
+bb_baseBullish = (close > open) and (bb_positiveDiff > bb_smaDiff)
+bb_baseBearish = (close < open) and (bb_positiveDiff > bb_smaDiff)
+
+bb_inRange(v, lowTh, highTh) => v >= lowTh and v < highTh
+
+conf = barstate.isconfirmed
+
+sigSAAB = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigKratos = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigBullRVOL1x = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigBearRVOL1x = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigGrandSlam = conf and bb_baseBullish and (bb_normalizedPrice >= th_gs_moab)
+sigMOAB = conf and bb_baseBearish and (bb_normalizedPrice >= th_gs_moab)
+
+// =============================================================================
+// RVOL REG @ TIME — WTC / Hiroshima
+// =============================================================================
+[currentVolume_reg, pastVolume_reg, _] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, reg_calculationMode == "Cumulative", reg_adjustRealtime)
+relVolRatio = currentVolume_reg / pastVolume_reg
+
+sigWTC = conf and (relVolRatio > th_wtc) and (relVolRatio <= th_hiroshima)
+sigHiroshima = conf and (relVolRatio > th_hiroshima)
+sigPentagon  = conf and (relVolRatio >= th_1x) and (relVolRatio <= th_wtc)
+
+// =============================================================================
+// HYBRID RVOL — MOMENTUM REGIMES (LONG/SHORT signals)
+// =============================================================================
+[hybRegCur, hybRegPast, _hr] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, false, reg_adjustRealtime)
+[hybCumCur, hybCumPast, _hc] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, true, reg_adjustRealtime)
+
+hybRegRatio = hybRegCur / hybRegPast
+hybCumRatio = hybCumCur / hybCumPast
+
+hybBodySz  = math.abs(close - open)
+hybRange   = high - low
+hybBodyRat = hybRange == 0 ? 0.0 : hybBodySz / hybRange
+
+hybConvict1  = hybBodyRat >= hybBody1Eff
+hybBull1     = (close > open) and hybConvict1
+hybBear1     = (close < open) and hybConvict1
+hybMom1      = conf and (hybRegRatio > hybReg1Eff) and (hybCumRatio > hybCum1Eff)
+sigAddLong1  = hybMom1 and hybBull1
+sigAddShort1 = hybMom1 and hybBear1
+
+hybConvict2  = hybBodyRat >= hybBody2Eff
+hybBull2     = (close > open) and hybConvict2
+hybBear2     = (close < open) and hybConvict2
+hybMom2      = conf and (hybRegRatio > hybReg2Eff) and (hybCumRatio > hybCum2Eff)
+sigAddLong2  = hybMom2 and hybBull2
+sigAddShort2 = hybMom2 and hybBear2
+
+hybConvict3  = hybBodyRat >= hybBody3Eff
+hybBull3     = (close > open) and hybConvict3
+hybMom3      = conf and (hybRegRatio > hybReg3Eff) and (hybCumRatio > hybCum3Eff)
+sigAddLong3  = hybMom3 and hybBull3
+
+hybConvict4  = hybBodyRat >= hybBody4Eff
+hybBull4     = (close > open) and hybConvict4
+hybMom4      = conf and (hybRegRatio > hybReg4Eff) and (hybCumRatio > hybCum4Eff)
+sigAddLong4  = hybMom4 and hybBull4
+
+hybConvict5  = hybBodyRat >= hybBody5Eff
+hybBull5     = (close > open) and hybConvict5
+hybMom5      = conf and (hybRegRatio > hybReg5Eff) and (hybCumRatio > hybCum5Eff)
+sigAddLong5  = hybMom5 and hybBull5
+
+// =============================================================================
+// NAGASAKI
+// =============================================================================
+vol = volume
+var float maxVol = 0.0
+bool isNagasaki = false
+
+if conf
+    if bar_index == 0
+        maxVol := vol
+    else if vol > maxVol
+        isNagasaki := true
+        maxVol := vol
+
+sigNagasaki = enableNagasaki and isNagasaki
+
+// =============================================================================
+// GATING HELPERS
+// =============================================================================
+anyLong  = sigAddLong1 or sigAddLong2 or sigAddLong3 or sigAddLong4 or sigAddLong5
+anyShort = sigAddShort1 or sigAddShort2
+anyMom   = anyLong or anyShort
+
+anyLong_1 = sigAddLong1[1] or sigAddLong2[1] or sigAddLong3[1] or sigAddLong4[1] or sigAddLong5[1]
+
+anyHV_cur = conf and (volume == ta.highest(volume, 150))
+
+// =============================================================================
+// HCT DISPLACEMENT ENGINE (verbatim from Heavy PENTAGON)
+// =============================================================================
+float hct_thresh     = hct_auto ? ta.cum((high - low) / low) / bar_index : hct_threshPct / 100
+bool  hct_bFVG       = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > hct_thresh
+bool  hct_sFVG       = high < low[2] and close[1] < low[2] and (low[2] - high) / high > hct_thresh
+float hct_barRange   = high[1] - low[1]
+float hct_rangeStdev = ta.stdev(high - low, hct_disp_lookback)
+bool  hct_dispMet    = hct_barRange > hct_disp_strength * nz(hct_rangeStdev[1])
+
+bool hct_dispBull = conf and hct_dispMet and (close[1] > open[1]) and hct_bFVG
+bool hct_dispBear = conf and hct_dispMet and (close[1] < open[1]) and hct_sFVG
+bool hct_noDisp   = not hct_dispBull and not hct_dispBear
+
+// =============================================================================
+// HCT COMBO BUILDING BLOCKS — 15 combos, neutral→directional
+// =============================================================================
+bool groupA_Bull = sigBullRVOL1x or sigGrandSlam
+bool groupA_Bear = sigBearRVOL1x or sigMOAB
+bool groupB      = sigPentagon or sigWTC or sigHiroshima
+
+bool baseYinYang   = (groupA_Bull or groupA_Bear) and groupB
+bool baseNagasaki  = sigNagasaki and (groupA_Bull or groupA_Bear)
+bool baseNagasakiV = sigNagasaki and groupB
+bool baseTrident   = sigNagasaki and (groupA_Bull or groupA_Bear) and groupB
+bool baseNHx2      = (sigPentagon and sigWTC) or (sigPentagon and sigHiroshima) or (sigWTC and sigHiroshima)
+
+// 10 displacement-directional combos
+bool sigHYYBull  = baseYinYang   and hct_dispBull
+bool sigHYYBear  = baseYinYang   and hct_dispBear
+bool sigHNBull   = baseNagasaki  and hct_dispBull
+bool sigHNBear   = baseNagasaki  and hct_dispBear
+bool sigHNVBull  = baseNagasakiV and hct_dispBull
+bool sigHNVBear  = baseNagasakiV and hct_dispBear
+bool sigHTBull   = baseTrident   and hct_dispBull
+bool sigHTBear   = baseTrident   and hct_dispBear
+bool sigNHx2Bull = baseNHx2      and hct_dispBull
+bool sigNHx2Bear = baseNHx2      and hct_dispBear
+
+// 5 no-disp combos → routed bull/bear (groupA direction or candle direction)
+bool sigHYYNDBull  = baseYinYang   and hct_noDisp and groupA_Bull
+bool sigHYYNDBear  = baseYinYang   and hct_noDisp and groupA_Bear
+bool sigHNNDBull   = baseNagasaki  and hct_noDisp and groupA_Bull
+bool sigHNNDBear   = baseNagasaki  and hct_noDisp and groupA_Bear
+bool sigHNVNDBull  = baseNagasakiV and hct_noDisp and (close > open)
+bool sigHNVNDBear  = baseNagasakiV and hct_noDisp and (close < open)
+bool sigHTNDBull   = baseTrident   and hct_noDisp and groupA_Bull
+bool sigHTNDBear   = baseTrident   and hct_noDisp and groupA_Bear
+bool sigNHx2NDBull = baseNHx2      and hct_noDisp and (close > open)
+bool sigNHx2NDBear = baseNHx2      and hct_noDisp and (close < open)
+
+// Per-combo fire booleans (toggle AND signal)
+bool f_HYYBull  = en_HYYBull   and sigHYYBull
+bool f_HYYBear  = en_HYYBear   and sigHYYBear
+bool f_HNBull   = en_HNBull    and sigHNBull
+bool f_HNBear   = en_HNBear    and sigHNBear
+bool f_HNVBull  = en_HNVBull   and sigHNVBull
+bool f_HNVBear  = en_HNVBear   and sigHNVBear
+bool f_HTBull   = en_HTBull    and sigHTBull
+bool f_HTBear   = en_HTBear    and sigHTBear
+bool f_NHx2Bull = en_NHx2Bull  and sigNHx2Bull
+bool f_NHx2Bear = en_NHx2Bear  and sigNHx2Bear
+bool f_HYYNDBull  = en_HYYNoDisp  and sigHYYNDBull
+bool f_HYYNDBear  = en_HYYNoDisp  and sigHYYNDBear
+bool f_HNNDBull   = en_HNNoDisp   and sigHNNDBull
+bool f_HNNDBear   = en_HNNoDisp   and sigHNNDBear
+bool f_HNVNDBull  = en_HNVNoDisp  and sigHNVNDBull
+bool f_HNVNDBear  = en_HNVNoDisp  and sigHNVNDBear
+bool f_HTNDBull   = en_HTNoDisp   and sigHTNDBull
+bool f_HTNDBear   = en_HTNoDisp   and sigHTNDBear
+bool f_NHx2NDBull = en_NHx2NoDisp and sigNHx2NDBull
+bool f_NHx2NDBear = en_NHx2NoDisp and sigNHx2NDBear
+
+// HCT Master OR-gates: Bull + Bear only (no neutral)
+bool hctMasterBull = f_HYYBull or f_HNBull or f_HNVBull or f_HTBull or f_NHx2Bull or f_HYYNDBull or f_HNNDBull or f_HNVNDBull or f_HTNDBull or f_NHx2NDBull
+bool hctMasterBear = f_HYYBear or f_HNBear or f_HNVBear or f_HTBear or f_NHx2Bear or f_HYYNDBear or f_HNNDBear or f_HNVNDBear or f_HTNDBear or f_NHx2NDBear
+
+// Gate HCT: must coincide with any Singles detection signal
+bool anySinglesRaw = sigSAAB or sigKratos or sigBullRVOL1x or sigBearRVOL1x or sigGrandSlam or sigMOAB or sigWTC or sigHiroshima or sigNagasaki or anyLong or anyShort
+bool hctGatedBull  = hct_ref and hctMasterBull and anySinglesRaw
+bool hctGatedBear  = hct_ref and hctMasterBear and anySinglesRaw
+
+// =============================================================================
+// PENTAGON SPECIAL SIGNALS
+// =============================================================================
+bool pentDisp5       = (high - low) > nz(hct_rangeStdev) * 5.0
+bool sigPentHV1K     = conf and sigPentagon and (volume == ta.highest(volume, 1000))
+bool sigPentHV500D   = conf and sigPentagon and (volume == ta.highest(volume, 500)) and pentDisp5
+
+// =============================================================================
+// DISPLACEMENT ENGINE — PER-CONSUMER THRESHOLDS (no max cap)
+// =============================================================================
+disp_isBullishFVG = low > high[2] and open[1] < close[1]
+disp_isBearishFVG = high < low[2] and open[1] > close[1]
+
+disp_candle_range = i_disp_type == "Open to Close" ? math.abs(open - close) : high - low
+disp_std_dev = ta.stdev(disp_candle_range, i_std_len)
+
+disp_th_standalone = disp_std_dev * i_disp_std_standalone
+disp_th_cdisp2     = disp_std_dev * i_disp_std_cdisp2
+disp_th_cdisp3     = disp_std_dev * i_disp_std_cdisp3
+disp_th_seq        = disp_std_dev * i_disp_std_seq
+
+disp_cur_seq = disp_candle_range > disp_th_seq
+disp_cur_any = disp_cur_seq
+
+b2b_gate = anyHV_cur or disp_cur_any
+
+// =============================================================================
+// DISPLACEMENT — STANDALONE BULL/BEAR (FVG pattern, threshold=7.5)
+// =============================================================================
+disp_prev_standalone = disp_candle_range[1] > disp_th_standalone[1]
+sigDispBull = disp_prev_standalone and disp_isBullishFVG
+sigDispBear = disp_prev_standalone and disp_isBearishFVG
+
+// =============================================================================
+// DISPLACEMENT — CONSECUTIVE 2+ (FVG pattern, threshold=5.0)
+// =============================================================================
+disp_prev_c2 = disp_candle_range[1] > disp_th_cdisp2[1]
+sigDispBull_c2 = disp_prev_c2 and disp_isBullishFVG
+sigDispBear_c2 = disp_prev_c2 and disp_isBearishFVG
+
+var int disp_bullStreak_c2 = 0
+var int disp_bearStreak_c2 = 0
+disp_bullStreak_c2 := sigDispBull_c2 ? disp_bullStreak_c2 + 1 : 0
+disp_bearStreak_c2 := sigDispBear_c2 ? disp_bearStreak_c2 + 1 : 0
+
+sigCDispBull2 = sigDispBull_c2 and disp_bullStreak_c2 >= 2
+sigCDispBear2 = sigDispBear_c2 and disp_bearStreak_c2 >= 2
+
+// =============================================================================
+// DISPLACEMENT — CONSECUTIVE 3+ (FVG pattern, threshold=3.0)
+// =============================================================================
+disp_prev_c3 = disp_candle_range[1] > disp_th_cdisp3[1]
+sigDispBull_c3 = disp_prev_c3 and disp_isBullishFVG
+sigDispBear_c3 = disp_prev_c3 and disp_isBearishFVG
+
+var int disp_bullStreak_c3 = 0
+var int disp_bearStreak_c3 = 0
+disp_bullStreak_c3 := sigDispBull_c3 ? disp_bullStreak_c3 + 1 : 0
+disp_bearStreak_c3 := sigDispBear_c3 ? disp_bearStreak_c3 + 1 : 0
+
+sigCDispBull3 = sigDispBull_c3 and disp_bullStreak_c3 >= 3
+sigCDispBear3 = sigDispBear_c3 and disp_bearStreak_c3 >= 3
+
+// =============================================================================
+// RVOL SEQUENCE — WITH DISPLACEMENT TRACKING
+// Sum threshold hardcoded to th_saab_kratos. No upper bound on bar RVOL.
+// Override: U3/D3 with 2+ displaced, U4/D4 with 2+ displaced = auto-fire.
+// =============================================================================
+is_u_bar_UU   = bb_baseBullish and bb_normalizedPrice > th_low_UU_DD
+is_u_bar_UUU  = bb_baseBullish and bb_normalizedPrice > th_low_UUU_DDD
+is_u_bar_UUUU = bb_baseBullish and bb_normalizedPrice > th_low_UUUU_DDDD
+
+is_d_bar_DD   = bb_baseBearish and bb_normalizedPrice > th_low_UU_DD
+is_d_bar_DDD  = bb_baseBearish and bb_normalizedPrice > th_low_UUU_DDD
+is_d_bar_DDDD = bb_baseBearish and bb_normalizedPrice > th_low_UUUU_DDDD
+
+// --- UU / DD ---
+var float bull_seq_sum_UU = 0.0
+var int   bull_seq_len_UU = 0
+var int   bull_disp_UU    = 0
+var float bear_seq_sum_DD = 0.0
+var int   bear_seq_len_DD = 0
+var int   bear_disp_DD    = 0
+if conf
+    if is_u_bar_UU
+        bull_seq_len_UU += 1
+        bull_seq_sum_UU += bb_normalizedPrice
+        bull_disp_UU    += disp_cur_seq ? 1 : 0
+    else
+        bull_seq_len_UU := 0
+        bull_seq_sum_UU := 0.0
+        bull_disp_UU    := 0
+    if is_d_bar_DD
+        bear_seq_len_DD += 1
+        bear_seq_sum_DD += bb_normalizedPrice
+        bear_disp_DD    += disp_cur_seq ? 1 : 0
+    else
+        bear_seq_len_DD := 0
+        bear_seq_sum_DD := 0.0
+        bear_disp_DD    := 0
+
+// --- UUU / DDD ---
+var float bull_seq_sum_UUU = 0.0
+var int   bull_seq_len_UUU = 0
+var int   bull_disp_UUU    = 0
+var float bear_seq_sum_DDD = 0.0
+var int   bear_seq_len_DDD = 0
+var int   bear_disp_DDD    = 0
+if conf
+    if is_u_bar_UUU
+        bull_seq_len_UUU += 1
+        bull_seq_sum_UUU += bb_normalizedPrice
+        bull_disp_UUU    += disp_cur_seq ? 1 : 0
+    else
+        bull_seq_len_UUU := 0
+        bull_seq_sum_UUU := 0.0
+        bull_disp_UUU    := 0
+    if is_d_bar_DDD
+        bear_seq_len_DDD += 1
+        bear_seq_sum_DDD += bb_normalizedPrice
+        bear_disp_DDD    += disp_cur_seq ? 1 : 0
+    else
+        bear_seq_len_DDD := 0
+        bear_seq_sum_DDD := 0.0
+        bear_disp_DDD    := 0
+
+// --- UUUU / DDDD ---
+var float bull_seq_sum_UUUU = 0.0
+var int   bull_seq_len_UUUU = 0
+var int   bull_disp_UUUU    = 0
+var float bear_seq_sum_DDDD = 0.0
+var int   bear_seq_len_DDDD = 0
+var int   bear_disp_DDDD    = 0
+if conf
+    if is_u_bar_UUUU
+        bull_seq_len_UUUU += 1
+        bull_seq_sum_UUUU += bb_normalizedPrice
+        bull_disp_UUUU    += disp_cur_seq ? 1 : 0
+    else
+        bull_seq_len_UUUU := 0
+        bull_seq_sum_UUUU := 0.0
+        bull_disp_UUUU    := 0
+    if is_d_bar_DDDD
+        bear_seq_len_DDDD += 1
+        bear_seq_sum_DDDD += bb_normalizedPrice
+        bear_disp_DDDD    += disp_cur_seq ? 1 : 0
+    else
+        bear_seq_len_DDDD := 0
+        bear_seq_sum_DDDD := 0.0
+        bear_disp_DDDD    := 0
+
+// UU/DD: needs 1 displaced + sum >= SAAB threshold
+sig_bull_UU   = conf and bull_seq_len_UU == 2 and bull_seq_sum_UU >= th_saab_kratos and bull_disp_UU >= 1
+sig_bear_DD   = conf and bear_seq_len_DD == 2 and bear_seq_sum_DD >= th_saab_kratos and bear_disp_DD >= 1
+
+// UUU/DDD: override if 2+ displaced, otherwise 1 displaced + sum >= SAAB
+bool uu3_base     = conf and bull_seq_len_UUU == 3
+bool uu3_override = uu3_base and bull_disp_UUU >= 2
+bool uu3_normal   = uu3_base and bull_disp_UUU >= 1 and bull_seq_sum_UUU >= th_saab_kratos
+sig_bull_UUU = uu3_override or uu3_normal
+
+bool dd3_base     = conf and bear_seq_len_DDD == 3
+bool dd3_override = dd3_base and bear_disp_DDD >= 2
+bool dd3_normal   = dd3_base and bear_disp_DDD >= 1 and bear_seq_sum_DDD >= th_saab_kratos
+sig_bear_DDD = dd3_override or dd3_normal
+
+// UUUU/DDDD: override if 2+ displaced, otherwise 1 displaced + sum >= SAAB
+bool uu4_base     = conf and bull_seq_len_UUUU == 4
+bool uu4_override = uu4_base and bull_disp_UUUU >= 2
+bool uu4_normal   = uu4_base and bull_disp_UUUU >= 1 and bull_seq_sum_UUUU >= th_saab_kratos
+sig_bull_UUUU = uu4_override or uu4_normal
+
+bool dd4_base     = conf and bear_seq_len_DDDD == 4
+bool dd4_override = dd4_base and bear_disp_DDDD >= 2
+bool dd4_normal   = dd4_base and bear_disp_DDDD >= 1 and bear_seq_sum_DDDD >= th_saab_kratos
+sig_bear_DDDD = dd4_override or dd4_normal
+
+// =============================================================================
+// BACK-TO-BACK — GATED BY HV OR DISPLACEMENT
+// =============================================================================
+sig_B2B_2xSAAB   = conf and sigSAAB[1]       and sigSAAB       and b2b_gate
+sig_B2B_2xKratos = conf and sigKratos[1]      and sigKratos     and b2b_gate
+sig_B2B_2xBull1x = conf and sigBullRVOL1x[1]  and sigBullRVOL1x and b2b_gate
+sig_B2B_2xBear1x = conf and sigBearRVOL1x[1]  and sigBearRVOL1x and b2b_gate
+
+sig_B2B_MidBull = conf and not sig_B2B_2xSAAB and not sig_B2B_2xBull1x and ((sigSAAB[1] and sigBullRVOL1x) or (sigBullRVOL1x[1] and sigSAAB)) and b2b_gate
+sig_B2B_MidBear = conf and not sig_B2B_2xKratos and not sig_B2B_2xBear1x and ((sigKratos[1] and sigBearRVOL1x) or (sigBearRVOL1x[1] and sigKratos)) and b2b_gate
+
+// =============================================================================
+// FAUNA — CALCULATIONS (kept for alert text) + GATED BY DISP + LONG/SHORT
+// =============================================================================
+float fn_alpha_MB  = 1.6
+float fn_beta_MB   = 0.70
+float fn_delta_MB  = 1.8
+int   fn_atr_MB    = 14
+int   fn_vol_MB    = 20
+
+float fn_gamma_RE   = 2.2
+float fn_epsilon_RE = 0.15
+float fn_delta_RE   = 1.8
+int   fn_atr_RE     = 14
+
+float fn_zeta_GG  = 0.9
+float fn_delta_GG = 1.8
+int   fn_atr_GG   = 14
+
+float fn_theta_TA      = 1.6
+float fn_delta_TA      = 1.8
+int   fn_trend_ma_len  = 50
+int   fn_avg_delta_len = 10
+int   fn_atr_TA        = 14
+
+float fn_alpha_SB   = 1.5
+float fn_delta_SB   = 1.5
+float fn_weak_ratio = 0.2
+int   fn_body_avg   = 20
+int   fn_range_avg  = 20
+
+fn_ATR      = ta.atr(fn_atr_MB)
+fn_AvgVol   = ta.sma(volume, fn_vol_MB)
+fn_AvgBody  = ta.sma(math.abs(close - open), fn_body_avg)
+fn_AvgRange = ta.sma(high - low, fn_range_avg)
+fn_AvgDelta = ta.sma(math.abs(close - close[1]), fn_avg_delta_len)
+fn_TrendMA  = ta.sma(close, fn_trend_ma_len)
+
+fn_body        = close - open
+fn_candleRange = high - low
+fn_body_up     = fn_body > 0
+fn_body_dn     = fn_body < 0
+fn_body_size   = math.abs(fn_body)
+fn_body_ratio  = fn_candleRange == 0 ? 0.0 : fn_body_size / fn_candleRange
+
+fn_MB_bull = fn_body_up and fn_body_size > fn_alpha_MB * fn_ATR and fn_body_ratio > fn_beta_MB and volume > fn_delta_MB * fn_AvgVol
+fn_MB_bear = fn_body_dn and fn_body_size > fn_alpha_MB * fn_ATR and fn_body_ratio > fn_beta_MB and volume > fn_delta_MB * fn_AvgVol
+
+fn_wide    = fn_candleRange > fn_gamma_RE * ta.atr(fn_atr_RE)
+fn_RE_bull = fn_body_up and fn_wide and (high - close) < fn_epsilon_RE * fn_candleRange and volume > fn_delta_RE * fn_AvgVol
+fn_RE_bear = fn_body_dn and fn_wide and (close - low) < fn_epsilon_RE * fn_candleRange and volume > fn_delta_RE * fn_AvgVol
+
+fn_GG_bull = (open - close[1]) > fn_zeta_GG * ta.atr(fn_atr_GG) and fn_body_up and low > close[1] and volume > fn_delta_GG * fn_AvgVol
+fn_GG_bear = (close[1] - open) > fn_zeta_GG * ta.atr(fn_atr_GG) and fn_body_dn and high < close[1] and volume > fn_delta_GG * fn_AvgVol
+
+fn_up_trend = fn_TrendMA > fn_TrendMA[1]
+fn_dn_trend = fn_TrendMA < fn_TrendMA[1]
+fn_TA_bull = fn_up_trend and fn_body_up and (close - close[1]) > fn_theta_TA * fn_AvgDelta and volume > fn_delta_TA * fn_AvgVol
+fn_TA_bear = fn_dn_trend and fn_body_dn and (close[1] - close) > fn_theta_TA * fn_AvgDelta and volume > fn_delta_TA * fn_AvgVol
+
+fn_prev_body  = close[1] - open[1]
+fn_prev_range = high[1] - low[1]
+
+fn_StrongBear_pre = close[1] < open[1] and math.abs(fn_prev_body) > fn_alpha_SB * fn_AvgBody[1] and volume[1] > fn_delta_SB * fn_AvgVol[1]
+fn_WeakBear_pre   = close[1] < open[1] and (fn_prev_range == 0 ? 0.0 : math.abs(fn_prev_body) / fn_prev_range) <= fn_weak_ratio
+fn_StrongBull_pre = close[1] > open[1] and math.abs(fn_prev_body) > fn_alpha_SB * fn_AvgBody[1] and volume[1] > fn_delta_SB * fn_AvgVol[1]
+fn_WeakBull_pre   = close[1] > open[1] and (fn_prev_range == 0 ? 0.0 : math.abs(fn_prev_body) / fn_prev_range) <= fn_weak_ratio
+
+fn_TR_bull  = fn_WeakBear_pre   and (fn_MB_bull or fn_RE_bull or fn_TA_bull)
+fn_ES_bull  = fn_StrongBear_pre and (fn_MB_bull or fn_RE_bull or fn_TA_bull)
+fn_GDR_bull = close[1] < open[1] and fn_GG_bull
+
+fn_TR_bear  = fn_WeakBull_pre   and (fn_MB_bear or fn_RE_bear or fn_TA_bear)
+fn_ES_bear  = fn_StrongBull_pre and (fn_MB_bear or fn_RE_bear or fn_TA_bear)
+fn_GDR_bear = close[1] > open[1] and fn_GG_bear
+
+var string fn_bullText = ""
+fn_bullText := ""
+if show_FaunaBull
+    if   fn_GG_bull and fn_MB_bull and fn_RE_bull and fn_TA_bull
+        fn_bullText := "GG+MB+RE+TA"
+    else if fn_MB_bull and fn_TA_bull and fn_RE_bull
+        fn_bullText := "MB+TA+RE"
+    else if fn_GG_bull and fn_TA_bull and fn_MB_bull
+        fn_bullText := "GG+TA+MB"
+    else if fn_GG_bull and fn_TA_bull and fn_RE_bull
+        fn_bullText := "GG+TA+RE"
+    else if fn_GDR_bull and fn_RE_bull and fn_MB_bull
+        fn_bullText := "GDR+RE+MB"
+    else if fn_MB_bull and fn_RE_bull
+        fn_bullText := "MB+RE"
+    else if fn_MB_bull and fn_GG_bull
+        fn_bullText := "MB+GG"
+    else if fn_MB_bull and fn_TA_bull
+        fn_bullText := "MB+TA"
+    else if fn_MB_bull and fn_TR_bull
+        fn_bullText := "MB+TR"
+    else if fn_MB_bull and fn_ES_bull
+        fn_bullText := "MB+ES"
+    else if fn_MB_bull and fn_GDR_bull
+        fn_bullText := "MB+GDR"
+    else if fn_RE_bull and fn_GG_bull
+        fn_bullText := "RE+GG"
+    else if fn_RE_bull and fn_TA_bull
+        fn_bullText := "RE+TA"
+    else if fn_RE_bull and fn_TR_bull
+        fn_bullText := "RE+TR"
+    else if fn_RE_bull and fn_ES_bull
+        fn_bullText := "RE+ES"
+    else if fn_RE_bull and fn_GDR_bull
+        fn_bullText := "RE+GDR"
+    else if fn_GG_bull and fn_TA_bull
+        fn_bullText := "GG+TA"
+    else if fn_GG_bull and fn_TR_bull
+        fn_bullText := "GG+TR"
+    else if fn_GG_bull and fn_ES_bull
+        fn_bullText := "GG+ES"
+    else if fn_GG_bull and fn_GDR_bull
+        fn_bullText := "GG+GDR"
+    else if fn_TA_bull and fn_TR_bull
+        fn_bullText := "TA+TR"
+    else if fn_TA_bull and fn_ES_bull
+        fn_bullText := "TA+ES"
+    else if fn_TA_bull and fn_GDR_bull
+        fn_bullText := "TA+GDR"
+    else if fn_GDR_bull
+        fn_bullText := "GDR"
+    else if fn_ES_bull
+        fn_bullText := "ES"
+    else if fn_TR_bull
+        fn_bullText := "TR"
+    else if fn_MB_bull
+        fn_bullText := "MB"
+    else if fn_RE_bull
+        fn_bullText := "RE"
+    else if fn_GG_bull
+        fn_bullText := "GG"
+    else if fn_TA_bull
+        fn_bullText := "TA"
+
+var string fn_bearText = ""
+fn_bearText := ""
+if show_FaunaBear
+    if   fn_GG_bear and fn_MB_bear and fn_RE_bear and fn_TA_bear
+        fn_bearText := "GG+MB+RE+TA"
+    else if fn_MB_bear and fn_TA_bear and fn_RE_bear
+        fn_bearText := "MB+TA+RE"
+    else if fn_GG_bear and fn_TA_bear and fn_MB_bear
+        fn_bearText := "GG+TA+MB"
+    else if fn_GG_bear and fn_TA_bear and fn_RE_bear
+        fn_bearText := "GG+TA+RE"
+    else if fn_GDR_bear and fn_RE_bear and fn_MB_bear
+        fn_bearText := "GDR+RE+MB"
+    else if fn_MB_bear and fn_RE_bear
+        fn_bearText := "MB+RE"
+    else if fn_MB_bear and fn_GG_bear
+        fn_bearText := "MB+GG"
+    else if fn_MB_bear and fn_TA_bear
+        fn_bearText := "MB+TA"
+    else if fn_MB_bear and fn_TR_bear
+        fn_bearText := "MB+TR"
+    else if fn_MB_bear and fn_ES_bear
+        fn_bearText := "MB+ES"
+    else if fn_MB_bear and fn_GDR_bear
+        fn_bearText := "MB+GDR"
+    else if fn_RE_bear and fn_GG_bear
+        fn_bearText := "RE+GG"
+    else if fn_RE_bear and fn_TA_bear
+        fn_bearText := "RE+TA"
+    else if fn_RE_bear and fn_TR_bear
+        fn_bearText := "RE+TR"
+    else if fn_RE_bear and fn_ES_bear
+        fn_bearText := "RE+ES"
+    else if fn_RE_bear and fn_GDR_bear
+        fn_bearText := "RE+GDR"
+    else if fn_GG_bear and fn_TA_bear
+        fn_bearText := "GG+TA"
+    else if fn_GG_bear and fn_TR_bear
+        fn_bearText := "GG+TR"
+    else if fn_GG_bear and fn_ES_bear
+        fn_bearText := "GG+ES"
+    else if fn_GG_bear and fn_GDR_bear
+        fn_bearText := "GG+GDR"
+    else if fn_TA_bear and fn_TR_bear
+        fn_bearText := "TA+TR"
+    else if fn_TA_bear and fn_ES_bear
+        fn_bearText := "TA+ES"
+    else if fn_TA_bear and fn_GDR_bear
+        fn_bearText := "TA+GDR"
+    else if fn_GDR_bear
+        fn_bearText := "GDR"
+    else if fn_ES_bear
+        fn_bearText := "ES"
+    else if fn_TR_bear
+        fn_bearText := "TR"
+    else if fn_MB_bear
+        fn_bearText := "MB"
+    else if fn_RE_bear
+        fn_bearText := "RE"
+    else if fn_GG_bear
+        fn_bearText := "GG"
+    else if fn_TA_bear
+        fn_bearText := "TA"
+
+fn_bullActive = show_FaunaBull and fn_bullText != "" and conf and disp_cur_seq and anyLong
+fn_bearActive = show_FaunaBear and fn_bearText != "" and conf and disp_cur_seq and anyShort
+
+// =============================================================================
+// HV CALCULATIONS — 150/250/350/500/1000 — NRA via [1], GATED BY LONG[1]
+// =============================================================================
+bool is150Bar  = volume[1] == ta.highest(volume, 150)[1]
+bool is250Bar  = volume[1] == ta.highest(volume, 250)[1]
+bool is350Bar  = volume[1] == ta.highest(volume, 350)[1]
+bool is500Bar  = volume[1] == ta.highest(volume, 500)[1]
+bool is1000Bar = volume[1] == ta.highest(volume, 1000)[1]
+
+bool raw_HV1000 = show_HV1000 and is1000Bar
+bool raw_HV500  = show_HV500  and is500Bar  and not is1000Bar
+bool raw_HV350  = show_HV350  and is350Bar  and not is500Bar  and not is1000Bar
+bool raw_HV250  = show_HV250  and is250Bar  and not is350Bar  and not is500Bar  and not is1000Bar
+bool raw_HV150  = show_HV150  and is150Bar  and not is250Bar  and not is350Bar  and not is500Bar  and not is1000Bar
+
+bool plot_HV1000 = raw_HV1000 and anyLong_1
+bool plot_HV500  = raw_HV500  and anyLong_1
+bool plot_HV350  = raw_HV350  and anyLong_1
+bool plot_HV250  = raw_HV250  and anyLong_1
+bool plot_HV150  = raw_HV150  and anyLong_1
+
+// =============================================================================
+// PLOTS — RVOL 0.56 (GATED BY LONG/SHORT)
+// =============================================================================
+plotshape(show_SAAB       and sigSAAB       and anyLong,  title="SAAB",        style=shape.square,       location=location.belowbar, size=size.tiny,   color=color.lime,    text="SAAB")
+plotshape(show_Kratos     and sigKratos     and anyShort, title="Kratos",      style=shape.square,       location=location.abovebar, size=size.tiny,   color=color.orange,  text="Krat")
+plotshape(show_BullRVOL1x and sigBullRVOL1x and anyLong,  title="Bull RVOL 1x",style=shape.xcross,      location=location.belowbar, size=size.small,  color=color.green,   text="RV1x+")
+plotshape(show_BearRVOL1x and sigBearRVOL1x and anyShort, title="Bear RVOL 1x",style=shape.xcross,      location=location.abovebar, size=size.small,  color=color.red,     text="RV1x-")
+plotshape(show_GrandSlam  and sigGrandSlam  and anyLong,  title="Grand Slam",  style=shape.triangleup,  location=location.belowbar, size=size.normal, color=color.aqua,    text="DINGER")
+plotshape(show_MOAB       and sigMOAB       and anyShort, title="MOAB",        style=shape.triangledown,location=location.abovebar, size=size.normal, color=color.fuchsia, text="MOAB")
+plotshape(show_WTC        and sigWTC        and anyMom,   title="WTC",         style=shape.diamond,     location=location.top,      size=size.normal, color=color.yellow,  text="WTC")
+plotshape(show_Hiroshima  and sigHiroshima  and anyMom,   title="Hiroshima",   style=shape.diamond,     location=location.top,      size=size.normal, color=color.white,   text="H")
+plotshape(show_Nagasaki   and sigNagasaki   and anyMom,   title="Nagasaki",    style=shape.flag,        location=location.top,      size=size.normal, color=color.purple,  text="N")
+
+// =============================================================================
+// PLOTS — SEQUENCES
+// =============================================================================
+plotshape(show_UU   and sig_bull_UU,   title="UU Signal",   location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.lime,   text="UU")
+plotshape(show_UUU  and sig_bull_UUU,  title="UUU Signal",  location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.blue,   text="UUU")
+plotshape(show_UUUU and sig_bull_UUUU, title="UUUU Signal", location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.orange, text="4U")
+plotshape(show_DD   and sig_bear_DD,   title="DD Signal",   location=location.abovebar, style=shape.triangledown, size=size.small, color=color.red,    text="DD")
+plotshape(show_DDD  and sig_bear_DDD,  title="DDD Signal",  location=location.abovebar, style=shape.triangledown, size=size.small, color=color.purple, text="DDD")
+plotshape(show_DDDD and sig_bear_DDDD, title="DDDD Signal", location=location.abovebar, style=shape.triangledown, size=size.small, color=color.maroon, text="4D")
+
+// =============================================================================
+// PLOTS — B2B (gated by HV or displacement)
+// =============================================================================
+plotshape(show_B2B_2xSAAB   and sig_B2B_2xSAAB,   title="2x SAAB",      location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.lime, 0),   text="2xSAAB",   textcolor=color.black)
+plotshape(show_B2B_2xKratos and sig_B2B_2xKratos,  title="2x Kratos",    location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.orange, 0), text="2xKrat",   textcolor=color.black)
+plotshape(show_B2B_2xBull1x and sig_B2B_2xBull1x,  title="2x Bull 1x",   location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.green, 0),  text="2xRV1x+",  textcolor=color.white)
+plotshape(show_B2B_2xBear1x and sig_B2B_2xBear1x,  title="2x Bear 1x",   location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.red, 0),    text="2xRV1x-",  textcolor=color.white)
+plotshape(show_B2B_MidBull  and sig_B2B_MidBull,    title="B2B Mid Bull", location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.teal, 0),   text="B2B Mid+", textcolor=color.white)
+plotshape(show_B2B_MidBear  and sig_B2B_MidBear,    title="B2B Mid Bear", location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.maroon, 0), text="B2B Mid-", textcolor=color.white)
+
+// =============================================================================
+// PLOTS — FAUNA (plotshape, no label.new; gated by disp + LONG/SHORT)
+// =============================================================================
+plotshape(fn_bullActive, title="FAUNA Bull", style=shape.labelup,   location=location.belowbar, size=size.normal, color=fn_bullColor, text="FN", textcolor=color.white)
+plotshape(fn_bearActive, title="FAUNA Bear", style=shape.labeldown, location=location.abovebar, size=size.normal, color=fn_bearColor, text="FN", textcolor=color.white)
+
+// =============================================================================
+// PLOTS — DISPLACEMENT (standalone, offset=-1 to mark the displaced bar)
+// =============================================================================
+plotshape(show_DispBull   and sigDispBull,   title="Disp Bull",           location=location.belowbar, color=color.new(color.green, 40),   style=shape.triangleup,   size=size.tiny, offset=-1)
+plotshape(show_DispBear   and sigDispBear,   title="Disp Bear",           location=location.abovebar, color=color.new(color.red, 40),     style=shape.triangledown, size=size.tiny, offset=-1)
+plotshape(show_CDispBull2 and sigCDispBull2, title="Consec Disp Bull 2+", location=location.belowbar, color=color.new(color.lime, 0),     style=shape.diamond,      size=size.small, offset=-1)
+plotshape(show_CDispBear2 and sigCDispBear2, title="Consec Disp Bear 2+", location=location.abovebar, color=color.new(color.fuchsia, 0),  style=shape.diamond,      size=size.small, offset=-1)
+plotshape(show_CDispBull3 and sigCDispBull3, title="Consec Disp Bull 3+", location=location.belowbar, color=color.new(color.aqua, 0),     style=shape.square,       size=size.small, offset=-1)
+plotshape(show_CDispBear3 and sigCDispBear3, title="Consec Disp Bear 3+", location=location.abovebar, color=color.new(color.orange, 0),   style=shape.square,       size=size.small, offset=-1)
+
+// =============================================================================
+// PLOTS — MOMENTUM (fire independently, no gating)
+// =============================================================================
+plotshape(show_Long1  and sigAddLong1,  title="LONG 1",  style=shape.labelup,   location=location.belowbar, size=size.tiny, color=color.new(color.blue, 10),    text="LONG 1",  textcolor=color.yellow)
+plotshape(show_Short1 and sigAddShort1, title="SHORT 1", style=shape.labeldown, location=location.abovebar, size=size.tiny, color=color.new(color.red, 10),     text="SHORT 1", textcolor=color.white)
+plotshape(show_Long2  and sigAddLong2,  title="LONG 2",  style=shape.labelup,   location=location.belowbar, size=size.tiny, color=color.new(color.teal, 10),    text="LONG 2",  textcolor=color.yellow)
+plotshape(show_Short2 and sigAddShort2, title="SHORT 2", style=shape.labeldown, location=location.abovebar, size=size.tiny, color=color.new(color.maroon, 10),  text="SHORT 2", textcolor=color.white)
+plotshape(show_Long3  and sigAddLong3,  title="LONG 3",  style=shape.labelup,   location=location.belowbar, size=size.tiny, color=color.new(color.purple, 10),  text="LONG 3",  textcolor=color.yellow)
+plotshape(show_Long4  and sigAddLong4,  title="LONG 4",  style=shape.labelup,   location=location.belowbar, size=size.tiny, color=color.new(color.orange, 10),  text="LONG 4",  textcolor=color.white)
+plotshape(show_Long5  and sigAddLong5,  title="LONG 5",  style=shape.labelup,   location=location.belowbar, size=size.tiny, color=color.new(color.fuchsia, 10), text="LONG 5",  textcolor=color.white)
+
+// =============================================================================
+// PLOTS — HV (offset=-1, gated by LONG[1])
+// =============================================================================
+plotshape(plot_HV1000, title="HV 1000", style=shape.circle,       location=location.top,    color=color.new(color.blue, 0),   size=size.normal, text="1K",  textcolor=color.yellow, offset=-1)
+plotshape(plot_HV500,  title="HV 500",  style=shape.circle,       location=location.top,    color=color.new(color.red, 0),    size=size.normal, text="500", textcolor=color.silver, offset=-1)
+plotshape(plot_HV350,  title="HV 350",  style=shape.circle,       location=location.top,    color=color.new(color.green, 0),  size=size.small,  text="350", textcolor=color.white,  offset=-1)
+plotshape(plot_HV250,  title="HV 250",  style=shape.circle,       location=location.top,    color=color.new(color.yellow, 0), size=size.small,  text="250", textcolor=color.teal,   offset=-1)
+plotshape(plot_HV150,  title="HV 150",  style=shape.triangledown, location=location.bottom, color=color.new(color.aqua, 0),   size=size.tiny,   text="150", textcolor=color.orange, offset=-1)
+
+// =============================================================================
+// PLOTS — HCT COMBOS (gated by coincident Singles signal)
+// =============================================================================
+plotshape(show_HCTBull and hctGatedBull,  title="HCT Bull",  style=shape.circle, location=location.top, size=size.huge, color=color.lime,    text="HC▲", textcolor=color.black)
+plotshape(show_HCTBear and hctGatedBear,  title="HCT Bear",  style=shape.circle, location=location.top, size=size.huge, color=color.red,     text="HC▼", textcolor=color.white)
+
+// =============================================================================
+// PLOTS — PENTAGON SPECIALS
+// =============================================================================
+plotshape(show_PentHV1K   and sigPentHV1K,   title="Pent+HV1K",       style=shape.diamond, location=location.top, size=size.huge, color=color.new(#FFD700, 0), text="P+1K",  textcolor=color.black)
+plotshape(show_PentHV500D and sigPentHV500D, title="Pent+HV500+Disp",  style=shape.diamond, location=location.top, size=size.huge, color=color.new(#FF4500, 0), text="P+5D",  textcolor=color.white)
+
+// =============================================================================
+// AGGREGATED ALERT
+// =============================================================================
+f_add(existing, addition) =>
+    existing == "" ? addition : existing + " | " + addition
+
+if conf
+    string msg = ""
+
+    if show_Nagasaki  and sigNagasaki  and anyMom
+        msg := f_add(msg, "NAGASAKI")
+    if show_Hiroshima and sigHiroshima and anyMom
+        msg := f_add(msg, "HIROSHIMA")
+    if show_WTC       and sigWTC       and anyMom
+        msg := f_add(msg, "WTC")
+
+    if show_GrandSlam and sigGrandSlam and anyLong
+        msg := f_add(msg, "GRAND SLAM")
+    if show_MOAB      and sigMOAB      and anyShort
+        msg := f_add(msg, "MOAB")
+
+    if show_B2B_2xSAAB   and sig_B2B_2xSAAB
+        msg := f_add(msg, "2x SAAB")
+    if show_B2B_2xKratos and sig_B2B_2xKratos
+        msg := f_add(msg, "2x KRATOS")
+    if show_B2B_2xBull1x and sig_B2B_2xBull1x
+        msg := f_add(msg, "2x BULL 1x")
+    if show_B2B_2xBear1x and sig_B2B_2xBear1x
+        msg := f_add(msg, "2x BEAR 1x")
+    if show_B2B_MidBull  and sig_B2B_MidBull
+        msg := f_add(msg, "B2B MID BULL")
+    if show_B2B_MidBear  and sig_B2B_MidBear
+        msg := f_add(msg, "B2B MID BEAR")
+
+    if show_BullRVOL1x and sigBullRVOL1x and anyLong
+        msg := f_add(msg, "BULL RVOL 1x")
+    if show_BearRVOL1x and sigBearRVOL1x and anyShort
+        msg := f_add(msg, "BEAR RVOL 1x")
+
+    if show_SAAB   and sigSAAB   and anyLong
+        msg := f_add(msg, "SAAB")
+    if show_Kratos and sigKratos and anyShort
+        msg := f_add(msg, "KRATOS")
+
+    if show_UUUU and sig_bull_UUUU
+        msg := f_add(msg, "UUUU" + (uu4_override ? " [DISP-OVR]" : ""))
+    if show_DDDD and sig_bear_DDDD
+        msg := f_add(msg, "DDDD" + (dd4_override ? " [DISP-OVR]" : ""))
+    if show_UUU  and sig_bull_UUU
+        msg := f_add(msg, "UUU" + (uu3_override ? " [DISP-OVR]" : ""))
+    if show_DDD  and sig_bear_DDD
+        msg := f_add(msg, "DDD" + (dd3_override ? " [DISP-OVR]" : ""))
+    if show_UU   and sig_bull_UU
+        msg := f_add(msg, "UU")
+    if show_DD   and sig_bear_DD
+        msg := f_add(msg, "DD")
+
+    if show_Long1  and sigAddLong1
+        msg := f_add(msg, "LONG 1")
+    if show_Short1 and sigAddShort1
+        msg := f_add(msg, "SHORT 1")
+    if show_Long2  and sigAddLong2
+        msg := f_add(msg, "LONG 2")
+    if show_Short2 and sigAddShort2
+        msg := f_add(msg, "SHORT 2")
+    if show_Long3  and sigAddLong3
+        msg := f_add(msg, "LONG 3")
+    if show_Long4  and sigAddLong4
+        msg := f_add(msg, "LONG 4")
+    if show_Long5  and sigAddLong5
+        msg := f_add(msg, "LONG 5")
+
+    if show_HV1000 and plot_HV1000
+        msg := f_add(msg, "HV 1000")
+    if show_HV500 and plot_HV500
+        msg := f_add(msg, "HV 500")
+    if show_HV350 and plot_HV350
+        msg := f_add(msg, "HV 350")
+    if show_HV250 and plot_HV250
+        msg := f_add(msg, "HV 250")
+    if show_HV150 and plot_HV150
+        msg := f_add(msg, "HV 150")
+
+    if show_CDispBull3 and sigCDispBull3
+        msg := f_add(msg, "DISP BULL 3+")
+    if show_CDispBear3 and sigCDispBear3
+        msg := f_add(msg, "DISP BEAR 3+")
+    if show_CDispBull2 and sigCDispBull2
+        msg := f_add(msg, "DISP BULL 2+")
+    if show_CDispBear2 and sigCDispBear2
+        msg := f_add(msg, "DISP BEAR 2+")
+    if show_DispBull and sigDispBull
+        msg := f_add(msg, "DISP BULL")
+    if show_DispBear and sigDispBear
+        msg := f_add(msg, "DISP BEAR")
+
+    if show_FaunaBull and fn_bullActive
+        msg := f_add(msg, "FAUNA BULL " + fn_bullText)
+    if show_FaunaBear and fn_bearActive
+        msg := f_add(msg, "FAUNA BEAR " + fn_bearText)
+
+    if hctGatedBull
+        msg := f_add(msg, "HCT BULL")
+    if hctGatedBear
+        msg := f_add(msg, "HCT BEAR")
+    if sigPentHV1K
+        msg := f_add(msg, "PENT+HV1K")
+    if sigPentHV500D
+        msg := f_add(msg, "PENT+HV500+DISP")
+
+    if msg != ""
+        alert("{{ticker}} {{interval}} — " + msg, alert.freq_once_per_bar_close)
+
+// =============================================================================
+// INFO PANEL
+// =============================================================================
+f_panelPos(s) =>
+    s == "Top Right"     ? position.top_right    :
+     s == "Top Left"      ? position.top_left     :
+     s == "Bottom Left"   ? position.bottom_left  :
+     s == "Middle Right"  ? position.middle_right :
+     s == "Middle Left"   ? position.middle_left  :
+     position.bottom_right
+
+f_panelSize(s) =>
+    s == "Tiny"   ? size.tiny   :
+     s == "Normal" ? size.normal :
+     s == "Large"  ? size.large  :
+     size.small
+
+var table infoTbl = na
+if show_InfoPanel and barstate.islast
+    if na(infoTbl)
+        infoTbl := table.new(f_panelPos(infoPanelPosition), 5, 11, bgcolor=color.new(color.black, 15), border_width=1, border_color=color.new(color.gray, 50))
+
+    sz       = f_panelSize(infoPanelTextSize)
+    modeTxt  = hyb_autoDerive ? "AUTO" : "MANUAL"
+    modeBg   = hyb_autoDerive ? color.new(color.green, 60) : color.new(color.orange, 60)
+
+    table.cell(infoTbl, 0, 0, "HW SINGLES v2  —  " + timeframe.period + "  —  H = " + str.tostring(th_hiroshima, "#.##") + "  —  " + modeTxt, text_color=color.yellow, text_size=sz, bgcolor=modeBg)
+    table.merge_cells(infoTbl, 0, 0, 4, 0)
+
+    table.cell(infoTbl, 0, 1, "Tier", text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+    table.cell(infoTbl, 1, 1, "Side", text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+    table.cell(infoTbl, 2, 1, "Reg",  text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+    table.cell(infoTbl, 3, 1, "Cum",  text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+    table.cell(infoTbl, 4, 1, "Body", text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
+
+    fireBg1 = (sigAddLong1 or sigAddShort1) ? color.new(color.lime, 50) : color.new(color.black, 80)
+    fireBg2 = (sigAddLong2 or sigAddShort2) ? color.new(color.lime, 50) : color.new(color.black, 80)
+    fireBg3 = sigAddLong3 ? color.new(color.lime, 50) : color.new(color.black, 80)
+    fireBg4 = sigAddLong4 ? color.new(color.lime, 50) : color.new(color.black, 80)
+    fireBg5 = sigAddLong5 ? color.new(color.lime, 50) : color.new(color.black, 80)
+
+    table.cell(infoTbl, 0, 2, "M1", text_color=color.aqua, text_size=sz, bgcolor=fireBg1)
+    table.cell(infoTbl, 1, 2, "L/S", text_color=color.white, text_size=sz, bgcolor=fireBg1)
+    table.cell(infoTbl, 2, 2, str.tostring(hybReg1Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg1)
+    table.cell(infoTbl, 3, 2, str.tostring(hybCum1Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg1)
+    table.cell(infoTbl, 4, 2, str.tostring(hybBody1Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg1)
+
+    table.cell(infoTbl, 0, 3, "M2", text_color=color.aqua, text_size=sz, bgcolor=fireBg2)
+    table.cell(infoTbl, 1, 3, "L/S", text_color=color.white, text_size=sz, bgcolor=fireBg2)
+    table.cell(infoTbl, 2, 3, str.tostring(hybReg2Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg2)
+    table.cell(infoTbl, 3, 3, str.tostring(hybCum2Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg2)
+    table.cell(infoTbl, 4, 3, str.tostring(hybBody2Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg2)
+
+    table.cell(infoTbl, 0, 4, "M3", text_color=color.aqua, text_size=sz, bgcolor=fireBg3)
+    table.cell(infoTbl, 1, 4, "L", text_color=color.white, text_size=sz, bgcolor=fireBg3)
+    table.cell(infoTbl, 2, 4, str.tostring(hybReg3Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg3)
+    table.cell(infoTbl, 3, 4, str.tostring(hybCum3Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg3)
+    table.cell(infoTbl, 4, 4, str.tostring(hybBody3Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg3)
+
+    table.cell(infoTbl, 0, 5, "M4", text_color=color.aqua, text_size=sz, bgcolor=fireBg4)
+    table.cell(infoTbl, 1, 5, "L", text_color=color.white, text_size=sz, bgcolor=fireBg4)
+    table.cell(infoTbl, 2, 5, str.tostring(hybReg4Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg4)
+    table.cell(infoTbl, 3, 5, str.tostring(hybCum4Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg4)
+    table.cell(infoTbl, 4, 5, str.tostring(hybBody4Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg4)
+
+    table.cell(infoTbl, 0, 6, "M5", text_color=color.aqua, text_size=sz, bgcolor=fireBg5)
+    table.cell(infoTbl, 1, 6, "L", text_color=color.white, text_size=sz, bgcolor=fireBg5)
+    table.cell(infoTbl, 2, 6, str.tostring(hybReg5Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg5)
+    table.cell(infoTbl, 3, 6, str.tostring(hybCum5Eff, "#.##"), text_color=color.white, text_size=sz, bgcolor=fireBg5)
+    table.cell(infoTbl, 4, 6, str.tostring(hybBody5Eff, "0.00"), text_color=color.white, text_size=sz, bgcolor=fireBg5)
+
+    table.cell(infoTbl, 0, 7, "Bar Reg: " + str.tostring(hybRegRatio, "#.##") + "   Sess Cum: " + str.tostring(hybCumRatio, "#.##") + "   Body: " + str.tostring(hybBodyRat, "0.00"), text_color=color.yellow, text_size=sz, bgcolor=color.new(color.navy, 60))
+    table.merge_cells(infoTbl, 0, 7, 4, 7)
+
+    table.cell(infoTbl, 0, 8, "DISP StdDev — Standalone: " + str.tostring(i_disp_std_standalone, "#.#") + " | C2+: " + str.tostring(i_disp_std_cdisp2, "#.#") + " | C3+: " + str.tostring(i_disp_std_cdisp3, "#.#") + " | Seq/FN: " + str.tostring(i_disp_std_seq, "#.#"), text_color=color.aqua, text_size=sz, bgcolor=color.new(color.navy, 60))
+    table.merge_cells(infoTbl, 0, 8, 4, 8)
+
+    table.cell(infoTbl, 0, 9, "SAAB/Krat TH: " + str.tostring(th_saab_kratos, "#.##") + " | Seq sum must >= this | U3 2disp / U4 2disp = override", text_color=color.aqua, text_size=sz, bgcolor=color.new(color.navy, 60))
+    table.merge_cells(infoTbl, 0, 9, 4, 9)
+
+    table.cell(infoTbl, 0, 10, "GATES — RVOL: +LONG/SHORT | HV: +LONG[1] | B2B: +HV/DISP | SEQ: +DISP+SUM | FAUNA: +DISP+LONG/SHORT", text_color=color.gray, text_size=sz, bgcolor=color.new(color.black, 30))
+    table.merge_cells(infoTbl, 0, 10, 4, 10)
+
+// =============================================================================
+// DATA WINDOW
+// =============================================================================
+plot(th_hiroshima, "Hiroshima Threshold (TF)", display=display.data_window)
+plot(hybRegRatio,  "Bar RegRatio (live)",      display=display.data_window)
+plot(hybCumRatio,  "Sess CumRatio (live)",     display=display.data_window)
+plot(hybBodyRat,   "Bar BodyRat (live)",       display=display.data_window)
+
+plot(hybReg1Eff,  "M1 Reg (eff)",  display=display.data_window)
+plot(hybCum1Eff,  "M1 Cum (eff)",  display=display.data_window)
+plot(hybBody1Eff, "M1 Body (eff)", display=display.data_window)
+plot(hybReg2Eff,  "M2 Reg (eff)",  display=display.data_window)
+plot(hybCum2Eff,  "M2 Cum (eff)",  display=display.data_window)
+plot(hybReg3Eff,  "M3 Reg (eff)",  display=display.data_window)
+plot(hybCum3Eff,  "M3 Cum (eff)",  display=display.data_window)
+plot(hybReg4Eff,  "M4 Reg (eff)",  display=display.data_window)
+plot(hybCum4Eff,  "M4 Cum (eff)",  display=display.data_window)
+plot(hybReg5Eff,  "M5 Reg (eff)",  display=display.data_window)
+plot(hybCum5Eff,  "M5 Cum (eff)",  display=display.data_window)
+
+plot(th_saab_kratos, "SAAB/Krat Threshold", display=display.data_window)
