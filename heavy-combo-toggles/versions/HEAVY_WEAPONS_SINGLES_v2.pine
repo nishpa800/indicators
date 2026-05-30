@@ -78,27 +78,9 @@ reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg, to
 
 groupHybrid = "RVOL - Hybrid Regime Settings"
 
-hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Momentum thresholds from Hiroshima ladder", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and auto-computed from the current TF's Hiroshima threshold:\n\n  • REG floor: linear ramp from H×2.85 (M1) down to H×1.1875 (M5)\n  • CUM floor: quantum decoherence model — 1.86 × √(ln(REG))\n  • BODY ratio: 0.69 / 0.72 / 0.75 / 0.78 / 0.81\n\nWhen OFF, the manual values below are used. See the live info panel for what's actually being applied.")
-
-hyb_addReg1 = input.float(5.0, "Momentum 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
-hyb_addCum1 = input.float(3.0, "Momentum 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
-hyb_bodyRat1   = input.float(0.65, "Momentum 1 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-
-hyb_addReg2 = input.float(5.0, "Momentum 2 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
-hyb_addCum2 = input.float(3.0, "Momentum 2 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
-hyb_bodyRat2   = input.float(0.65, "Momentum 2 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-
-hyb_addReg3 = input.float(5.0, "Momentum 3 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
-hyb_addCum3 = input.float(3.0, "Momentum 3 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
-hyb_bodyRat3   = input.float(0.65, "Momentum 3 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-
-hyb_addReg4 = input.float(5.0, "Momentum 4 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
-hyb_addCum4 = input.float(3.0, "Momentum 4 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
-hyb_bodyRat4   = input.float(0.65, "Momentum 4 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-
-hyb_addReg5 = input.float(5.0, "Momentum 5 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
-hyb_addCum5 = input.float(3.0, "Momentum 5 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
-hyb_bodyRat5   = input.float(0.65, "Momentum 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+reg_pct  = input.int(100, "Reg Floor %",  minval=0, group=groupHybrid, tooltip="Percentage multiplier applied uniformly to ALL 5 auto-derived Reg floors (M1-M5). 100 = use auto-derived as-is. 90 = 90% of auto-derived. No max cap.")
+cum_pct  = input.int(100, "Cum Floor %",  minval=0, group=groupHybrid, tooltip="Percentage multiplier applied uniformly to ALL 5 auto-derived Cum floors. 100 = default.")
+body_pct = input.int(100, "Body Ratio %", minval=0, group=groupHybrid, tooltip="Percentage multiplier applied uniformly to ALL 5 auto-derived Body ratios. 100 = default.")
 
 groupNaga = "RVOL - Nagasaki"
 enableNagasaki = input.bool(true, "Enable Nagasaki", group=groupNaga, tooltip="Nagasaki: fires when current bar's volume exceeds ALL prior bars' volume (all-time high). Gated by LONG or SHORT.")
@@ -250,23 +232,27 @@ float hybAutoBody3 = 0.75
 float hybAutoBody4 = 0.78
 float hybAutoBody5 = 0.81
 
-hybReg1Eff  = hyb_autoDerive ? hybAutoReg1  : hyb_addReg1
-hybReg2Eff  = hyb_autoDerive ? hybAutoReg2  : hyb_addReg2
-hybReg3Eff  = hyb_autoDerive ? hybAutoReg3  : hyb_addReg3
-hybReg4Eff  = hyb_autoDerive ? hybAutoReg4  : hyb_addReg4
-hybReg5Eff  = hyb_autoDerive ? hybAutoReg5  : hyb_addReg5
+float regMult  = reg_pct  / 100.0
+float cumMult  = cum_pct  / 100.0
+float bodyMult = body_pct / 100.0
 
-hybCum1Eff  = hyb_autoDerive ? hybAutoCum1  : hyb_addCum1
-hybCum2Eff  = hyb_autoDerive ? hybAutoCum2  : hyb_addCum2
-hybCum3Eff  = hyb_autoDerive ? hybAutoCum3  : hyb_addCum3
-hybCum4Eff  = hyb_autoDerive ? hybAutoCum4  : hyb_addCum4
-hybCum5Eff  = hyb_autoDerive ? hybAutoCum5  : hyb_addCum5
+hybReg1Eff  = hybAutoReg1  * regMult
+hybReg2Eff  = hybAutoReg2  * regMult
+hybReg3Eff  = hybAutoReg3  * regMult
+hybReg4Eff  = hybAutoReg4  * regMult
+hybReg5Eff  = hybAutoReg5  * regMult
 
-hybBody1Eff = hyb_autoDerive ? hybAutoBody1 : hyb_bodyRat1
-hybBody2Eff = hyb_autoDerive ? hybAutoBody2 : hyb_bodyRat2
-hybBody3Eff = hyb_autoDerive ? hybAutoBody3 : hyb_bodyRat3
-hybBody4Eff = hyb_autoDerive ? hybAutoBody4 : hyb_bodyRat4
-hybBody5Eff = hyb_autoDerive ? hybAutoBody5 : hyb_bodyRat5
+hybCum1Eff  = hybAutoCum1  * cumMult
+hybCum2Eff  = hybAutoCum2  * cumMult
+hybCum3Eff  = hybAutoCum3  * cumMult
+hybCum4Eff  = hybAutoCum4  * cumMult
+hybCum5Eff  = hybAutoCum5  * cumMult
+
+hybBody1Eff = hybAutoBody1 * bodyMult
+hybBody2Eff = hybAutoBody2 * bodyMult
+hybBody3Eff = hybAutoBody3 * bodyMult
+hybBody4Eff = hybAutoBody4 * bodyMult
+hybBody5Eff = hybAutoBody5 * bodyMult
 
 // =============================================================================
 // RVOL 0.56 — BULL/BEAR SIGNALS
@@ -875,41 +861,41 @@ bool plot_HV150  = raw_HV150  and anyLong_1
 // =============================================================================
 // PLOTS — RVOL 0.56 (GATED BY LONG/SHORT)
 // =============================================================================
-plotshape(show_SAAB       and sigSAAB       and anyLong,  title="SAAB",        style=shape.square,       location=location.belowbar, size=size.tiny,   color=color.lime,    text="SAAB")
-plotshape(show_Kratos     and sigKratos     and anyShort, title="Kratos",      style=shape.square,       location=location.abovebar, size=size.tiny,   color=color.orange,  text="Krat")
-plotshape(show_BullRVOL1x and sigBullRVOL1x and anyLong,  title="Bull RVOL 1x",style=shape.xcross,      location=location.belowbar, size=size.small,  color=color.green,   text="RV1x+")
-plotshape(show_BearRVOL1x and sigBearRVOL1x and anyShort, title="Bear RVOL 1x",style=shape.xcross,      location=location.abovebar, size=size.small,  color=color.red,     text="RV1x-")
-plotshape(show_GrandSlam  and sigGrandSlam  and anyLong,  title="Grand Slam",  style=shape.triangleup,  location=location.belowbar, size=size.normal, color=color.aqua,    text="DINGER")
-plotshape(show_MOAB       and sigMOAB       and anyShort, title="MOAB",        style=shape.triangledown,location=location.abovebar, size=size.normal, color=color.fuchsia, text="MOAB")
-plotshape(show_WTC        and sigWTC        and anyMom,   title="WTC",         style=shape.diamond,     location=location.top,      size=size.normal, color=color.yellow,  text="WTC")
-plotshape(show_Hiroshima  and sigHiroshima  and anyMom,   title="Hiroshima",   style=shape.diamond,     location=location.top,      size=size.normal, color=color.white,   text="H")
-plotshape(show_Nagasaki   and sigNagasaki   and anyMom,   title="Nagasaki",    style=shape.flag,        location=location.top,      size=size.normal, color=color.purple,  text="N")
+plotshape(show_SAAB       and sigSAAB       and anyLong,  title="SAAB +LONG",              style=shape.square,       location=location.belowbar, size=size.tiny,   color=color.lime,    text="SAAB +LONG")
+plotshape(show_Kratos     and sigKratos     and anyShort, title="Kratos +SHORT",           style=shape.square,       location=location.abovebar, size=size.tiny,   color=color.orange,  text="Krat +SHORT")
+plotshape(show_BullRVOL1x and sigBullRVOL1x and anyLong,  title="Bull RVOL 1x +LONG",      style=shape.xcross,      location=location.belowbar, size=size.small,  color=color.green,   text="RV1x+ +LONG")
+plotshape(show_BearRVOL1x and sigBearRVOL1x and anyShort, title="Bear RVOL 1x +SHORT",     style=shape.xcross,      location=location.abovebar, size=size.small,  color=color.red,     text="RV1x- +SHORT")
+plotshape(show_GrandSlam  and sigGrandSlam  and anyLong,  title="Grand Slam +LONG",        style=shape.triangleup,  location=location.belowbar, size=size.normal, color=color.aqua,    text="DINGER +LONG")
+plotshape(show_MOAB       and sigMOAB       and anyShort, title="MOAB +SHORT",             style=shape.triangledown,location=location.abovebar, size=size.normal, color=color.fuchsia, text="MOAB +SHORT")
+plotshape(show_WTC        and sigWTC        and anyMom,   title="WTC +LONG/+SHORT",        style=shape.diamond,     location=location.top,      size=size.normal, color=color.yellow,  text="WTC +L/+S")
+plotshape(show_Hiroshima  and sigHiroshima  and anyMom,   title="Hiroshima +LONG/+SHORT",  style=shape.diamond,     location=location.top,      size=size.normal, color=color.white,   text="H +L/+S")
+plotshape(show_Nagasaki   and sigNagasaki   and anyMom,   title="Nagasaki +LONG/+SHORT",   style=shape.flag,        location=location.top,      size=size.normal, color=color.purple,  text="N +L/+S")
 
 // =============================================================================
 // PLOTS — SEQUENCES
 // =============================================================================
-plotshape(show_UU   and sig_bull_UU,   title="UU Signal",   location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.lime,   text="UU")
-plotshape(show_UUU  and sig_bull_UUU,  title="UUU Signal",  location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.blue,   text="UUU")
-plotshape(show_UUUU and sig_bull_UUUU, title="UUUU Signal", location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.orange, text="4U")
-plotshape(show_DD   and sig_bear_DD,   title="DD Signal",   location=location.abovebar, style=shape.triangledown, size=size.small, color=color.red,    text="DD")
-plotshape(show_DDD  and sig_bear_DDD,  title="DDD Signal",  location=location.abovebar, style=shape.triangledown, size=size.small, color=color.purple, text="DDD")
-plotshape(show_DDDD and sig_bear_DDDD, title="DDDD Signal", location=location.abovebar, style=shape.triangledown, size=size.small, color=color.maroon, text="4D")
+plotshape(show_UU   and sig_bull_UU,   title="UU +disp",   location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.lime,   text="UU +disp")
+plotshape(show_UUU  and sig_bull_UUU,  title="UUU +disp",  location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.blue,   text="UUU +disp")
+plotshape(show_UUUU and sig_bull_UUUU, title="UUUU +disp", location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.orange, text="4U +disp")
+plotshape(show_DD   and sig_bear_DD,   title="DD +disp",   location=location.abovebar, style=shape.triangledown, size=size.small, color=color.red,    text="DD +disp")
+plotshape(show_DDD  and sig_bear_DDD,  title="DDD +disp",  location=location.abovebar, style=shape.triangledown, size=size.small, color=color.purple, text="DDD +disp")
+plotshape(show_DDDD and sig_bear_DDDD, title="DDDD +disp", location=location.abovebar, style=shape.triangledown, size=size.small, color=color.maroon, text="4D +disp")
 
 // =============================================================================
 // PLOTS — B2B (gated by HV or displacement)
 // =============================================================================
-plotshape(show_B2B_2xSAAB   and sig_B2B_2xSAAB,   title="2x SAAB",      location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.lime, 0),   text="2xSAAB",   textcolor=color.black)
-plotshape(show_B2B_2xKratos and sig_B2B_2xKratos,  title="2x Kratos",    location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.orange, 0), text="2xKrat",   textcolor=color.black)
-plotshape(show_B2B_2xBull1x and sig_B2B_2xBull1x,  title="2x Bull 1x",   location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.green, 0),  text="2xRV1x+",  textcolor=color.white)
-plotshape(show_B2B_2xBear1x and sig_B2B_2xBear1x,  title="2x Bear 1x",   location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.red, 0),    text="2xRV1x-",  textcolor=color.white)
-plotshape(show_B2B_MidBull  and sig_B2B_MidBull,    title="B2B Mid Bull", location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.teal, 0),   text="B2B Mid+", textcolor=color.white)
-plotshape(show_B2B_MidBear  and sig_B2B_MidBear,    title="B2B Mid Bear", location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.maroon, 0), text="B2B Mid-", textcolor=color.white)
+plotshape(show_B2B_2xSAAB   and sig_B2B_2xSAAB,   title="2x SAAB +HV/disp",      location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.lime, 0),   text="2xSAAB +HV/disp",   textcolor=color.black)
+plotshape(show_B2B_2xKratos and sig_B2B_2xKratos,  title="2x Kratos +HV/disp",    location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.orange, 0), text="2xKrat +HV/disp",   textcolor=color.black)
+plotshape(show_B2B_2xBull1x and sig_B2B_2xBull1x,  title="2x Bull 1x +HV/disp",   location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.green, 0),  text="2xRV1x+ +HV/disp",  textcolor=color.white)
+plotshape(show_B2B_2xBear1x and sig_B2B_2xBear1x,  title="2x Bear 1x +HV/disp",   location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.red, 0),    text="2xRV1x- +HV/disp",  textcolor=color.white)
+plotshape(show_B2B_MidBull  and sig_B2B_MidBull,    title="B2B Mid Bull +HV/disp", location=location.belowbar, style=shape.labelup,   size=size.small, color=color.new(color.teal, 0),   text="B2B Mid+ +HV/disp", textcolor=color.white)
+plotshape(show_B2B_MidBear  and sig_B2B_MidBear,    title="B2B Mid Bear +HV/disp", location=location.abovebar, style=shape.labeldown, size=size.small, color=color.new(color.maroon, 0), text="B2B Mid- +HV/disp", textcolor=color.white)
 
 // =============================================================================
 // PLOTS — FAUNA (plotshape, no label.new; gated by disp + LONG/SHORT)
 // =============================================================================
-plotshape(fn_bullActive, title="FAUNA Bull", style=shape.labelup,   location=location.belowbar, size=size.normal, color=fn_bullColor, text="FN", textcolor=color.white)
-plotshape(fn_bearActive, title="FAUNA Bear", style=shape.labeldown, location=location.abovebar, size=size.normal, color=fn_bearColor, text="FN", textcolor=color.white)
+plotshape(fn_bullActive, title="FAUNA Bull +disp+LONG", style=shape.labelup,   location=location.belowbar, size=size.normal, color=fn_bullColor, text="FN +disp+LONG", textcolor=color.white)
+plotshape(fn_bearActive, title="FAUNA Bear +disp+SHORT", style=shape.labeldown, location=location.abovebar, size=size.normal, color=fn_bearColor, text="FN +disp+SHORT", textcolor=color.white)
 
 // =============================================================================
 // PLOTS — DISPLACEMENT (standalone, offset=-1 to mark the displaced bar)
@@ -935,17 +921,17 @@ plotshape(show_Long5  and sigAddLong5,  title="LONG 5",  style=shape.labelup,   
 // =============================================================================
 // PLOTS — HV (offset=-1, gated by LONG[1])
 // =============================================================================
-plotshape(plot_HV1000, title="HV 1000", style=shape.circle,       location=location.top,    color=color.new(color.blue, 0),   size=size.normal, text="1K",  textcolor=color.yellow, offset=-1)
-plotshape(plot_HV500,  title="HV 500",  style=shape.circle,       location=location.top,    color=color.new(color.red, 0),    size=size.normal, text="500", textcolor=color.silver, offset=-1)
-plotshape(plot_HV350,  title="HV 350",  style=shape.circle,       location=location.top,    color=color.new(color.green, 0),  size=size.small,  text="350", textcolor=color.white,  offset=-1)
-plotshape(plot_HV250,  title="HV 250",  style=shape.circle,       location=location.top,    color=color.new(color.yellow, 0), size=size.small,  text="250", textcolor=color.teal,   offset=-1)
-plotshape(plot_HV150,  title="HV 150",  style=shape.triangledown, location=location.bottom, color=color.new(color.aqua, 0),   size=size.tiny,   text="150", textcolor=color.orange, offset=-1)
+plotshape(plot_HV1000, title="HV 1000 +LONG[1]", style=shape.circle,       location=location.top,    color=color.new(color.blue, 0),   size=size.normal, text="1K +LONG[1]",  textcolor=color.yellow, offset=-1)
+plotshape(plot_HV500,  title="HV 500 +LONG[1]",  style=shape.circle,       location=location.top,    color=color.new(color.red, 0),    size=size.normal, text="500 +LONG[1]", textcolor=color.silver, offset=-1)
+plotshape(plot_HV350,  title="HV 350 +LONG[1]",  style=shape.circle,       location=location.top,    color=color.new(color.green, 0),  size=size.small,  text="350 +LONG[1]", textcolor=color.white,  offset=-1)
+plotshape(plot_HV250,  title="HV 250 +LONG[1]",  style=shape.circle,       location=location.top,    color=color.new(color.yellow, 0), size=size.small,  text="250 +LONG[1]", textcolor=color.teal,   offset=-1)
+plotshape(plot_HV150,  title="HV 150 +LONG[1]",  style=shape.triangledown, location=location.bottom, color=color.new(color.aqua, 0),   size=size.tiny,   text="150 +LONG[1]", textcolor=color.orange, offset=-1)
 
 // =============================================================================
 // PLOTS — HCT COMBOS (gated by coincident Singles signal)
 // =============================================================================
-plotshape(show_HCTBull and hctGatedBull,  title="HCT Bull",  style=shape.circle, location=location.top, size=size.huge, color=color.lime,    text="HC▲", textcolor=color.black)
-plotshape(show_HCTBear and hctGatedBear,  title="HCT Bear",  style=shape.circle, location=location.top, size=size.huge, color=color.red,     text="HC▼", textcolor=color.white)
+plotshape(show_HCTBull and hctGatedBull,  title="HCT Bull +Singles",  style=shape.circle, location=location.top, size=size.huge, color=color.lime,    text="HC▲ +Singles", textcolor=color.black)
+plotshape(show_HCTBear and hctGatedBear,  title="HCT Bear +Singles",  style=shape.circle, location=location.top, size=size.huge, color=color.red,     text="HC▼ +Singles", textcolor=color.white)
 
 // =============================================================================
 // PLOTS — PENTAGON SPECIALS
@@ -963,52 +949,52 @@ if conf
     string msg = ""
 
     if show_Nagasaki  and sigNagasaki  and anyMom
-        msg := f_add(msg, "NAGASAKI")
+        msg := f_add(msg, "NAGASAKI +L/+S")
     if show_Hiroshima and sigHiroshima and anyMom
-        msg := f_add(msg, "HIROSHIMA")
+        msg := f_add(msg, "HIROSHIMA +L/+S")
     if show_WTC       and sigWTC       and anyMom
-        msg := f_add(msg, "WTC")
+        msg := f_add(msg, "WTC +L/+S")
 
     if show_GrandSlam and sigGrandSlam and anyLong
-        msg := f_add(msg, "GRAND SLAM")
+        msg := f_add(msg, "GRAND SLAM +LONG")
     if show_MOAB      and sigMOAB      and anyShort
-        msg := f_add(msg, "MOAB")
+        msg := f_add(msg, "MOAB +SHORT")
 
     if show_B2B_2xSAAB   and sig_B2B_2xSAAB
-        msg := f_add(msg, "2x SAAB")
+        msg := f_add(msg, "2x SAAB +HV/disp")
     if show_B2B_2xKratos and sig_B2B_2xKratos
-        msg := f_add(msg, "2x KRATOS")
+        msg := f_add(msg, "2x KRATOS +HV/disp")
     if show_B2B_2xBull1x and sig_B2B_2xBull1x
-        msg := f_add(msg, "2x BULL 1x")
+        msg := f_add(msg, "2x BULL 1x +HV/disp")
     if show_B2B_2xBear1x and sig_B2B_2xBear1x
-        msg := f_add(msg, "2x BEAR 1x")
+        msg := f_add(msg, "2x BEAR 1x +HV/disp")
     if show_B2B_MidBull  and sig_B2B_MidBull
-        msg := f_add(msg, "B2B MID BULL")
+        msg := f_add(msg, "B2B MID BULL +HV/disp")
     if show_B2B_MidBear  and sig_B2B_MidBear
-        msg := f_add(msg, "B2B MID BEAR")
+        msg := f_add(msg, "B2B MID BEAR +HV/disp")
 
     if show_BullRVOL1x and sigBullRVOL1x and anyLong
-        msg := f_add(msg, "BULL RVOL 1x")
+        msg := f_add(msg, "BULL RVOL 1x +LONG")
     if show_BearRVOL1x and sigBearRVOL1x and anyShort
-        msg := f_add(msg, "BEAR RVOL 1x")
+        msg := f_add(msg, "BEAR RVOL 1x +SHORT")
 
     if show_SAAB   and sigSAAB   and anyLong
-        msg := f_add(msg, "SAAB")
+        msg := f_add(msg, "SAAB +LONG")
     if show_Kratos and sigKratos and anyShort
-        msg := f_add(msg, "KRATOS")
+        msg := f_add(msg, "KRATOS +SHORT")
 
     if show_UUUU and sig_bull_UUUU
-        msg := f_add(msg, "UUUU" + (uu4_override ? " [DISP-OVR]" : ""))
+        msg := f_add(msg, "UUUU +disp" + (uu4_override ? " [DISP-OVR]" : ""))
     if show_DDDD and sig_bear_DDDD
-        msg := f_add(msg, "DDDD" + (dd4_override ? " [DISP-OVR]" : ""))
+        msg := f_add(msg, "DDDD +disp" + (dd4_override ? " [DISP-OVR]" : ""))
     if show_UUU  and sig_bull_UUU
-        msg := f_add(msg, "UUU" + (uu3_override ? " [DISP-OVR]" : ""))
+        msg := f_add(msg, "UUU +disp" + (uu3_override ? " [DISP-OVR]" : ""))
     if show_DDD  and sig_bear_DDD
-        msg := f_add(msg, "DDD" + (dd3_override ? " [DISP-OVR]" : ""))
+        msg := f_add(msg, "DDD +disp" + (dd3_override ? " [DISP-OVR]" : ""))
     if show_UU   and sig_bull_UU
-        msg := f_add(msg, "UU")
+        msg := f_add(msg, "UU +disp")
     if show_DD   and sig_bear_DD
-        msg := f_add(msg, "DD")
+        msg := f_add(msg, "DD +disp")
 
     if show_Long1  and sigAddLong1
         msg := f_add(msg, "LONG 1")
@@ -1026,15 +1012,15 @@ if conf
         msg := f_add(msg, "LONG 5")
 
     if show_HV1000 and plot_HV1000
-        msg := f_add(msg, "HV 1000")
+        msg := f_add(msg, "HV 1000 +LONG[1]")
     if show_HV500 and plot_HV500
-        msg := f_add(msg, "HV 500")
+        msg := f_add(msg, "HV 500 +LONG[1]")
     if show_HV350 and plot_HV350
-        msg := f_add(msg, "HV 350")
+        msg := f_add(msg, "HV 350 +LONG[1]")
     if show_HV250 and plot_HV250
-        msg := f_add(msg, "HV 250")
+        msg := f_add(msg, "HV 250 +LONG[1]")
     if show_HV150 and plot_HV150
-        msg := f_add(msg, "HV 150")
+        msg := f_add(msg, "HV 150 +LONG[1]")
 
     if show_CDispBull3 and sigCDispBull3
         msg := f_add(msg, "DISP BULL 3+")
@@ -1050,21 +1036,22 @@ if conf
         msg := f_add(msg, "DISP BEAR")
 
     if show_FaunaBull and fn_bullActive
-        msg := f_add(msg, "FAUNA BULL " + fn_bullText)
+        msg := f_add(msg, "FAUNA BULL +disp+LONG " + fn_bullText)
     if show_FaunaBear and fn_bearActive
-        msg := f_add(msg, "FAUNA BEAR " + fn_bearText)
+        msg := f_add(msg, "FAUNA BEAR +disp+SHORT " + fn_bearText)
 
     if hctGatedBull
-        msg := f_add(msg, "HCT BULL")
+        msg := f_add(msg, "HCT BULL +Singles")
     if hctGatedBear
-        msg := f_add(msg, "HCT BEAR")
+        msg := f_add(msg, "HCT BEAR +Singles")
     if sigPentHV1K
         msg := f_add(msg, "PENT+HV1K")
     if sigPentHV500D
         msg := f_add(msg, "PENT+HV500+DISP")
 
     if msg != ""
-        alert("{{ticker}} {{interval}} — " + msg, alert.freq_once_per_bar_close)
+        metrics = " | REG=" + str.tostring(hybRegRatio, "#.##") + " CUM=" + str.tostring(hybCumRatio, "#.##") + " BODY=" + str.tostring(hybBodyRat, "0.00")
+        alert(msg + metrics, alert.freq_once_per_bar_close)
 
 // =============================================================================
 // INFO PANEL
@@ -1089,10 +1076,10 @@ if show_InfoPanel and barstate.islast
         infoTbl := table.new(f_panelPos(infoPanelPosition), 5, 11, bgcolor=color.new(color.black, 15), border_width=1, border_color=color.new(color.gray, 50))
 
     sz       = f_panelSize(infoPanelTextSize)
-    modeTxt  = hyb_autoDerive ? "AUTO" : "MANUAL"
-    modeBg   = hyb_autoDerive ? color.new(color.green, 60) : color.new(color.orange, 60)
+    pctTxt   = "R=" + str.tostring(reg_pct) + "% C=" + str.tostring(cum_pct) + "% B=" + str.tostring(body_pct) + "%"
+    pctBg    = (reg_pct == 100 and cum_pct == 100 and body_pct == 100) ? color.new(color.green, 60) : color.new(color.orange, 60)
 
-    table.cell(infoTbl, 0, 0, "HW SINGLES v2  —  " + timeframe.period + "  —  H = " + str.tostring(th_hiroshima, "#.##") + "  —  " + modeTxt, text_color=color.yellow, text_size=sz, bgcolor=modeBg)
+    table.cell(infoTbl, 0, 0, "HW SINGLES v2  —  " + timeframe.period + "  —  H = " + str.tostring(th_hiroshima, "#.##") + "  —  " + pctTxt, text_color=color.yellow, text_size=sz, bgcolor=pctBg)
     table.merge_cells(infoTbl, 0, 0, 4, 0)
 
     table.cell(infoTbl, 0, 1, "Tier", text_color=color.silver, text_size=sz, bgcolor=color.new(color.gray, 70))
