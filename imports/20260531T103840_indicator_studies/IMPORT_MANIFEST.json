@@ -49,8 +49,8 @@
       "original_import_path": "imports/20260531T103840_indicator_studies/originals/base_hv_d_to_pbj_to_ppd_v1_no_htf_shorttitle_base_hvd_pbj.txt",
       "pine_v5_path": "imports/20260531T103840_indicator_studies/pine_v5/base_hv_d_to_pbj_to_ppd_v1_no_htf_shorttitle_base_hvd_pbj.pine",
       "desktop_filename": "\"BASE HV+D ↔ PBJ ↔ PPD v1 (no HTF)\", shorttitle=\"BASE HVD PBJ\".txt",
-      "indicator_title": "BASE HV+D ↔ PBJ ↔ PPD v1 (no HTF)",
-      "shorttitle": "BASE HVD PBJ",
+      "indicator_title": "******** DO NOT USE - BANNED BAD BASE HVD PBJ STUDY ********",
+      "shorttitle": "DO NOT USE BASE",
       "source_pine_version": "5",
       "normalized_pine_version": "5",
       "duplicate_of_desktop_filename": "",
@@ -58,8 +58,13 @@
       "original_import_sha256": "7cc536620c788d62a5006e8a3291d351ef5c42a86c3a878edc9d5663e064736f",
       "pine_v5_sha256": "6c5fb3090cfee647a981e783c1217933c22bf2bc38d0fd26ef8ec1aa994a41e0",
       "line_count": 1833,
-      "normalization_notes": [],
-      "status": "pine_v5_normalized"
+      "normalization_notes": [
+        "BANNED_DO_NOT_USE: Disqualified by Anish on 2026-05-31. Wrong / poorly written code. Await replacement bullish and bearish studies."
+      ],
+      "status": "BANNED_DO_NOT_USE",
+      "ban_status": "BANNED_DO_NOT_USE",
+      "ban_reason": "Disqualified by Anish on 2026-05-31 because the BASE HVD PBJ study is wrong / poorly written. Await replacement bullish and bearish studies.",
+      "do_not_use": true
     },
     {
       "desktop_source_path": "/Users/anishpatel/Desktop/Indicator studies/\"Displacement 4x\", shorttitle=\"DISP 4x\".txt",

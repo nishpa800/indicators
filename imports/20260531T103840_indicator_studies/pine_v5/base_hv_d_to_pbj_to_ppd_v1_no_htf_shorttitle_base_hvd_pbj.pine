@@ -60,7 +60,13 @@
 // ║  └────────────────────────────────────────────────────────────────────────┘   ║
 // ╚════════════════════════════════════════════════════════════════════════════════╝
 //@version=5
-indicator("BASE HV+D ↔ PBJ ↔ PPD v1 (no HTF)", shorttitle="BASE HVD PBJ", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
+// *****************************************************************************
+// *** DO NOT USE - BANNED BAD BASE HVD PBJ STUDY - DO NOT USE                 ***
+// *** DO NOT USE - DISQUALIFIED BY ANISH ON 2026-05-31 - DO NOT USE           ***
+// *** DO NOT USE - WRONG / POORLY WRITTEN CODE - DO NOT USE                   ***
+// *** WAIT FOR REPLACEMENT BULLISH + BEARISH STUDIES FROM ANISH               ***
+// *****************************************************************************
+indicator("******** DO NOT USE - BANNED BAD BASE HVD PBJ STUDY ********", shorttitle="DO NOT USE BASE", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
 
 import TradingView/ta/7 as tv_ta
 
