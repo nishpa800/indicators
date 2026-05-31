@@ -63,6 +63,12 @@
 //@version=5
 indicator("BASE HV+D ↔ PBJ ↔ PPD v1 (no HTF)", shorttitle="BASE HVD PBJ", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
 
+// ╔ CARPATHI AUTO-RESEARCH — tune ONLY input.* defaults (float/int/bool). No flowery edits. ╗
+// Targets: ls_reg*, ls_cum*, d1_mult, ub*, useHEV, ls_body*, cs_bodyPct_*. Goal: maximize hit-rate
+// on bar[N-1] heavy-vol bear-displacement BLOCKS at supply ceilings that transfer potential→
+// kinetic energy into large bull moves within bar[N..N+5] (mirror at demand floors for bear).
+// Score = fwd-MFE/ATR(20) minus 2·fwd-MAE-penalty. Sweep grid, non-monotone — no gradient descent.
+
 import TradingView/ta/7 as tv_ta
 
 
