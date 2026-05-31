@@ -176,19 +176,25 @@ var float[] b1_sqLo = array.new_float()
 bool b1_ovlp = false
 if array.size(b1_thIdx) > 0
     while bar_index - array.get(b1_thIdx, 0) > 20
-        array.shift(b1_thIdx), array.shift(b1_thHi), array.shift(b1_thLo)
+        array.shift(b1_thIdx)
+        array.shift(b1_thHi)
+        array.shift(b1_thLo)
         if array.size(b1_thIdx) == 0
             break
 if array.size(b1_sqIdx) > 0
     while bar_index - array.get(b1_sqIdx, 0) > 20
-        array.shift(b1_sqIdx), array.shift(b1_sqHi), array.shift(b1_sqLo)
+        array.shift(b1_sqIdx)
+        array.shift(b1_sqHi)
+        array.shift(b1_sqLo)
         if array.size(b1_sqIdx) == 0
             break
 
 b1_chk(loA, hiA, loB, hiB) => loA <= hiB and loB <= hiA
 
 if b1_thEv
-    array.push(b1_thIdx, bar_index), array.push(b1_thHi, high), array.push(b1_thLo, low)
+    array.push(b1_thIdx, bar_index)
+    array.push(b1_thHi, high)
+    array.push(b1_thLo, low)
     if array.size(b1_sqIdx) > 0
         for i = 0 to array.size(b1_sqIdx) - 1
             if b1_chk(low, high, array.get(b1_sqLo, i), array.get(b1_sqHi, i))
@@ -196,7 +202,9 @@ if b1_thEv
                 break
 
 if b1_seqEv and not b1_ovlp
-    array.push(b1_sqIdx, bar_index), array.push(b1_sqHi, high), array.push(b1_sqLo, low)
+    array.push(b1_sqIdx, bar_index)
+    array.push(b1_sqHi, high)
+    array.push(b1_sqLo, low)
     if array.size(b1_thIdx) > 0
         for i = 0 to array.size(b1_thIdx) - 1
             if b1_chk(low, high, array.get(b1_thLo, i), array.get(b1_thHi, i))
@@ -263,19 +271,25 @@ var float[] b4_sqLo = array.new_float()
 bool b4_ovlp = false
 if array.size(b4_thIdx) > 0
     while bar_index - array.get(b4_thIdx, 0) > 20
-        array.shift(b4_thIdx), array.shift(b4_thHi), array.shift(b4_thLo)
+        array.shift(b4_thIdx)
+        array.shift(b4_thHi)
+        array.shift(b4_thLo)
         if array.size(b4_thIdx) == 0
             break
 if array.size(b4_sqIdx) > 0
     while bar_index - array.get(b4_sqIdx, 0) > 20
-        array.shift(b4_sqIdx), array.shift(b4_sqHi), array.shift(b4_sqLo)
+        array.shift(b4_sqIdx)
+        array.shift(b4_sqHi)
+        array.shift(b4_sqLo)
         if array.size(b4_sqIdx) == 0
             break
 
 b4_chk(loA, hiA, loB, hiB) => loA <= hiB and loB <= hiA
 
 if b4_thEv
-    array.push(b4_thIdx, bar_index), array.push(b4_thHi, high), array.push(b4_thLo, low)
+    array.push(b4_thIdx, bar_index)
+    array.push(b4_thHi, high)
+    array.push(b4_thLo, low)
     if array.size(b4_sqIdx) > 0
         for i = 0 to array.size(b4_sqIdx) - 1
             if b4_chk(low, high, array.get(b4_sqLo, i), array.get(b4_sqHi, i))
@@ -283,7 +297,9 @@ if b4_thEv
                 break
 
 if b4_seqEv and not b4_ovlp
-    array.push(b4_sqIdx, bar_index), array.push(b4_sqHi, high), array.push(b4_sqLo, low)
+    array.push(b4_sqIdx, bar_index)
+    array.push(b4_sqHi, high)
+    array.push(b4_sqLo, low)
     if array.size(b4_thIdx) > 0
         for i = 0 to array.size(b4_thIdx) - 1
             if b4_chk(low, high, array.get(b4_thLo, i), array.get(b4_thHi, i))
@@ -1145,4 +1161,3 @@ alertcondition(comboPBJ_Cluster_Bull or comboPBJ_Cluster_Bear, "PBJ+Cluster", "P
 alertcondition(comboHW_AnyBull or comboHW_AnyBear, "HW+Any", "HW+ANY")
 alertcondition(comboGZHV_AnyBull or comboGZHV_AnyBear, "GZ/HV+Any", "GZ/HV+ANY")
 alertcondition(hvGziComboBull or hvGziComboBear, "HV+GZI Combo", "HV+GZI COMBO")
-

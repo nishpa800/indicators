@@ -16,9 +16,12 @@ followUpBars = input.int(1, "Window Bars (Y)", minval=1, group="TB/Foster Signal
 neutralBarsRequired = input.int(5, "Neutral Bars Required", minval=1, group="1st Pass Signals", tooltip="Min bars with neither Anish Bull nor Anish Bear before PP can arm the signal")
 
 // === CORE CALCS ===
-float ema50 = ta.ema(close, 50), float ema150 = ta.ema(close, 150), float ema200 = ta.ema(close, 200)
+float ema50 = ta.ema(close, 50)
+float ema150 = ta.ema(close, 150)
+float ema200 = ta.ema(close, 200)
 float ema200_1m = ema200[21]
-float w52Hi = ta.highest(high, 252), float w52Lo = ta.lowest(low, 252)
+float w52Hi = ta.highest(high, 252)
+float w52Lo = ta.lowest(low, 252)
 
 // === ANISH BULL CONDITIONS (Stage 2 Uptrend) ===
 bool bullPass = close > ema50 and close >= ema150 and close >= ema200 and ema50 > ema150 and ema50 > ema200 and ema150 >= ema200 and ema200 > ema200_1m and close > (w52Lo * 1.30) and close >= (w52Hi * 0.75)
@@ -217,4 +220,3 @@ alertcondition(b2bPUP, "B2B PUP", "Back to Back PUP - Consecutive Bullish Pocket
 alertcondition(b2bPPD, "B2B PPD", "Back to Back PPD - Consecutive Bearish Pocket Pivots")
 alertcondition(firstPUPPass, "1st PUP Pass", "First PUP Pass - Bullish Breakout from Neutral")
 alertcondition(firstPPDPass, "1st PPD Pass", "First PPD Pass - Bearish Breakdown from Neutral")
-

@@ -616,7 +616,9 @@ f_vob(int len1, array<level> up_lvl, array<level> lo_lvl, float atr_prox, float 
         bp := vbv.size() > 0 ? vbv.sum() : 0.0
         sp := vav.size() > 0 ? vav.sum() : 0.0
 
-        float db_vol = 0.0, float db_low = 0.0, float db_high = 0.0
+        float db_vol = 0.0
+        float db_low = 0.0
+        float db_high = 0.0
         int bc = vbv.size()
         if bc > 0
             for i = 0 to bc - 1
@@ -626,7 +628,9 @@ f_vob(int len1, array<level> up_lvl, array<level> lo_lvl, float atr_prox, float 
                     db_low  := vbl.get(i)
                     db_high := vbh.get(i)
 
-        float da_vol = 0.0, float da_low = 0.0, float da_high = 0.0
+        float da_vol = 0.0
+        float da_low = 0.0
+        float da_high = 0.0
         int ac = vav.size()
         if ac > 0
             for i = 0 to ac - 1
@@ -648,12 +652,18 @@ f_vob(int len1, array<level> up_lvl, array<level> lo_lvl, float atr_prox, float 
 // FUNCTION CALLS — capture array sizes BEFORE for zone-creation detection
 // ─────────────────────────────────────────────────────────────────────────────
 
-int sz_la = lower_a.size(), int sz_ua = upper_a.size()
-int sz_lb = lower_b.size(), int sz_ub = upper_b.size()
-int sz_lc = lower_c.size(), int sz_uc = upper_c.size()
-int sz_ld = lower_d.size(), int sz_ud = upper_d.size()
-int sz_le = lower_e.size(), int sz_ue = upper_e.size()
-int sz_lf = lower_f.size(), int sz_uf = upper_f.size()
+int sz_la = lower_a.size()
+int sz_ua = upper_a.size()
+int sz_lb = lower_b.size()
+int sz_ub = upper_b.size()
+int sz_lc = lower_c.size()
+int sz_uc = upper_c.size()
+int sz_ld = lower_d.size()
+int sz_ud = upper_d.size()
+int sz_le = lower_e.size()
+int sz_ue = upper_e.size()
+int sz_lf = lower_f.size()
+int sz_uf = upper_f.size()
 
 [t3_buy_a, t3_sell_a, bpa, spa] = f_vob(sens_a, upper_a, lower_a, atr_proximity, atr_adjust, super_mult)
 [t3_buy_b, t3_sell_b, bpb, spb] = f_vob(sens_b, upper_b, lower_b, atr_proximity, atr_adjust, super_mult)
@@ -663,12 +673,18 @@ int sz_lf = lower_f.size(), int sz_uf = upper_f.size()
 [t3_buy_f, t3_sell_f, bpf, spf] = f_vob(sens_f, upper_f, lower_f, atr_proximity, atr_adjust, super_mult)
 
 // Zone-creation booleans (array grew = new zone pushed)
-bool nzb_a = lower_a.size() > sz_la, bool nzs_a = upper_a.size() > sz_ua
-bool nzb_b = lower_b.size() > sz_lb, bool nzs_b = upper_b.size() > sz_ub
-bool nzb_c = lower_c.size() > sz_lc, bool nzs_c = upper_c.size() > sz_uc
-bool nzb_d = lower_d.size() > sz_ld, bool nzs_d = upper_d.size() > sz_ud
-bool nzb_e = lower_e.size() > sz_le, bool nzs_e = upper_e.size() > sz_ue
-bool nzb_f = lower_f.size() > sz_lf, bool nzs_f = upper_f.size() > sz_uf
+bool nzb_a = lower_a.size() > sz_la
+bool nzs_a = upper_a.size() > sz_ua
+bool nzb_b = lower_b.size() > sz_lb
+bool nzs_b = upper_b.size() > sz_ub
+bool nzb_c = lower_c.size() > sz_lc
+bool nzs_c = upper_c.size() > sz_uc
+bool nzb_d = lower_d.size() > sz_ld
+bool nzs_d = upper_d.size() > sz_ud
+bool nzb_e = lower_e.size() > sz_le
+bool nzs_e = upper_e.size() > sz_ue
+bool nzb_f = lower_f.size() > sz_lf
+bool nzs_f = upper_f.size() > sz_uf
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EMISSION LAYER — ZONE METRICS COMPUTATION (moved here so alerts can use them)
@@ -676,21 +692,33 @@ bool nzb_f = lower_f.size() > sz_lf, bool nzs_f = upper_f.size() > sz_uf
 // These DO NOT affect signal logic. Computed here (after f_vob populates zone
 // arrays) so Bloomberg-format alert strings can reference them.
 
-int cnt_ba = f_count_active(lower_a), int cnt_sa = f_count_active(upper_a)
-int cnt_bb = f_count_active(lower_b), int cnt_sb = f_count_active(upper_b)
-int cnt_bc = f_count_active(lower_c), int cnt_sc = f_count_active(upper_c)
-int cnt_bd = f_count_active(lower_d), int cnt_sd = f_count_active(upper_d)
-int cnt_be = f_count_active(lower_e), int cnt_se = f_count_active(upper_e)
-int cnt_bf = f_count_active(lower_f), int cnt_sf = f_count_active(upper_f)
+int cnt_ba = f_count_active(lower_a)
+int cnt_sa = f_count_active(upper_a)
+int cnt_bb = f_count_active(lower_b)
+int cnt_sb = f_count_active(upper_b)
+int cnt_bc = f_count_active(lower_c)
+int cnt_sc = f_count_active(upper_c)
+int cnt_bd = f_count_active(lower_d)
+int cnt_sd = f_count_active(upper_d)
+int cnt_be = f_count_active(lower_e)
+int cnt_se = f_count_active(upper_e)
+int cnt_bf = f_count_active(lower_f)
+int cnt_sf = f_count_active(upper_f)
 int cnt_bull_all = cnt_ba + cnt_bb + cnt_bc + cnt_bd + cnt_be + cnt_bf
 int cnt_bear_all = cnt_sa + cnt_sb + cnt_sc + cnt_sd + cnt_se + cnt_sf
 
-float nd_ba = f_nearest_dist_pct(lower_a, close), float nd_sa = f_nearest_dist_pct(upper_a, close)
-float nd_bb = f_nearest_dist_pct(lower_b, close), float nd_sb = f_nearest_dist_pct(upper_b, close)
-float nd_bc = f_nearest_dist_pct(lower_c, close), float nd_sc = f_nearest_dist_pct(upper_c, close)
-float nd_bd = f_nearest_dist_pct(lower_d, close), float nd_sd = f_nearest_dist_pct(upper_d, close)
-float nd_be = f_nearest_dist_pct(lower_e, close), float nd_se = f_nearest_dist_pct(upper_e, close)
-float nd_bf = f_nearest_dist_pct(lower_f, close), float nd_sf = f_nearest_dist_pct(upper_f, close)
+float nd_ba = f_nearest_dist_pct(lower_a, close)
+float nd_sa = f_nearest_dist_pct(upper_a, close)
+float nd_bb = f_nearest_dist_pct(lower_b, close)
+float nd_sb = f_nearest_dist_pct(upper_b, close)
+float nd_bc = f_nearest_dist_pct(lower_c, close)
+float nd_sc = f_nearest_dist_pct(upper_c, close)
+float nd_bd = f_nearest_dist_pct(lower_d, close)
+float nd_sd = f_nearest_dist_pct(upper_d, close)
+float nd_be = f_nearest_dist_pct(lower_e, close)
+float nd_se = f_nearest_dist_pct(upper_e, close)
+float nd_bf = f_nearest_dist_pct(lower_f, close)
+float nd_sf = f_nearest_dist_pct(upper_f, close)
 
 float nearest_bull_dist = math.min(nd_ba >= 0 ? nd_ba : 999, nd_bb >= 0 ? nd_bb : 999, nd_bc >= 0 ? nd_bc : 999, nd_bd >= 0 ? nd_bd : 999, nd_be >= 0 ? nd_be : 999, nd_bf >= 0 ? nd_bf : 999)
 float nearest_bear_dist = math.min(nd_sa >= 0 ? nd_sa : 999, nd_sb >= 0 ? nd_sb : 999, nd_sc >= 0 ? nd_sc : 999, nd_sd >= 0 ? nd_sd : 999, nd_se >= 0 ? nd_se : 999, nd_sf >= 0 ? nd_sf : 999)
@@ -700,13 +728,19 @@ nearest_bear_dist := nearest_bear_dist >= 999 ? -1.0 : nearest_bear_dist
 int stk_bull = f_stack_near(lower_a, close, stack_thresh_pct) + f_stack_near(lower_b, close, stack_thresh_pct) + f_stack_near(lower_c, close, stack_thresh_pct) + f_stack_near(lower_d, close, stack_thresh_pct) + f_stack_near(lower_e, close, stack_thresh_pct) + f_stack_near(lower_f, close, stack_thresh_pct)
 int stk_bear = f_stack_near(upper_a, close, stack_thresh_pct) + f_stack_near(upper_b, close, stack_thresh_pct) + f_stack_near(upper_c, close, stack_thresh_pct) + f_stack_near(upper_d, close, stack_thresh_pct) + f_stack_near(upper_e, close, stack_thresh_pct) + f_stack_near(upper_f, close, stack_thresh_pct)
 
-float opp_a = f_nearest_above_pct(upper_a, close), float opp_b = f_nearest_above_pct(upper_b, close)
-float opp_c = f_nearest_above_pct(upper_c, close), float opp_d = f_nearest_above_pct(upper_d, close)
-float opp_e = f_nearest_above_pct(upper_e, close), float opp_f = f_nearest_above_pct(upper_f, close)
+float opp_a = f_nearest_above_pct(upper_a, close)
+float opp_b = f_nearest_above_pct(upper_b, close)
+float opp_c = f_nearest_above_pct(upper_c, close)
+float opp_d = f_nearest_above_pct(upper_d, close)
+float opp_e = f_nearest_above_pct(upper_e, close)
+float opp_f = f_nearest_above_pct(upper_f, close)
 float bull_gap = math.min(opp_a, opp_b, opp_c, opp_d, opp_e, opp_f)
-float opp_ba = f_nearest_below_pct(lower_a, close), float opp_bb = f_nearest_below_pct(lower_b, close)
-float opp_bc = f_nearest_below_pct(lower_c, close), float opp_bd = f_nearest_below_pct(lower_d, close)
-float opp_be = f_nearest_below_pct(lower_e, close), float opp_bf = f_nearest_below_pct(lower_f, close)
+float opp_ba = f_nearest_below_pct(lower_a, close)
+float opp_bb = f_nearest_below_pct(lower_b, close)
+float opp_bc = f_nearest_below_pct(lower_c, close)
+float opp_bd = f_nearest_below_pct(lower_d, close)
+float opp_be = f_nearest_below_pct(lower_e, close)
+float opp_bf = f_nearest_below_pct(lower_f, close)
 float bear_gap = math.min(opp_ba, opp_bb, opp_bc, opp_bd, opp_be, opp_bf)
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -987,8 +1021,10 @@ var array<float> ovlp_bull_lo = array.new<float>()
 var array<float> ovlp_bull_hi = array.new<float>()
 var array<float> ovlp_bear_lo = array.new<float>()
 var array<float> ovlp_bear_hi = array.new<float>()
-ovlp_bull_lo.clear(), ovlp_bull_hi.clear()
-ovlp_bear_lo.clear(), ovlp_bear_hi.clear()
+ovlp_bull_lo.clear()
+ovlp_bull_hi.clear()
+ovlp_bear_lo.clear()
+ovlp_bear_hi.clear()
 
 f_count_overlaps(array<float> trk_lo, array<float> trk_hi, float zlo, float zhi) =>
     int count = 0
@@ -1004,7 +1040,9 @@ f_draw_zone(int origin_time, float z_upper, float z_lower, float z_mid, color co
         line lb = line.new(origin_time, z_lower, time, z_lower, xloc.bar_time, extend.right, col, line.style_solid, 1)
         line lm = line.new(origin_time, z_mid,   time, z_mid,   xloc.bar_time, extend.right, color.new(col, mid_transp), line.style_dashed, 1)
         linefill lf = linefill.new(lt, lb, color.new(col, fill_transp))
-        drawn_lines.push(lt), drawn_lines.push(lb), drawn_lines.push(lm)
+        drawn_lines.push(lt)
+        drawn_lines.push(lb)
+        drawn_lines.push(lm)
         drawn_fills.push(lf)
     else if priority == 1
         line lm = line.new(origin_time, z_mid, time, z_mid, xloc.bar_time, extend.right, col, line.style_solid, 2)
