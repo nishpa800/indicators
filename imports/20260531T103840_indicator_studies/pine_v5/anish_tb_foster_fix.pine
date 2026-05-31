@@ -1,0 +1,220 @@
+//@version=5
+indicator("Anish TB Foster Fix", overlay=true, max_bars_back=2000)
+
+// === INPUTS ===
+barSize = input.float(3.0, "% Change (Barsize)", minval=0.1, step=0.1, group="Pocket Pivot")
+ppLookback = input.int(10, "Lookback Days", minval=1, group="Pocket Pivot")
+gapUpEnabled = input.bool(false, "Gap-Up Required", group="Gap Detection")
+gapDownEnabled = input.bool(false, "Gap-Down Required", group="Gap Detection")
+gapValue = input.float(0.5, "Gap Value %", minval=0.1, step=0.1, group="Gap Detection")
+
+// === TB/FOSTER SIGNAL INPUTS ===
+minAnishBars = input.int(5, "Min Anish Bars (X)", minval=1, group="TB/Foster Signals", tooltip="Minimum consecutive bars with Anish signal before transition")
+followUpBars = input.int(1, "Window Bars (Y)", minval=1, group="TB/Foster Signals", tooltip="Window of opportunity after Anish run ends - PPD/PUP must appear within Y bars to trigger TB/Foster")
+
+// === 1ST PASS SIGNAL INPUTS ===
+neutralBarsRequired = input.int(5, "Neutral Bars Required", minval=1, group="1st Pass Signals", tooltip="Min bars with neither Anish Bull nor Anish Bear before PP can arm the signal")
+
+// === CORE CALCS ===
+float ema50 = ta.ema(close, 50), float ema150 = ta.ema(close, 150), float ema200 = ta.ema(close, 200)
+float ema200_1m = ema200[21]
+float w52Hi = ta.highest(high, 252), float w52Lo = ta.lowest(low, 252)
+
+// === ANISH BULL CONDITIONS (Stage 2 Uptrend) ===
+bool bullPass = close > ema50 and close >= ema150 and close >= ema200 and ema50 > ema150 and ema50 > ema200 and ema150 >= ema200 and ema200 > ema200_1m and close > (w52Lo * 1.30) and close >= (w52Hi * 0.75)
+
+// === ANISH BEAR CONDITIONS (Stage 4 Downtrend) ===
+bool bearPass = close < ema50 and close <= ema150 and close <= ema200 and ema50 < ema150 and ema50 < ema200 and ema150 <= ema200 and ema200 < ema200_1m and close < (w52Hi * 0.70) and close <= (w52Lo * 1.25)
+
+// === POCKET PIVOT CALCS ===
+float redVol = close < open ? volume : 0.0
+float greenVol = close > open ? volume : 0.0
+float hiRedVol = ta.highest(redVol[1], ppLookback)
+float hiGreenVol = ta.highest(greenVol[1], ppLookback)
+
+bool priceUp = ((close - open) / open) * 100 > barSize
+bool priceDn = ((open - close) / open) * 100 > barSize
+bool volBull = volume > hiRedVol
+bool volBear = volume > hiGreenVol
+
+bool sPPBull = priceUp and volBull
+bool sPPBear = priceDn and volBear
+
+// === GAP DETECTION ===
+bool gapUp = open > (close[1] * (1 + gapValue / 100))
+bool gapDn = open < (close[1] * (1 - gapValue / 100))
+bool gapUpSig = gapUpEnabled and gapUp
+bool gapDnSig = gapDownEnabled and gapDn
+
+// === CONFLUENCE SIGNALS ===
+bool sAllBull = sPPBull and gapUpSig and bullPass
+bool sAllBear = sPPBear and gapDnSig and bearPass
+
+// === SUPER PPD / SUPER PUP (Same-bar confluence) ===
+bool superPPD = sPPBear and bearPass
+bool superPup = sPPBull and bullPass
+
+// === TB SIGNAL LOGIC (Bearish) ===
+// Track consecutive Anish Bull bars
+var int consecAnishBull = 0
+if bullPass
+    consecAnishBull := consecAnishBull + 1
+else
+    consecAnishBull := 0
+
+// Track if we've completed a valid Anish Bull run and window is open
+var bool tbWindowOpen = false
+var int tbWindowCount = 0
+
+// Detect transition: Anish Bull run of X bars just ended (was bullPass, now not)
+bool bullRunJustEnded = not bullPass and consecAnishBull[1] >= minAnishBars
+
+// Open window when bull run ends
+if bullRunJustEnded
+    tbWindowOpen := true
+    tbWindowCount := 0
+
+// TB Signal logic
+bool tbSignal = false
+if tbWindowOpen
+    tbWindowCount := tbWindowCount + 1
+    // If Anish Bull returns, close window
+    if bullPass
+        tbWindowOpen := false
+        tbWindowCount := 0
+    // If PPD appears within window, fire TB
+    else if sPPBear
+        tbSignal := true
+        tbWindowOpen := false
+        tbWindowCount := 0
+    // If window expires (Y bars passed), close it
+    else if tbWindowCount > followUpBars
+        tbWindowOpen := false
+        tbWindowCount := 0
+
+// === FOSTER SIGNAL LOGIC (Bullish) ===
+// Track consecutive Anish Bear bars
+var int consecAnishBear = 0
+if bearPass
+    consecAnishBear := consecAnishBear + 1
+else
+    consecAnishBear := 0
+
+// Track if we've completed a valid Anish Bear run and window is open
+var bool fosterWindowOpen = false
+var int fosterWindowCount = 0
+
+// Detect transition: Anish Bear run of X bars just ended (was bearPass, now not)
+bool bearRunJustEnded = not bearPass and consecAnishBear[1] >= minAnishBars
+
+// Open window when bear run ends
+if bearRunJustEnded
+    fosterWindowOpen := true
+    fosterWindowCount := 0
+
+// Foster Signal logic
+bool fosterSignal = false
+if fosterWindowOpen
+    fosterWindowCount := fosterWindowCount + 1
+    // If Anish Bear returns, close window
+    if bearPass
+        fosterWindowOpen := false
+        fosterWindowCount := 0
+    // If PUP appears within window, fire Foster
+    else if sPPBull
+        fosterSignal := true
+        fosterWindowOpen := false
+        fosterWindowCount := 0
+    // If window expires (Y bars passed), close it
+    else if fosterWindowCount > followUpBars
+        fosterWindowOpen := false
+        fosterWindowCount := 0
+
+// === BACK TO BACK SIGNALS ===
+bool b2bPUP = sPPBull and sPPBull[1]
+bool b2bPPD = sPPBear and sPPBear[1]
+
+// === 1ST PUP PASS LOGIC ===
+// Track consecutive neutral bars (no Anish Bull AND no Anish Bear)
+var int neutralBarCount = 0
+bool isNeutral = not bullPass and not bearPass
+neutralBarCount := isNeutral ? neutralBarCount + 1 : 0
+
+// Track if we've had enough neutral bars
+var bool neutralPhaseComplete = false
+if neutralBarCount >= neutralBarsRequired
+    neutralPhaseComplete := true
+
+// Track if PUP occurred after neutral phase
+var bool pupArmed = false
+if neutralPhaseComplete and sPPBull
+    pupArmed := true
+
+// Reset if we get an Anish Bear (wrong direction)
+if bearPass and pupArmed
+    pupArmed := false
+    neutralPhaseComplete := false
+
+// 1st PUP Pass fires on first Anish Bull after armed
+bool firstPUPPass = pupArmed and bullPass and not bullPass[1]
+
+// Reset after signal fires
+if firstPUPPass
+    pupArmed := false
+    neutralPhaseComplete := false
+
+// === 1ST PPD PASS LOGIC ===
+// Track if PPD occurred after neutral phase
+var bool ppdArmed = false
+if neutralPhaseComplete and sPPBear
+    ppdArmed := true
+
+// Reset if we get an Anish Bull (wrong direction)
+if bullPass and ppdArmed
+    ppdArmed := false
+    neutralPhaseComplete := false
+
+// 1st PPD Pass fires on first Anish Bear after armed
+bool firstPPDPass = ppdArmed and bearPass and not bearPass[1]
+
+// Reset after signal fires
+if firstPPDPass
+    ppdArmed := false
+    neutralPhaseComplete := false
+
+// === PLOTS ===
+plotshape(sPPBull, "Pocket Pivot Bull", shape.triangleup, location.belowbar, color.blue, size=size.small, text="PUP")
+plotshape(sPPBear, "Pocket Pivot Bear", shape.triangledown, location.abovebar, color.red, size=size.small, text="PPD")
+plotshape(bullPass, "Anish Bull", shape.diamond, location.abovebar, color.green, size=size.tiny)
+plotshape(bearPass, "Anish Bear", shape.diamond, location.belowbar, color.red, size=size.tiny)
+plotshape(sAllBull, "All Three Bull", shape.circle, location.abovebar, color.yellow, size=size.small)
+plotshape(sAllBear, "All Three Bear", shape.circle, location.belowbar, color.fuchsia, size=size.small)
+
+// === NEW SIGNAL PLOTS ===
+plotshape(superPup, "Super Pup", shape.labelup, location.belowbar, color.lime, size=size.small, text="S-PUP", textcolor=color.white)
+plotshape(superPPD, "Super PPD", shape.labeldown, location.abovebar, color.maroon, size=size.small, text="S-PPD", textcolor=color.white)
+plotshape(fosterSignal, "Foster Buy", shape.labelup, location.belowbar, color.aqua, size=size.small, text="FOSTER", textcolor=color.white)
+plotshape(tbSignal, "TB Sell", shape.labeldown, location.abovebar, color.purple, size=size.small, text="TB", textcolor=color.white)
+
+// === B2B AND 1ST PASS SIGNAL PLOTS ===
+plotshape(b2bPUP, "B2B PUP", shape.labelup, location.belowbar, color.teal, size=size.small, text="B2B PUP", textcolor=color.white)
+plotshape(b2bPPD, "B2B PPD", shape.labeldown, location.abovebar, color.orange, size=size.small, text="B2B PPD", textcolor=color.black)
+plotshape(firstPUPPass, "1st PUP Pass", shape.labelup, location.belowbar, color.rgb(0, 255, 127), size=size.small, text="1st PUP", textcolor=color.blue)
+plotshape(firstPPDPass, "1st PPD Pass", shape.labeldown, location.abovebar, color.rgb(255, 69, 0), size=size.small, text="1st PPD", textcolor=color.white)
+
+// === ALERTS ===
+alertcondition(sPPBull, "Pocket Pivot Bull", "Bullish Pocket Pivot")
+alertcondition(sPPBear, "Pocket Pivot Bear", "Bearish Pocket Pivot")
+alertcondition(bullPass, "Anish Bull Pass", "Anish Patel Bull Pass - Stage 2 Uptrend")
+alertcondition(bearPass, "Anish Bear Pass", "Anish Patel Bear Pass - Stage 4 Downtrend")
+alertcondition(sAllBull, "All Three Bull", "PP + Gap Up + Anish Bull")
+alertcondition(sAllBear, "All Three Bear", "PP + Gap Down + Anish Bear")
+alertcondition(superPup, "Super Pup", "PUP + Anish Bull Confluence - Strong Buy")
+alertcondition(superPPD, "Super PPD", "PPD + Anish Bear Confluence - Strong Sell")
+alertcondition(fosterSignal, "Foster Buy", "Foster Signal - Rescue Buy after Bear Phase")
+alertcondition(tbSignal, "TB Sell", "TB Signal - Breakdown after Bull Phase")
+alertcondition(b2bPUP, "B2B PUP", "Back to Back PUP - Consecutive Bullish Pocket Pivots")
+alertcondition(b2bPPD, "B2B PPD", "Back to Back PPD - Consecutive Bearish Pocket Pivots")
+alertcondition(firstPUPPass, "1st PUP Pass", "First PUP Pass - Bullish Breakout from Neutral")
+alertcondition(firstPPDPass, "1st PPD Pass", "First PPD Pass - Bearish Breakdown from Neutral")
+

@@ -1,0 +1,435 @@
+// THIS MUST BE THE VERY FIRST LINE IN THE EDITOR
+//@version=5
+indicator("Fauna Dual Mode 2.0", overlay=true, max_bars_back=1500)
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  0. GLOBAL VISIBILITY + COLORS                              ║
+// ╚══════════════════════════════════════════════════════════════╝
+group_global   = "0. Global Visibility"
+showBullish    = input.bool(true,  "Show ALL Bullish Signals",  group=group_global)
+showBearish    = input.bool(true,  "Show ALL Bearish Signals",  group=group_global)
+bullLabelColor = input.color(color.new(#00C800, 0), "▲ Bull Color (labels + bar)", group=group_global)
+bearLabelColor = input.color(color.new(#FF2020, 0), "▼ Bear Color (labels + bar)", group=group_global)
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  1. FAMILY MASTER SWITCHES                                  ║
+// ║  Disabling a family removes it from ALL combos + singles    ║
+// ╚══════════════════════════════════════════════════════════════╝
+group_family = "1. Signal Families — Master Switches"
+family_MB    = input.bool(true,  "MB  — Momentum Blast",    group=group_family)
+family_RE    = input.bool(true,  "RE  — Range Expansion",   group=group_family)
+family_GG    = input.bool(true,  "GG  — Gap & Go",          group=group_family)
+family_TA    = input.bool(true,  "TA  — Trend Accelerant",  group=group_family)
+family_TR    = input.bool(true,  "TR  — Trapdoor Reversal", group=group_family)
+family_ES    = input.bool(true,  "ES  — Exhaustion Spike",  group=group_family)
+family_GDR   = input.bool(true,  "GDR — Gap & Recover",     group=group_family)
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  2. INDICATOR PARAMETERS                                    ║
+// ╚══════════════════════════════════════════════════════════════╝
+// 2a. Momentum Blast
+group_mb   = "2a. Momentum Blast (MB) Parameters"
+alpha_MB   = input.float(1.6,  "Body Size × ATR",  group=group_mb)
+beta_MB    = input.float(0.70, "Body / Range ≥",   minval=0.5, maxval=0.99, step=0.01, group=group_mb)
+delta_MB   = input.float(1.8,  "Volume × Avg",     group=group_mb)
+atr_len_MB = input.int(14,     "ATR Lookback",     group=group_mb)
+vol_len_MB = input.int(20,     "Volume Lookback",  group=group_mb)
+
+// 2b. Range Expansion
+group_re   = "2b. Range Expansion (RE) Parameters"
+gamma_RE   = input.float(2.2,  "Range × ATR",      group=group_re)
+epsilon_RE = input.float(0.15, "Close-to-Edge ≤",  group=group_re)
+delta_RE   = input.float(1.8,  "Volume × Avg",     group=group_re)
+atr_len_RE = input.int(14,     "ATR Lookback",     group=group_re)
+vol_len_RE = input.int(20,     "Volume Lookback",  group=group_re)
+
+// 2c. Gap & Go
+group_gg   = "2c. Gap & Go (GG) Parameters"
+zeta_GG    = input.float(0.9,  "Gap × ATR",        group=group_gg)
+delta_GG   = input.float(1.8,  "Volume × Avg",     group=group_gg)
+atr_len_GG = input.int(14,     "ATR Lookback",     group=group_gg)
+vol_len_GG = input.int(20,     "Volume Lookback",  group=group_gg)
+
+// 2d. Trend Accelerant
+group_ta        = "2d. Trend Accelerant (TA) Parameters"
+theta_TA        = input.float(1.6, "ΔPrice × AvgΔ", group=group_ta)
+delta_TA        = input.float(1.8, "Volume × Avg",  group=group_ta)
+trend_ma_len_TA = input.int(50,    "Trend MA Len",  group=group_ta)
+avg_delta_len   = input.int(10,    "Avg Δ Len",     group=group_ta)
+atr_len_TA      = input.int(14,    "ATR Lookback",  group=group_ta)
+vol_len_TA      = input.int(20,    "Volume Lookback",group=group_ta)
+
+// 2e. Preceding Candle (used by TR / ES / GDR)
+group_pre     = "2e. Preceding Candle Parameters"
+alpha_SB      = input.float(1.5, "Strong Candle Body × Avg",  group=group_pre)
+delta_SB      = input.float(1.5, "Strong Candle Vol  × Avg",  group=group_pre)
+weak_ratio    = input.float(0.2, "Weak Candle Max Body/Range", group=group_pre)
+body_avg_len  = input.int(20,    "Avg Body Len",               group=group_pre)
+range_avg_len = input.int(20,    "Avg Range Len",              group=group_pre)
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  3. BULLISH SIGNAL VISIBILITY                               ║
+// ║  Each checkbox controls BOTH the visual label AND the alert ║
+// ╚══════════════════════════════════════════════════════════════╝
+group_bull       = "3. Bullish Signals — Plot + Alert (one-to-one)"
+// ── Combo of 4
+bull_GG_MB_RE_TA = input.bool(true,  "BULL  GG+MB+RE+TA",  group=group_bull)
+// ── Combos of 3
+bull_MB_TA_RE    = input.bool(true,  "BULL  MB+TA+RE",     group=group_bull)
+bull_GG_TA_MB    = input.bool(false, "BULL  GG+TA+MB",     group=group_bull)
+bull_GG_TA_RE    = input.bool(false, "BULL  GG+TA+RE",     group=group_bull)
+bull_GDR_RE_MB   = input.bool(false, "BULL  GDR+RE+MB",    group=group_bull)
+// ── Combos of 2
+bull_MB_RE       = input.bool(true,  "BULL  MB+RE",        group=group_bull)
+bull_MB_GG       = input.bool(false, "BULL  MB+GG",        group=group_bull)
+bull_MB_TA       = input.bool(true,  "BULL  MB+TA",        group=group_bull)
+bull_MB_TR       = input.bool(false, "BULL  MB+TR",        group=group_bull)
+bull_MB_ES       = input.bool(false, "BULL  MB+ES",        group=group_bull)
+bull_MB_GDR      = input.bool(false, "BULL  MB+GDR",       group=group_bull)
+bull_RE_GG       = input.bool(false, "BULL  RE+GG",        group=group_bull)
+bull_RE_TA       = input.bool(false, "BULL  RE+TA",        group=group_bull)
+bull_RE_TR       = input.bool(false, "BULL  RE+TR",        group=group_bull)
+bull_RE_ES       = input.bool(true,  "BULL  RE+ES",        group=group_bull)
+bull_RE_GDR      = input.bool(true,  "BULL  RE+GDR",       group=group_bull)
+bull_GG_TA       = input.bool(true,  "BULL  GG+TA",        group=group_bull)
+bull_GG_TR       = input.bool(false, "BULL  GG+TR",        group=group_bull)
+bull_GG_ES       = input.bool(false, "BULL  GG+ES",        group=group_bull)
+bull_GG_GDR      = input.bool(true,  "BULL  GG+GDR",       group=group_bull)
+bull_TA_TR       = input.bool(false, "BULL  TA+TR",        group=group_bull)
+bull_TA_ES       = input.bool(false, "BULL  TA+ES",        group=group_bull)
+bull_TA_GDR      = input.bool(false, "BULL  TA+GDR",       group=group_bull)
+// ── Singles
+bull_GDR         = input.bool(true,  "BULL  GDR",          group=group_bull)
+bull_ES          = input.bool(true,  "BULL  ES",           group=group_bull)
+bull_TR          = input.bool(true,  "BULL  TR",           group=group_bull)
+bull_MB          = input.bool(true,  "BULL  MB",           group=group_bull)
+bull_RE          = input.bool(true,  "BULL  RE",           group=group_bull)
+bull_GG          = input.bool(true,  "BULL  GG",           group=group_bull)
+bull_TA          = input.bool(true,  "BULL  TA",           group=group_bull)
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  4. BEARISH SIGNAL VISIBILITY                               ║
+// ║  Each checkbox controls BOTH the visual label AND the alert ║
+// ╚══════════════════════════════════════════════════════════════╝
+group_bear       = "4. Bearish Signals — Plot + Alert (one-to-one)"
+// ── Combo of 4
+bear_GG_MB_RE_TA = input.bool(true,  "BEAR  GG+MB+RE+TA",  group=group_bear)
+// ── Combos of 3
+bear_MB_TA_RE    = input.bool(true,  "BEAR  MB+TA+RE",     group=group_bear)
+bear_GG_TA_MB    = input.bool(false, "BEAR  GG+TA+MB",     group=group_bear)
+bear_GG_TA_RE    = input.bool(false, "BEAR  GG+TA+RE",     group=group_bear)
+bear_GDR_RE_MB   = input.bool(false, "BEAR  GDR+RE+MB",    group=group_bear)
+// ── Combos of 2
+bear_MB_RE       = input.bool(true,  "BEAR  MB+RE",        group=group_bear)
+bear_MB_GG       = input.bool(false, "BEAR  MB+GG",        group=group_bear)
+bear_MB_TA       = input.bool(true,  "BEAR  MB+TA",        group=group_bear)
+bear_MB_TR       = input.bool(false, "BEAR  MB+TR",        group=group_bear)
+bear_MB_ES       = input.bool(false, "BEAR  MB+ES",        group=group_bear)
+bear_MB_GDR      = input.bool(false, "BEAR  MB+GDR",       group=group_bear)
+bear_RE_GG       = input.bool(false, "BEAR  RE+GG",        group=group_bear)
+bear_RE_TA       = input.bool(false, "BEAR  RE+TA",        group=group_bear)
+bear_RE_TR       = input.bool(false, "BEAR  RE+TR",        group=group_bear)
+bear_RE_ES       = input.bool(true,  "BEAR  RE+ES",        group=group_bear)
+bear_RE_GDR      = input.bool(true,  "BEAR  RE+GDR",       group=group_bear)
+bear_GG_TA       = input.bool(true,  "BEAR  GG+TA",        group=group_bear)
+bear_GG_TR       = input.bool(false, "BEAR  GG+TR",        group=group_bear)
+bear_GG_ES       = input.bool(false, "BEAR  GG+ES",        group=group_bear)
+bear_GG_GDR      = input.bool(true,  "BEAR  GG+GDR",       group=group_bear)
+bear_TA_TR       = input.bool(false, "BEAR  TA+TR",        group=group_bear)
+bear_TA_ES       = input.bool(false, "BEAR  TA+ES",        group=group_bear)
+bear_TA_GDR      = input.bool(false, "BEAR  TA+GDR",       group=group_bear)
+// ── Singles
+bear_GDR         = input.bool(true,  "BEAR  GDR",          group=group_bear)
+bear_ES          = input.bool(true,  "BEAR  ES",           group=group_bear)
+bear_TR          = input.bool(true,  "BEAR  TR",           group=group_bear)
+bear_MB          = input.bool(true,  "BEAR  MB",           group=group_bear)
+bear_RE          = input.bool(true,  "BEAR  RE",           group=group_bear)
+bear_GG          = input.bool(true,  "BEAR  GG",           group=group_bear)
+bear_TA          = input.bool(true,  "BEAR  TA",           group=group_bear)
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  COMMON SERIES                                              ║
+// ╚══════════════════════════════════════════════════════════════╝
+ATR      = ta.atr(atr_len_MB)
+AvgVol   = ta.sma(volume, vol_len_MB)
+AvgBody  = ta.sma(math.abs(close - open), body_avg_len)
+AvgRange = ta.sma(high - low, range_avg_len)
+AvgDelta = ta.sma(math.abs(close - close[1]), avg_delta_len)
+TrendMA  = ta.sma(close, trend_ma_len_TA)
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  SIGNAL DETECTION  (family switches baked in)               ║
+// ╚══════════════════════════════════════════════════════════════╝
+body        = close - open
+candleRange = high - low
+body_up     = body > 0
+body_dn     = body < 0
+body_size   = math.abs(body)
+body_ratio  = candleRange == 0 ? 0.0 : body_size / candleRange
+
+// ── Momentum Blast
+MB_bull = family_MB and body_up
+         and body_size    > alpha_MB * ATR
+         and body_ratio   > beta_MB
+         and volume       > delta_MB * AvgVol
+
+MB_bear = family_MB and body_dn
+         and body_size    > alpha_MB * ATR
+         and body_ratio   > beta_MB
+         and volume       > delta_MB * AvgVol
+
+// ── Range Expansion
+wide    = candleRange > gamma_RE * ta.atr(atr_len_RE)
+RE_bull = family_RE and body_up and wide
+         and (high - close) < epsilon_RE * candleRange
+         and volume > delta_RE * AvgVol
+
+RE_bear = family_RE and body_dn and wide
+         and (close - low) < epsilon_RE * candleRange
+         and volume > delta_RE * AvgVol
+
+// ── Gap & Go
+GG_bull = family_GG
+         and (open - close[1]) > zeta_GG * ta.atr(atr_len_GG)
+         and body_up and low > close[1]
+         and volume > delta_GG * AvgVol
+
+GG_bear = family_GG
+         and (close[1] - open) > zeta_GG * ta.atr(atr_len_GG)
+         and body_dn and high < close[1]
+         and volume > delta_GG * AvgVol
+
+// ── Trend Accelerant
+up_trend = TrendMA > TrendMA[1]
+dn_trend = TrendMA < TrendMA[1]
+
+TA_bull = family_TA and up_trend and body_up
+         and (close - close[1]) > theta_TA * AvgDelta
+         and volume > delta_TA * AvgVol
+
+TA_bear = family_TA and dn_trend and body_dn
+         and (close[1] - close) > theta_TA * AvgDelta
+         and volume > delta_TA * AvgVol
+
+// ── Preceding candle characteristics (uses prior bar — non-repainting)
+prev_body  = close[1] - open[1]
+prev_range = high[1] - low[1]
+
+StrongBear_pre = close[1] < open[1]
+               and math.abs(prev_body) > alpha_SB * AvgBody[1]
+               and volume[1]           > delta_SB * AvgVol[1]
+
+WeakBear_pre   = close[1] < open[1]
+               and (prev_range == 0 ? 0.0 : math.abs(prev_body) / prev_range) <= weak_ratio
+
+StrongBull_pre = close[1] > open[1]
+               and math.abs(prev_body) > alpha_SB * AvgBody[1]
+               and volume[1]           > delta_SB * AvgVol[1]
+
+WeakBull_pre   = close[1] > open[1]
+               and (prev_range == 0 ? 0.0 : math.abs(prev_body) / prev_range) <= weak_ratio
+
+// ── Reversal signals (family switches baked in)
+TR_bull  = family_TR  and WeakBear_pre   and (MB_bull or RE_bull or TA_bull)
+ES_bull  = family_ES  and StrongBear_pre and (MB_bull or RE_bull or TA_bull)
+GDR_bull = family_GDR and close[1] < open[1] and GG_bull
+
+TR_bear  = family_TR  and WeakBull_pre   and (MB_bear or RE_bear or TA_bear)
+ES_bear  = family_ES  and StrongBull_pre and (MB_bear or RE_bear or TA_bear)
+GDR_bear = family_GDR and close[1] > open[1] and GG_bear
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  HIERARCHICAL SIGNAL RESOLUTION                             ║
+// ║  Priority: highest-order combo wins; lower ones fall        ║
+// ║  through only if the higher is disabled or not triggered.   ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// ── BULLISH ──────────────────────────────────────────────────
+var string bullText = ""
+bullText := ""   // reset every bar
+
+if showBullish
+    // Combo of 4
+    if   bull_GG_MB_RE_TA and GG_bull and MB_bull and RE_bull and TA_bull
+        bullText := "GG+MB+RE+TA"
+    // Combos of 3
+    else if bull_MB_TA_RE  and MB_bull and TA_bull and RE_bull
+        bullText := "MB+TA+RE"
+    else if bull_GG_TA_MB  and GG_bull and TA_bull and MB_bull
+        bullText := "GG+TA+MB"
+    else if bull_GG_TA_RE  and GG_bull and TA_bull and RE_bull
+        bullText := "GG+TA+RE"
+    else if bull_GDR_RE_MB and GDR_bull and RE_bull and MB_bull
+        bullText := "GDR+RE+MB"
+    // Combos of 2
+    else if bull_MB_RE     and MB_bull  and RE_bull
+        bullText := "MB+RE"
+    else if bull_MB_GG     and MB_bull  and GG_bull
+        bullText := "MB+GG"
+    else if bull_MB_TA     and MB_bull  and TA_bull
+        bullText := "MB+TA"
+    else if bull_MB_TR     and MB_bull  and TR_bull
+        bullText := "MB+TR"
+    else if bull_MB_ES     and MB_bull  and ES_bull
+        bullText := "MB+ES"
+    else if bull_MB_GDR    and MB_bull  and GDR_bull
+        bullText := "MB+GDR"
+    else if bull_RE_GG     and RE_bull  and GG_bull
+        bullText := "RE+GG"
+    else if bull_RE_TA     and RE_bull  and TA_bull
+        bullText := "RE+TA"
+    else if bull_RE_TR     and RE_bull  and TR_bull
+        bullText := "RE+TR"
+    else if bull_RE_ES     and RE_bull  and ES_bull
+        bullText := "RE+ES"
+    else if bull_RE_GDR    and RE_bull  and GDR_bull
+        bullText := "RE+GDR"
+    else if bull_GG_TA     and GG_bull  and TA_bull
+        bullText := "GG+TA"
+    else if bull_GG_TR     and GG_bull  and TR_bull
+        bullText := "GG+TR"
+    else if bull_GG_ES     and GG_bull  and ES_bull
+        bullText := "GG+ES"
+    else if bull_GG_GDR    and GG_bull  and GDR_bull
+        bullText := "GG+GDR"
+    else if bull_TA_TR     and TA_bull  and TR_bull
+        bullText := "TA+TR"
+    else if bull_TA_ES     and TA_bull  and ES_bull
+        bullText := "TA+ES"
+    else if bull_TA_GDR    and TA_bull  and GDR_bull
+        bullText := "TA+GDR"
+    // Singles
+    else if bull_GDR       and GDR_bull
+        bullText := "GDR"
+    else if bull_ES        and ES_bull
+        bullText := "ES"
+    else if bull_TR        and TR_bull
+        bullText := "TR"
+    else if bull_MB        and MB_bull
+        bullText := "MB"
+    else if bull_RE        and RE_bull
+        bullText := "RE"
+    else if bull_GG        and GG_bull
+        bullText := "GG"
+    else if bull_TA        and TA_bull
+        bullText := "TA"
+
+// ── BEARISH ──────────────────────────────────────────────────
+var string bearText = ""
+bearText := ""   // reset every bar
+
+if showBearish
+    // Combo of 4
+    if   bear_GG_MB_RE_TA and GG_bear and MB_bear and RE_bear and TA_bear
+        bearText := "GG+MB+RE+TA"
+    // Combos of 3
+    else if bear_MB_TA_RE  and MB_bear and TA_bear and RE_bear
+        bearText := "MB+TA+RE"
+    else if bear_GG_TA_MB  and GG_bear and TA_bear and MB_bear
+        bearText := "GG+TA+MB"
+    else if bear_GG_TA_RE  and GG_bear and TA_bear and RE_bear
+        bearText := "GG+TA+RE"
+    else if bear_GDR_RE_MB and GDR_bear and RE_bear and MB_bear
+        bearText := "GDR+RE+MB"
+    // Combos of 2
+    else if bear_MB_RE     and MB_bear  and RE_bear
+        bearText := "MB+RE"
+    else if bear_MB_GG     and MB_bear  and GG_bear
+        bearText := "MB+GG"
+    else if bear_MB_TA     and MB_bear  and TA_bear
+        bearText := "MB+TA"
+    else if bear_MB_TR     and MB_bear  and TR_bear
+        bearText := "MB+TR"
+    else if bear_MB_ES     and MB_bear  and ES_bear
+        bearText := "MB+ES"
+    else if bear_MB_GDR    and MB_bear  and GDR_bear
+        bearText := "MB+GDR"
+    else if bear_RE_GG     and RE_bear  and GG_bear
+        bearText := "RE+GG"
+    else if bear_RE_TA     and RE_bear  and TA_bear
+        bearText := "RE+TA"
+    else if bear_RE_TR     and RE_bear  and TR_bear
+        bearText := "RE+TR"
+    else if bear_RE_ES     and RE_bear  and ES_bear
+        bearText := "RE+ES"
+    else if bear_RE_GDR    and RE_bear  and GDR_bear
+        bearText := "RE+GDR"
+    else if bear_GG_TA     and GG_bear  and TA_bear
+        bearText := "GG+TA"
+    else if bear_GG_TR     and GG_bear  and TR_bear
+        bearText := "GG+TR"
+    else if bear_GG_ES     and GG_bear  and ES_bear
+        bearText := "GG+ES"
+    else if bear_GG_GDR    and GG_bear  and GDR_bear
+        bearText := "GG+GDR"
+    else if bear_TA_TR     and TA_bear  and TR_bear
+        bearText := "TA+TR"
+    else if bear_TA_ES     and TA_bear  and ES_bear
+        bearText := "TA+ES"
+    else if bear_TA_GDR    and TA_bear  and GDR_bear
+        bearText := "TA+GDR"
+    // Singles
+    else if bear_GDR       and GDR_bear
+        bearText := "GDR"
+    else if bear_ES        and ES_bear
+        bearText := "ES"
+    else if bear_TR        and TR_bear
+        bearText := "TR"
+    else if bear_MB        and MB_bear
+        bearText := "MB"
+    else if bear_RE        and RE_bear
+        bearText := "RE"
+    else if bear_GG        and GG_bear
+        bearText := "GG"
+    else if bear_TA        and TA_bear
+        bearText := "TA"
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  NON-REPAINTING GATE                                        ║
+// ║  barstate.isconfirmed = true only on the CLOSING tick of a  ║
+// ║  bar (and on all historical bars).  Labels and alerts are   ║
+// ║  NEVER created on an intra-bar tick, so they cannot repaint.║
+// ╚══════════════════════════════════════════════════════════════╝
+bullActive = bullText != "" and barstate.isconfirmed
+bearActive = bearText != "" and barstate.isconfirmed
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  LABELS  (same color for every bull / every bear)           ║
+// ╚══════════════════════════════════════════════════════════════╝
+if bullActive
+    label.new(bar_index, na,
+              text      = bullText,
+              yloc      = yloc.belowbar,
+              color     = bullLabelColor,
+              textcolor = color.white,
+              style     = label.style_label_up,
+              size      = size.normal)
+
+if bearActive
+    label.new(bar_index, na,
+              text      = bearText,
+              yloc      = yloc.abovebar,
+              color     = bearLabelColor,
+              textcolor = color.white,
+              style     = label.style_label_down,
+              size      = size.normal)
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  BAR COLOR  (2 colors only: bull or bear)                   ║
+// ╚══════════════════════════════════════════════════════════════╝
+barcolor(bearActive ? bearLabelColor : bullActive ? bullLabelColor : na)
+
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  ALERTS                                                     ║
+// ║  • Dynamic message shows exact fauna (e.g. BULL "MB+RE+TA") ║
+// ║  • alert.freq_once_per_bar_close → fires only at bar close  ║
+// ║  • Parity guaranteed: if label fires, alert fires; if label ║
+// ║    is suppressed by its checkbox, alert is suppressed too.  ║
+// ║  To use: Add Alert → "alert() function calls" condition.    ║
+// ╚══════════════════════════════════════════════════════════════╝
+if bullActive
+    alert('BULL "' + bullText + '"', alert.freq_once_per_bar_close)
+
+if bearActive
+    alert('BEAR "' + bearText + '"', alert.freq_once_per_bar_close)
+
