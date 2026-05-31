@@ -245,8 +245,8 @@ show_PAFBull=input.bool(true,"PAF PUP B2B",group=grp_t1,inline="k",tooltip="Back
 show_PAFBear=input.bool(true,"PAF PPD B2B",group=grp_t1,inline="k",tooltip="Bear mirror.")
 show_NagPlusBull=input.bool(true,"NAG+ Bull",group=grp_t1,inline="n1",tooltip="Plot for Nagasaki + bull directional confirmation. Plot only — no separate alert.")
 show_Nagasaki=input.bool(true,"Nagasaki Alert",group=grp_t1,inline="n2",tooltip="Raw Nagasaki (all-time-high volume) alert. Direction in payload (BULL/BEAR/BOTH/NEUTRAL). Uncheck to suppress.")
-show_LongBig4Bull=input.bool(true,"L+Big4 Bull",group=grp_t1,inline="lb4",tooltip="(sigLong1 or sigLong2) AND (sigPentagon or sigWTC or sigHiroshima or sigNagasaki). Plot only.")
-show_LongBig4Bear=input.bool(true,"S+Big4 Bear",group=grp_t1,inline="lb4",tooltip="(sigShort1 or sigShort2) AND (sigPentagon or sigWTC or sigHiroshima or sigNagasaki). Plot only.")
+show_LongBig4Bull=input.bool(true,"L+Big4 Bull",group=grp_t1,inline="lb4",tooltip="(sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5) AND (sigPentagon or sigWTC or sigHiroshima or sigNagasaki). Plot only.")
+show_LongBig4Bear=input.bool(true,"S+Big4 Bear",group=grp_t1,inline="lb4",tooltip="(sigShort1 or sigShort2 or sigShort3 or sigShort4 or sigShort5) AND (sigPentagon or sigWTC or sigHiroshima or sigNagasaki). Plot only.")
 
 grp_t1b = "★ TIER 1B: Combo Sets ★"
 show_CS1B=input.bool(false,"CS1 FVG Bull",group=grp_t1b,inline="1",tooltip="FVG Combo consolidated.")
@@ -337,6 +337,12 @@ grp_m1 = "Momentum 1"
 ls_reg1=input.float(10.0,"Reg Floor",minval=0.5,step=0.1,group=grp_m1), ls_cum1=input.float(5.0,"Cum Floor",minval=0.5,step=0.1,group=grp_m1), ls_body1=input.float(0.69,"Body Ratio",minval=0.0,maxval=1.0,step=0.05,group=grp_m1)
 grp_m2 = "Momentum 2"
 ls_reg2=input.float(8.0,"Reg Floor",minval=0.5,step=0.1,group=grp_m2), ls_cum2=input.float(4.0,"Cum Floor",minval=0.5,step=0.1,group=grp_m2), ls_body2=input.float(0.69,"Body Ratio",minval=0.0,maxval=1.0,step=0.05,group=grp_m2)
+grp_m3 = "Momentum 3"
+ls_reg3=input.float(6.0,"Reg Floor",minval=0.5,step=0.1,group=grp_m3), ls_cum3=input.float(3.0,"Cum Floor",minval=0.5,step=0.1,group=grp_m3), ls_body3=input.float(0.65,"Body Ratio",minval=0.0,maxval=1.0,step=0.05,group=grp_m3)
+grp_m4 = "Momentum 4"
+ls_reg4=input.float(4.0,"Reg Floor",minval=0.5,step=0.1,group=grp_m4), ls_cum4=input.float(2.0,"Cum Floor",minval=0.5,step=0.1,group=grp_m4), ls_body4=input.float(0.60,"Body Ratio",minval=0.0,maxval=1.0,step=0.05,group=grp_m4)
+grp_m5 = "Momentum 5"
+ls_reg5=input.float(2.5,"Reg Floor",minval=0.5,step=0.1,group=grp_m5), ls_cum5=input.float(1.25,"Cum Floor",minval=0.5,step=0.1,group=grp_m5), ls_body5=input.float(0.55,"Body Ratio",minval=0.0,maxval=1.0,step=0.05,group=grp_m5)
 
 grp_cs_set = "Combo Set Settings"
 cs_bodyPct_FVG=input.float(0.74,"Min Body% FVG",minval=0.0,maxval=1.0,step=0.05,group=grp_cs_set)
@@ -846,9 +852,15 @@ bool sigLong1=conf and ls_regRatio>ls_reg1 and ls_cumRatio>ls_cum1 and close>ope
 bool sigShort1=conf and ls_regRatio>ls_reg1 and ls_cumRatio>ls_cum1 and close<open and ls_bodyRat>=ls_body1
 bool sigLong2=conf and ls_regRatio>ls_reg2 and ls_cumRatio>ls_cum2 and close>open and ls_bodyRat>=ls_body2
 bool sigShort2=conf and ls_regRatio>ls_reg2 and ls_cumRatio>ls_cum2 and close<open and ls_bodyRat>=ls_body2
+bool sigLong3=conf and ls_regRatio>ls_reg3 and ls_cumRatio>ls_cum3 and close>open and ls_bodyRat>=ls_body3
+bool sigShort3=conf and ls_regRatio>ls_reg3 and ls_cumRatio>ls_cum3 and close<open and ls_bodyRat>=ls_body3
+bool sigLong4=conf and ls_regRatio>ls_reg4 and ls_cumRatio>ls_cum4 and close>open and ls_bodyRat>=ls_body4
+bool sigShort4=conf and ls_regRatio>ls_reg4 and ls_cumRatio>ls_cum4 and close<open and ls_bodyRat>=ls_body4
+bool sigLong5=conf and ls_regRatio>ls_reg5 and ls_cumRatio>ls_cum5 and close>open and ls_bodyRat>=ls_body5
+bool sigShort5=conf and ls_regRatio>ls_reg5 and ls_cumRatio>ls_cum5 and close<open and ls_bodyRat>=ls_body5
 
-bool neo_bull_aligned=sigNeoBull and (sigLong1 or sigLong2), bool neo_bear_aligned=sigNeoBear and (sigShort1 or sigShort2)
-bool trinity_bull_aligned=sigTrinityBull and (sigLong1 or sigLong2), bool trinity_bear_aligned=sigTrinityBear and (sigShort1 or sigShort2)
+bool neo_bull_aligned=sigNeoBull and (sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5), bool neo_bear_aligned=sigNeoBear and (sigShort1 or sigShort2 or sigShort3 or sigShort4 or sigShort5)
+bool trinity_bull_aligned=sigTrinityBull and (sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5), bool trinity_bear_aligned=sigTrinityBear and (sigShort1 or sigShort2 or sigShort3 or sigShort4 or sigShort5)
 
 // === COMBO SETS ===
 float cs_bp1=high[1]-low[1]==0?0.0:math.abs(close[1]-open[1])/(high[1]-low[1])
@@ -889,10 +901,10 @@ bool hwBear=(close<open) and disp5_bear and sigBearPBJ and (sigMOAB or sigWTC or
 bool super_hw_bull=sigBullRVOL1x or sigGrandSlam or sigWTC or sigHiroshima or sigNagasaki
 bool super_hw_bear=sigBearRVOL1x or sigMOAB or sigWTC or sigHiroshima or sigNagasaki
 bool super_comboAny_bull=csNew1_Bull or csNew2_Bull, bool super_comboAny_bear=csNew1_Bear or csNew2_Bear
-bool superBull=conf and sigBullPBJ and sigDISPBull and (sigFAUNABull or sigLong1 or sigLong2) and super_hw_bull and ((super_comboAny_bull and sigPUP) or (anyBullFloor or anyBull2nd))
-bool superBear=conf and sigBearPBJ and sigDISPBear and (sigFAUNABear or sigShort1 or sigShort2) and super_hw_bear and ((super_comboAny_bear and sigPPD) or (anyBearRoof or anyBearPent))
-bool sduperBull=conf and (anyBullFloor or anyBull2nd) and sigBullPBJ and super_hw_bull and super_comboAny_bull and sigPUP and sigDISPBull and (sigFAUNABull or sigLong1 or sigLong2)
-bool sduperBear=conf and (anyBearRoof or anyBearPent) and sigBearPBJ and super_hw_bear and super_comboAny_bear and sigPPD and sigDISPBear and (sigFAUNABear or sigShort1 or sigShort2)
+bool superBull=conf and sigBullPBJ and sigDISPBull and (sigFAUNABull or sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5) and super_hw_bull and ((super_comboAny_bull and sigPUP) or (anyBullFloor or anyBull2nd))
+bool superBear=conf and sigBearPBJ and sigDISPBear and (sigFAUNABear or sigShort1 or sigShort2 or sigShort3 or sigShort4 or sigShort5) and super_hw_bear and ((super_comboAny_bear and sigPPD) or (anyBearRoof or anyBearPent))
+bool sduperBull=conf and (anyBullFloor or anyBull2nd) and sigBullPBJ and super_hw_bull and super_comboAny_bull and sigPUP and sigDISPBull and (sigFAUNABull or sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5)
+bool sduperBear=conf and (anyBearRoof or anyBearPent) and sigBearPBJ and super_hw_bear and super_comboAny_bear and sigPPD and sigDISPBear and (sigFAUNABear or sigShort1 or sigShort2 or sigShort3 or sigShort4 or sigShort5)
 
 // Golf + PAF
 bool sigGolfBull=conf and sigDISPBull and nz(sigFAUNABull[1]) and nz(sigPUP[1]) and nz(sigDISPBull[1]) and nz(sigFAUNABull[2]) and nz(sigPUP[2])
@@ -982,10 +994,10 @@ bool sigLSCBull=conf and lsc_bull_active, bool sigLSCBear=conf and lsc_bear_acti
 
 
 // === NAGASAKI PLUS ===
-bool sigNagPlusBull=sigNagasaki and (sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI or sigLong1 or sigLong2 or anyBullFloor or anyBull2nd)
-bool sigNagPlusBear=sigNagasaki and (sigBearRVOL1x or sigMOAB or sigFAUNABear or sigDISPBear or sigBearPBJ or sigPPD or gz_bearHV or gz_bearGZI or sigShort1 or sigShort2 or anyBearRoof or anyBearPent)
-bool sigLongBig4Bull = conf and (sigLong1 or sigLong2) and (sigPentagon or sigWTC or sigHiroshima or sigNagasaki)
-bool sigLongBig4Bear = conf and (sigShort1 or sigShort2) and (sigPentagon or sigWTC or sigHiroshima or sigNagasaki)
+bool sigNagPlusBull=sigNagasaki and (sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI or sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5 or anyBullFloor or anyBull2nd)
+bool sigNagPlusBear=sigNagasaki and (sigBearRVOL1x or sigMOAB or sigFAUNABear or sigDISPBear or sigBearPBJ or sigPPD or gz_bearHV or gz_bearGZI or sigShort1 or sigShort2 or sigShort3 or sigShort4 or sigShort5 or anyBearRoof or anyBearPent)
+bool sigLongBig4Bull = conf and (sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5) and (sigPentagon or sigWTC or sigHiroshima or sigNagasaki)
+bool sigLongBig4Bear = conf and (sigShort1 or sigShort2 or sigShort3 or sigShort4 or sigShort5) and (sigPentagon or sigWTC or sigHiroshima or sigNagasaki)
 
 // === ENGINE 8: UU / UUU / UUUU — SQUAREIFY PATHWAYS A-F ===
 // Refactored with helper functions to reduce main body size.
@@ -1130,15 +1142,15 @@ if conf and u_bear_streak==2
     sigUUBear_indep:=(u_bear_hasDay1 and hp) or ad or asd or ((dnp and hp) or (pnd and (hd or hf)))
 
 // oneOfThese gate for UU
-bool oneOfThese_forUU=sigP21BullUUUU or sigP21BullUUU or sigDISPBull or hvd_fire_bull or sigFAUNABull or sigPUP or sigBullPBJ or sigLong1 or sigLong2 or sigGrandSlam or sigBullRVOL1x or csNew3_Bull or csNew1_Bull or csNew2_Bull or sigCCBull or sigNagPlusBull or sigDispConsBull2 or sigDispConsBull3
+bool oneOfThese_forUU=sigP21BullUUUU or sigP21BullUUU or sigDISPBull or hvd_fire_bull or sigFAUNABull or sigPUP or sigBullPBJ or sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5 or sigGrandSlam or sigBullRVOL1x or csNew3_Bull or csNew1_Bull or csNew2_Bull or sigCCBull or sigNagPlusBull or sigDispConsBull2 or sigDispConsBull3
 bool uu_gated_bull=sigUUBull and oneOfThese_forUU
 
 // Alpha Strike
 // Alpha Strike — Squareify definition: firstOfDay + PP + (GS or RVOL1x) + PBJ ONLY + expanded FAUNA slot
 // NOTE: Squareify includes raw_napalmBull in FAUNA slot. This indicator has no TNT engine,
 // so Napalm is excluded here. If TNT engine is added, add raw_napalmBull to as_fauna_bull.
-bool as_fauna_bull=sigFAUNABull or sigLong1 or sigLong2 or sigDISPBull or hvd_fire_bull or sigPUP or sigWTC or sigHiroshima or sigNagasaki
-bool as_fauna_bear=sigFAUNABear or sigShort1 or sigShort2 or sigDISPBear or hvd_fire_bear or sigPPD or sigWTC or sigHiroshima or sigNagasaki
+bool as_fauna_bull=sigFAUNABull or sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5 or sigDISPBull or hvd_fire_bull or sigPUP or sigWTC or sigHiroshima or sigNagasaki
+bool as_fauna_bear=sigFAUNABear or sigShort1 or sigShort2 or sigShort3 or sigShort4 or sigShort5 or sigDISPBear or hvd_fire_bear or sigPPD or sigWTC or sigHiroshima or sigNagasaki
 bool sigAlphaStrikeBull=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and as_fauna_bull
 bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearRVOL1x) and sigBearPBJ and as_fauna_bear
 
@@ -1146,8 +1158,8 @@ bool sigAlphaStrikeBear=conf and firstOfDay and bear_pp and (sigMOAB or sigBearR
 bool oneOfThese=sigP21BullUUUU or sigP21BullUUU or sigUUBull or csNew3_Bull or csNew1_Bull or csNew2_Bull or sigNagPlusBull or sigDispConsBull2 or sigDispConsBull3
 bool cb_uu_any=sigP21BullUUUU or sigP21BullUUU or sigUUBull
 bool cb_disp9=conf and disp_rng>disp_std*9.0 and close>open
-bool cb1_pass_floor=(cb_uu_any) or (csNew3_Bull) or (cb_disp9) or (sigPUP) or (sigLong1) or (sigLong2)
-bool cb1_pass=(cb_uu_any) or (csNew3_Bull) or (cb_disp9) or (sigPUP) or (sigBullPBJ) or (sigLong1) or (sigLong2)
+bool cb1_pass_floor=(cb_uu_any) or (csNew3_Bull) or (cb_disp9) or (sigPUP) or (sigLong1) or (sigLong2) or (sigLong3) or (sigLong4) or (sigLong5)
+bool cb1_pass=(cb_uu_any) or (csNew3_Bull) or (cb_disp9) or (sigPUP) or (sigBullPBJ) or (sigLong1) or (sigLong2) or (sigLong3) or (sigLong4) or (sigLong5)
 bool floor_gated=anyBullFloor and oneOfThese and cb1_pass_floor
 bool floor2_gated=anyBull2nd and oneOfThese and cb1_pass
 
@@ -1233,7 +1245,7 @@ bool sigShortPlusPress=conf and bh_senter3 and bh_wt2>=80 and bh_crossunder2
 
 
 // === OMEGA (SQ64 TWO-TIER) ===
-bool omega_cosignal=(tfSec>=45?(sigSAAB or sigPentagon):false) or sigBullRVOL1x or sigGrandSlam or (tfSec>=60?sigBullPBJ:false) or (tfSec>=300?sigBullPB:false) or sigPUP or (tfSec>=300?(gz_bullGZI or gz_bullHV):false) or sigLong1 or sigLong2 or sigP21BullUUUU or sigP21BullUUU or sigUUBull or sigNeoBull or (tfSec>=300?sigTrinityBull:false) or (tfSec>=120?sigHV500:false) or (tfSec>=60?sigHV1000:false) or sigWTC or sigHiroshima or sigNagasaki or sigAlphaStrikeBull or sigFoxtrotBull or comboSet1_Bull or comboSet2_Bull or comboSet3_Bull or comboSet4_Bull or sigDispConsBull2 or sigDispConsBull3 or sigODBull or sigCCBull or sigLSCBull or sigGolfBull or sigPAFBull or anyBullFloor or anyBull2nd or hwBull or superBull or sduperBull
+bool omega_cosignal=(tfSec>=45?(sigSAAB or sigPentagon):false) or sigBullRVOL1x or sigGrandSlam or (tfSec>=60?sigBullPBJ:false) or (tfSec>=300?sigBullPB:false) or sigPUP or (tfSec>=300?(gz_bullGZI or gz_bullHV):false) or sigLong1 or sigLong2 or sigLong3 or sigLong4 or sigLong5 or sigP21BullUUUU or sigP21BullUUU or sigUUBull or sigNeoBull or (tfSec>=300?sigTrinityBull:false) or (tfSec>=120?sigHV500:false) or (tfSec>=60?sigHV1000:false) or sigWTC or sigHiroshima or sigNagasaki or sigAlphaStrikeBull or sigFoxtrotBull or comboSet1_Bull or comboSet2_Bull or comboSet3_Bull or comboSet4_Bull or sigDispConsBull2 or sigDispConsBull3 or sigODBull or sigCCBull or sigLSCBull or sigGolfBull or sigPAFBull or anyBullFloor or anyBull2nd or hwBull or superBull or sduperBull
 bool sigOmegaLong=conf and bh_anyOmega and omega_cosignal and not sigMOAB and not sigDISPBear
 
 bool omega_cosignal_A=(tfSec>=60?sigBullPBJ:false) or sigP21BullUUUU or anyBullFloor or anyBull2nd or hwBull or superBull or sduperBull or sigAlphaStrikeBull or sigFoxtrotBull or sigODBull or sigDispConsBull3 or sigGolfBull or sigGrandSlam or (sigBullRVOL1x and sigDISPBull)
@@ -1241,8 +1253,8 @@ bool sigOmegaLongA=conf and bh_anyOmega and omega_cosignal_A and not sigMOAB and
 
 // TF Gate
 int tf_req=(tfSec<=1800?2:tfSec<=3000?1:0)
-int bull_ec=(sigFAUNABull?1:0)+(sigDISPBull?1:0)+(sigPUP?1:0)+(gz_bullGZI?1:0)+(gz_bullHV?1:0)+(sigBullRVOL1x?1:0)+(sigGrandSlam?1:0)+(sigLong1?1:0)+(sigLong2?1:0)+(sigHV75?1:0)+(sigHV150?1:0)+(sigHV500?1:0)+(sigHV1000?1:0)+(sigWTC?1:0)+(sigHiroshima?1:0)+(sigNagasaki?1:0)+(is_matrix_number?1:0)+(rawBullUU or rawBullUUU or rawBullUUUU?1:0)+(sigOmegaLong?1:0)+(sigBullPBJ?1:0)+(sigCCBull?1:0)+(sigLSCBull?1:0)
-int bear_ec=(sigFAUNABear?1:0)+(sigDISPBear?1:0)+(sigPPD?1:0)+(gz_bearGZI?1:0)+(gz_bearHV?1:0)+(sigBearRVOL1x?1:0)+(sigMOAB?1:0)+(sigShort1?1:0)+(sigShort2?1:0)+(sigHV75?1:0)+(sigHV150?1:0)+(sigHV500?1:0)+(sigHV1000?1:0)+(sigWTC?1:0)+(sigHiroshima?1:0)+(sigNagasaki?1:0)+(is_matrix_number?1:0)+(rawBearUU or rawBearUUU or rawBearUUUU?1:0)+(sigShortPlusPress?1:0)+(sigBearPBJ?1:0)+(sigCCBear?1:0)+(sigLSCBear?1:0)
+int bull_ec=(sigFAUNABull?1:0)+(sigDISPBull?1:0)+(sigPUP?1:0)+(gz_bullGZI?1:0)+(gz_bullHV?1:0)+(sigBullRVOL1x?1:0)+(sigGrandSlam?1:0)+(sigLong1?1:0)+(sigLong2?1:0)+(sigLong3?1:0)+(sigLong4?1:0)+(sigLong5?1:0)+(sigHV75?1:0)+(sigHV150?1:0)+(sigHV500?1:0)+(sigHV1000?1:0)+(sigWTC?1:0)+(sigHiroshima?1:0)+(sigNagasaki?1:0)+(is_matrix_number?1:0)+(rawBullUU or rawBullUUU or rawBullUUUU?1:0)+(sigOmegaLong?1:0)+(sigBullPBJ?1:0)+(sigCCBull?1:0)+(sigLSCBull?1:0)
+int bear_ec=(sigFAUNABear?1:0)+(sigDISPBear?1:0)+(sigPPD?1:0)+(gz_bearGZI?1:0)+(gz_bearHV?1:0)+(sigBearRVOL1x?1:0)+(sigMOAB?1:0)+(sigShort1?1:0)+(sigShort2?1:0)+(sigShort3?1:0)+(sigShort4?1:0)+(sigShort5?1:0)+(sigHV75?1:0)+(sigHV150?1:0)+(sigHV500?1:0)+(sigHV1000?1:0)+(sigWTC?1:0)+(sigHiroshima?1:0)+(sigNagasaki?1:0)+(is_matrix_number?1:0)+(rawBearUU or rawBearUUU or rawBearUUUU?1:0)+(sigShortPlusPress?1:0)+(sigBearPBJ?1:0)+(sigCCBear?1:0)+(sigLSCBear?1:0)
 bool tf_bull_ok=bull_ec>=(tf_req+1), bool tf_bear_ok=bear_ec>=(tf_req+1)
 
 // First-of-day tracker
