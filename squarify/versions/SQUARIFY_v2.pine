@@ -33,7 +33,7 @@
 //   AGGREGATOR BYPASSERS: None.
 // ════════════════════════════════════════════════════════════════════════════
 //@version=5
-indicator("SQUARIFY 46 v2", shorttitle="SQ46 v2", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1500)
+indicator("SQUARIFY 49 v2", shorttitle="SQ49 v2", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1500)
 import TradingView/ta/7 as tv_ta
 
 // SHARED
@@ -179,6 +179,9 @@ bool en_wbushNeutral = input.bool(true, "43. WBUSH Neutral",     group=grpSIG, t
 bool en_63 = input.bool(true, "44. NPM+UC+PBJ",    group=grpSIG, tooltip="NPM+UC+PBJ: Napalm (consolidated) + Uni.Combo + PBJ. Offset=-1.")
 bool en_ucNagBull = input.bool(true, "45. UC NAGASAKI Bull",  group=grpSIG, tooltip="UC NAGASAKI: Unified Combo (csNew3) + Nagasaki on same visual bar. Offset = -1.")
 bool en_ucNagBear = input.bool(true, "46. UC NAGASAKI Bear",  group=grpSIG, tooltip="UC NAGASAKI Bear mirror. Offset = -1.")
+bool en_hv1kAny    = input.bool(true, "47. 1K+ANY",            group=grpSIG, tooltip="HV 1000-bar high volume + any bullish SQUARIFY signal on same bar. Offset = 0.")
+bool en_pent500Any = input.bool(true, "48. PENT+500+ANY",       group=grpSIG, tooltip="Pentagon vol-rank + HV 500-bar + any bullish SQUARIFY signal on same bar. Offset = 0.")
+bool en_pent1kAny  = input.bool(true, "49. PENT+1K+ANY",        group=grpSIG, tooltip="Pentagon vol-rank + HV 1000-bar + any bullish SQUARIFY signal on same bar. Offset = 0.")
 
 string grpHVBase = "── HV+D: BASE HV ──"
 bool ub50   = input.bool(false, "50-Bar",   group=grpHVBase)
@@ -2215,6 +2218,12 @@ bool wmd_any_bull=sigWMD and (sigBullRVOL1x or sigGrandSlam or sigFAUNABull or s
 // Signal 62 L1²+B2B (offset 0)
 // (b2b_long1_pup already defined above)
 
+// Signals 47-49: HV + ANY SQUARIFY composites
+bool any_squarify_bull = sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI or uu_any or det_bullNapalmCons or anyBullFloor or anyBull2nd or sigLong1 or sigWTC or sigHiroshima or sigNagasaki or sigSAAB or hwBull or superBull or sduperBull or sigAlphaStrikeBull or sigFoxtrotBull or sigODBull or sigGolfBull or sig_WBUSH_Bull or csNew3_Bull
+bool sig_HV1k_any    = conf and sigHV1000 and any_squarify_bull
+bool sig_Pent500_any = conf and sigPentagon and sigHV500 and any_squarify_bull
+bool sig_Pent1k_any  = conf and sigPentagon and sigHV1000 and any_squarify_bull
+
 // ════════════════════════════════════════════════════════════════════════════
 // 46 BULLISH/BEARISH PLOTSHAPES — every plot is a buy/sell trigger
 // v2: 64 → 46 contiguous. B2B-overlap removals (kept GOLF), reserved removed,
@@ -2286,6 +2295,11 @@ plotshape(_masterGate and en_63 and sig_npm_combo_pbj, "44 NPM+UC+PBJ",shape.lab
 // UC NAGASAKI (45-46) — new
 plotshape(_masterGate and en_ucNagBull and sig_UCNagasakiBull, "45 UC NAGASAKI Bull",shape.labelup,location.belowbar,#FF00FF,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
 plotshape(_masterGate and en_ucNagBear and sig_UCNagasakiBear, "46 UC NAGASAKI Bear",shape.labeldown,location.abovebar,#9C27B0,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
+
+// HV + ANY SQUARIFY composites (47-49)
+plotshape(_masterGate and en_hv1kAny    and sig_HV1k_any,    "47 1K+ANY",       shape.triangleup,location.belowbar,#00E5FF,text="1K\nANY",textcolor=color.black,size=size.huge)
+plotshape(_masterGate and en_pent500Any and sig_Pent500_any, "48 PENT+500+ANY", shape.triangleup,location.belowbar,#FF9100,text="PENT\n500\nANY",textcolor=color.white,size=size.huge)
+plotshape(_masterGate and en_pent1kAny  and sig_Pent1k_any,  "49 PENT+1K+ANY",  shape.triangleup,location.belowbar,#FF1744,text="PENT\n1K\nANY",textcolor=color.white,size=size.huge)
 
 // ════════════════════════════════════════════════════════════════════════════
 // ALERT AGGREGATOR — Bloomberg format
@@ -2384,6 +2398,12 @@ if conf and _masterGate
         s:=f_add(s,"NPM+UC+PBJ")
     if en_ucNagBull and sig_UCNagasakiBull
         s:=f_add(s,"UC NAGASAKI")
+    if en_hv1kAny and sig_HV1k_any
+        s:=f_add(s,"1K+ANY")
+    if en_pent500Any and sig_Pent500_any
+        s:=f_add(s,"PENT+500+ANY")
+    if en_pent1kAny and sig_Pent1k_any
+        s:=f_add(s,"PENT+1K+ANY")
     if str.length(s)>0
         if master_aggAlerts
             alert("BULL | " + _gapQual + " | " + s, alert.freq_once_per_bar_close)

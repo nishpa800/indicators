@@ -4,6 +4,21 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v2 — 2026-06-01 — HV+ANY composites (47-49) added
+**File:** `versions/SQUARIFY_v2.pine` (in-place patch). Indicator renamed `SQUARIFY 49 v2` / `SQ49 v2`.
+
+Three new detection plots appended; numbering extended 46 → 49. All bullish, all offset 0.
+
+- **47. 1K+ANY** — `sigHV1000 AND any_squarify_bull`. HV 1000-bar volume rank with any bullish SQUARIFY signal on same bar.
+- **48. PENT+500+ANY** — `sigPentagon AND sigHV500 AND any_squarify_bull`. Pentagon vol-rank + HV 500-bar + any bullish SQ signal.
+- **49. PENT+1K+ANY** — `sigPentagon AND sigHV1000 AND any_squarify_bull`. Pentagon vol-rank + HV 1000-bar + any bullish SQ signal.
+
+**`any_squarify_bull` aggregator** — 26 bullish ingredients OR'd: sigBullRVOL1x, sigGrandSlam, sigFAUNABull, sigDISPBull, sigBullPBJ, sigPUP, gz_bullHV, gz_bullGZI, uu_any, det_bullNapalmCons, anyBullFloor, anyBull2nd, sigLong1, sigWTC, sigHiroshima, sigNagasaki, sigSAAB, hwBull, superBull, sduperBull, sigAlphaStrikeBull, sigFoxtrotBull, sigODBull, sigGolfBull, sig_WBUSH_Bull, csNew3_Bull. Superset of nag_any_bull (35) and wmd_any_bull patterns.
+
+Toggles: `en_hv1kAny`, `en_pent500Any`, `en_pent1kAny` — all default TRUE. Alert lines appended to bullish aggregator: "1K+ANY", "PENT+500+ANY", "PENT+1K+ANY".
+
+---
+
 ## ATOMS v1 — 2026-05-08 (Tier 0 atomics, separate companion indicator)
 **File:** `versions/SQUARIFY_ATOMS_v1.pine` (2524 lines, 60 atomic plots — fits under Pine's 64 cap).
 
