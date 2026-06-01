@@ -1,0 +1,24 @@
+{
+  "note": "These 3 house scripts have scriptAccess=closed_no_auth in the pine-facade list. The /get/<id>/<ver> SOURCE endpoint returns HTTP 401 {code:401, message:'User is not allowed to see source code of pine'} for ALL unauthenticated users (and the source is protected/closed regardless of login). Only obfuscated bytecode is available via /translate/ (HTTP 200). Readable Pine source is NOT retrievable via public HTTP. Recorded here for completeness; intentionally NOT counted in manifest.json. The daily updater fetches only manifest.json entries, so it will not churn on these.",
+  "endpoint_pattern": "https://pine-facade.tradingview.com/pine-facade/get/<ENCODED_ID>/last",
+  "list_total": 145,
+  "open_no_auth_retrieved": 142,
+  "closed_no_auth_blocked": 3,
+  "protected": [
+    {
+      "scriptName": "Auto Key Levels",
+      "scriptIdPart": "STD;Auto_Key_Levels",
+      "scriptAccess": "closed_no_auth"
+    },
+    {
+      "scriptName": "Auto Trend Detector",
+      "scriptIdPart": "STD;Auto_Trend_Detector",
+      "scriptAccess": "closed_no_auth"
+    },
+    {
+      "scriptName": "RelativeValue",
+      "scriptIdPart": "PUB;LIB_TradingView_RelativeValue",
+      "scriptAccess": "closed_no_auth"
+    }
+  ]
+}

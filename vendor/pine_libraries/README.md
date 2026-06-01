@@ -1,8 +1,12 @@
 # Pine Library Vault — TradingView house Pine sources
 
-A permanent, redundant, auto-refreshed local mirror of **every TradingView house
-(built-in) Pine script** plus the two libraries the indicator suite depends on
-(`TradingView/ta` and `TradingView/RelativeValue`).
+A permanent, redundant, auto-refreshed local mirror of **every publicly readable
+TradingView house (built-in) Pine script**, plus the `TradingView/ta` library the
+indicator suite depends on (at the pinned `v7` and the `last` version).
+
+> `TradingView/RelativeValue` (imported by `ta` as `TradingView/RelativeValue/3`) is
+> `closed_no_auth`: its source is blocked server-side for everyone and cannot be
+> mirrored via public HTTP. See "What this is" below and `manifest/protected.json`.
 
 This vault is the **source-of-truth spec** for the Python port: when an indicator
 does `import TradingView/ta/7 as tv_ta` and calls `tv_ta.relativeVolume(...)`, the
@@ -13,8 +17,16 @@ parity-checked against real source instead of guesswork.
 
 ## What this is
 
-- **148 Pine sources** (144 STD house studies/strategies + `RelativeValue` library +
-  `ta` library at `last` and pinned `v7`/`v6`/`v5`).
+- **146 Pine sources** on disk = 142 open STD house studies/strategies + the
+  `ta` library at 4 versions (`last`/v21-class, plus pinned `v7`/`v6`/`v5`).
+- The master `?filter=standard` list has **145 entries** (142 `open_no_auth` +
+  3 `closed_no_auth`). The 3 `closed_no_auth` scripts — **Auto Key Levels**,
+  **Auto Trend Detector**, and **RelativeValue** — return HTTP 401
+  `{"code":401,"message":"User is not allowed to see source code of pine"}` from the
+  SOURCE endpoint for ALL unauthenticated callers; their readable Pine source is
+  protected server-side and is NOT retrievable via public HTTP. They are recorded in
+  `manifest/protected.json` (not counted in `manifest.json`). `TradingView/ta` is
+  fetched separately by its verified ID (it is not in the standard list).
 - Pulled over **public, unauthenticated HTTP** from TradingView's `pine-facade`
   endpoint. **No login, no cookies, no session, no credentials** are used or required.
 - Refreshed automatically every day at **06:30 America/Chicago** by a launchd agent.

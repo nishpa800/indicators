@@ -7,7 +7,7 @@
     "bytes": 1335,
     "sha256": "abce3eb3065267961060bb95b30f7456a59d4befd7467d0ce7454a9a326eed75",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3B24h%25Volume/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Accumulation/Distribution",
@@ -17,7 +17,7 @@
     "bytes": 448,
     "sha256": "a7ee9323d0b2a8a7cd5ca4c36476bcf9c7f4a64e6cafba3aa24e7362c7323b28",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAccumulation_Distribution/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Advance Decline Line",
@@ -27,7 +27,7 @@
     "bytes": 344,
     "sha256": "fd1a1529c6b18242aa56ae95ad8bc837c1c078b6953179b49ca08a5955d48540",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAdvance%251Decline%251Line/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Advance Decline Ratio",
@@ -37,7 +37,7 @@
     "bytes": 277,
     "sha256": "733d6125a531e60714ddd0022ec2857fd2d707b8fbd300aadb827d3be7c2c124",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAdvance%251Decline%251Ratio/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Advance/Decline Ratio (Bars)",
@@ -47,7 +47,7 @@
     "bytes": 402,
     "sha256": "c826877d5e60a4e48257d5cf5911ee097076112472b355363d4c285648fa874d",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAdvance_Decline_Ratio_Bars/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Arnaud Legoux Moving Average",
@@ -57,7 +57,7 @@
     "bytes": 645,
     "sha256": "7ebe8369894e27799cc4fcfef80d889405e54e60ed777ac1887555ccfaf2e428",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BArnaud%251Legoux%251Moving%251Average/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Aroon",
@@ -67,7 +67,7 @@
     "bytes": 384,
     "sha256": "d9723dec60160be0673fbbe413badf8ae6a197845473649f3e98e983f131fa03",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAroon/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Aroon Oscillator",
@@ -77,7 +77,7 @@
     "bytes": 663,
     "sha256": "2e3ddd3dd8bad1da23ebc071d2bb49fec6e5d175c5d3a679e8ccbff43b823582",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAroon_Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Auto Fib Extension",
@@ -87,7 +87,7 @@
     "bytes": 15714,
     "sha256": "99d3c6cb312f4818961d8ae19cfac5030803879b70d92752c2164db3eba22e25",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAuto%251Fib%251Extension%251/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Auto Fib Retracement",
@@ -97,7 +97,7 @@
     "bytes": 12509,
     "sha256": "90894f65044d57d67bb7de637221bd54db8d5d25792791320ede141b5911d9fe",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAuto%251Fib%251Retracement%251/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Auto Pitchfork",
@@ -107,7 +107,7 @@
     "bytes": 12173,
     "sha256": "e768530a33bbf364bbc669d4079cf8eb6d58b633c0287ff383c7f402ffc4981a",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAuto%251Pitchfork/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Average Daily Range",
@@ -117,7 +117,7 @@
     "bytes": 203,
     "sha256": "c1b73af36ff2f060656d690013b0079adb17cbc4aac9ed1481b7a68864c7f94e",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAverage%25Day%25Range/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Average Directional Index",
@@ -127,7 +127,7 @@
     "bytes": 1011,
     "sha256": "2bb28be5ffa9a9b54912875b3a52202662791cc018b43db29e818ab66dc60924",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAverage%251Directional%251Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Average True Range",
@@ -137,7 +137,7 @@
     "bytes": 532,
     "sha256": "f38afd8d804f3350087d31c7c40893f3e6fff77f76f609ab02b18033d2882644",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAverage_True_Range/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Awesome Oscillator",
@@ -147,7 +147,7 @@
     "bytes": 563,
     "sha256": "350516cecf78947197bc0ae63d094416b6c370f1760215ea0e4f8ed918c655b0",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BAwesome_Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Balance of Power",
@@ -157,7 +157,7 @@
     "bytes": 177,
     "sha256": "556c01761b2deea7bc884bd390477de2b5baeb6a24cc6a48f8aac4ed469fea7c",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBalance%251of%251Power/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "BarUpDn Strategy",
@@ -167,7 +167,7 @@
     "bytes": 509,
     "sha256": "02e6ca0755fbd20aaf83dba61fe3db9ea485a8b17c0ac7678a371d703d4a0fe3",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBars%251Up%251Dn%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "BBTrend",
@@ -177,7 +177,7 @@
     "bytes": 1084,
     "sha256": "3a2e2882a59646b3baca46aab11013497759a63eaf8902b5f3e3b254e19ec89f",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBBTrend/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Bollinger Bands",
@@ -187,7 +187,7 @@
     "bytes": 1709,
     "sha256": "0735a0a353908f3744f782e02ce108ff8129e0d65b4bb4f8e8718f4495ae5a6b",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBollinger_Bands/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Bollinger Bands %b",
@@ -197,7 +197,7 @@
     "bytes": 1503,
     "sha256": "e7c3c4dc4fdc9f3526293c0661db018d3fce6af7b1b0e03e75a548dbcc590258",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBollinger_Bands_B/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Bollinger Bands Strategy",
@@ -207,7 +207,7 @@
     "bytes": 844,
     "sha256": "a5ac24f78df428380a78804a3c7554de89a231984627c84d152eafe35cf7362c",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBollinger%251Bands%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Bollinger Bands Strategy directed",
@@ -217,7 +217,7 @@
     "bytes": 990,
     "sha256": "8da90e7a96e8be2d6ee44dfc02958624869b6651044caee8456935cc365706fe",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBollinger%251Band%251Directed%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Bollinger BandWidth",
@@ -227,7 +227,7 @@
     "bytes": 1667,
     "sha256": "045847f67f3e9dbc51ad1f9a26d653b00b9285c60d7b91aea535b139a48c19d6",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBollinger_Bands_Width/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Bollinger Bars",
@@ -237,7 +237,7 @@
     "bytes": 390,
     "sha256": "21cafc9f848a311e4d4fc89f112a52097d37631ed805b5a5d4e8e8fc32090b24",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBollinger%251Bars/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Bull Bear Power",
@@ -247,7 +247,7 @@
     "bytes": 338,
     "sha256": "60b79ae9afea2462520cfccaadc4209aad1a178b4977721c5a7a5c542c8f9275",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BBull%25Bear%25Power/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Chaikin Money Flow",
@@ -257,7 +257,7 @@
     "bytes": 548,
     "sha256": "b5a02ef004523b1d644b311236476d4c962e7ff83e4de72d89105ee3e71385c9",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BChaikin_Money_Flow/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Chaikin Oscillator",
@@ -267,7 +267,7 @@
     "bytes": 552,
     "sha256": "bc2df8aa838f503bda218bd4a231910d8c2b719d5d37cecc693af8c65a759c4c",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BChaikin_Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Chande Kroll Stop",
@@ -277,7 +277,7 @@
     "bytes": 552,
     "sha256": "bf00e035646ccb646423ac7c32118572bebe492876c5c5fb07a3aefa329423e7",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BChande%251Kroll%251Stop/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Chande Momentum Oscillator",
@@ -287,7 +287,7 @@
     "bytes": 562,
     "sha256": "6c4a18dc0022ec1f776cdb3f8bfa9d479d32210dd259e7b98512ff379db23486",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BChande_Momentum_Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Chandelier Exit",
@@ -297,7 +297,7 @@
     "bytes": 533,
     "sha256": "ee394923db116063ca68f943a0f690fad7198ec7a77178bf09670c3922e3375c",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BChandelier_Exit/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "ChannelBreakOutStrategy",
@@ -307,7 +307,7 @@
     "bytes": 510,
     "sha256": "763323e05cc8bed972c426f6baf0706deba4c78ed4fa45c5d6c38ba9c86bbb38",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BChannel%251BreakOut%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Chop Zone",
@@ -317,7 +317,7 @@
     "bytes": 1358,
     "sha256": "776b830f637586ebaf6d94f924c0ddbc195ce5bded26855f1cc7d50fb1760861",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BChop%251Zone/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Choppiness Index",
@@ -327,7 +327,7 @@
     "bytes": 686,
     "sha256": "6cc92a7ffaabb5318c41d34f20631d530b7213b009e58502282a98c6f16b8670",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BChoppiness_Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Commodity Channel Index",
@@ -337,7 +337,7 @@
     "bytes": 2457,
     "sha256": "a5749d9f003c3f0b47539019fbbf0b32f1ec72e174cb5f66c67d90ecbf573148",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BCCI/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Connors RSI",
@@ -347,7 +347,7 @@
     "bytes": 842,
     "sha256": "3683d4a70ef838c01da31e8beb890962446c999114859c596d6a1176ee1212eb",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BConnors_RSI/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Consecutive Up/Down Strategy",
@@ -357,7 +357,7 @@
     "bytes": 583,
     "sha256": "f59939a6b61ea87fb863ad9672980be34b389279b4985b5c89199ae18f384b33",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BConsecutive%251Ups%251Downs%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Coppock Curve",
@@ -367,7 +367,7 @@
     "bytes": 383,
     "sha256": "f205549b70c7e0001d8870341a3a7879161c708996b10dc365189a297d635012",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BCoppock%251Curve/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Correlation Coefficient",
@@ -377,7 +377,7 @@
     "bytes": 670,
     "sha256": "817c9d65c56ddc0c5ab422b6663a34441f63bbe0de5bfd411d987a493767cc5d",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BCorrelation_Coeff/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Cumulative Volume Delta",
@@ -387,7 +387,7 @@
     "bytes": 1310,
     "sha256": "dce996d919879fea19cf0c873ebc1829a924c6795c5503de60eecd585ad2f590",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BCumulative%251Volume%251Delta/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Cumulative Volume Index",
@@ -397,7 +397,7 @@
     "bytes": 799,
     "sha256": "ebb090cccbc6ff7af25d0ddaf0af61e30d02c7fa509e274f69f224c7197b59da",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BCumulative%251Volume%251Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Detrended Price Oscillator",
@@ -407,7 +407,7 @@
     "bytes": 666,
     "sha256": "94a28174c433c7e573e7433a5c2d087b2fda14f7a1d1211b142da15d914fb786",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BDPO/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Directional Movement Index",
@@ -417,7 +417,7 @@
     "bytes": 977,
     "sha256": "61307f3cbdb386d794b8745aac4b28d700420a19c71fac8bd8463d68b1f8fd80",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BDMI/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Donchian Channels",
@@ -427,7 +427,7 @@
     "bytes": 516,
     "sha256": "c11b95737dba524fc7ca443096f74f1f66949a7579425d3a82a19784aa99aae3",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BDonchian_Channels/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Double EMA",
@@ -437,7 +437,7 @@
     "bytes": 279,
     "sha256": "96516c33e3bdeea655d66f0ec0d7ff3e72ea8c2a2e9622cc834b64dd644ddd60",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BDEMA/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Ease of Movement",
@@ -447,7 +447,7 @@
     "bytes": 440,
     "sha256": "b84360b7c5e086415b7e7f10b94d6d8ed2060c49443c4cc7a4f8abab25492b72",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BEOM/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Elder Force Index",
@@ -457,7 +457,7 @@
     "bytes": 430,
     "sha256": "0483a39d99639521eee7c679da9c75e6b86e5cae3666359bb58637cf4b33bdf0",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BEFI/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Envelope",
@@ -467,7 +467,7 @@
     "bytes": 569,
     "sha256": "ffd3d53da311c038c4f6e1f06ff9f14dd91c91f59d82912558bc84a9c1de116f",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BENV/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Fisher Transform",
@@ -477,7 +477,7 @@
     "bytes": 745,
     "sha256": "8260c4d526e1272888418cdd7752fe66480d78dab7e9b7a15ad902bf57548b6d",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BFisher_Transform/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Gaps",
@@ -487,7 +487,7 @@
     "bytes": 5499,
     "sha256": "34fe410a4c018f3b31d8aa2cb23fb4508359bd32274c237e431616c69e68bbb0",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BGaps/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Greedy Strategy",
@@ -497,7 +497,7 @@
     "bytes": 1628,
     "sha256": "0d7593a903fda8fa2c517a98d051ea9de7641f3ed336589654279e1d94eca487",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BGreedy%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Historical Volatility",
@@ -507,7 +507,7 @@
     "bytes": 383,
     "sha256": "1fa84d91510207d0e465643f6db3e17f705daa0b7c4d35976895049f14eb0995",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BHistorical_Volatility/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Hull Moving Average",
@@ -517,7 +517,7 @@
     "bytes": 306,
     "sha256": "dcc10534e06f10a5b6c341cd69a5da22e8777b5069f1c2340235fcafc0f1e233",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BHull%251MA/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Ichimoku Cloud",
@@ -527,7 +527,7 @@
     "bytes": 1349,
     "sha256": "a4f9f1e3f1912ac0f8801d0d2f371a4091282d0a0884f160f22c4b89c9cc62c3",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BIchimoku%251Cloud/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "InSide Bar Strategy",
@@ -537,7 +537,7 @@
     "bytes": 357,
     "sha256": "708ffc8382ee9b92dc7a81e9311116832fb59042cd4d50fd55b00a5bbada6c06",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BInSide%251Bar%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Kaufman&#039;s Adaptive Moving Average",
@@ -547,7 +547,7 @@
     "bytes": 483,
     "sha256": "0df8ee1e08b441885235bfe84f0fa639a8868b1e9ec5773d6d9ff9acee0481e0",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BKaufmans_Adaptive_Moving_Average/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Keltner Channels",
@@ -557,7 +557,7 @@
     "bytes": 993,
     "sha256": "58831e96ca666c917a816f73f3e03ed02af40367b13bd0f89f6b1a5a25a6421f",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BKeltner_Channels/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Keltner Channels Strategy",
@@ -567,7 +567,7 @@
     "bytes": 1503,
     "sha256": "876d15dafaa1e7dfe42d86ca4dd6763284fb9b7b1321133585c52279dd41df2a",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BKeltner%251Channel%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Klinger Oscillator",
@@ -577,7 +577,7 @@
     "bytes": 445,
     "sha256": "034f20eeb9320d89f03490a0331bbafa773a03fcaec4bc5dd5d9984ad09a74e3",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BKlinger%251Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Know Sure Thing",
@@ -587,7 +587,7 @@
     "bytes": 1001,
     "sha256": "5b52bdd0673278b5cb7295f4695c455d9d9dc85a2e037a086ab90395ed7c69c2",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BKnow_Sure_Thing/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Least Squares Moving Average",
@@ -597,7 +597,7 @@
     "bytes": 305,
     "sha256": "bdc3367fdfbd5e8cf60a63576c871f7d50a2b26e5471d88a3a242c288ba64ce9",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BLeast%251Squares%251Moving%251Average/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Linear Regression Channel",
@@ -607,7 +607,7 @@
     "bytes": 5346,
     "sha256": "e696944a252fe59e49d9fc174c690fc68730a0e161c973592da654105bedda32",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BLinear_Regression/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "MA Cross",
@@ -617,7 +617,7 @@
     "bytes": 460,
     "sha256": "5d10e69486013a22fab9105075df1cc8cc4b8dcdc8a3fac07bafc36737558081",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMA%251Cross/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "MACD Strategy",
@@ -627,7 +627,7 @@
     "bytes": 551,
     "sha256": "dd7ff5d98526ca62f391d74f4e506ca4413df963646008e6b30993fd734d0026",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMACD%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Mass Index",
@@ -637,7 +637,7 @@
     "bytes": 253,
     "sha256": "ae98567637c9164a9209c38b7716ce1ee6674315b7a94f78b30abcf74d8db39c",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMass%251Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "McGinley Dynamic",
@@ -647,7 +647,7 @@
     "bytes": 290,
     "sha256": "38e6dd1e0e4c9805239340335ea1fa476a740d9baffd8b06b37264cdbaa1f18a",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMcGinley%251Dynamic/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Median",
@@ -657,7 +657,7 @@
     "bytes": 787,
     "sha256": "1d904fa4e4a585fa0eabe936aa21298ac348ce4fcccf886969751bba3c6a5552",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMedian/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Momentum",
@@ -667,7 +667,7 @@
     "bytes": 233,
     "sha256": "84ab2cb56276aa6682a68d9c383becef8918a3de35eb3617544ca9eec44aae71",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMomentum/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Momentum Strategy",
@@ -677,7 +677,7 @@
     "bytes": 586,
     "sha256": "0b62bda005df0e681249c6a82025d84e96f7f92f309d9db6d37dab7433bef511",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMomentum%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Money Flow Index",
@@ -687,7 +687,7 @@
     "bytes": 515,
     "sha256": "e337377a96d1ef9a6aedde4ed590d08936dd77f8b86c9925c6267cd251da105d",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMoney_Flow/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Moon Phases",
@@ -697,7 +697,7 @@
     "bytes": 4189,
     "sha256": "883a1e7f4e437398ce4cbaa4c67ac68671e0d7fd54c0f962f25857ce349e8169",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMoon%251Phases/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Moving Average Convergence Divergence",
@@ -707,7 +707,7 @@
     "bytes": 1573,
     "sha256": "12cd16de1380493146631e3482b7a29245b05d9dbc17b0b028732b793cb43c7b",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMACD/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Moving Average Exponential",
@@ -717,7 +717,7 @@
     "bytes": 2236,
     "sha256": "93a471054af35d23370dbd914bb3965b934a3f931975d4792098b45a52a43b21",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BEMA/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Moving Average Ribbon",
@@ -727,7 +727,7 @@
     "bytes": 3050,
     "sha256": "a927aa95adff67dacfdca25fb5618392c177f1b4ce4f642afb13c9da89598953",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMA%25Ribbon/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Moving Average Weighted",
@@ -737,7 +737,7 @@
     "bytes": 375,
     "sha256": "9170ed960cc9575a1207b607523d33739809c9c7e547ede7ff3396317f55292b",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BWMA/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "MovingAvg Cross",
@@ -747,7 +747,7 @@
     "bytes": 582,
     "sha256": "22405722377b28e8400ed1c1fdb25dd976aa213b7a9d449af8fbbdd0c19f67d9",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMovingAvg%251Cross%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "MovingAvg2Line Cross",
@@ -757,7 +757,7 @@
     "bytes": 487,
     "sha256": "ee859af730d538290c5bdf3dd91307113c68cf37243be7ccc90fc5ceec56b811",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMovingAvg%251Cross2%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Multi-Time Period Charts",
@@ -767,7 +767,7 @@
     "bytes": 7743,
     "sha256": "c1377b9a2ae660ff3b58cc23ba3f87433fd9406e520e3b3d379d54a3f579d90d",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BMulti-Time%25Period%25Charts/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Negative Volume Index",
@@ -777,7 +777,7 @@
     "bytes": 490,
     "sha256": "aee5e7a712321e1238a9610fd094682815295ee73a29886dd69e4e6a01fc1044",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BNegative_Volume_Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Net Volume",
@@ -787,7 +787,7 @@
     "bytes": 1055,
     "sha256": "16b594a8dc953b1bf24c78951c7f3f5ae7ebae540f7e0d6b27265eb3d145fd9e",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BNet%251Volume/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "On Balance Volume",
@@ -797,7 +797,7 @@
     "bytes": 2228,
     "sha256": "abbfcaa752d32f86702117f9e7a0d1918f66c664298ebc42647860d38fd0d3ff",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BOn_Balance_Volume/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Open Interest",
@@ -807,7 +807,7 @@
     "bytes": 1110,
     "sha256": "909eb9bf6e9c6ce726bcadda494731b625ae51085c11fbf88f2935dcd3cb1296",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BOpen%25Interest/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "OutSide Bar Strategy",
@@ -817,7 +817,7 @@
     "bytes": 358,
     "sha256": "942ed8f86ace8ff406e5cfa6c37cde8b738f4f3bf0044b00b9f6df25edd183fd",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BOutSide%251Bar%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Parabolic SAR",
@@ -827,7 +827,7 @@
     "bytes": 295,
     "sha256": "0b65333a9c928edf614ff55fb66654e0f66fa00a7fc57d7e2d590923df77350e",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPSAR/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Parabolic SAR Strategy",
@@ -837,7 +837,7 @@
     "bytes": 1888,
     "sha256": "b06470ff055674824a66e4b4a6c175c4f1e8b080612c914662fa783e8a8ffa08",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BParabolic%251SAR%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Percentage Price Oscillator",
@@ -847,7 +847,7 @@
     "bytes": 1330,
     "sha256": "01532c1b0f10cab05bb1dcdb144435b9c7fcf728ecc22703c9d5cfe228b13024",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPrice_Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Percentage Volume Oscillator",
@@ -857,7 +857,7 @@
     "bytes": 1449,
     "sha256": "1b78f683fc10864258fbe2fcd94bf0367400e3501b6811b777e2a78fc45df56f",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BVolume%251Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Performance",
@@ -867,7 +867,7 @@
     "bytes": 5728,
     "sha256": "dc86bab1994db447a56b98ab7be4b554544a57d22ce773d6726c45b1136f61fd",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPerformance/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Pivot Extension Strategy",
@@ -877,7 +877,7 @@
     "bytes": 482,
     "sha256": "760774b29c1cecd0b3c2a99cf6030e789451275062c930051c954e794418fd1f",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPivot%251Extension%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Pivot Points High Low",
@@ -887,7 +887,7 @@
     "bytes": 1435,
     "sha256": "284755167209623fc5e1038060c3de3cd48f13f41da10438f4c1281599c0b70d",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPivot%251Points%251High%251Low/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Pivot Points Standard",
@@ -897,7 +897,7 @@
     "bytes": 13037,
     "sha256": "4a1355ba774eafbf3548e27118e84814e8128ada216a762207f5751757567dc1",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPivot%251Points%251Standard/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Pivot Reversal Strategy",
@@ -907,7 +907,7 @@
     "bytes": 828,
     "sha256": "53f6e37406698e80b5f171258e62238e3d7e3cfa1b1ebc34c7bff20f78afa791",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPivot%251Reversal%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Positive Volume Index",
@@ -917,7 +917,7 @@
     "bytes": 490,
     "sha256": "264bd21e10688d56ec5a2a2cce7327e774f46cf8a3f9049a5a914c766e05f9fa",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPositive_Volume_Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Price Channel Strategy",
@@ -927,7 +927,7 @@
     "bytes": 393,
     "sha256": "006ef212ebe5cd45bc5acf0d47b0d900825aa6c2afba50cefc4882ac9ad6de47",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPrice%251Channel%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Price Momentum Oscillator",
@@ -937,7 +937,7 @@
     "bytes": 578,
     "sha256": "35554ff8558ddef769e9b51ec1133fe34b89c89d05c388a542f4bea7604cca3d",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPrice_Momentum_Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Price Target",
@@ -947,7 +947,7 @@
     "bytes": 3334,
     "sha256": "e66e4a133c9a2fbc56d66ae8adebf43cbc50c25b475483169b5b813c3ea0aabe",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPrice%251Target/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Price Volume Trend",
@@ -957,7 +957,7 @@
     "bytes": 351,
     "sha256": "62738e3506c0c76305b629d3756c9c68bbb8da4687fe14fb4db47b614b9cc02f",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPrice_Volume_Trend/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Pring&#039;s Special K",
@@ -967,7 +967,7 @@
     "bytes": 762,
     "sha256": "ccf5807a1863e4defa75e17ac9345354d27c99a8beee3b16e87b6c6a60f4b761",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BPrings_Special_K/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Rank Correlation Index",
@@ -977,7 +977,7 @@
     "bytes": 2283,
     "sha256": "be635799b3453775e5922eacfe008156e3eb45a805c09035f0f4317da2da7628",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BRank_Correlation_Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Rate Of Change",
@@ -987,7 +987,7 @@
     "bytes": 331,
     "sha256": "8da5f71827041b53bc8e7f4485a9d8ecf7d4e68172586ea8db40cbb8d4a4d1d4",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BROC/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "RCI Ribbon",
@@ -997,7 +997,7 @@
     "bytes": 724,
     "sha256": "2a518a2c4400d72025cdb28202b590107701a68da2677ff5476664992eeacbf4",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BRCI_Ribbon/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Relative Strength Index",
@@ -1007,7 +1007,7 @@
     "bytes": 6108,
     "sha256": "85c6f9f6a7284ce8c943d15dccb3a7018ee936f55487c39e773144e9b02f2589",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BRSI/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Relative Vigor Index",
@@ -1017,7 +1017,7 @@
     "bytes": 477,
     "sha256": "2e8203f49280c3675cc51b3dbfcf25a85ce3b6113ae6e8acabc3868b45c55670",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BRelative_Vigor_Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Relative Volatility Index",
@@ -1027,7 +1027,7 @@
     "bytes": 2558,
     "sha256": "ced5967d3cfb6d8e498a0fa0f6810613e7083a2547752b6b5ea9a9c9d6ec42c8",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BRelative_Volatility_Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Relative Volume at Time",
@@ -1037,7 +1037,7 @@
     "bytes": 1234,
     "sha256": "4dfc90073aeed0d529a8d5bade5a1b0a3951916a64b0bf44177a7baf980d3e24",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BRelative%251Volume%251at%251Time/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Rob Booker - ADX Breakout",
@@ -1047,7 +1047,7 @@
     "bytes": 3331,
     "sha256": "106f1b44a3ec52a47e543f3012fbf0c23894a482b594dc4979eec85692abbe31",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BRob%251Booker%251ADX%251Breakout%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Rob Booker - Ziv Ghost Pivots",
@@ -1057,7 +1057,7 @@
     "bytes": 1553,
     "sha256": "93e513e6fe6dab70690a24ae4911532d7fefbbf53d3c2cdd859f6f02c8218236",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BRob%251Booker%251Ghost%251Pivots%251v2/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "RSI Divergence Indicator",
@@ -1067,7 +1067,7 @@
     "bytes": 5683,
     "sha256": "c25798e54409780eb621bb08635d82b78ffd310142cea189cb72bd8545856794",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BDivergence%251Indicator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "RSI Strategy",
@@ -1077,7 +1077,7 @@
     "bytes": 512,
     "sha256": "c42033e27f69d6ce552a606d76250660bab5964ec87f4ce9209bfa384265f628",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BRSI%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Seasonality",
@@ -1087,7 +1087,7 @@
     "bytes": 13574,
     "sha256": "82a778d12fb359dd0e1b621fed4b33288eae75150562f8d09eecc8edac158805",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BSeasonality/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Simple Moving Average",
@@ -1097,7 +1097,7 @@
     "bytes": 2230,
     "sha256": "7727499094878717862858ae10fdc00e698789c0b5635becd5b7ccdbf8b34d66",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BSMA/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "SMI Ergodic Indicator",
@@ -1107,7 +1107,7 @@
     "bytes": 456,
     "sha256": "d71a0f3915c5fd5782770b22126d7e2e02a342f6de2f8b4b90242b4963ca4fad",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BSMI_Ergodic_Indicator_Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "SMI Ergodic Oscillator",
@@ -1117,7 +1117,7 @@
     "bytes": 479,
     "sha256": "b4ca947f143832692c06c506e194ab87d1f385831c74bbdfe1308a7ce9801282",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BSMI_Ergodic_Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Smoothed Moving Average",
@@ -1127,7 +1127,7 @@
     "bytes": 325,
     "sha256": "f8031fd238ac7192f87be0571cb7977cbfe7276bc696782ee5d94984c88562cf",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BSmoothed%251Moving%251Average/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Stochastic",
@@ -1137,7 +1137,7 @@
     "bytes": 655,
     "sha256": "9b00afeef2c25ffc6468eda350736710b7120d1d0934ad6278b22a44dac852b8",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BStochastic/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Stochastic Momentum Index",
@@ -1147,7 +1147,7 @@
     "bytes": 1351,
     "sha256": "fbdddfb14d068cc5818f77c8eea65f4dd7f49c8aa3a7844bdd741b490a244ec7",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BSMI/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Stochastic RSI",
@@ -1157,7 +1157,7 @@
     "bytes": 744,
     "sha256": "1efda9937d6f197cefac02598b8fe6d53fd25aa004ca74fddf2d8038a0c2090e",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BStochastic_RSI/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Stochastic Slow Strategy",
@@ -1167,7 +1167,7 @@
     "bytes": 629,
     "sha256": "3a155c25f6c54e4feb9d687757684000f9b41834d11381d7e8a024866f2f62f9",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BStochastic%251Slow%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Supertrend",
@@ -1177,7 +1177,7 @@
     "bytes": 1307,
     "sha256": "0c4115d2b12d1a3eb07c12bbc44e9dd99eaded6019781a40115be066311c42e3",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BSupertrend/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Supertrend Strategy",
@@ -1187,7 +1187,7 @@
     "bytes": 526,
     "sha256": "ddefdf896f51d474783dcc6d7625d9eed1e229cc7b13f3338bc0f81d56f82cb4",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BSupertrend%25Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "ta",
@@ -1197,7 +1197,7 @@
     "bytes": 64893,
     "sha256": "ec97826259eae186977f864b37333d5d2624666b206448ea4c4f01e87e8bdb72",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/PUB%3B77c0f0012daa4ff09d68b6f3bed95a7f/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "ta",
@@ -1207,7 +1207,7 @@
     "bytes": 41311,
     "sha256": "c6888dbdf18c0c19fe5ba915d0df0cb2361f4f2f26f1e67953ac35a8f0d60876",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/PUB%3B77c0f0012daa4ff09d68b6f3bed95a7f/7",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "ta",
@@ -1217,7 +1217,7 @@
     "bytes": 29539,
     "sha256": "2f0459c23d9340f0a3709aede7807bdc2124403ed948a505ed8cfcbce2bf85f8",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/PUB%3B77c0f0012daa4ff09d68b6f3bed95a7f/6",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "ta",
@@ -1227,7 +1227,7 @@
     "bytes": 26489,
     "sha256": "4f86588fee721a2bbd39e8d5a1868e048e35fb1b5f59ad68265379bd61df2920",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/PUB%3B77c0f0012daa4ff09d68b6f3bed95a7f/5",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Technical Ratings",
@@ -1237,7 +1237,7 @@
     "bytes": 9693,
     "sha256": "b7bad3782ff2b4059e08ed96b630cc77aa5ee0eb7e8622906fa2ec3134620608",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BTechnical%251Ratings/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Technical Ratings Strategy",
@@ -1247,7 +1247,7 @@
     "bytes": 1097,
     "sha256": "46cdb6d23dcdf6772830a6c733a679994ece64b6e33b2b05482b8dfbb8464597",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BTechnical%251Ratings%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Time Weighted Average Price",
@@ -1257,7 +1257,7 @@
     "bytes": 596,
     "sha256": "4c4c8197abbdeedf4922b024f2f2b175c33f1f5ce1d0f539536e6b4de8f88dff",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BTime%251Weighted%251Average%251Price/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Trading Sessions",
@@ -1267,7 +1267,7 @@
     "bytes": 6650,
     "sha256": "3e10b21c90c853eb92b8de211e299de7032baf70474a5268db1f4d4eac5fee84",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BTrading%251Sessions/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Trend Strength Index",
@@ -1277,7 +1277,7 @@
     "bytes": 1063,
     "sha256": "abfe14d7876bacd6af2d09a6ec1df6f65881c43bbedc5ba42cd35a7357a0b978",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BTrend%251Strength%251Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Triple EMA",
@@ -1287,7 +1287,7 @@
     "bytes": 291,
     "sha256": "d26dcd126d60deae1f65d4b6058f93a521d73a22c4c8a73e4a1fec17d2ade446",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BTEMA/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "TRIX",
@@ -1297,7 +1297,7 @@
     "bytes": 323,
     "sha256": "b42e2d8aa7f2f63d5299036c5b75e79002ca02692bc50738fa18c3bf2a10225c",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BTRIX/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "True Strength Index",
@@ -1307,7 +1307,7 @@
     "bytes": 748,
     "sha256": "85d651daa2ffad4ec80150e35e79c14b41203aa1bc5f472005c51342f0bade4d",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BTrue%251Strength%251Indicator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Ulcer Index",
@@ -1317,7 +1317,7 @@
     "bytes": 464,
     "sha256": "10fa20b2fa091b8e58f80e7faa6a479ee6c71e6273a661f82472461f4cc4368a",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BUlcer_Index/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Ultimate Oscillator",
@@ -1327,7 +1327,7 @@
     "bytes": 672,
     "sha256": "87fd2ca7cb3f2d54ce176bf4951fb475ec63fcbf6c30aa93b29ceaf0a2e56c82",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BUltimate_Oscillator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Up/Down Volume",
@@ -1337,7 +1337,7 @@
     "bytes": 1320,
     "sha256": "ffafaf33a57cd3af8040d254b43a34b86b6864357988b28da1a23c34db8d3c65",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BUP_DOWN_Volume/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Visible Average Price",
@@ -1347,7 +1347,7 @@
     "bytes": 472,
     "sha256": "ed6be3d7bb18a678bab30f0995c0a98ebee175fa7d16c546b078ea8b47d63aa6",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BVisible%251Average%251Price/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Volatility Stop",
@@ -1357,7 +1357,7 @@
     "bytes": 1026,
     "sha256": "1477fbefe1fbce39427511d62db0c0a70367b3612f62b726135773dfdebd256a",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BVolatility_Stop/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Volty Expan Close Strategy",
@@ -1367,7 +1367,7 @@
     "bytes": 451,
     "sha256": "08efd06de1961b1c2cab683aec9ebba9930c7a0c623aee4426729f7c04e48068",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BVolty%251Expan%251Close%251Strategy/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Volume Delta",
@@ -1377,7 +1377,7 @@
     "bytes": 1224,
     "sha256": "450f38acb5703718aa374f73b43a1191c00b7db82782fbac05392dcd8ce75a41",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BVolume%251Delta/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Volume Weighted Average Price",
@@ -1387,7 +1387,7 @@
     "bytes": 5412,
     "sha256": "8b236c23fcaeb3fa1a38c52a0e138bda6b1e6ba5d9cd4759895bb613e1a3c02b",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BVWAP/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Volume Weighted Moving Average",
@@ -1397,7 +1397,7 @@
     "bytes": 338,
     "sha256": "5e2c9a93f97e303d51540c980c16360341592db658052d3c77d8d18b870305b4",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BVWMA/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Vortex Indicator",
@@ -1407,7 +1407,7 @@
     "bytes": 437,
     "sha256": "240be8c3732c6445882cea3dff5430218a9e00f77f82ee8f48861591ebf6dc06",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BVortex%251Indicator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Williams Alligator",
@@ -1417,7 +1417,7 @@
     "bytes": 801,
     "sha256": "b44b9269fbf0d08dfdb1c4d54171a9547421a66db27f8198228c23f5ad3a0cee",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BWilliams_Alligator/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Williams Fractals",
@@ -1427,7 +1427,7 @@
     "bytes": 2653,
     "sha256": "b29c70828b12e3b0569c3476adec9e5aaa3c8469863d0b5dbb6462675f54d285",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BWhilliams_Fractals/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Williams Percent Range",
@@ -1437,7 +1437,7 @@
     "bytes": 642,
     "sha256": "9b88ac837371c17a65ff4c8f858edae80a7e7e0dbf5bec08879bb5e8fb8dd8e7",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BWillams_R/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Woodies CCI",
@@ -1447,7 +1447,7 @@
     "bytes": 1073,
     "sha256": "58476161a9cb5e945f566e694a27b40fa4d2ebee77a19ff4c94bbf24de28ce89",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BWoodies%251CCI/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   },
   {
     "scriptName": "Zig Zag",
@@ -1457,6 +1457,6 @@
     "bytes": 1205,
     "sha256": "93860eb4853c16e1ec104f8aa0098479f2083425ae2a9abb68f2e404512666f2",
     "source_url": "https://pine-facade.tradingview.com/pine-facade/get/STD%3BZig_Zag/last",
-    "fetched_utc": "2026-06-01T01:21:24Z"
+    "fetched_utc": "2026-06-01T01:26:12Z"
   }
 ]
