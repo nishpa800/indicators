@@ -1,0 +1,25 @@
+//@version=6
+indicator(title="Bollinger BandWidth", shorttitle="BBW", format=format.price, precision=2, timeframe="", timeframe_gaps=true)
+
+
+string TT_LENGTH = "The time period to be used in calculating the SMA which creates the base for the Upper and Lower Bands"
+string TT_SOURCE = "Determines what data from each bar will be used in calculations."
+string TT_MULT   = "The number of Standard Deviations away from the SMA that the Upper and Lower Bands should be."
+string TT_HI_EXP = "The Highest Expansion plot displays the highest value that BBW had in the last N bars, where N is the length specified by this input."
+string TT_LO_EXP = "The Lowest Contraction plot displays the lowest value that BBW had in the last N bars, where N is the length specified by this input."
+
+length = input.int(20,       "Length", minval = 1, tooltip = TT_LENGTH)
+src    = input(close,        "Source",             tooltip = TT_SOURCE)
+mult   = input.float(2.0,    "StdDev", minval = 0.001,    maxval = 50, tooltip = TT_MULT)
+expansionLengthInput   = input.int(125,      "Highest Expansion Length",  minval = 1, display = display.none, tooltip = TT_HI_EXP)
+contractionLengthInput = input.int(125,      "Lowest Contraction Length", minval = 1, display = display.none, tooltip = TT_LO_EXP)
+
+basis = ta.sma(src, length)
+dev   = mult * ta.stdev(src, length)
+upper = basis + dev
+lower = basis - dev
+bbw   = ((upper - lower) / basis) * 100
+
+plot(bbw, "Bollinger BandWidth", color = #2962FF)
+plot(ta.highest(bbw, expansionLengthInput),  "Highest Expansion",  color = color.new(#F23645, 50))
+plot(ta.lowest(bbw, contractionLengthInput), "Lowest Contraction", color = color.new(#089981, 50))

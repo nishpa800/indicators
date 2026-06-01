@@ -1,0 +1,16 @@
+//@version=6
+indicator("Ulcer Index", timeframe = "", timeframe_gaps = true)
+
+import TradingView/ta/11 as TVta
+
+// Inputs
+float sourceInput = input.source(close, "Source")
+int   lengthInput = input.int(14, "Length", 1)
+
+// Calculate and plot the Ulcer Index.
+float ui = TVta.ulcerIndex(sourceInput, lengthInput)
+
+uiPlot   = plot(ui, "Ulcer Index")
+zeroPlot = plot(0, "", display = display.none, editable = false)
+fill(uiPlot, zeroPlot, #2196f31a)
+hline(0, "Zero")

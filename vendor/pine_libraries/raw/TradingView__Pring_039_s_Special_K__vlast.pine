@@ -1,0 +1,21 @@
+//@version=6
+indicator("Pring's Special K", "Special K", timeframe = "", timeframe_gaps = true)
+
+import TradingView/ta/11 as TVta
+
+// Inputs
+float sourceInput  = input.source(close, "Source")
+int   length1Input = input.int(100, "Signal length 1", 1)
+int   length2Input = input.int(100, "Signal length 2", 1)
+
+// Calculate the Special K and twice-smoothed signal line.
+[specialK, signal] = TVta.specialK(sourceInput, length1Input, length2Input)
+
+// Plot the values, and display a zero line.
+plot(specialK, "Special K")
+plot(signal, "Signal", #ff6d00)
+hline(0, "Zero")
+
+// Raise an error if the chart's history is insufficient.
+if last_bar_index < 724
+    runtime.error("Not enough history on the chart. Choose a symbol or timeframe with a larger number of bars.")

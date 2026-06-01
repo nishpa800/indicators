@@ -1,0 +1,18 @@
+//@version=6
+indicator("Price Momentum Oscillator", "PMO", timeframe = "", timeframe_gaps = true)
+
+import TradingView/ta/11 as TVta
+
+// Inputs
+float sourceInput  = input.source(close, "Source")
+int   length1Input = input.int(35, "Length 1", 1)
+int   length2Input = input.int(20, "Length 2", 1)
+int   signalInput  = input.int(10, "Signal length", 1)
+
+// Calculate the PMO and signal line.
+[pmo, signal] = TVta.pmo(sourceInput, length1Input, length2Input, signalInput)
+
+// Plot the values, and display a zero line.
+plot(pmo, "PMO")
+plot(signal, "Signal", #ff6d00)
+hline(0, "Zero")

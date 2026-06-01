@@ -1,0 +1,15 @@
+//@version=6
+indicator("Positive Volume Index", "PVI", timeframe = "", timeframe_gaps = true)
+
+int maLengthInput = input.int(255, "EMA length", 1)
+
+// Calculate and plot the PVI and its EMA.
+float pvi = ta.pvi * 1000.0
+float ema = ta.ema(pvi, maLengthInput)
+
+plot(pvi, "PVI")
+plot(ema, "PVI-based EMA", #ff9800)
+
+// Raise an error if no volume data is available.
+if ta.cum(nz(volume)) == 0.0 and barstate.islastconfirmedhistory
+    runtime.error("No volume is provided by the data vendor.")
