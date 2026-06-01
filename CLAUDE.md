@@ -2,6 +2,17 @@
 
 Public repo: **github.com/nishpa800/indicators**
 
+> ## ⭐ `tv_ta.relativeVolume()` — the suite's ONE shared library function
+> Every Pine study here shares exactly one external library function:
+> `tv_ta.relativeVolume()` (`import TradingView/ta/7`, 90 call sites suite-wide,
+> zero other `tv_ta` functions). Its CANONICAL Python port lives in the companion
+> repo: **`~/code/anish/realtime-indicators/rti/tv_ta_shim.py`** (verified in
+> `rti/SHIM_PARITY.md`). It is "Relative Volume **at Time**" — a session-anchored,
+> intraday-offset average. **Never re-implement it, and never approximate it as
+> `volume / ta.sma(volume, N)`** (that guess diverged up to ~162% from TradingView
+> on real opening bars and silently broke parity). Any Python port of any study in
+> this repo must import that one shim.
+
 ## Before doing anything
 
 **Read the master registry first:**
