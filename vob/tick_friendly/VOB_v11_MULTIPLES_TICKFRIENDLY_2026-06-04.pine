@@ -565,12 +565,11 @@ f_vob(int len1, array<level> up_lvl, array<level> lo_lvl, float atr_prox, float 
 
     if lo_lvl.size() > 0
         for i = 0 to lo_lvl.size() - 1
-            level l  = lo_lvl.get(i)
-            level l1 = lo_lvl.get(i - 1)
-            float mid  = l.mid
-            float mid1 = l1.mid
-            if math.abs(mid - mid1) < atr_prox
-                lo_lvl.set(i - 1, level.new(na, na, na, na, na, na, na, na, na))
+            level l = lo_lvl.get(i)
+            if i > 0
+                level l1 = lo_lvl.get(i - 1)
+                if math.abs(l.mid - l1.mid) < atr_prox
+                    lo_lvl.set(i - 1, level.new(na, na, na, na, na, na, na, na, na))
             if close < l.lower
                 lo_lvl.set(i, level.new(na, na, na, na, na, na, na, na, na))
         if lo_lvl.size() > 15
@@ -578,14 +577,12 @@ f_vob(int len1, array<level> up_lvl, array<level> lo_lvl, float atr_prox, float 
 
     if up_lvl.size() > 0
         for i = 0 to up_lvl.size() - 1
-            level l     = up_lvl.get(i)
-            level l1    = up_lvl.get(i - 1)
-            float upper = l.upper
-            float mid   = l.mid
-            float mid1  = l1.mid
-            if math.abs(mid - mid1) < atr_prox
-                up_lvl.set(i - 1, level.new(na, na, na, na, na, na, na, na, na))
-            if close > upper
+            level l = up_lvl.get(i)
+            if i > 0
+                level l1 = up_lvl.get(i - 1)
+                if math.abs(l.mid - l1.mid) < atr_prox
+                    up_lvl.set(i - 1, level.new(na, na, na, na, na, na, na, na, na))
+            if close > l.upper
                 up_lvl.set(i, level.new(na, na, na, na, na, na, na, na, na))
         if up_lvl.size() > 15
             up_lvl.shift()
