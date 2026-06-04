@@ -1,5 +1,43 @@
 # VOB Indicator Suite — Changelog
 
+## VOB v11 — HW-Single Coincidence + T3 Cluster — 2026-06-04
+
+Two new files (NOT replacing v10). Built on the v10 body. **Host bumped to
+`//@version=6` by explicit in-session instruction from Anish** (the suite-wide
+"v5 only" default was waived for this build after a smoke test proved
+`import TradingView/ta/7` + `relativeVolume()` compiles clean under v6).
+
+### Files
+- `versions/VOB_v11_FULL_HWcoincidence_2026-06-04.pine` — keeps ALL v10 visuals
+  (individual T3 circles + zA..zF zone crosses + zone lines/fills + VLB + MZ),
+  PLUS the two new detections.
+- `versions/VOB_v11_MULTIPLES_HWcoincidence_2026-06-04.pine` — "multiples only":
+  the 12 individual T3 circles and the 12 individual zone-formation crosses are
+  commented out (`// [v11 MULTIPLES-ONLY removed]`). KEEPS the drawn zone
+  lines/fills, Nagasaki, VLB, MZ2/MZ3, and both new detections. Chart shows only
+  confluence/composite events.
+
+### New detection #1 — T3 Cluster (`T3x`, yellow flag, top)
+Fires when **2+ of the six T3 tiers** (T3a..T3f, buy OR sell) paint on the SAME
+candle. Direction-agnostic — two bulls, two bears, or a bull+bear mix all count.
+One plot + alertcondition + Bloomberg `alert()`. Non-repainting, cooldown-gated.
+
+### New detection #2 — VOB × HW-Single Coincidence (`V×HW`, magenta label, top)
+Fires when ANY VOB T3 or ANY VOB zone-formation marker (either direction)
+coincides on the SAME candle with ANY Heavy Weapons Single v3 detection (high
+volume, displacement, RVOL, sequence, B2B, FAUNA, HCT, Pentagon, HV).
+**HW Single v3 itself is NOT modified** — its detection math is embedded
+READ-ONLY (group "HW Single v3 Engine (embedded — read-only)"), visuals stripped,
+collapsed to a single `hws_any` boolean. One plot + alertcondition + Bloomberg
+`alert()`. Non-repainting, cooldown-gated.
+
+### Verification
+- Append block (HWS engine + both detections) compiles under v6: 0 errors,
+  3 advisory warnings (pre-existing HWS `ta.*`-in-conditional patterns).
+- v10 body scanned for v5→v6 breaking constructs: none present.
+
+# VOB Indicator Suite — Changelog
+
 ## VOB_Asym_T3x6_MutEx_Claude_v9_2026-05-12.pine — v9.1 patch — 2026-05-12
 
 Adds the "Wrong-Way 3" family + makes every v9 detection non-repainting
