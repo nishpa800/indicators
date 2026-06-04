@@ -771,10 +771,8 @@ bool sigHV500=conf and volume>=ta.highest(volume,500)[1], bool sigHV1000=conf an
 int cc_win_bull=0
 bool cc_pbj_bull=false
 for i=0 to cc_window-1
-    bool hv2=nz(comboSet3_Bull[i]) or nz(comboSet4_Bull[i])
-    if i>=1
-        if nz(comboSet1_Bull[i-1]) or nz(comboSet2_Bull[i-1])
-            hv2:=true
+    // BINARY FIX (Anish 2026-06-04): one physical bar = 1 or 0; Matrix(CS2)+FVG(CS1) same-bar OR-collapse.
+    bool hv2=nz(comboSet3_Bull[i]) or nz(comboSet4_Bull[i]) or nz(comboSet1_Bull[i]) or nz(comboSet2_Bull[i])
     if hv2
         cc_win_bull+=1
     if nz(sigBullPBJ[i]) or nz(sigBullPB[i])
