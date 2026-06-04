@@ -1,0 +1,489 @@
+//@version=5
+// =============================================================================
+// Heavy Weapons NRA + GZI/FVG + Matrix 4 Combos (FIXED — Non-Repainting)
+//
+// FIXES APPLIED:
+// 1. GZI/HV FVG array mutations (unshift/remove) gated by barstate.isconfirmed
+//    → prevents intrabar state corruption of the fvgs array
+// 2. bullGZI/bearGZI/bullHV/bearHV now only set inside conf block
+//    → FVG combo signals no longer repaint
+// 3. FVG combo signals (comboSet1/2) explicitly conf-gated
+// 4. All plots and alerts use identical fire_* booleans → 1:1 parity
+// 5. Added missing alertconditions for SAAB, Kratos, Bull/Bear RVOL 1x,
+//    Long 1/2, Short 1/2
+// =============================================================================
+
+indicator("Heavy Weapons NRA + GZI/FVG + Matrix Combos 2 bodies not 1 NRAFR", shorttitle="RVOL NRAFR x2", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+import TradingView/ta/7 as tv_ta
+
+// =============================================================================
+// TYPES (GZI / HV FVG)
+// =============================================================================
+type fvg
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+
+// =============================================================================
+// GLOBAL PLOT/ALERT TOGGLES
+// =============================================================================
+grp_global = "★ GLOBAL PLOT/ALERT TOGGLES ★"
+
+show_SAAB       = input.bool(false, "SAAB", group=grp_global, inline="rv1")
+show_Kratos     = input.bool(false, "Kratos", group=grp_global, inline="rv1")
+show_BullRVOL1x = input.bool(false, "Bull RVOL 1x", group=grp_global, inline="rv1")
+show_BearRVOL1x = input.bool(false, "Bear RVOL 1x", group=grp_global, inline="rv1")
+show_GrandSlam  = input.bool(true, "Grand Slam", group=grp_global, inline="rv2")
+show_MOAB       = input.bool(true, "MOAB", group=grp_global, inline="rv2")
+
+show_Pentagon   = input.bool(false, "Pentagon", group=grp_global, inline="rv3")
+show_WTC        = input.bool(true, "WTC", group=grp_global, inline="rv3")
+show_Hiroshima  = input.bool(true, "Hiroshima", group=grp_global, inline="rv3")
+show_Nagasaki   = input.bool(true, "Nagasaki", group=grp_global, inline="rv3")
+
+show_Long1      = input.bool(false, "LONG 1", group=grp_global, inline="hy1")
+show_Short1     = input.bool(false, "SHORT 1", group=grp_global, inline="hy1")
+show_Long2      = input.bool(false, "LONG 2", group=grp_global, inline="hy2")
+show_Short2     = input.bool(false, "SHORT 2", group=grp_global, inline="hy2")
+
+// =============================================================================
+// GZI / HV FVG COMBO SETTINGS (SETS 1 & 2)
+// =============================================================================
+grp_combo_fvg = "COMBOS: GZI / HV FVG"
+
+show_ComboSet1Bull = input.bool(true, "Combo Set 1 Bull (FVG + Std RVOL)", group=grp_combo_fvg)
+show_ComboSet1Bear = input.bool(true, "Combo Set 1 Bear (FVG + Std RVOL)", group=grp_combo_fvg)
+show_ComboSet2Bull = input.bool(true, "Combo Set 2 Bull (FVG + Reg@Time)", group=grp_combo_fvg)
+show_ComboSet2Bear = input.bool(true, "Combo Set 2 Bear (FVG + Reg@Time)", group=grp_combo_fvg)
+
+comboBodyPct_FVG = input.float(0.85, "Min Body % for FVG Combos", minval=0.0, maxval=1.0, step=0.05, group=grp_combo_fvg)
+inc_pentagon_FVG = input.bool(true, "Include Pentagon in FVG Combos (Set 2)", group=grp_combo_fvg)
+
+// =============================================================================
+// MATRIX COMBO SETTINGS (SETS 3 & 4)
+// =============================================================================
+grp_combo_mat = "COMBOS: MATRIX (Neo/Trinity)"
+
+show_ComboSet3Bull = input.bool(true, "Combo Set 3 Bull (Matrix + Std RVOL)", group=grp_combo_mat)
+show_ComboSet3Bear = input.bool(true, "Combo Set 3 Bear (Matrix + Std RVOL)", group=grp_combo_mat)
+show_ComboSet4Bull = input.bool(true, "Combo Set 4 Bull (Matrix + Reg@Time)", group=grp_combo_mat)
+show_ComboSet4Bear = input.bool(true, "Combo Set 4 Bear (Matrix + Reg@Time)", group=grp_combo_mat)
+
+comboBodyPct_MAT = input.float(0.85, "Min Body % for Matrix Combos", minval=0.0, maxval=1.0, step=0.05, group=grp_combo_mat)
+inc_pentagon_MAT = input.bool(true, "Include Pentagon in Matrix Combos (Set 4)", group=grp_combo_mat)
+
+matrix_len = input.int(67, "Matrix Number Lookback", minval=1, group=grp_combo_mat)
+
+// =============================================================================
+// GZI & HV FVG BASE SETTINGS
+// =============================================================================
+grp_gzi = "GZI & HV FVG Base Settings"
+threshPct = input.float(2, "Threshold %", minval=0, maxval=100, step=0.1, group=grp_gzi)
+auto = input.bool(true, "Auto", group=grp_gzi)
+mitLvl = input.bool(false, 'Mitigation Levels', group=grp_gzi)
+gziDist = input.int(7, "Max Bar Distance", minval=1, maxval=200, group=grp_gzi)
+
+// =============================================================================
+// RVOL 0.56 / REG @ TIME SETTINGS
+// =============================================================================
+groupBullBear = "RVOL - Bull/Bear Calculation"
+bb_avgLength  = input.int(30, "Lookback Length", minval=1, group=groupBullBear)
+bb_smaLength  = input.int(20, "SMA Length", minval=1, group=groupBullBear)
+
+groupReg = "RVOL - Reg @ Time Calculation"
+reg_anchorTimeframe  = input.timeframe("", "Anchor Timeframe", group=groupReg)
+reg_length           = input.int(30, "Length", minval=1, group=groupReg)
+reg_calculationMode  = input.string("Cumulative", "Calculation Mode", options=["Cumulative", "Regular"], group=groupReg)
+reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg)
+
+grp_hyb = "Hybrid Momentum (Long/Short)"
+hyb_addReg1  = input.float(5.0, "Momentum 1 Reg Floor", minval=0.5, group=grp_hyb)
+hyb_addCum1  = input.float(3.0, "Momentum 1 Cum Floor", minval=0.5, group=grp_hyb)
+hyb_bodyRat1 = input.float(0.65, "Momentum 1 Min Body Ratio", minval=0.0, group=grp_hyb)
+
+hyb_addReg2  = input.float(5.0, "Momentum 2 Reg Floor", minval=0.5, group=grp_hyb)
+hyb_addCum2  = input.float(3.0, "Momentum 2 Cum Floor", minval=0.5, group=grp_hyb)
+hyb_bodyRat2 = input.float(0.65, "Momentum 2 Min Body Ratio", minval=0.0, group=grp_hyb)
+
+// =============================================================================
+// RVOL BASE CALCULATIONS
+// =============================================================================
+tfSec = timeframe.in_seconds(timeframe.period)
+conf = barstate.isconfirmed
+
+f_rvol_1x_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10 ? 38.0 : s <= 15 ? 33.0 : s <= 30 ? 28.0 : s <= 45 ? 23.0 : s <= 60 ? 20.0 : s <= 120 ? 19.0 : s <= 180 ? 17.0 : s <= 240 ? 16.0 : s <= 300 ? 15.0 : s <= 360 ? 14.0 : s <= 420 ? 12.0 : s <= 480 ? 11.0 : s <= 540 ? 10.0 : s <= 600 ? 10.0 : s <= 900 ? 8.4 : s <= 1800 ? 6.9 : s <= 3600 ? 5.9 : s <= 7200 ? 3.0 : 1.8
+    th
+
+th_1x          = f_rvol_1x_threshold(tfSec)
+th_saab_kratos = th_1x * 0.56
+th_wtc         = th_1x * 2.0
+
+f_gs_moab_threshold(_tfSec) =>
+    float s = _tfSec
+    float th = s <= 10 ? 114.0 : s <= 15 ? 99.0 : s <= 30 ? 84.0 : s <= 45 ? 69.0 : s <= 60 ? 35.0 : s <= 300 ? 35.0 : s <= 600 ? 25.0 : s <= 900 ? 20.0 : s <= 3600 ? 10.0 : 8.0
+    th
+
+th_gs_moab   = f_gs_moab_threshold(tfSec)
+th_hiroshima = th_gs_moab
+
+bb_spike = math.abs(close - open)
+bb_avgSpikeDenom = ta.sma(bb_spike, bb_avgLength)[1]
+bb_normalizedPrice = bb_spike / nz(bb_avgSpikeDenom, 1.0)
+bb_avgVolDenom = ta.sma(volume, bb_avgLength)[1]
+bb_normalizedVolume = volume / nz(bb_avgVolDenom, 1.0)
+bb_diff = bb_normalizedPrice - bb_normalizedVolume
+bb_positiveDiff = bb_diff > 0 ? bb_diff : na
+bb_smaDiff = ta.sma(bb_positiveDiff, bb_smaLength)
+
+bb_baseBullish = (close > open) and (bb_positiveDiff > bb_smaDiff)
+bb_baseBearish = (close < open) and (bb_positiveDiff > bb_smaDiff)
+bb_inRange(v, lowTh, highTh) => v >= lowTh and v < highTh
+
+sigSAAB       = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigKratos     = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigBullRVOL1x = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigBearRVOL1x = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigGrandSlam  = conf and bb_baseBullish and (bb_normalizedPrice >= th_gs_moab)
+sigMOAB       = conf and bb_baseBearish and (bb_normalizedPrice >= th_gs_moab)
+
+[currentVolume_reg, pastVolume_reg, _] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, reg_calculationMode == "Cumulative", reg_adjustRealtime)
+relVolRatio = currentVolume_reg / pastVolume_reg
+
+sigPentagon  = conf and (relVolRatio >= th_1x) and (relVolRatio <= th_wtc)
+sigWTC       = conf and (relVolRatio > th_wtc) and (relVolRatio <= th_hiroshima)
+sigHiroshima = conf and (relVolRatio > th_hiroshima)
+
+var float maxVol = 0.0
+bool isNagasaki = false
+if conf
+    if bar_index == 0
+        maxVol := volume
+    else if volume > maxVol
+        isNagasaki := true
+        maxVol := volume
+sigNagasaki = conf and isNagasaki
+
+// =============================================================================
+// GZI & HV FVG LOGIC
+// FIX: All array mutations and signal flags gated by conf to prevent
+//      intrabar state corruption.
+// =============================================================================
+float v1_fvg = volume[1]
+bool isHV_FVG = v1_fvg == ta.highest(volume, 5000)[1] or v1_fvg == ta.highest(volume, 252)[1] or v1_fvg == ta.highest(volume, 63)[1]
+
+float thresh = auto ? ta.cum((high - low) / low) / bar_index : threshPct / 100
+bool bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > thresh
+bool sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > thresh
+
+var fvgs = array.new<fvg>(0)
+var int lastT = 0
+bool bullGZI = false, bool bearGZI = false, bool bullHV = false, bool bearHV = false
+
+// FIX: Gate ALL array mutations and GZI/HV flag setting behind conf.
+// Without this, the fvgs array gets duplicate entries and premature removals
+// on every intrabar tick, permanently corrupting the GZI overlap detection.
+if conf
+    if bFVG and time != lastT
+        float mx = low, float mn = high[2]
+        if isHV_FVG
+            bullHV := true
+        if fvgs.size() > 0
+            for i = 0 to fvgs.size() - 1
+                fvg e = fvgs.get(i)
+                if e.bull and bar_index - e.idx <= gziDist
+                    float ob = math.max(e.mn, mn), float ot = math.min(e.mx, mx)
+                    if ob < ot or (ob <= ot and e.hv and isHV_FVG)
+                        bullGZI := true
+                        break
+        fvgs.unshift(fvg.new(mx, mn, true, time, bar_index, isHV_FVG))
+        lastT := time
+
+    if sFVG and time != lastT
+        float mx = low[2], float mn = high
+        if isHV_FVG
+            bearHV := true
+        if fvgs.size() > 0
+            for i = 0 to fvgs.size() - 1
+                fvg e = fvgs.get(i)
+                if not e.bull and bar_index - e.idx <= gziDist
+                    float ob = math.max(e.mn, mn), float ot = math.min(e.mx, mx)
+                    if ob < ot or (ob <= ot and e.hv and isHV_FVG)
+                        bearGZI := true
+                        break
+        fvgs.unshift(fvg.new(mx, mn, false, time, bar_index, isHV_FVG))
+        lastT := time
+
+    if fvgs.size() > 0
+        for i = fvgs.size() - 1 to 0
+            fvg g = fvgs.get(i)
+            if g.bull and close < g.mn
+                if mitLvl
+                    line.new(g.t, g.mn, time, g.mn, xloc.bar_time, color=color.new(#089981, 70), style=line.style_dashed)
+                fvgs.remove(i)
+            else if not g.bull and close > g.mx
+                if mitLvl
+                    line.new(g.t, g.mx, time, g.mx, xloc.bar_time, color=color.new(#f23645, 70), style=line.style_dashed)
+                fvgs.remove(i)
+
+// =============================================================================
+// MATRIX & FAUNA LOGIC (EXACT PORT FROM SOURCE)
+// =============================================================================
+// Fauna Constants
+atr_len = 14
+vol_len = 20
+gg_master_on = true
+gg_body_th   = 0.85
+
+const float b_alpha_MB = 1.6, b_beta_MB = 0.70, b_delta_MB = 1.8
+const float b_gamma_RE = 2.2, b_epsilon_RE = 0.15, b_delta_RE = 1.8
+const float b_theta_TA = 1.6, b_delta_TA = 1.8
+const int   b_trend_len = 50, b_delta_len = 10
+const float b_zeta_GG = 0.9, b_delta_GG = 1.8
+const float b_alpha_SB = 1.5, b_delta_SB = 1.5, b_weak_rat = 0.2
+const int   b_body_len = 20, b_range_len = 20
+
+const float s_alpha_MB = 1.6, s_beta_MB = 0.70, s_delta_MB = 1.8
+const float s_gamma_RE = 2.2, s_epsilon_RE = 0.15, s_delta_RE = 1.8
+const float s_theta_TA = 1.6, s_delta_TA = 1.8
+const int   s_trend_len = 50, s_delta_len = 10
+const float s_zeta_GG = 0.9, s_delta_GG = 1.8
+const float s_alpha_SB = 1.5, s_delta_SB = 1.5, s_weak_rat = 0.2
+const int   s_body_len = 20, s_range_len = 20
+
+ATR    = ta.atr(atr_len)
+AvgVol = ta.sma(volume, vol_len)
+
+is_matrix_number = volume == ta.highest(volume, matrix_len)
+
+// ── FAUNA BULLISH LOGIC ──
+AvgBody_B  = ta.sma(math.abs(close - open), b_body_len)
+AvgDelta_B = ta.sma(math.abs(close - close[1]), b_delta_len)
+TrendMA_B  = ta.sma(close, b_trend_len)
+body_up    = close > open
+body_siz   = math.abs(close - open)
+range_b    = high - low
+ratio_b    = range_b == 0 ? 0.0 : body_siz / range_b
+
+MB_bull = body_up and body_siz > b_alpha_MB * ATR and ratio_b > b_beta_MB and volume > b_delta_MB * AvgVol
+RE_bull = body_up and range_b > b_gamma_RE * ATR and (high - close) < b_epsilon_RE * range_b and volume > b_delta_RE * AvgVol
+TA_bull = TrendMA_B > TrendMA_B[1] and (close - close[1]) > b_theta_TA * AvgDelta_B and body_up and volume > b_delta_TA * AvgVol
+
+GG_bull = (open - close[1]) > b_zeta_GG * ATR and body_up and low > close[1] and volume > b_delta_GG * AvgVol
+prev_b_body = close[1] - open[1]
+prev_b_rng  = high[1] - low[1]
+StrBear = close[1] < open[1] and math.abs(prev_b_body) > b_alpha_SB * AvgBody_B[1] and volume[1] > b_delta_SB * AvgVol[1]
+WeakBear = close[1] < open[1] and (prev_b_rng == 0 ? 0.0 : math.abs(prev_b_body) / prev_b_rng) <= b_weak_rat
+TR_bull = WeakBear and (MB_bull or RE_bull or TA_bull)
+ES_bull = StrBear  and (MB_bull or RE_bull or TA_bull)
+GDR_bull = close[1] < open[1] and GG_bull
+
+b_core_cnt = (MB_bull ? 1 : 0) + (RE_bull ? 1 : 0) + (TA_bull ? 1 : 0)
+b_gg_pass  = gg_master_on and (b_core_cnt >= 2) and (ratio_b >= gg_body_th)
+b_hard_exc = TR_bull or ES_bull or GDR_bull
+b_gg_exc   = GG_bull and not b_gg_pass
+excluded_bull = b_hard_exc or b_gg_exc
+is_fauna_bull = (MB_bull or RE_bull or TA_bull) and not excluded_bull
+
+// ── FAUNA BEARISH LOGIC ──
+AvgBody_S  = ta.sma(math.abs(close - open), s_body_len)
+AvgDelta_S = ta.sma(math.abs(close - close[1]), s_delta_len)
+TrendMA_S  = ta.sma(close, s_trend_len)
+body_dn    = close < open
+
+MB_bear = body_dn and body_siz > s_alpha_MB * ATR and ratio_b > s_beta_MB and volume > s_delta_MB * AvgVol
+RE_bear = body_dn and range_b > s_gamma_RE * ATR and (close - low) < s_epsilon_RE * range_b and volume > s_delta_RE * AvgVol
+TA_bear = TrendMA_S < TrendMA_S[1] and (close[1] - close) > s_theta_TA * AvgDelta_S and body_dn and volume > s_delta_TA * AvgVol
+
+GG_bear = (close[1] - open) > s_zeta_GG * ATR and body_dn and high < close[1] and volume > s_delta_GG * AvgVol
+StrBull = close[1] > open[1] and math.abs(prev_b_body) > s_alpha_SB * AvgBody_S[1] and volume[1] > s_delta_SB * AvgVol[1]
+WeakBull = close[1] > open[1] and (prev_b_rng == 0 ? 0.0 : math.abs(prev_b_body) / prev_b_rng) <= s_weak_rat
+TR_bear = WeakBull and (MB_bear or RE_bear or TA_bear)
+ES_bear = StrBull  and (MB_bear or RE_bear or TA_bear)
+GDR_bear = close[1] > open[1] and GG_bear
+
+s_core_cnt = (MB_bear ? 1 : 0) + (RE_bear ? 1 : 0) + (TA_bear ? 1 : 0)
+s_gg_pass  = gg_master_on and (s_core_cnt >= 2) and (ratio_b >= gg_body_th)
+s_hard_exc = TR_bear or ES_bear or GDR_bear
+s_gg_exc   = GG_bear and not s_gg_pass
+excluded_bear = s_hard_exc or s_gg_exc
+is_fauna_bear = (MB_bear or RE_bear or TA_bear) and not excluded_bear
+
+// ── HYBRID MOMENTUM ALIGNMENT ──
+hybRegRatio = relVolRatio
+[hybCumCur, hybCumPast, _] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, true,  reg_adjustRealtime)
+hybCumRatio = hybCumCur / hybCumPast
+
+hybBodySz  = math.abs(close - open)
+hybRange   = high - low
+hybBodyRat = hybRange == 0 ? 0.0 : hybBodySz / hybRange
+
+hybConvict1  = hybBodyRat >= hyb_bodyRat1
+hybBull1     = (close > open) and hybConvict1
+hybBear1     = (close < open) and hybConvict1
+hybMom1      = conf and (hybRegRatio > hyb_addReg1) and (hybCumRatio > hyb_addCum1)
+sigAddLong1  = hybMom1 and hybBull1
+sigAddShort1 = hybMom1 and hybBear1
+
+hybConvict2  = hybBodyRat >= hyb_bodyRat2
+hybBull2     = (close > open) and hybConvict2
+hybBear2     = (close < open) and hybConvict2
+hybMom2      = conf and (hybRegRatio > hyb_addReg2) and (hybCumRatio > hyb_addCum2)
+sigAddLong2  = hybMom2 and hybBull2
+sigAddShort2 = hybMom2 and hybBear2
+
+// ── MATRIX BASE & ALIGNED SIGNALS ──
+neo_bull     = conf and is_matrix_number and is_fauna_bull
+neo_bear     = conf and is_matrix_number and is_fauna_bear
+trinity_bull = conf and is_matrix_number and (not is_fauna_bull) and (close > open)
+trinity_bear = conf and is_matrix_number and (not is_fauna_bear) and (close < open)
+
+neo_bull_aligned     = neo_bull     and (sigAddLong1  or sigAddLong2)
+neo_bear_aligned     = neo_bear     and (sigAddShort1 or sigAddShort2)
+trinity_bull_aligned = trinity_bull and (sigAddLong1  or sigAddLong2)
+trinity_bear_aligned = trinity_bear and (sigAddShort1 or sigAddShort2)
+
+// =============================================================================
+// COMBINATION SIGNALS
+// =============================================================================
+
+// --- FVG / GZI BODY EVALUATION (ON BAR [1]) ---
+bodySize1 = math.abs(close[1] - open[1])
+candleRange1 = high[1] - low[1]
+candleBodyPct1 = candleRange1 == 0 ? 0.0 : bodySize1 / candleRange1
+bool validBody_FVG = candleBodyPct1 >= comboBodyPct_FVG
+
+// --- SET 1 & 2: GZI/HV FVG Combos ---
+// FIX: Added explicit conf gate. bullHV/bullGZI/bearHV/bearGZI are now
+// only set inside the conf block above, so they're already confirmed-only.
+// The conf here is belt-and-suspenders for the combo as a whole.
+bool comboSet1_Bull = conf and validBody_FVG and (bullHV or bullGZI) and (sigSAAB[1] or sigBullRVOL1x[1] or sigGrandSlam[1])
+bool comboSet1_Bear = conf and validBody_FVG and (bearHV or bearGZI) and (sigKratos[1] or sigBearRVOL1x[1] or sigMOAB[1])
+
+bool volRegTimeActiveBull_FVG = (inc_pentagon_FVG and sigPentagon[1]) or sigWTC[1] or sigHiroshima[1] or sigNagasaki[1]
+bool volRegTimeActiveBear_FVG = (inc_pentagon_FVG and sigPentagon[1]) or sigWTC[1] or sigHiroshima[1] or sigNagasaki[1]
+
+bool comboSet2_Bull = conf and validBody_FVG and (bullHV or bullGZI) and volRegTimeActiveBull_FVG
+bool comboSet2_Bear = conf and validBody_FVG and (bearHV or bearGZI) and volRegTimeActiveBear_FVG
+
+// --- MATRIX BODY EVALUATION (ON BAR [0]) ---
+bool validBody_MAT = ratio_b >= comboBodyPct_MAT
+
+bool matrix_any_bull = neo_bull or trinity_bull or neo_bull_aligned or trinity_bull_aligned
+bool matrix_any_bear = neo_bear or trinity_bear or neo_bear_aligned or trinity_bear_aligned
+
+// --- SET 3 & 4: MATRIX Combos ---
+// Already conf-gated via matrix_any_bull/bear (which require neo/trinity, which require conf)
+bool comboSet3_Bull = validBody_MAT and matrix_any_bull and (sigSAAB or sigBullRVOL1x or sigGrandSlam)
+bool comboSet3_Bear = validBody_MAT and matrix_any_bear and (sigKratos or sigBearRVOL1x or sigMOAB)
+
+bool volRegTimeActiveBull_MAT = (inc_pentagon_MAT and sigPentagon) or sigWTC or sigHiroshima or sigNagasaki
+bool volRegTimeActiveBear_MAT = (inc_pentagon_MAT and sigPentagon) or sigWTC or sigHiroshima or sigNagasaki
+
+bool comboSet4_Bull = validBody_MAT and matrix_any_bull and volRegTimeActiveBull_MAT
+bool comboSet4_Bear = validBody_MAT and matrix_any_bear and volRegTimeActiveBear_MAT
+
+// =============================================================================
+// FIRE CONDITIONS (unified booleans for BOTH plot AND alert → 1:1 parity)
+// =============================================================================
+fire_SAAB       = show_SAAB       and sigSAAB
+fire_Kratos     = show_Kratos     and sigKratos
+fire_BullRVOL1x = show_BullRVOL1x and sigBullRVOL1x
+fire_BearRVOL1x = show_BearRVOL1x and sigBearRVOL1x
+fire_GrandSlam  = show_GrandSlam  and sigGrandSlam
+fire_MOAB       = show_MOAB       and sigMOAB
+
+fire_Pentagon   = show_Pentagon   and sigPentagon
+fire_WTC        = show_WTC        and sigWTC
+fire_Hiroshima  = show_Hiroshima  and sigHiroshima
+fire_Nagasaki   = show_Nagasaki   and sigNagasaki
+
+fire_Long1      = show_Long1      and sigAddLong1
+fire_Short1     = show_Short1     and sigAddShort1
+fire_Long2      = show_Long2      and sigAddLong2
+fire_Short2     = show_Short2     and sigAddShort2
+
+fire_CS1_Bull   = show_ComboSet1Bull and comboSet1_Bull
+fire_CS1_Bear   = show_ComboSet1Bear and comboSet1_Bear
+fire_CS2_Bull   = show_ComboSet2Bull and comboSet2_Bull
+fire_CS2_Bear   = show_ComboSet2Bear and comboSet2_Bear
+
+fire_CS3_Bull   = show_ComboSet3Bull and comboSet3_Bull
+fire_CS3_Bear   = show_ComboSet3Bear and comboSet3_Bear
+fire_CS4_Bull   = show_ComboSet4Bull and comboSet4_Bull
+fire_CS4_Bear   = show_ComboSet4Bear and comboSet4_Bear
+
+// =============================================================================
+// PLOTS (all use fire_* booleans)
+// =============================================================================
+plotshape(fire_SAAB,       title="SAAB",          style=shape.square,       location=location.belowbar, size=size.tiny,   color=color.lime,    text="SAAB")
+plotshape(fire_Kratos,     title="Kratos",         style=shape.square,       location=location.abovebar, size=size.tiny,   color=color.orange,  text="Krat")
+plotshape(fire_BullRVOL1x, title="Bull RVOL 1x",   style=shape.xcross,       location=location.belowbar, size=size.small,  color=color.green,   text="RV1x+")
+plotshape(fire_BearRVOL1x, title="Bear RVOL 1x",   style=shape.xcross,       location=location.abovebar, size=size.small,  color=color.red,     text="RV1x-")
+plotshape(fire_GrandSlam,  title="Grand Slam",      style=shape.triangleup,   location=location.belowbar, size=size.normal, color=color.aqua,    text="DINGER")
+plotshape(fire_MOAB,       title="MOAB",            style=shape.triangledown, location=location.abovebar, size=size.normal, color=color.fuchsia, text="MOAB")
+
+plotshape(fire_Pentagon,   title="Pentagon",        style=shape.diamond,      location=location.top,      size=size.small,  color=color.teal,    text="PENT")
+plotshape(fire_WTC,        title="WTC",             style=shape.diamond,      location=location.top,      size=size.normal, color=color.yellow,  text="WTC")
+plotshape(fire_Hiroshima,  title="Hiroshima",       style=shape.diamond,      location=location.top,      size=size.normal, color=color.white,   text="H")
+plotshape(fire_Nagasaki,   title="Nagasaki (HEV)",  style=shape.flag,         location=location.top,      size=size.normal, color=color.purple,  text="N")
+
+// --- Hybrid Momentum Plots ---
+plotshape(fire_Long1,  title="LONG 1",  style=shape.labelup,   location=location.belowbar, size=size.small, color=color.green,  text="L1", textcolor=color.white)
+plotshape(fire_Short1, title="SHORT 1", style=shape.labeldown, location=location.abovebar, size=size.small, color=color.red,    text="S1", textcolor=color.white)
+plotshape(fire_Long2,  title="LONG 2",  style=shape.labelup,   location=location.belowbar, size=size.small, color=color.lime,   text="L2", textcolor=color.black)
+plotshape(fire_Short2, title="SHORT 2", style=shape.labeldown, location=location.abovebar, size=size.small, color=color.maroon, text="S2", textcolor=color.white)
+
+// --- FVG COMBO PLOTS (offset=-1) ---
+plotshape(fire_CS1_Bull, title="Combo Set 1 Bull (FVG)", style=shape.labelup,   location=location.belowbar, color=color.green,   text="F-S1", textcolor=color.white, offset=-1)
+plotshape(fire_CS1_Bear, title="Combo Set 1 Bear (FVG)", style=shape.labeldown, location=location.abovebar, color=color.red,     text="F-S1", textcolor=color.white, offset=-1)
+plotshape(fire_CS2_Bull, title="Combo Set 2 Bull (FVG)", style=shape.labelup,   location=location.belowbar, color=color.aqua,    text="F-S2", textcolor=color.black, offset=-1)
+plotshape(fire_CS2_Bear, title="Combo Set 2 Bear (FVG)", style=shape.labeldown, location=location.abovebar, color=color.fuchsia, text="F-S2", textcolor=color.white, offset=-1)
+
+// --- MATRIX COMBO PLOTS (offset=0) ---
+plotshape(fire_CS3_Bull, title="Combo Set 3 Bull (Matrix)", style=shape.labelup,   location=location.belowbar, color=color.lime,   text="M-S1", textcolor=color.black)
+plotshape(fire_CS3_Bear, title="Combo Set 3 Bear (Matrix)", style=shape.labeldown, location=location.abovebar, color=color.maroon, text="M-S1", textcolor=color.white)
+plotshape(fire_CS4_Bull, title="Combo Set 4 Bull (Matrix)", style=shape.labelup,   location=location.belowbar, color=color.blue,   text="M-S2", textcolor=color.white)
+plotshape(fire_CS4_Bear, title="Combo Set 4 Bear (Matrix)", style=shape.labeldown, location=location.abovebar, color=color.purple, text="M-S2", textcolor=color.white)
+
+// =============================================================================
+// ALERTS (all use identical fire_* booleans as plots → 1:1 parity)
+// =============================================================================
+// --- Standard RVOL Signals ---
+alertcondition(fire_SAAB,       "SAAB",          "SAAB fired on {{ticker}}")
+alertcondition(fire_Kratos,     "Kratos",        "Kratos fired on {{ticker}}")
+alertcondition(fire_BullRVOL1x, "Bull RVOL 1x",  "Bull RVOL 1x fired on {{ticker}}")
+alertcondition(fire_BearRVOL1x, "Bear RVOL 1x",  "Bear RVOL 1x fired on {{ticker}}")
+alertcondition(fire_GrandSlam,  "Grand Slam",     "Grand Slam fired on {{ticker}}")
+alertcondition(fire_MOAB,       "MOAB",           "MOAB fired on {{ticker}}")
+
+// --- Reg @ Time Signals ---
+alertcondition(fire_Pentagon,   "Pentagon",       "Pentagon fired on {{ticker}}")
+alertcondition(fire_WTC,        "WTC",            "WTC fired on {{ticker}}")
+alertcondition(fire_Hiroshima,  "Hiroshima",      "Hiroshima fired on {{ticker}}")
+alertcondition(fire_Nagasaki,   "Nagasaki",       "Nagasaki fired on {{ticker}}")
+
+// --- Hybrid Momentum Signals ---
+alertcondition(fire_Long1,  "LONG 1",  "LONG 1 fired on {{ticker}}")
+alertcondition(fire_Short1, "SHORT 1", "SHORT 1 fired on {{ticker}}")
+alertcondition(fire_Long2,  "LONG 2",  "LONG 2 fired on {{ticker}}")
+alertcondition(fire_Short2, "SHORT 2", "SHORT 2 fired on {{ticker}}")
+
+// --- FVG Combo Signals ---
+alertcondition(fire_CS1_Bull, "Combo 1 Bull", "Bullish GZI/HV FVG + Standard RVOL on {{ticker}}")
+alertcondition(fire_CS1_Bear, "Combo 1 Bear", "Bearish GZI/HV FVG + Standard RVOL on {{ticker}}")
+alertcondition(fire_CS2_Bull, "Combo 2 Bull", "Bullish GZI/HV FVG + Reg@Time on {{ticker}}")
+alertcondition(fire_CS2_Bear, "Combo 2 Bear", "Bearish GZI/HV FVG + Reg@Time on {{ticker}}")
+
+// --- Matrix Combo Signals ---
+alertcondition(fire_CS3_Bull, "Combo 3 Bull", "Bullish Matrix + Standard RVOL on {{ticker}}")
+alertcondition(fire_CS3_Bear, "Combo 3 Bear", "Bearish Matrix + Standard RVOL on {{ticker}}")
+alertcondition(fire_CS4_Bull, "Combo 4 Bull", "Bullish Matrix + Reg@Time on {{ticker}}")
+alertcondition(fire_CS4_Bear, "Combo 4 Bear", "Bearish Matrix + Reg@Time on {{ticker}}")
+// =============================================================================
+

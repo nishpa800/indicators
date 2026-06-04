@@ -1,0 +1,29 @@
+//@version=6
+indicator("Percentage Price Oscillator", "PPO", false, format.percent, 2, timeframe = "", timeframe_gaps = true)
+
+// Inputs
+float  sourceInput  = input.source(close, "Source")
+int    fastLenInput = input.int(12, "Fast length",   1)
+int    slowLenInput = input.int(26, "Slow length",   1)
+int    sigLenInput  = input.int(9,  "Signal length", 1)
+string oscTypeInput = input.string("EMA", "Oscillator MA type", ["EMA", "SMA"], display = display.none)
+string sigTypeInput = input.string("EMA", "Signal MA type",     ["EMA", "SMA"], display = display.none)
+
+// @function    Calculates an EMA or SMA of a `source` series.
+ma(float source, int length, simple string maType) =>
+    switch maType
+        "EMA" => ta.ema(source, length)
+        "SMA" => ta.sma(source, length)
+
+// Calculate and plot the PPO, signal, and histogram values.
+float maFast = ma(sourceInput, fastLenInput, oscTypeInput)
+float maSlow = ma(sourceInput, slowLenInput, oscTypeInput)
+float ppo    = 100.0 * (maFast - maSlow) / maSlow
+float signal = ma(ppo, sigLenInput, sigTypeInput)
+float hist   = ppo - signal
+color hColor = hist >= 0 ? hist > hist[1] ? #26a69a : #b2dfdb : hist > hist[1] ? #ffcdd2 : #ff5252
+
+hline(0, "Zero", #787b8680)
+plot(hist, "Histogram", hColor, style = plot.style_columns)
+plot(ppo, "PPO")
+plot(signal, "Signal line", #ff6d00)

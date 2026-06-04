@@ -1,0 +1,15 @@
+//@version=6
+indicator("Chandelier Exit", "Chandelier", true, timeframe = "", timeframe_gaps = true)
+
+import TradingView/ta/11 as TVta
+
+// Inputs
+int   lengthInput  = input.int(22,    "Length",         1)
+int   atrLenInput  = input.int(22,    "ATR length",     1)
+float atrMultInput = input.float(3.0, "ATR multiplier", 0.0, step = 0.01)
+
+// Calculate and plot the long and short exit values.
+[longCE, shortCE] = TVta.chandelier(lengthInput, atrLenInput, atrMultInput)
+
+plot(longCE,  "Long exit")
+plot(shortCE, "Short exit", #ff6d00)

@@ -1,0 +1,32 @@
+//@version=6
+indicator("Percentage Volume Oscillator", "PVO", false, format.percent, 2, timeframe = "", timeframe_gaps = true)
+
+// Inputs
+int    fastLenInput = input.int(12, "Fast length",   1)
+int    slowLenInput = input.int(26, "Slow length",   1)
+int    sigLenInput  = input.int(9,  "Signal length", 1)
+string oscTypeInput = input.string("EMA", "Oscillator MA type", ["EMA", "SMA"], display = display.none)
+string sigTypeInput = input.string("EMA", "Signal MA type",     ["EMA", "SMA"], display = display.none)
+
+// @function    Calculates an EMA or SMA of a `source` series.
+ma(float source, int length, simple string maType) =>
+    switch maType
+        "EMA" => ta.ema(source, length)
+        "SMA" => ta.sma(source, length)
+
+// Calculate and plot the PVO, signal, and histogram values.
+float maFast = ma(volume, fastLenInput, oscTypeInput)
+float maSlow = ma(volume, slowLenInput, oscTypeInput)
+float pvo    = 100.0 * (maFast - maSlow) / maSlow
+float signal = ma(pvo, sigLenInput, sigTypeInput)
+float hist   = pvo - signal
+color hColor = hist >= 0 ? hist > hist[1] ? #26a69a : #b2dfdb : hist > hist[1] ? #ffcdd2 : #ff5252
+
+hline(0, "Zero", #787b8680)
+plot(hist, "Histogram", hColor, style = plot.style_columns)
+plot(pvo, "PVO")
+plot(signal, "Signal line", #ff6d00)
+
+// Raise an error if no volume data is available.
+if ta.cum(nz(volume)) == 0.0 and barstate.islastconfirmedhistory
+    runtime.error("No volume is provided by the data vendor.")

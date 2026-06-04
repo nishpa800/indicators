@@ -1,0 +1,213 @@
+
+//@version=6
+indicator("Pivot Points Standard", "Pivots", overlay = true, max_lines_count = 500, max_labels_count = 500)
+
+string TT_DB = (
+    "When not selected, the indicator uses intraday data instead of EOD data on intraday charts. If the chart includes "
+    + "data from extended hours, the pivot level calculation takes that data into account. If intraday OHLC values "
+    + "differ from EOD values (normal for stocks), the calculated pivot levels will also differ."
+)
+DW = display.data_window
+string pivotTypeInput           = input.string("Traditional", "Type",                   options = ["Traditional", "Fibonacci", "Woodie", "Classic", "DM", "Camarilla"])
+string pivotAnchorInput         = input.string("Auto",        "Pivots timeframe",       options = ["Auto", "Daily", "Weekly", "Monthly", "Quarterly", "Yearly", "Biyearly", "Triyearly", "Quinquennially", "Decennially"])
+int    maxHistoricalPivotsInput = input.int(15,               "Number of pivots back",  1, 200, display = DW)
+bool   isDailyBasedInput        = input.bool(true,            "Use daily-based values", tooltip = TT_DB, display = DW)
+
+string GRP01                    = "Labels"
+bool   showLabelsInput          = input.bool(true,            "Show labels",            group   = GRP01, display = DW)
+bool   showPricesInput          = input.bool(true,            "Show prices",            group   = GRP01, display = DW)
+string positionLabelsInput      = input.string("Left",        "Labels position",        options = ["Left", "Right"], group = GRP01, display = DW, active = showLabelsInput or showPricesInput)
+
+color DEFAULT_COLOR  = #fb8c00
+bool  showLevel2and3 = pivotTypeInput != "DM"
+bool  showLevel4     = pivotTypeInput != "DM" and pivotTypeInput != "Fibonacci"
+bool  showLevel5     = pivotTypeInput == "Traditional" or pivotTypeInput == "Camarilla"
+
+string GRP02          = "Levels"
+int    linewidthInput = input.int(1,               "Line width", 1, 100,        group = GRP02, display = DW)
+color  pColorInput    = input.color(DEFAULT_COLOR, "P ",         inline = "10", group = GRP02, display = DW)
+bool   pShowInput     = input.bool(true,           "",           inline = "10", group = GRP02, display = DW)
+color  s1ColorInput   = input.color(DEFAULT_COLOR, "S1",         inline = "02", group = GRP02, display = DW)
+bool   s1ShowInput    = input.bool(true,           "",           inline = "02", group = GRP02, display = DW)
+color  r1ColorInput   = input.color(DEFAULT_COLOR, "   R1",      inline = "02", group = GRP02, display = DW)
+bool   r1ShowInput    = input.bool(true,           "",           inline = "02", group = GRP02, display = DW)
+color  s2ColorInput   = input.color(DEFAULT_COLOR, "S2",         inline = "03", group = GRP02, display = DW, active = showLevel2and3)
+bool   s2ShowInput    = input.bool(true,           "",           inline = "03", group = GRP02, display = DW, active = showLevel2and3)
+color  r2ColorInput   = input.color(DEFAULT_COLOR, "   R2",      inline = "03", group = GRP02, display = DW, active = showLevel2and3)
+bool   r2ShowInput    = input.bool(true,           "",           inline = "03", group = GRP02, display = DW, active = showLevel2and3)
+color  s3ColorInput   = input.color(DEFAULT_COLOR, "S3",         inline = "04", group = GRP02, display = DW, active = showLevel2and3)
+bool   s3ShowInput    = input.bool(true,           "",           inline = "04", group = GRP02, display = DW, active = showLevel2and3)
+color  r3ColorInput   = input.color(DEFAULT_COLOR, "   R3",      inline = "04", group = GRP02, display = DW, active = showLevel2and3)
+bool   r3ShowInput    = input.bool(true,           "",           inline = "04", group = GRP02, display = DW, active = showLevel2and3)
+color  s4ColorInput   = input.color(DEFAULT_COLOR, "S4",         inline = "05", group = GRP02, display = DW, active = showLevel4)
+bool   s4ShowInput    = input.bool(true,           "",           inline = "05", group = GRP02, display = DW, active = showLevel4)
+color  r4ColorInput   = input.color(DEFAULT_COLOR, "   R4",      inline = "05", group = GRP02, display = DW, active = showLevel4)
+bool   r4ShowInput    = input.bool(true,           "",           inline = "05", group = GRP02, display = DW, active = showLevel4)
+color  s5ColorInput   = input.color(DEFAULT_COLOR, "S5",         inline = "06", group = GRP02, display = DW, active = showLevel5)
+bool   s5ShowInput    = input.bool(true,           "",           inline = "06", group = GRP02, display = DW, active = showLevel5)
+color  r5ColorInput   = input.color(DEFAULT_COLOR, "   R5",      inline = "06", group = GRP02, display = DW, active = showLevel5)
+bool   r5ShowInput    = input.bool(true,           "",           inline = "06", group = GRP02, display = DW, active = showLevel5)
+
+// @type A custom type for creating objects containing the name, color, and visibility settings for pivot levels.
+type graphicSettings
+    string levelName
+    color  levelColor
+    bool   showLevel
+
+// @type A custom type for creating objects that reference the line and label of a single pivot level.
+type pivotGraphic
+    line  pivotLine
+    label pivotLabel
+
+// @variable References an array of `graphicSettings` IDs for all pivot levels.
+var array<graphicSettings> graphicSettingsArray = array.from(
+    graphicSettings.new(" P", pColorInput,  pShowInput),
+    graphicSettings.new("R1", r1ColorInput, r1ShowInput), graphicSettings.new("S1", s1ColorInput, s1ShowInput),
+    graphicSettings.new("R2", r2ColorInput, r2ShowInput), graphicSettings.new("S2", s2ColorInput, s2ShowInput),
+    graphicSettings.new("R3", r3ColorInput, r3ShowInput), graphicSettings.new("S3", s3ColorInput, s3ShowInput),
+    graphicSettings.new("R4", r4ColorInput, r4ShowInput), graphicSettings.new("S4", s4ColorInput, s4ShowInput),
+    graphicSettings.new("R5", r5ColorInput, r5ShowInput), graphicSettings.new("S5", s5ColorInput, s5ShowInput)
+)
+
+// @variable An automatic timeframe string based on the chart's timeframe and the "daily-based" input.
+var string autoAnchor = switch
+    timeframe.isintraday => timeframe.multiplier <= 15 ? isDailyBasedInput ? "1D" : "1440" : "1W"
+    timeframe.isdaily    => "1M"
+    => "12M"
+
+// @variable The final timeframe string for the calculation based on the "Pivots timeframe" input.
+var string pivotTimeframe = switch pivotAnchorInput
+    "Auto"      => autoAnchor
+    "Daily"     => isDailyBasedInput ? "1D" : "1440"
+    "Weekly"    => "1W"
+    "Monthly"   => "1M"
+    "Quarterly" => "3M"
+    => "12M"
+
+// @variable The number of years in the selected Pivot period.
+var int pivotYearMultiplier = switch pivotAnchorInput
+    "Biyearly"       => 2
+    "Triyearly"      => 3
+    "Quinquennially" => 5
+    "Decennially"    => 10
+    => 1
+
+// @variable References a matrix of `pivotGraphic` IDs for all displayed pivot levels.
+var matrix<pivotGraphic> drawnGraphics = matrix.new<pivotGraphic>()
+
+// @function Returns a running total of pivot periods based on a specified condition.
+pivotTimeframeChangeCounter(bool condition) =>
+    var int count = 0
+    if condition and bar_index > 0
+        count += 1
+    count
+
+// @function Deletes the line and label associated with the `pivotGraphic` object for a pivot level.
+method delete(pivotGraphic graphic) =>
+    graphic.pivotLine.delete()
+    graphic.pivotLabel.delete()
+
+// @function Calculates pivot points using chart data (when not using EOD values) or data requested from the selected
+//           pivot timeframe. Returns IDs of arrays containing static and developing pivot levels, and a counter
+//           indicating pivot period changes.
+calculatePivots(simple bool isDailyBased) =>
+    if isDailyBased
+        bool pivotTimeframeChange = (
+            timeframe.change(timeframe.period) and year(time_tradingday, syminfo.timezone) % pivotYearMultiplier == 0
+        )
+        [pivotPointsArrayStatic, pivotPointsArrayDeveloping, pivotCounter] = request.security(
+            ticker.modify(syminfo.tickerid, settlement_as_close = settlement_as_close.on),
+            pivotTimeframe, [
+                ta.pivot_point_levels(pivotTypeInput, pivotTimeframeChange),
+                ta.pivot_point_levels(pivotTypeInput, pivotTimeframeChange, developing = pivotTypeInput != "Woodie"),
+                pivotTimeframeChangeCounter(pivotTimeframeChange)
+            ], lookahead = barmerge.lookahead_on
+        )
+    else
+        bool pivotTimeframeChange = (
+            timeframe.change(pivotTimeframe) and year(time_tradingday, syminfo.timezone) % pivotYearMultiplier == 0
+        )
+        array<float> pivotPointsArrayStatic = ta.pivot_point_levels(pivotTypeInput, pivotTimeframeChange)
+        array<float> pivotPointsArrayDeveloping = ta.pivot_point_levels(
+            pivotTypeInput, pivotTimeframeChange, developing = pivotTypeInput != "Woodie"
+        )
+        int pivotCounter = pivotTimeframeChangeCounter(pivotTimeframeChange)
+        [pivotPointsArrayStatic, pivotPointsArrayDeveloping, pivotCounter]
+
+// @function Moves the ending points of the last drawn pivot line and label to a specified end time.
+affixOldPivots(int endTime) =>
+    int rows = drawnGraphics.rows()
+    if rows > 0
+        array<pivotGraphic> lastGraphics = drawnGraphics.row(rows - 1)
+        for graphic in lastGraphics
+            graphic.pivotLine.set_x2(endTime)
+            if positionLabelsInput == "Right"
+                graphic.pivotLabel.set_x(endTime)
+
+//@function Creates pivot drawings from a specified start time to the approximate end of the pivot period.
+drawNewPivots(int startTime, array<float> pivotPointsArray) =>
+    array<pivotGraphic> newGraphics = array.new<pivotGraphic>()
+    int endTime = startTime + timeframe.in_seconds(pivotTimeframe) * 1000 * pivotYearMultiplier
+    [labelPosition, labelStyle] = switch positionLabelsInput
+        "Left"  => [startTime, label.style_label_right]
+        "Right" => [endTime,   label.style_label_left]
+    for [index, level] in pivotPointsArray
+        graphicSettings levelSettings = graphicSettingsArray.get(index)
+        if not na(level) and levelSettings.showLevel
+            line pivotLine = line.new(
+                startTime, level, endTime, level, xloc = xloc.bar_time, color = levelSettings.levelColor,
+                width = linewidthInput
+            )
+            label pivotLabel = label.new(
+                labelPosition, level,
+                (showLabelsInput ? levelSettings.levelName + " " : "")
+                + (showPricesInput ? "(" + str.tostring(level, format.mintick) + ")" : ""),
+                style = labelStyle, textcolor = levelSettings.levelColor, color = #00000000, xloc = xloc.bar_time
+            )
+            newGraphics.push(pivotGraphic.new(pivotLine, pivotLabel))
+    if newGraphics.size() > 0
+        drawnGraphics.add_row(array_id = newGraphics)
+        if drawnGraphics.rows() > maxHistoricalPivotsInput
+            array<pivotGraphic> oldGraphics = drawnGraphics.remove_row(0)
+            for graphic in oldGraphics
+                graphic.delete()
+
+// Calculate pivot levels and count the number of pivot periods.
+[pivotPointsArrayStatic, pivotPointsArrayDeveloping, pivotCount] = calculatePivots(isDailyBasedInput)
+
+// If the session is open at the end of the last pivot point period, draw next pivots without waiting for the next bar.
+var bool skipNextPivots = false
+if barstate.islast and barstate.isconfirmed and pivotTypeInput != "Woodie"
+    int nextBarOpenTime = time("", bars_back = -1)
+    int nextPivotStartTime = time(pivotTimeframe, timeframe_bars_back = -1)
+    if nextBarOpenTime >= nextPivotStartTime
+        affixOldPivots(nextPivotStartTime)
+        drawNewPivots(nextPivotStartTime, pivotPointsArrayDeveloping)
+        skipNextPivots := true
+if pivotCount != pivotCount[1]
+    if skipNextPivots
+        skipNextPivots := false
+    else
+        affixOldPivots(time)
+        drawNewPivots(time, pivotPointsArrayStatic)
+// Move the last drawn pivots if there are no pivots on the current line.
+else if drawnGraphics.rows() > 0 and drawnGraphics.row(drawnGraphics.rows() - 1).last().pivotLine.get_x2() <= time[1]
+    affixOldPivots(time)
+
+// If no pivots are displayed by the last historical bar, draw pivots across all the current history if possible,
+// or raise an error if not enough data is available.
+var int firstBarTime = time
+if barstate.islastconfirmedhistory and drawnGraphics.rows() == 0
+    if pivotCount > 0 and not na(pivotPointsArrayStatic)
+        drawNewPivots(firstBarTime, pivotPointsArrayStatic)
+    else if timeframe.isintraday and not isDailyBasedInput
+        runtime.error(
+            "Not enough intraday data available for pivot point calculation. "
+            + "Select a lower timeframe from the options in the 'Pivots timeframe' input, or try selecting the "
+            + "'Use daily-based values' checkbox to request EOD data."
+        )
+    else
+        runtime.error(
+            "Not enough data available for pivot point calculation. "
+            + "Select a lower timeframe from the options in the 'Pivots timeframe' input."
+        )
