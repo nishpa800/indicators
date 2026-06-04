@@ -12,6 +12,24 @@ Public repo: **github.com/nishpa800/indicators**
 > `volume / ta.sma(volume, N)`** (that guess diverged up to ~162% from TradingView
 > on real opening bars and silently broke parity). Any Python port of any study in
 > this repo must import that one shim.
+>
+> ### 🚨 TICK CHARTS: `relativeVolume()` crashes with RE10023 unless you force a "D" anchor
+> `TradingView/ta/7` line 346 runs `timeframe.change(anchorTimeframe)`. The suite passes
+> `""` (chart TF) → on a **tick** interval that's tick-based → `timeframe.change` throws
+> **RE10023 on bar 0**: *"Cannot call `timeframe.change` with a tick-based 'timeframe' argument."*
+> EVERY tick-friendly build MUST route relativeVolume through a forced time-based anchor:
+> ```pine
+> string reg_anchorSafe = (reg_anchorTimeframe == "" or str.endswith(timeframe.period, "T")
+>      or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)
+>      ? "D" : reg_anchorTimeframe
+> [c,p,r] = tv_ta.relativeVolume(len, reg_anchorSafe, cumul, adjust)
+> ```
+> Time charts keep their anchor (parity preserved); only tick charts get `"D"`. PROVEN live on
+> 1000T (AMEX:BRF): anchor `"D"` → relVol 4.11 clean; `""` → RE10023. Gate before "done":
+> `grep -nE 'relativeVolume\([^,]+,\s*""' <file>` must return nothing. Also guard `tfSec` —
+> `timeframe.in_seconds()` is na/0 on tick → thresholds silently die without a fallback.
+> Full doctrine: `~/.claude/projects/-Users-anishpatel/memory/pine_tick_relativevolume_re10023.md`
+> + skill `pine-editor-to-pine-tick-friendly`.
 
 ## Before doing anything
 
