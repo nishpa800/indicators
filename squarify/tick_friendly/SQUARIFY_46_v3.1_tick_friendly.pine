@@ -1,5 +1,24 @@
-// SQUARIFY LTF v1 — lower-timeframe/tick-friendly production version
-// Pine is a Pine Editor tick-friendly
+// SQUARIFY 46 v3.1 — every plot is a buy/sell trigger
+// ════════════════════════════════════════════════════════════════════════════
+// CHANGELOG v3 → v3.1 (2026-06-04) — TWO UNIVERSAL GATES + PENTAGON-SET (all 46 preserved)
+//   ① "Require UC" (MASTER, default OFF): when ON, EVERY plot additionally requires
+//      SQUARIFY's Unified Combo (UC = csNew3, bull or bear) on the SAME candle.
+//      fire = existing AND uc_on_bar. Reuses csNew3 (the same UC used by SUPER/SDUPER,
+//      UU+UC #31, NPM+UC #40, UC-NAGASAKI #45/46). OFF = no change.
+//   ② "Require HCT V2" (MASTER, default OFF): when ON, EVERY plot additionally
+//      requires HCT V2 (BULLISH heavy-combo set ONLY, bear dropped) on the bar:
+//      hctv2_on_bar = sig_WBUSH_Bull (SQUARIFY's bullish heavy-combo / WBUSH path,
+//      #41) OR the two Pentagon-set specials. Displacement-inclusive variant
+//      hctv2_disp_on_bar also built. OFF = no change.
+//   ③ PENTAGON-SET specials (ported/adapted from Heavy Weapons sigPentHV1K /
+//      sigPentHV500D), broadened to PENTAGON OR WTC OR HIROSHIMA OR NAGASAKI:
+//        • sigPentSetHV500D = Pentagon-set + sigHV500  + main bullish disp (+D)
+//        • sigPentSetHV1KD  = Pentagon-set + sigHV1000 + main bullish disp (+D)
+//      Both REQUIRE +D (main displacement, sigDISPBull — consistent w/ v3 atoms 4-9).
+//   Mechanism: gates folded into a merged _plotGate = _masterGate AND _uc_gate AND
+//   _hctv2_gate; every plotshape + the alert aggregator switched _masterGate→_plotGate.
+//   Both gates independent; if both ON, both must hold. All 46 signals + the v3
+//   atoms-4-9 displacement routing preserved byte-for-byte otherwise.
 // ════════════════════════════════════════════════════════════════════════════
 // CHANGELOG v1 (64 signals) → v2 (46 signals)
 // ──────────────────────────────────────────────────────────────────────────────
@@ -34,18 +53,47 @@
 //   AGGREGATOR BYPASSERS: None.
 // ════════════════════════════════════════════════════════════════════════════
 //@version=5
-indicator("SQUARIFY LTF v1", shorttitle="SQ LTF v1", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1500)
+indicator("SQUARIFY 46 v3.1 [Tick-Friendly]", shorttitle="SQ46 v3.1 TF", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1500)
 import TradingView/ta/7 as tv_ta
+
+// ════════════════════════════════════════════════════════════════════════════
+// v3 (2026-06-04) — TWO behavioral notes vs v2 (everything else byte-identical):
+//   (A) ATOMS #4–#9 DISPLACEMENT now route to the MAIN displacement setting
+//       (group "Displacement": i_std_min/i_std_max/i_req_fvg -> sigDISPBull).
+//       Atoms #4 FLOOR / #5 2F / #9 A★ require MAIN displacement on the SIGNAL
+//       BAR (sigDISPBull or hvd_fire_bull). Atoms #6 UUUU / #7 UUU / #8 UU accept
+//       MAIN displacement on ANY bar of the streak (already structural via the
+//       per-bar streak loop `bdisp = nz(sigDISPBull[i]) or bhvd`). The separate
+//       `d9_bull` (disp_std*9.0) multiplier is NO LONGER the displacement source
+//       for the #4/#5 gate; the main setting is. NO Heavy-Weapons / HTT momentum
+//       tiers are ported — only SQUARIFY atoms 4–9 are touched.
+//   (B) LTF / HTF MODE selector (sq_tf_mode). HTF v1 was byte-identical to v2
+//       except the title; LTF is the lower-timeframe/tick-friendly profile. v3
+//       unifies both into one indicator via the TF MODE input + the engine's own
+//       tfSec sub-2min gating and HTF1/HTF2 HV+D profiles. The 46 signals are
+//       preserved in both modes.
+// ════════════════════════════════════════════════════════════════════════════
 
 // SHARED
 // ============================================================================
 conf = barstate.isconfirmed
-// TICK-FRIENDLY GUARD: timeframe.in_seconds() can return na on some tick resolutions →
-// per-TF threshold tables (f_*_threshold(tfSec)) would silently go na → signals never fire.
-// Fall back to the tightest sub-minute bucket (10s) so thresholds stay live on tick.
-// On time charts and tick TFs that report a real number, the raw value wins (parity preserved).
+// TICK-FRIENDLY GUARD: in_seconds() returns a POSITIVE number on tick (not na) so the period-"T"
+// suffix is the authoritative tick detector. On tick: per-TF thresholds use the 10s sub-minute
+// bucket, and the session gate below avoids passing a tick period to time(). Time charts unchanged.
 int _tfSecRaw = timeframe.in_seconds(timeframe.period)
-int tfSec = (na(_tfSecRaw) or _tfSecRaw <= 0) ? 10 : _tfSecRaw
+bool isTickChart = na(_tfSecRaw) or _tfSecRaw <= 0 or str.endswith(timeframe.period, "T")
+int tfSec = isTickChart ? 10 : _tfSecRaw
+
+// === SQUARIFY TF MODE (LTF / HTF) ===
+// LTF  = lower-timeframe / tick-friendly profile (10s/15s/30s/45s & 5–10 tick).
+// HTF  = high-timeframe legacy profile (multi-minute/hour/day).
+// The engine's sub-2min gating (tfSec) and HTF1/HTF2 HV+D profiles already adapt
+// to the chart resolution; this selector labels the active mode and is exposed so
+// LTF and HTF live in ONE indicator (consistent with SQUARIFY_HTF_v1 / SQUARIFY_LTF_v1).
+string grp_tfmode = "★ SQUARIFY TF MODE ★"
+string sq_tf_mode = input.string("Auto", "Timeframe Mode", options=["Auto","LTF","HTF"], group=grp_tfmode, tooltip="Auto: derive from chart tfSec (<=120s -> LTF, else HTF). LTF: force lower-timeframe/tick-friendly profile. HTF: force high-timeframe legacy profile.")
+bool sq_is_ltf = sq_tf_mode=="LTF" or (sq_tf_mode=="Auto" and tfSec<=120)
+bool sq_is_htf = not sq_is_ltf
 f_add(string base, string part) => base == "" ? part : base + " + " + part
 atr14 = ta.atr(14)
 
@@ -55,6 +103,23 @@ atr14 = ta.atr(14)
 grpMASTER = "★★★ MASTER TOGGLES ★★★"
 bool master_firstBarOnly = input.bool(false, "First Bar Only", group=grpMASTER, tooltip="ON: requires first bar of session AND any HV rank on bar[0]. Both must be true. Detections blocked if either missing.")
 bool master_aggAlerts = input.bool(true, "Aggregate Alerts", group=grpMASTER, tooltip="ON = one combined alert per bar. OFF = individual alerts per detection.")
+
+// ════════════════════════════════════════════════════════════════════════════
+// v3.1 (2026-06-04) — UNIVERSAL GATES (apply to ALL 46 detection plots + alerts)
+//   ① Require UC      — every plot additionally requires SQUARIFY's Unified Combo
+//                       (UC = csNew3, bull OR bear) on the SAME candle.
+//   ② Require HCT V2  — every plot additionally requires the HCT V2 BULLISH heavy
+//                       -combo set on the same bar. HCT V2 = SQUARIFY's bullish
+//                       WBUSH path (sig_WBUSH_Bull) OR the two Pentagon-set specials
+//                       (PENT-set + HV500 + D, PENT-set + HV1K + D), Pentagon-set =
+//                       Pentagon OR WTC OR Hiroshima OR Nagasaki. Bear dropped.
+//   Both gates independent (default OFF). If both checked, both must hold.
+//   The actual gate booleans (_uc_gate_on_bar / _hctv2_gate_on_bar) and the merged
+//   _plotGate are defined LATER (after WBUSH / csNew3 / Pentagon / HV are computed);
+//   only the two input toggles live here at the top per spec.
+// ════════════════════════════════════════════════════════════════════════════
+bool master_requireUC    = input.bool(false, "Require UC", group=grpMASTER, tooltip="UC GATE — when ON, EVERY SQUARIFY detection plot additionally requires SQUARIFY's Unified Combo (UC = csNew3, bull or bear) on the SAME candle. Each plot fire becomes (existing AND UC). OFF = no change. Default OFF.")
+bool master_requireHCTV2 = input.bool(false, "Require HCT V2", group=grpMASTER, tooltip="HCT V2 GATE — when ON, EVERY SQUARIFY detection plot additionally requires HCT V2 (BULLISH heavy-combo set only) on the same bar: SQUARIFY's bullish WBUSH path OR the Pentagon-set specials (PENT-set+HV500+D, PENT-set+HV1K+D; Pentagon-set = Pentagon OR WTC OR Hiroshima OR Nagasaki). Bear dropped. OFF = no change. Default OFF.")
 
 // Gap qualifier for FIRST/NOT alert format
 float _gapSize = math.abs(open - close[1])
@@ -185,9 +250,6 @@ bool en_wbushNeutral = input.bool(true, "43. WBUSH Neutral",     group=grpSIG, t
 bool en_63 = input.bool(true, "44. NPM+UC+PBJ",    group=grpSIG, tooltip="NPM+UC+PBJ: Napalm (consolidated) + Uni.Combo + PBJ. Offset=-1.")
 bool en_ucNagBull = input.bool(true, "45. UC NAGASAKI Bull",  group=grpSIG, tooltip="UC NAGASAKI: Unified Combo (csNew3) + Nagasaki on same visual bar. Offset = -1.")
 bool en_ucNagBear = input.bool(true, "46. UC NAGASAKI Bear",  group=grpSIG, tooltip="UC NAGASAKI Bear mirror. Offset = -1.")
-bool en_hv1kAny    = input.bool(true, "47. 1K+ANY",            group=grpSIG, tooltip="HV 1000-bar + displacement + any bullish SQUARIFY signal on same bar. Alert names the ANY component. Offset = 0.")
-bool en_pent500Any = input.bool(true, "48. PENT+500+ANY",       group=grpSIG, tooltip="Pentagon-family (Pentagon/WTC/Hiroshima/Nagasaki) + HV 500-bar + displacement + any bullish SQUARIFY signal on same bar. Alert names the ANY component. Offset = 0.")
-bool en_pent1kAny  = input.bool(true, "49. PENT+1K+ANY",        group=grpSIG, tooltip="Pentagon-family (Pentagon/WTC/Hiroshima/Nagasaki) + HV 1000-bar + displacement + any bullish SQUARIFY signal on same bar. Alert names the ANY component. Offset = 0.")
 
 string grpHVBase = "── HV+D: BASE HV ──"
 bool ub50   = input.bool(false, "50-Bar",   group=grpHVBase)
@@ -316,11 +378,6 @@ bool hvd_fire_bear = base_combo_bear or htf1_combo_bear or htf2_combo_bear
 bool _anyHVRank = baseRank > 0 or h1Rank > 0 or h2Rank > 0 or isHEV
 bool _masterGate = not master_firstBarOnly or (_isGapBar and _anyHVRank)
 
-// LTF optional gates
-grpLTF = "★★★ SQUARIFY LTF GATES ★★★"
-bool ltf_require_uc_same_visual = input.bool(false, "Require UC same visual candle for each plot", group=grpLTF, tooltip="OFF: plots fire from their own definitions. ON: every detection requires the Unified Combo visual plot on that same visual candle.")
-bool ltf_require_u_hv100 = input.bool(false, "Require HV>=100 for U2/U3/U4", group=grpLTF, tooltip="OFF: U2/U3/U4 use their normal definitions. ON: U2/U3/U4 require a high-volume rank of 100 or greater on at least one bar inside their U window.")
-
 
 // ╔════════════════════════════════════════════════════════════════════════════╗
 // ║  PIPELINES B + C: USE ALARM 1293                                         ║
@@ -332,8 +389,9 @@ bool ltf_require_u_hv100 = input.bool(false, "Require HV>=100 for U2/U3/U4", gro
 // === HARDCODED — RVOL ===
 bb_avgLength = 30, bb_smaLength = 20
 reg_anchorTimeframe = "", reg_length = 30, reg_calculationMode = "Cumulative", reg_adjustRealtime = true
-// TICK-FRIENDLY FIX (RE10023): force "D" anchor only on tick charts (blank="" resolves to the
-// tick-based chart TF → timeframe.change throws). Time charts keep original "" behavior.
+// TICK-FRIENDLY FIX (RE10023): tv_ta.relativeVolume() calls timeframe.change(), which throws on
+// tick-based charts when the anchor resolves to the tick TF. Force "D" anchor only on tick charts;
+// time charts keep the original "" behavior (no parity change off tick).
 string reg_anchorSafe = ((reg_anchorTimeframe == "" and (str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
 // === HARDCODED — FAUNA NRA ===
 fauna_gg_master = true, fauna_gg_body = 0.80
@@ -899,6 +957,12 @@ bool bull_pp=bull_cnt>=pp_min_count and bull_has_floor_gravity and bull_state>0
 bool bear_pp=bear_cnt>=pp_min_count and bear_has_ceiling_gravity and bear_state>0
 
 // === ENGINE 8: UU / UUU / UUUU — UNIFIED STREAK ===
+// v3 ATOMS #6/#7/#8: displacement for the streak atoms is the MAIN setting and may
+// occur on ANY bar of the streak. This is already structural below: the per-bar
+// loop sets `bdisp = nz(sigDISPBull[i]) or bhvd` for i over the whole window and
+// records `_has_disp` if ANY bar is displaced. sigDISPBull is the MAIN displacement
+// (group "Displacement": i_std_min/i_std_max/i_req_fvg). No change required here —
+// documented for the parity system. UUUU=any-of-4, UUU=any-of-3, UU=either-of-2.
 bool u_qual_bull = conf and bb_baseBullish and bb_normalizedPrice >= 0.5
 bool u_qual_bear = conf and bb_baseBearish and bb_normalizedPrice >= 0.5
 
@@ -1696,17 +1760,15 @@ bool super_hw_bull = sigBullRVOL1x or sigGrandSlam or sigWTC or sigHiroshima or 
 bool super_hw_bear = sigBearRVOL1x or sigMOAB or sigWTC or sigHiroshima or sigNagasaki
 bool super_comboAny_bull=csNew1_Bull or csNew2_Bull, bool super_comboAny_bear=csNew1_Bear or csNew2_Bear
 
-// SUPER and SDUPER — LTF v1:
-//   SUPER  = UC (Unified Combo) + (Napalm consolidated OR RVOL1x OR Grand Slam)
-//   SDUPER = UC + (Napalm consolidated OR RVOL1x OR Grand Slam) + PUP
+// SUPER and SDUPER — REDEFINED v2 per Anish:
+//   SUPER  = UC (Unified Combo) + Napalm (consolidated)
+//   SDUPER = UC + Napalm + PUP
 // UC = csNew3 (CS1[0] AND CS2[1]) — both events on visual bar 1, offset -1.
-// Napalm is offset -1, RVOL/GS/PUP are offset 0; align offset-0 signals with [1].
-bool super_power_bull = det_bullNapalmCons or nz(sigBullRVOL1x[1]) or nz(sigGrandSlam[1])
-bool super_power_bear = det_bearNapalmCons or nz(sigBearRVOL1x[1]) or nz(sigMOAB[1])
-bool superBull = conf and csNew3_Bull and super_power_bull
-bool superBear = conf and csNew3_Bear and super_power_bear
-bool sduperBull = conf and csNew3_Bull and super_power_bull and nz(sigPUP[1])
-bool sduperBear = conf and csNew3_Bear and super_power_bear and nz(sigPPD[1])
+// Napalm (det_*NapalmCons) is offset -1, visual bar 1. PUP is offset 0; align with [1].
+bool superBull = conf and csNew3_Bull and det_bullNapalmCons
+bool superBear = conf and csNew3_Bear and det_bearNapalmCons
+bool sduperBull = conf and csNew3_Bull and det_bullNapalmCons and nz(sigPUP[1])
+bool sduperBear = conf and csNew3_Bear and det_bearNapalmCons and nz(sigPPD[1])
 
 // === BOOM HUNTER + OMEGA ===
 float bh_K2=0.3, float bh_pi=2*math.asin(1)
@@ -1790,7 +1852,6 @@ bool omega_cosignal=(tfSec>=45?(sigSAAB or sigPentagon):false) or sigBullRVOL1x 
 bool sigOmegaLong=conf and bh_anyOmega and omega_cosignal and not sigMOAB and not sigDISPBear
 
 bool omega_cosignal_A=(tfSec>=60?sigBullPBJ:false) or sigP21BullUUUU or anyBullFloor or anyBull2nd or hwBull or superBull or sduperBull or sigAlphaStrikeBull or sigFoxtrotBull or sigODBull or sigDispConsBull3 or sigGolfBull or sigGrandSlam or (sigBullRVOL1x and sigDISPBull)
-string omega_cosignal_A_label = (tfSec>=60 and sigBullPBJ) ? "PBJ" : sigP21BullUUUU ? "U4" : anyBullFloor ? "FLOOR" : anyBull2nd ? "2F" : hwBull ? "HW" : sduperBull ? "SD!" : superBull ? "SUPER" : sigAlphaStrikeBull ? "A*" : sigFoxtrotBull ? "FOX" : sigODBull ? "OD" : sigDispConsBull3 ? "DISP3" : sigGolfBull ? "GOLF" : sigGrandSlam ? "GrandSlam" : (sigBullRVOL1x and sigDISPBull) ? "RVOL1x+DISP" : "UNKNOWN"
 bool sigOmegaLongA=conf and bh_anyOmega and omega_cosignal_A and not sigMOAB and not sigDISPBear
 
 // TF Gate
@@ -1840,9 +1901,10 @@ bool co_en_bearPBJ = true, bool co_en_bearPB = true
 bool use_any_bull = sigP21BullUUUU_indep or sigP21BullUUU_indep or sigUUBull_indep or sigAlphaStrikeBull or sigFoxtrotBull or sigOmegaLong or sigOmegaLongA or sigODBull or sigDispConsBull2 or sigDispConsBull3 or sigGolfBull or sigPAFBull or csNew1_Bull or csNew2_Bull or csNew3_Bull or sigCCBull or sigLSCBull or anyBullFloor or anyBull2nd or hwBull or superBull or sduperBull
 bool use_any_bear = sigP21BearUUUU_indep or sigP21BearUUU_indep or sigUUBear_indep or sigAlphaStrikeBear or sigFoxtrotBear or sigODBear or sigDispConsBear2 or sigDispConsBear3 or sigGolfBear or sigPAFBear or csNew1_Bear or csNew2_Bear or csNew3_Bear or sigCCBear or sigLSCBear or anyBearRoof or anyBearPent or hwBear or superBear or sduperBear
 
-// LTF v1: CO must require UC. FVG Combo Set alone no longer qualifies.
-bool co_uc_or_fvg_bull = csNew3_Bull
-bool co_uc_or_fvg_bear = csNew3_Bear
+// v2: CO restructured per Anish — must include UC (Unified Combo) OR FVG Combo Set,
+//     not just any bullish/bearish signal. Old `use_any_bull/bear[1]` gate replaced.
+bool co_uc_or_fvg_bull = csNew3_Bull or csNew1_Bull
+bool co_uc_or_fvg_bear = csNew3_Bear or csNew1_Bear
 bool co_bull_pbj = hvd_fire_bull and co_en_bullPBJ and nz(sigBullPBJ[1]) and co_uc_or_fvg_bull
 bool co_bull_pb  = hvd_fire_bull and co_en_bullPB  and nz(sigBullPB[1])  and co_uc_or_fvg_bull
 bool co_bear_pbj = hvd_fire_bear and co_en_bearPBJ and nz(sigBearPBJ[1]) and co_uc_or_fvg_bear
@@ -1863,7 +1925,7 @@ bool b2b_bear_nopb = b2b_bear_raw and not b2b_bear_pbj and not b2b_bear_pb
 // ════════════════════════════════════════════════════════════════════════════
 // ULTRA 57 FAUNA COMBOS
 // ════════════════════════════════════════════════════════════════════════════
-bool u57_inSession=not na(time(timeframe.period,"0930-1600","America/New_York"))
+bool u57_inSession=not na(time(isTickChart ? "1" : timeframe.period,"0930-1600","America/New_York"))
 var bool u57_newDay=false
 if ta.change(dayofmonth)!=0
     u57_newDay:=true
@@ -2051,7 +2113,7 @@ if fosterWindowOpen
 // ════════════════════════════════════════════════════════════════════════════
 bool hp_groupA_Bull = sigBullRVOL1x or sigGrandSlam
 bool hp_groupA_Bear = sigBearRVOL1x or sigMOAB
-bool hp_groupB      = sigPentagon or sigWTC or sigHiroshima or sigNagasaki
+bool hp_groupB      = sigPentagon or sigWTC or sigHiroshima
 
 bool hp_baseYinYang   = (hp_groupA_Bull or hp_groupA_Bear) and hp_groupB
 bool hp_baseNagasaki  = sigNagasaki and (hp_groupA_Bull or hp_groupA_Bear)
@@ -2082,12 +2144,10 @@ bool hp_NHx2Bull    = hp_baseNHx2 and sigDISPBull
 bool hp_NHx2Bear    = hp_baseNHx2 and sigDISPBear
 bool hp_NHx2Neutral = hp_baseNHx2 and hp_noDisp
 
-// WBUSH/HCT v2 aggregates — LTF v1 only bull-side counts for HCT v2.
+// WBUSH aggregates — any of the 15 fired
 bool sig_WBUSH_Bull    = hp_HYYBull    or hp_HNBull    or hp_HNVBull    or hp_HTBull    or hp_NHx2Bull
 bool sig_WBUSH_Bear    = hp_HYYBear    or hp_HNBear    or hp_HNVBear    or hp_HTBear    or hp_NHx2Bear
 bool sig_WBUSH_Neutral = hp_HYYNeutral or hp_HNNeutral or hp_HNVNeutral or hp_HTNeutral or hp_NHx2Neutral
-bool sig_HCTV2_Bull = sig_WBUSH_Bull
-bool det_npmHctBull = det_bullNapalmCons and sig_HCTV2_Bull
 
 // Backward-compat: sigWMD aliased to sig_WBUSH_Bull (old WMD = bullish heavy weapons; WBUSH supersedes).
 bool sigWMD = sig_WBUSH_Bull
@@ -2096,6 +2156,41 @@ bool sigWMD = sig_WBUSH_Bull
 // csNew3 (UC) at bar[0] = visual bar 1; sigNagasaki[1] = visual bar 1. Offset = -1.
 bool sig_UCNagasakiBull = csNew3_Bull and nz(sigNagasaki[1])
 bool sig_UCNagasakiBear = csNew3_Bear and nz(sigNagasaki[1])
+
+// ════════════════════════════════════════════════════════════════════════════
+// v3.1 UNIVERSAL GATES — PENTAGON-SET SPECIALS + HCT V2 BULLISH SET + UC GATE
+// ────────────────────────────────────────────────────────────────────────────
+// ③ PENTAGON-SET — ported/adapted from Heavy Weapons reference (sigPentHV1K /
+//    sigPentHV500D), broadened per spec to PENTAGON OR WTC OR HIROSHIMA OR NAGASAKI.
+//    Both specials REQUIRE +D (displacement). SQUARIFY's HV ranks: sigHV500 =
+//    volume>=highest(500)[1], sigHV1000 = volume>=highest(1000)[1]. Displacement (+D)
+//    uses the MAIN displacement setting (sigDISPBull), consistent with v3 atom 4-9
+//    routing. (Heavy Weapons used same-candle volume==highest(N) + 5x-stdev range;
+//    here we map to SQUARIFY's existing sigHV500/sigHV1000 + main bullish disp.)
+// ════════════════════════════════════════════════════════════════════════════
+bool hp_pentagonSet   = sigPentagon or sigWTC or sigHiroshima or sigNagasaki
+bool sigPentSetHV500D = conf and hp_pentagonSet and sigHV500  and sigDISPBull
+bool sigPentSetHV1KD  = conf and hp_pentagonSet and sigHV1000 and sigDISPBull
+
+// ② HCT V2 = BULLISH heavy-combo set ONLY (bear dropped):
+//    SQUARIFY's bullish WBUSH path OR the two Pentagon-set specials.
+bool hctv2_on_bar = sig_WBUSH_Bull or sigPentSetHV500D or sigPentSetHV1KD
+// Displacement-inclusive variant (explicit main-displacement requirement on top of
+// the heavy-combo set — WBUSH bull already embeds sigDISPBull; the Pentagon specials
+// already require +D, so this also requires main bullish displacement on the bar).
+bool hctv2_disp_on_bar = hctv2_on_bar and sigDISPBull
+
+// ① UC GATE — SQUARIFY's own Unified Combo (csNew3), either direction, same candle.
+bool uc_on_bar = csNew3_Bull or csNew3_Bear
+
+// Gate booleans honor their input toggles (pass-through when toggle OFF).
+bool _uc_gate_on_bar    = (not master_requireUC)    or uc_on_bar
+bool _hctv2_gate_on_bar = (not master_requireHCTV2) or hctv2_on_bar
+
+// MERGED PLOT GATE — _masterGate (First-Bar-Only / HV) AND the two universal gates.
+// Every detection plot and the alert aggregator use _plotGate instead of _masterGate
+// so both gates apply to ALL 46 plots. Gates independent; both must hold if both ON.
+bool _plotGate = _masterGate and _uc_gate_on_bar and _hctv2_gate_on_bar
 
 bool comboAnyB2B_F2E3=det_b2bPUP and (sBullF2 or sBullE3)
 
@@ -2147,13 +2242,7 @@ bool cb3_pbj=input.bool(true,"PBJ (3)",group=grpCB), bool cb3_l1=input.bool(true
 float d9_thresh=disp_std*9.0
 bool d9_bull=conf and disp_rng>d9_thresh and close>open
 
-bool u4_hv100_ok = (baseRank >= 100 or h1Rank >= 100 or h2Rank >= 100 or isHEV) or (nz(baseRank[1]) >= 100 or nz(h1Rank[1]) >= 100 or nz(h2Rank[1]) >= 100 or nz(isHEV[1])) or (nz(baseRank[2]) >= 100 or nz(h1Rank[2]) >= 100 or nz(h2Rank[2]) >= 100 or nz(isHEV[2])) or (nz(baseRank[3]) >= 100 or nz(h1Rank[3]) >= 100 or nz(h2Rank[3]) >= 100 or nz(isHEV[3]))
-bool u3_hv100_ok = (baseRank >= 100 or h1Rank >= 100 or h2Rank >= 100 or isHEV) or (nz(baseRank[1]) >= 100 or nz(h1Rank[1]) >= 100 or nz(h2Rank[1]) >= 100 or nz(isHEV[1])) or (nz(baseRank[2]) >= 100 or nz(h1Rank[2]) >= 100 or nz(h2Rank[2]) >= 100 or nz(isHEV[2]))
-bool u2_hv100_ok = (baseRank >= 100 or h1Rank >= 100 or h2Rank >= 100 or isHEV) or (nz(baseRank[1]) >= 100 or nz(h1Rank[1]) >= 100 or nz(h2Rank[1]) >= 100 or nz(isHEV[1]))
-bool sigP21BullUUUU_ltf = sigP21BullUUUU and (not ltf_require_u_hv100 or u4_hv100_ok)
-bool sigP21BullUUU_ltf = sigP21BullUUU and (not ltf_require_u_hv100 or u3_hv100_ok)
-bool sigUUBull_ltf = sigUUBull and (not ltf_require_u_hv100 or u2_hv100_ok)
-bool uu_any=sigP21BullUUUU_ltf or sigP21BullUUU_ltf or sigUUBull_ltf
+bool uu_any=sigP21BullUUUU or sigP21BullUUU or sigUUBull
 bool disp_or_hvd=sigDISPBull or hvd_fire_bull
 bool pbj_or_hvdpbj=sigBullPBJ or hvd_pbj_bull
 
@@ -2171,26 +2260,34 @@ f_cb_npm(bool e_uu,bool e_co,bool e_d9,bool e_pup,bool e_pbj,bool e_l1,bool e_wm
 bool cb1_pass_npm=f_cb_npm(cb1_uu,cb1_combo,cb1_d9,cb1_pup,cb1_pbj,cb1_l1,cb1_wmd)
 bool cb2_pass_npm=f_cb_npm(cb2_uu,cb2_combo,cb2_d9,cb2_pup,cb2_pbj,cb2_l1,cb2_wmd)
 bool cb3_pass_npm=f_cb_npm(cb3_uu,cb3_combo,cb3_d9,cb3_pup,cb3_pbj,cb3_l1,cb3_wmd)
-bool ltf_rvol_or_gs_p1 = nz(sigBullRVOL1x[1]) or nz(sigGrandSlam[1])
 
 // Alpha Strike expanded FAUNA slot
 bool as_fauna_expanded=sigFAUNABull or sigLong1 or disp_or_hvd or sigPUP or det_bullNapalmCons or sigWTC or sigHiroshima or sigNagasaki
-bool sigAlphaStrikeBull_sq=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and as_fauna_expanded
+// v3 ATOM #9 CHANGE: A★ now REQUIRES MAIN displacement on the SIGNAL BAR
+//   (disp_or_hvd = main-setting sigDISPBull OR hvd_fire_bull). In v2 displacement
+//   was only an optional slot inside as_fauna_expanded; v3 makes it mandatory.
+bool sigAlphaStrikeBull_sq=conf and firstOfDay and bull_pp and (sigGrandSlam or sigBullRVOL1x) and sigBullPBJ and as_fauna_expanded and disp_or_hvd
 
 // Super with bar[1]-aligned oneOfThese gate
 bool superBull_sq=superBull and oneOfThese_p1
 
 // Floor/2F with checkbox + one-of-these
-bool floor_ltf = anyBullFloor and disp_or_hvd
-bool floor2_ltf = anyBull2nd and disp_or_hvd
-bool floor_sq=floor_ltf and oneOfThese and cb1_pass_floor
-bool floor2_sq=floor2_ltf and oneOfThese and cb1_pass
-bool uu_gated=sigUUBull_ltf and oneOfThese_forUU
+// v3 ATOMS #4/#5 CHANGE: require MAIN displacement on the SIGNAL BAR.
+//   disp_or_hvd = sigDISPBull (built from the MAIN "Displacement" setting:
+//   i_std_min/i_std_max/i_req_fvg) OR hvd_fire_bull (the HV+D displacement path).
+//   v2 had NO signal-bar main-displacement requirement on Floor/2F (displacement
+//   only leaked in optionally via the d9_bull *9.0 checkbox); v3 routes them to
+//   the main displacement threshold, exactly as SQUARIFY_LTF_v1 does.
+bool floor_disp = anyBullFloor and disp_or_hvd
+bool floor2_disp = anyBull2nd and disp_or_hvd
+bool floor_sq=floor_disp and oneOfThese and cb1_pass_floor
+bool floor2_sq=floor2_disp and oneOfThese and cb1_pass
+bool uu_gated=sigUUBull and oneOfThese_forUU
 bool foxtrot_sq=sigFoxtrotBull and (hvd_pbj_bull or oneOfThese)
 
-// LTF v1: S22-S24 replace Napalm with RVOL1x OR Grand Slam.
-bool npm12=ltf_rvol_or_gs_p1 and (cb1_pass_npm or cb2_pass_npm)
-bool npm3=ltf_rvol_or_gs_p1 and cb3_pass_npm
+// NPM12/NPM3 — FIX: use napalm-aligned checkbox (bar[1] signals)
+bool npm12=det_bullNapalmCons and (cb1_pass_npm or cb2_pass_npm)
+bool npm3=det_bullNapalmCons and cb3_pass_npm
 
 // ┌──────────────────────────────────────────────────────────────────────────┐
 // │  CROSS-INDICATOR FUSIONS — OFFSET-CORRECTED                            │
@@ -2199,8 +2296,8 @@ bool npm3=ltf_rvol_or_gs_p1 and cb3_pass_npm
 // │  csNew3_Bull stays [0] (two-bar pattern already describes bar[1]).      │
 // └──────────────────────────────────────────────────────────────────────────┘
 
-// Signal 22 NPM+: LTF v1 replaces Napalm with RVOL1x OR Grand Slam; PBJ/HW/HCT shifted to [1].
-bool sig38=ltf_rvol_or_gs_p1 and ((nz(sigBullPBJ[1]) and (csNew3_Bull or nz(hwBull[1]) or nz(sig_HCTV2_Bull[1]))) or nz(sig_HCTV2_Bull[1]))
+// Signal 38 NPM+: PBJ/HW/WMD shifted to [1]
+bool sig38=det_bullNapalmCons and ((nz(sigBullPBJ[1]) and (csNew3_Bull or nz(hwBull[1]) or nz(sigWMD[1]))) or nz(sigWMD[1]))
 
 // Signal 49 GRAIL: PBJ/PUP shifted to [1]
 bool holy_grail=det_bullNapalmCons and nz(sigBullPBJ[1]) and nz(sigPUP[1]) and csNew3_Bull
@@ -2215,13 +2312,13 @@ bool npm_pbj_pup=det_bullNapalmCons and nz(sigBullPBJ[1]) and nz(sigPUP[1])
 bool nag_any_bull=sigNagasaki and (sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI)
 
 // Signal 53 UU+HVD: UU shifted to [1] (hvd_pbj_bull is offset -1)
-bool uu_hvdpbj=(nz(sigP21BullUUUU_ltf[1]) or nz(sigP21BullUUU_ltf[1]) or nz(sigUUBull_ltf[1])) and hvd_pbj_bull
+bool uu_hvdpbj=(nz(sigP21BullUUUU[1]) or nz(sigP21BullUUU[1]) or nz(sigUUBull[1])) and hvd_pbj_bull
 
 // Signal 54 UU+NPM: UU shifted to [1] (napalm is offset -1)
-bool uu_npm=(nz(sigP21BullUUUU_ltf[1]) or nz(sigP21BullUUU_ltf[1]) or nz(sigUUBull_ltf[1])) and det_bullNapalmCons
+bool uu_npm=(nz(sigP21BullUUUU[1]) or nz(sigP21BullUUU[1]) or nz(sigUUBull[1])) and det_bullNapalmCons
 
-// Signal 38 FLR+UU: use updated LTF Floor/2F definition. NPM fusions keep raw Floor to avoid double displacement.
-bool floor_uu=(floor_ltf or floor2_ltf) and uu_any
+// Signal 55 FLR+UU (both offset 0 — no displacement in chain)
+bool floor_uu=(anyBullFloor or anyBull2nd) and uu_any
 
 // Signal 56 FOS+PUP+1x
 bool foster_pup_rvol=fosterPBJSignal and sigPUP and (sigBullRVOL1x or det_bullNapalmCons)
@@ -2240,25 +2337,13 @@ bool sig_uu_combo=uu_any and csNew3_Bull
 
 // Signal 61 WMD (already offset 0)
 // Signal 64 WMD+BULL
-bool wmd_any_bull=sig_HCTV2_Bull and (sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI or uu_any or det_bullNapalmCons or anyBullFloor or anyBull2nd or sigLong1)
-
-// LTF same-visual UC gate: off = no UC requirement; on = require UC on the plot's visual candle.
-bool uc_gate_0 = not ltf_require_uc_same_visual or csNew3_Bull
-bool uc_gate_m1 = not ltf_require_uc_same_visual or csNew3_Bull
-
-// LTF HV + ANY composites. Pentagon-family means Pentagon OR WTC OR Hiroshima OR Nagasaki.
-bool ltf_pentagon_family = sigPentagon or sigWTC or sigHiroshima or sigNagasaki
-bool any_squarify_bull = sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI or uu_any or det_bullNapalmCons or anyBullFloor or anyBull2nd or sigLong1 or sigWTC or sigHiroshima or sigNagasaki or sigSAAB or hwBull or superBull or sduperBull or sigAlphaStrikeBull or sigFoxtrotBull or sigODBull or sigGolfBull or sig_HCTV2_Bull or csNew3_Bull
-string any_squarify_bull_label = sigBullRVOL1x ? "RVOL1x" : sigGrandSlam ? "GrandSlam" : sigFAUNABull ? "FAUNA" : sigDISPBull ? "DISP" : sigBullPBJ ? "PBJ" : sigPUP ? "PUP" : gz_bullHV ? "GZ-HV" : gz_bullGZI ? "GZI" : sigP21BullUUUU_ltf ? "U4" : sigP21BullUUU_ltf ? "U3" : sigUUBull_ltf ? "U2" : det_bullNapalmCons ? "NPM" : anyBullFloor ? "FLOOR" : anyBull2nd ? "2F" : sigLong1 ? "Long1" : sigWTC ? "WTC" : sigHiroshima ? "Hiroshima" : sigNagasaki ? "Nagasaki" : sigSAAB ? "SAAB" : hwBull ? "HW" : sduperBull ? "SD!" : superBull ? "SUPER" : sigAlphaStrikeBull ? "A*" : sigFoxtrotBull ? "FOX" : sigODBull ? "OD" : sigGolfBull ? "GOLF" : sig_HCTV2_Bull ? "HCTv2" : csNew3_Bull ? "UC" : "UNKNOWN"
-bool sig_HV1k_any    = conf and sigHV1000 and sigDISPBull and any_squarify_bull
-bool sig_Pent500_any = conf and ltf_pentagon_family and sigHV500 and sigDISPBull and any_squarify_bull
-bool sig_Pent1k_any  = conf and ltf_pentagon_family and sigHV1000 and sigDISPBull and any_squarify_bull
+bool wmd_any_bull=sigWMD and (sigBullRVOL1x or sigGrandSlam or sigFAUNABull or sigDISPBull or sigBullPBJ or sigPUP or gz_bullHV or gz_bullGZI or uu_any or det_bullNapalmCons or anyBullFloor or anyBull2nd or sigLong1)
 
 // Signal 62 L1²+B2B (offset 0)
 // (b2b_long1_pup already defined above)
 
 // ════════════════════════════════════════════════════════════════════════════
-// 49 BULLISH/BEARISH PLOTSHAPES — every plot is a buy/sell trigger
+// 46 BULLISH/BEARISH PLOTSHAPES — every plot is a buy/sell trigger
 // v2: 64 → 46 contiguous. B2B-overlap removals (kept GOLF), reserved removed,
 // CONT removed, WMD replaced with WBUSH (3), UC NAGASAKI added (Bull/Bear).
 // Offset: -1 = displacement+FVG in chain (visual on bar[1])
@@ -2266,80 +2351,75 @@ bool sig_Pent1k_any  = conf and ltf_pentagon_family and sigHV1000 and sigDISPBul
 // ════════════════════════════════════════════════════════════════════════════
 
 // USE STANDALONE (1-13)
-plotshape(_masterGate and uc_gate_m1 and en_1 and sduperBull, "1 SD!",shape.flag,location.bottom,#FFD700,text="SD!",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_2 and superBull and not sduperBull, "2 SUPER",shape.flag,location.top,#00FF00,text="SUPER",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and uc_gate_0 and en_3 and hwBull, "3 HW",shape.xcross,location.abovebar,#FF6D00,text="HW",textcolor=color.white,size=size.large)
-plotshape(_masterGate and uc_gate_0 and en_4 and floor_sq, "4 FLOOR",shape.circle,location.belowbar,#00E5FF,text="FLOOR",textcolor=color.white,size=size.large)
-plotshape(_masterGate and uc_gate_0 and en_5 and floor2_sq and not floor_sq, "5 2F",shape.cross,location.belowbar,#80DEEA,text="2F",textcolor=color.white,size=size.normal)
-plotshape(_masterGate and uc_gate_0 and en_6 and sigP21BullUUUU_ltf, "6 UUUU",shape.labelup,location.belowbar,#00FF00,text="UUUU",textcolor=color.white,size=size.large)
-plotshape(_masterGate and uc_gate_0 and en_7 and sigP21BullUUU_ltf and not sigP21BullUUUU_ltf, "7 UUU",shape.labelup,location.belowbar,#76FF03,text="UUU",textcolor=color.white,size=size.normal)
-plotshape(_masterGate and uc_gate_0 and en_8 and uu_gated and not sigP21BullUUU_ltf and not sigP21BullUUUU_ltf, "8 UU",shape.labelup,location.belowbar,#A5D6A7,text="UU",textcolor=color.white,size=size.small)
-plotshape(_masterGate and uc_gate_0 and en_9 and sigAlphaStrikeBull_sq, "9 A★",shape.flag,location.belowbar,#00E676,text="A★",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_10 and sigOmegaLongA, "10 ΩA",shape.circle,location.abovebar,#FFD700,text="ΩA",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_11 and foxtrot_sq, "11 FOX",shape.triangleup,location.top,#1B5E20,text="FOX",textcolor=color.white,size=size.large)
-plotshape(_masterGate and uc_gate_m1 and en_12 and sigODBull, "12 OD",shape.flag,location.bottom,#00FFFF,text="OD",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_13 and sigGolfBull, "13 GOLF",shape.labelup,location.bottom,color.new(#00FF00,25),text="GOLF",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_1 and sduperBull, "1 SD!",shape.flag,location.bottom,#FFD700,text="SD!",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_2 and superBull and not sduperBull, "2 SUPER",shape.flag,location.top,#00FF00,text="SUPER",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_3 and hwBull, "3 HW",shape.xcross,location.abovebar,#FF6D00,text="HW",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_4 and floor_sq, "4 FLOOR",shape.circle,location.belowbar,#00E5FF,text="FLOOR",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_5 and floor2_sq and not floor_sq, "5 2F",shape.cross,location.belowbar,#80DEEA,text="2F",textcolor=color.white,size=size.normal)
+plotshape(_plotGate and en_6 and sigP21BullUUUU, "6 UUUU",shape.labelup,location.belowbar,#00FF00,text="UUUU",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_7 and sigP21BullUUU and not sigP21BullUUUU, "7 UUU",shape.labelup,location.belowbar,#76FF03,text="UUU",textcolor=color.white,size=size.normal)
+plotshape(_plotGate and en_8 and uu_gated and not sigP21BullUUU and not sigP21BullUUUU, "8 UU",shape.labelup,location.belowbar,#A5D6A7,text="UU",textcolor=color.white,size=size.small)
+plotshape(_plotGate and en_9 and sigAlphaStrikeBull_sq, "9 A★",shape.flag,location.belowbar,#00E676,text="A★",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_10 and sigOmegaLongA, "10 ΩA",shape.circle,location.abovebar,#FFD700,text="ΩA",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_11 and foxtrot_sq, "11 FOX",shape.triangleup,location.top,#1B5E20,text="FOX",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_12 and sigODBull, "12 OD",shape.flag,location.bottom,#00FFFF,text="OD",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_13 and sigGolfBull, "13 GOLF",shape.labelup,location.bottom,color.new(#00FF00,25),text="GOLF",textcolor=color.white,size=size.huge,offset=-1)
 
 // ULTRA 57 (14-21)
-plotshape(_masterGate and uc_gate_0 and en_28 and (comboPBJ_F2_Bull or comboPBJ_E3_Bull), "14 PBJ+F2/E3",shape.labelup,location.belowbar,color.lime,text="PBJ\nF2E3",textcolor=color.white,size=size.large)
-plotshape(_masterGate and uc_gate_0 and en_29 and comboPBJ_Cluster_Bull, "15 PBJ+CL",shape.labelup,location.top,color.lime,text="PBJ\nCL",textcolor=color.white,size=size.large)
-plotshape(_masterGate and uc_gate_0 and en_30 and comboF2Cluster_E3_Bull, "16 F2CL→E3",shape.diamond,location.top,color.aqua,text="F2CL\n→E3",textcolor=color.white,size=size.large)
-plotshape(_masterGate and uc_gate_0 and en_33 and comboE3_2of3PUP_Bull, "17 E3⅔PP",shape.diamond,location.abovebar,color.teal,text="E3\n⅔PP",textcolor=color.white,size=size.normal)
-plotshape(_masterGate and uc_gate_0 and en_34 and comboF2_B2BDays_Bull, "18 F2×2D",shape.flag,location.top,color.lime,text="F2×2D",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_35 and comboE3_B2BDays_Bull, "19 E3×2D",shape.flag,location.top,#76FF03,text="E3×2D",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_36 and comboF2E3_Consec_Bull, "20 F2E3seq",shape.flag,location.top,#FFFF00,text="F2E3\nseq",textcolor=color.black,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_37 and comboCluster_B2BDays_Bull, "21 CL×2D",shape.flag,location.bottom,#FFFF00,text="CL×2D",textcolor=color.black,size=size.huge)
+plotshape(_plotGate and en_28 and (comboPBJ_F2_Bull or comboPBJ_E3_Bull), "14 PBJ+F2/E3",shape.labelup,location.belowbar,color.lime,text="PBJ\nF2E3",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_29 and comboPBJ_Cluster_Bull, "15 PBJ+CL",shape.labelup,location.top,color.lime,text="PBJ\nCL",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_30 and comboF2Cluster_E3_Bull, "16 F2CL→E3",shape.diamond,location.top,color.aqua,text="F2CL\n→E3",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_33 and comboE3_2of3PUP_Bull, "17 E3⅔PP",shape.diamond,location.abovebar,color.teal,text="E3\n⅔PP",textcolor=color.white,size=size.normal)
+plotshape(_plotGate and en_34 and comboF2_B2BDays_Bull, "18 F2×2D",shape.flag,location.top,color.lime,text="F2×2D",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_35 and comboE3_B2BDays_Bull, "19 E3×2D",shape.flag,location.top,#76FF03,text="E3×2D",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_36 and comboF2E3_Consec_Bull, "20 F2E3seq",shape.flag,location.top,#FFFF00,text="F2E3\nseq",textcolor=color.black,size=size.huge)
+plotshape(_plotGate and en_37 and comboCluster_B2BDays_Bull, "21 CL×2D",shape.flag,location.bottom,#FFFF00,text="CL×2D",textcolor=color.black,size=size.huge)
 
 // NPM (22-26)
-plotshape(_masterGate and uc_gate_m1 and en_38 and sig38, "22 NPM+",shape.labelup,location.bottom,#00FFAA,text="RV/GS+",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_39 and npm12, "23 NPM12",shape.triangleup,location.belowbar,#00BCD4,text="RVGS12",textcolor=color.white,size=size.normal,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_41 and npm3 and not npm12, "24 NPM3",shape.triangleup,location.top,#0097A7,text="RVGS3",textcolor=color.white,size=size.small,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_42 and det_b2bBullNapalm, "25 B2BNPM",shape.labelup,location.bottom,#1DE9B6,text="B2B\nNPM",textcolor=color.white,size=size.large,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_43 and det_npmHctBull, "26 NPM+TNT",shape.labelup,location.belowbar,#089981,text="NPM\nHCT",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_38 and sig38, "22 NPM+",shape.labelup,location.bottom,#00FFAA,text="NPM+",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_39 and npm12, "23 NPM12",shape.triangleup,location.belowbar,#00BCD4,text="NPM12",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(_plotGate and en_41 and npm3 and not npm12, "24 NPM3",shape.triangleup,location.top,#0097A7,text="NPM3",textcolor=color.white,size=size.small,offset=-1)
+plotshape(_plotGate and en_42 and det_b2bBullNapalm, "25 B2BNPM",shape.labelup,location.bottom,#1DE9B6,text="B2B\nNPM",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_43 and det_npmTntBull, "26 NPM+TNT",shape.labelup,location.belowbar,#089981,text="NPM\nTNT",textcolor=color.white,size=size.large,offset=-1)
 
 // HV+D (27-31)
-plotshape(_masterGate and uc_gate_m1 and en_44 and co_bull_pbj, "27 CO",shape.diamond,location.belowbar,#FFD700,text="CO",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_45 and hvd_pbj_bull and not co_bull_pbj and (tfSec>=180 or cb1_pass_npm), "28 HVD+PBJ",shape.diamond,location.bottom,color.new(color.yellow,25),text="HVD\nPBJ",textcolor=color.white,size=size.normal,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_46 and b2b_bull_pbj, "29 B2BHVD+PBJ",shape.flag,location.bottom,#E040FB,text="B2B\nHVD\nPBJ",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_47 and b2b_bull_nopb and not b2b_bull_pbj, "30 B2BHVD",shape.flag,location.belowbar,#4CAF50,text="B2B\nHVD",textcolor=color.white,size=size.large,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_48 and sig_uu_combo, "31 UU+UC",shape.labelup,location.bottom,#7C4DFF,text="UU\nUC",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_44 and co_bull_pbj, "27 CO",shape.diamond,location.belowbar,#FFD700,text="CO",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_45 and hvd_pbj_bull and not co_bull_pbj and (tfSec>=180 or cb1_pass_npm), "28 HVD+PBJ",shape.diamond,location.bottom,color.new(color.yellow,25),text="HVD\nPBJ",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(_plotGate and en_46 and b2b_bull_pbj, "29 B2BHVD+PBJ",shape.flag,location.bottom,#E040FB,text="B2B\nHVD\nPBJ",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_47 and b2b_bull_nopb and not b2b_bull_pbj, "30 B2BHVD",shape.flag,location.belowbar,#4CAF50,text="B2B\nHVD",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_48 and sig_uu_combo, "31 UU+UC",shape.labelup,location.bottom,#7C4DFF,text="UU\nUC",textcolor=color.white,size=size.huge,offset=-1)
 
 // FUSIONS (32-39)
-plotshape(_masterGate and uc_gate_m1 and en_49 and holy_grail, "32 GRAIL",shape.labelup,location.bottom,#FFD700,text="GRAIL",textcolor=color.black,size=size.huge,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_50 and floor_npm, "33 FLR+NPM",shape.circle,location.bottom,#00FFFF,text="FLR\nNPM",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_51 and npm_pbj_pup and not holy_grail, "34 NPM+PBJ+PUP",shape.labelup,location.belowbar,#00E676,text="NPM\nPBJ\nPUP",textcolor=color.white,size=size.large,offset=-1)
-plotshape(_masterGate and uc_gate_0 and en_52 and nag_any_bull, "35 NAG+",shape.labelup,location.abovebar,#FF00FF,text="NAG+",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and uc_gate_m1 and en_53 and uu_hvdpbj, "36 UU+HVD",shape.labelup,location.belowbar,#7C4DFF,text="UU\nHVD",textcolor=color.white,size=size.large,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_54 and uu_npm, "37 UU+NPM",shape.labelup,location.abovebar,#00BCD4,text="UU\nNPM",textcolor=color.white,size=size.normal,offset=-1)
-plotshape(_masterGate and uc_gate_0 and en_55 and floor_uu, "38 FLR+UU",shape.square,location.belowbar,#00E5FF,text="FLR\nUU",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_56 and foster_pup_rvol, "39 FOS+PUP+1x",shape.labelup,location.bottom,#88FF00,text="FOS\nPUP\n1x",textcolor=color.black,size=size.huge)
+plotshape(_plotGate and en_49 and holy_grail, "32 GRAIL",shape.labelup,location.bottom,#FFD700,text="GRAIL",textcolor=color.black,size=size.huge,offset=-1)
+plotshape(_plotGate and en_50 and floor_npm, "33 FLR+NPM",shape.circle,location.bottom,#00FFFF,text="FLR\nNPM",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_51 and npm_pbj_pup and not holy_grail, "34 NPM+PBJ+PUP",shape.labelup,location.belowbar,#00E676,text="NPM\nPBJ\nPUP",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_52 and nag_any_bull, "35 NAG+",shape.labelup,location.abovebar,#FF00FF,text="NAG+",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_53 and uu_hvdpbj, "36 UU+HVD",shape.labelup,location.belowbar,#7C4DFF,text="UU\nHVD",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_54 and uu_npm, "37 UU+NPM",shape.labelup,location.abovebar,#00BCD4,text="UU\nNPM",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(_plotGate and en_55 and floor_uu, "38 FLR+UU",shape.square,location.belowbar,#00E5FF,text="FLR\nUU",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_56 and foster_pup_rvol, "39 FOS+PUP+1x",shape.labelup,location.bottom,#88FF00,text="FOS\nPUP\n1x",textcolor=color.black,size=size.huge)
 
 // NPM+UC (40)
-plotshape(_masterGate and uc_gate_m1 and en_60 and sig_npm_combo and not sig_npm_combo_pbj, "40 NPM+UC",shape.labelup,location.belowbar,#00E5FF,text="NPM\nUC",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_60 and sig_npm_combo and not sig_npm_combo_pbj, "40 NPM+UC",shape.labelup,location.belowbar,#00E5FF,text="NPM\nUC",textcolor=color.white,size=size.large,offset=-1)
 
 // WBUSH (41-43) — replaces WMD slot
-plotshape(_masterGate and uc_gate_0 and en_wbushBull and sig_WBUSH_Bull, "41 WBUSH+ANY Bull",shape.diamond,location.belowbar,#00BFA5,text="WBUSH",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_wbushBear and sig_WBUSH_Bear, "42 WBUSH+ANY Bear",shape.diamond,location.abovebar,#C2185B,text="WBUSH",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_wbushNeutral and sig_WBUSH_Neutral, "43 WBUSH Neutral",shape.diamond,location.top,#9E9E9E,text="WBUSH N",textcolor=color.white,size=size.normal)
+plotshape(_plotGate and en_wbushBull and sig_WBUSH_Bull, "41 WBUSH+ANY Bull",shape.diamond,location.belowbar,#00BFA5,text="WBUSH",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_wbushBear and sig_WBUSH_Bear, "42 WBUSH+ANY Bear",shape.diamond,location.abovebar,#C2185B,text="WBUSH",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_wbushNeutral and sig_WBUSH_Neutral, "43 WBUSH Neutral",shape.diamond,location.top,#9E9E9E,text="WBUSH N",textcolor=color.white,size=size.normal)
 
 // NPM+UC+PBJ (44)
-plotshape(_masterGate and uc_gate_m1 and en_63 and sig_npm_combo_pbj, "44 NPM+UC+PBJ",shape.labelup,location.bottom,#FFC107,text="NPM\nUC\nPBJ",textcolor=color.black,size=size.huge,offset=-1)
+plotshape(_plotGate and en_63 and sig_npm_combo_pbj, "44 NPM+UC+PBJ",shape.labelup,location.bottom,#FFC107,text="NPM\nUC\nPBJ",textcolor=color.black,size=size.huge,offset=-1)
 
 // UC NAGASAKI (45-46) — new
-plotshape(_masterGate and uc_gate_m1 and en_ucNagBull and sig_UCNagasakiBull, "45 UC NAGASAKI Bull",shape.labelup,location.belowbar,#FF00FF,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and uc_gate_m1 and en_ucNagBear and sig_UCNagasakiBear, "46 UC NAGASAKI Bear",shape.labeldown,location.abovebar,#9C27B0,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
-
-// HV + ANY SQUARIFY LTF composites (47-49)
-plotshape(_masterGate and uc_gate_0 and en_hv1kAny and sig_HV1k_any, "47 1K+ANY", shape.triangleup,location.belowbar,#00E5FF,text="1K\nD\nANY",textcolor=color.black,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_pent500Any and sig_Pent500_any, "48 PENT+500+ANY", shape.triangleup,location.belowbar,#FF9100,text="PENT\n500\nD",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and uc_gate_0 and en_pent1kAny and sig_Pent1k_any, "49 PENT+1K+ANY", shape.triangleup,location.belowbar,#FF1744,text="PENT\n1K\nD",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_ucNagBull and sig_UCNagasakiBull, "45 UC NAGASAKI Bull",shape.labelup,location.belowbar,#FF00FF,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_ucNagBear and sig_UCNagasakiBear, "46 UC NAGASAKI Bear",shape.labeldown,location.abovebar,#9C27B0,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
 
 // ════════════════════════════════════════════════════════════════════════════
 // ALERT AGGREGATOR — Bloomberg format
 // Format: BULL | FIRST !!!/FIRST XXX/NOT !!! | signal_names
 // NEVER ticker/exchange/timeframe — TradingView adds those automatically.
 // ════════════════════════════════════════════════════════════════════════════
-if conf and _masterGate and uc_gate_0
+if conf and _plotGate
     string s=""
     if en_1 and sduperBull
         s:=f_add(s,"SD!")
@@ -2351,16 +2431,16 @@ if conf and _masterGate and uc_gate_0
         s:=f_add(s,"FLOOR")
     if en_5 and floor2_sq
         s:=f_add(s,"2F")
-    if en_6 and sigP21BullUUUU_ltf
+    if en_6 and sigP21BullUUUU
         s:=f_add(s,"UUUU")
-    if en_7 and sigP21BullUUU_ltf and not sigP21BullUUUU_ltf
+    if en_7 and sigP21BullUUU and not sigP21BullUUUU
         s:=f_add(s,"UUU")
-    if en_8 and uu_gated and not sigP21BullUUU_ltf and not sigP21BullUUUU_ltf
+    if en_8 and uu_gated and not sigP21BullUUU and not sigP21BullUUUU
         s:=f_add(s,"UU")
     if en_9 and sigAlphaStrikeBull_sq
         s:=f_add(s,"A★")
     if en_10 and sigOmegaLongA
-        s:=f_add(s,"ΩA("+omega_cosignal_A_label+")")
+        s:=f_add(s,"ΩA")
     if en_11 and foxtrot_sq
         s:=f_add(s,"FOX")
     if en_12 and sigODBull
@@ -2386,15 +2466,15 @@ if conf and _masterGate and uc_gate_0
     if en_37 and comboCluster_B2BDays_Bull
         s:=f_add(s,"CL×2D")
     if en_38 and sig38
-        s:=f_add(s,"RVGS+"+(csNew3_Bull?"UC":nz(hwBull[1])?"HW":"HCTv2"))
+        s:=f_add(s,"NPM+"+(csNew3_Bull?"UC":nz(hwBull[1])?"HW":"WBUSH"))
     if en_39 and npm12
-        s:=f_add(s,"RVGS12")
+        s:=f_add(s,"NPM12")
     if en_41 and npm3 and not npm12
-        s:=f_add(s,"RVGS3")
+        s:=f_add(s,"NPM3")
     if en_42 and det_b2bBullNapalm
         s:=f_add(s,"B2BNPM")
-    if en_43 and det_npmHctBull
-        s:=f_add(s,"NPM+HCTv2")
+    if en_43 and det_npmTntBull
+        s:=f_add(s,"NPM+TNT")
     if en_44 and co_bull_pbj
         s:=f_add(s,"CO")
     if en_45 and hvd_pbj_bull and not co_bull_pbj and (tfSec>=180 or cb1_pass_npm)
@@ -2424,19 +2504,13 @@ if conf and _masterGate and uc_gate_0
     if en_60 and sig_npm_combo and not sig_npm_combo_pbj
         s:=f_add(s,"NPM+UC")
     if en_wbushBull and sig_WBUSH_Bull
-        s:=f_add(s,"WBUSH+ANY(HCTv2)")
+        s:=f_add(s,"WBUSH+ANY")
     if en_wbushNeutral and sig_WBUSH_Neutral
         s:=f_add(s,"WBUSH-N")
     if en_63 and sig_npm_combo_pbj
         s:=f_add(s,"NPM+UC+PBJ")
     if en_ucNagBull and sig_UCNagasakiBull
         s:=f_add(s,"UC NAGASAKI")
-    if en_hv1kAny and sig_HV1k_any
-        s:=f_add(s,"1K+D+ANY("+any_squarify_bull_label+")")
-    if en_pent500Any and sig_Pent500_any
-        s:=f_add(s,"PENTFAM+500+D+ANY("+any_squarify_bull_label+")")
-    if en_pent1kAny and sig_Pent1k_any
-        s:=f_add(s,"PENTFAM+1K+D+ANY("+any_squarify_bull_label+")")
     if str.length(s)>0
         if master_aggAlerts
             alert("BULL | " + _gapQual + " | " + s, alert.freq_once_per_bar_close)
