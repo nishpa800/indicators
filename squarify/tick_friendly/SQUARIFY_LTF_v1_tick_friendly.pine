@@ -327,6 +327,9 @@ bool ltf_require_u_hv100 = input.bool(false, "Require HV>=100 for U2/U3/U4", gro
 // === HARDCODED — RVOL ===
 bb_avgLength = 30, bb_smaLength = 20
 reg_anchorTimeframe = "", reg_length = 30, reg_calculationMode = "Cumulative", reg_adjustRealtime = true
+// TICK-FRIENDLY FIX (RE10023): force "D" anchor only on tick charts (blank="" resolves to the
+// tick-based chart TF → timeframe.change throws). Time charts keep original "" behavior.
+string reg_anchorSafe = ((reg_anchorTimeframe == "" and (na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
 // === HARDCODED — FAUNA NRA ===
 fauna_gg_master = true, fauna_gg_body = 0.80
 
@@ -455,7 +458,7 @@ sigMOAB=conf and bb_baseBearish and (bb_normalizedPrice>=th_gs_moab)
 sigBullRVOL1x=conf and bb_baseBullish and bb_inRange(bb_normalizedPrice,th_1x,th_gs_moab) and not sigGrandSlam
 sigBearRVOL1x=conf and bb_baseBearish and bb_inRange(bb_normalizedPrice,th_1x,th_gs_moab) and not sigMOAB
 
-[currentVolume_reg,pastVolume_reg,_unused]=tv_ta.relativeVolume(reg_length,reg_anchorTimeframe,reg_calculationMode=="Cumulative",reg_adjustRealtime)
+[currentVolume_reg,pastVolume_reg,_unused]=tv_ta.relativeVolume(reg_length,reg_anchorSafe,reg_calculationMode=="Cumulative",reg_adjustRealtime)
 relVolRatio=currentVolume_reg/pastVolume_reg
 sigWTC=conf and (relVolRatio>th_wtc) and (relVolRatio<=th_hiroshima)
 sigHiroshima=conf and (relVolRatio>th_hiroshima)
@@ -1234,8 +1237,8 @@ bool sigFoxtrotBull=conf and sigFAUNABull and nz(sigFAUNABull[1]) and nz(sigFAUN
 bool sigFoxtrotBear=conf and sigFAUNABear and nz(sigFAUNABear[1]) and nz(sigFAUNABear[2]) and nz(sigFAUNABear[3])
 
 // === ENGINE 11: LONG/SHORT ===
-[currentVol_r,pastVol_r,_r2]=tv_ta.relativeVolume(reg_length,reg_anchorTimeframe,false,reg_adjustRealtime)
-[currentVol_c,pastVol_c,_c2]=tv_ta.relativeVolume(reg_length,reg_anchorTimeframe,true,reg_adjustRealtime)
+[currentVol_r,pastVol_r,_r2]=tv_ta.relativeVolume(reg_length,reg_anchorSafe,false,reg_adjustRealtime)
+[currentVol_c,pastVol_c,_c2]=tv_ta.relativeVolume(reg_length,reg_anchorSafe,true,reg_adjustRealtime)
 float ls_regRatio=nz(currentVol_r/pastVol_r), float ls_cumRatio=nz(currentVol_c/pastVol_c)
 float ls_bodyRat=(high-low)==0?0.0:math.abs(close-open)/(high-low)
 bool sigLong1=conf and ls_regRatio>ls_reg1 and ls_cumRatio>ls_cum1 and close>open and ls_bodyRat>=ls_body1

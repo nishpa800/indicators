@@ -125,6 +125,15 @@ bb_smaLength  = input.int(20, "SMA Length", minval=1, group=groupBullBear)
 
 groupReg = "RVOL - Reg @ Time Calculation"
 reg_anchorTimeframe  = input.timeframe("", "Anchor Timeframe", group=groupReg)
+// ── TICK-FRIENDLY FIX (RE10023) ──────────────────────────────────────────────
+// tv_ta.relativeVolume() calls timeframe.change(anchor) internally, which THROWS
+// "Cannot call timeframe.change with a tick-based timeframe" on bar 0 when the
+// anchor is tick-based. input.timeframe("") resolves to the CHART timeframe, so
+// on a tick chart (e.g. 1000T) the anchor IS tick-based → runtime error.
+// Force a real session anchor whenever the resolved anchor is empty or tick-based
+// ("T" suffix). Both relativeVolume calls below use reg_anchorSafe, NEVER the raw
+// input. ("" → "D" matches the Python ports' reg_anchor mapping.)
+reg_anchorSafe       = ((reg_anchorTimeframe == "" and (na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
 reg_length           = input.int(30, "Length", minval=1, group=groupReg)
 reg_calculationMode  = input.string("Cumulative", "Calculation Mode", options=["Cumulative", "Regular"], group=groupReg)
 reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg)
@@ -184,7 +193,7 @@ sigBearRVOL1x = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_1x
 sigGrandSlam  = conf and bb_baseBullish and (bb_normalizedPrice >= th_gs_moab)
 sigMOAB       = conf and bb_baseBearish and (bb_normalizedPrice >= th_gs_moab)
 
-[currentVolume_reg, pastVolume_reg, _] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, reg_calculationMode == "Cumulative", reg_adjustRealtime)
+[currentVolume_reg, pastVolume_reg, _] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, reg_calculationMode == "Cumulative", reg_adjustRealtime)
 relVolRatio = currentVolume_reg / pastVolume_reg
 
 sigPentagon  = conf and (relVolRatio >= th_1x) and (relVolRatio <= th_wtc)
@@ -348,7 +357,7 @@ is_fauna_bear = (MB_bear or RE_bear or TA_bear) and not excluded_bear
 
 // ── HYBRID MOMENTUM ALIGNMENT ──
 hybRegRatio = relVolRatio
-[hybCumCur, hybCumPast, _] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, true,  reg_adjustRealtime)
+[hybCumCur, hybCumPast, _] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, true,  reg_adjustRealtime)
 hybCumRatio = hybCumCur / hybCumPast
 
 hybBodySz  = math.abs(close - open)

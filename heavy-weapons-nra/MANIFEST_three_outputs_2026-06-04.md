@@ -58,3 +58,18 @@ them; the 1-or-0-per-physical-bar collapse is the downstream combo-chain's job.
 
 ## Parity
 NOT ACCEPTED. This command prepares a parity handoff only.
+
+## ADDENDUM — RE10023 tick anchor fix (live-verified 2026-06-04)
+Anish caught a runtime error on a 1000T tick chart: tv_ta.relativeVolume →
+timeframe.change(tick TF) throws. The tick-friendly builds had only guarded tfSec,
+NOT the Reg@Time anchor. Fixed in ALL 5 tick-friendly files that call relativeVolume:
+  - heavy-weapons-nra/tick_friendly/HEAVY_WEAPONS_NRA_v1_tick_friendly.pine (2 calls)
+  - squarify/tick_friendly/SQUARIFY_LTF_v1_tick_friendly.pine               (3 calls)
+  - tnt-od/tick_friendly/TNT_OD_v3_tick_friendly.pine                       (1 call)
+  - vob/tick_friendly/VOB_v11_FULL_TICKFRIENDLY_2026-06-04.pine             (3 calls)
+  - vob/tick_friendly/VOB_v11_MULTIPLES_TICKFRIENDLY_2026-06-04.pine        (3 calls)
+Guard: force "D" anchor only on tick charts (blank-on-tick or "…T"); time charts
+unchanged. Verified live: full heavy-weapons script runs on 1000T, no RE10023,
+intermediates relVol=4.11 / normPrice=2.21 / smaDiff=0.7745 / ATR=0.3937.
+The Python tick + time ports already mapped empty anchor → "D" (reg_anchor), so they
+were never affected.
