@@ -60,10 +60,14 @@ Proven (signals_time/combo_chain_fixed.py replay):
   intentionally diverges from the original (buggy) TradingView output on the
   single-mixed-bar case.
 
-## Pending
+## Final state after follow-up fix
 
-- **Bullish split version** (`HVD_PBJ_PPD_BULLISH_v1.pine`) has the SAME chain
-  defect per Anish. Same fix (same-bar OR-collapse) applies. Awaiting paste —
-  will be corrected in this same thread for consistency.
-- Full combined `BASE` source intake should be saved as a versioned `.pine` once
-  the bullish/bearish reconciliation is settled.
+- **Bullish split fixed:** `hvd-pbj-ppd/versions/HVD_PBJ_PPD_BULLISH_v1.pine`
+- **Bearish split fixed:** `hvd-pbj-ppd/versions/HVD_PBJ_PPD_BEARISH_v1.pine`
+- **Combined 4.26 file fixed:** `hvd-pbj-ppd/versions/HVDPBJPPD_4.26.1244am_PPD_UC_RVOL_2026-05-05.pine`
+- Fix commit: `5f690bc9848e9f73dfb35797b64e3f822a6041ea`
+
+The standalone `COMBO_CHAIN_FIXED_tick_friendly.pine` file is a focused
+combo-chain proof/adapter only. It is not the replacement TradingView study.
+The real TradingView studies to use are the Bullish and Bearish files under
+`hvd-pbj-ppd/versions/`.
