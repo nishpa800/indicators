@@ -1147,23 +1147,23 @@ if any_zone
 
 if en_emission_logs and barstate.isconfirmed
     log.info("VOB_EMISSION|TICKER:{0}|TF:{1}|CLOSE:{2}|RSI:{3}|SESS:{4}|VOLRANK:{5}|VOL:{6}|ATHVOL:{7}|BULLZONES:{8}|BEARZONES:{9}|STKBULL:{10}|STKBEAR:{11}|GAPBULL:{12}|GAPBEAR:{13}|NRBULLDIST:{14}|NRBEARDIST:{15}|BPA:{16}|SPA:{17}|BPB:{18}|SPB:{19}|BPC:{20}|SPC:{21}|BPD:{22}|SPD:{23}|BPE:{24}|SPE:{25}|BPF:{26}|SPF:{27}|SLOPEA:{28}|SLOPEB:{29}|SLOPEC:{30}|SLOPED:{31}|SLOPEE:{32}|SLOPEF:{33}",
-        syminfo.ticker, timeframe.period,
-        str.tostring(close), str.tostring(math.round(rsi_14 * 100) / 100),
-        str.tostring(sess_bar_count), str.tostring(math.round(vol_rank)),
-        str.tostring(math.round(volume)), str.tostring(math.round(maxVolEver)),
-        str.tostring(cnt_bull_all), str.tostring(cnt_bear_all),
-        str.tostring(stk_bull), str.tostring(stk_bear),
-        str.tostring(math.round(bull_gap * 100) / 100), str.tostring(math.round(bear_gap * 100) / 100),
-        str.tostring(math.round(nearest_bull_dist * 100) / 100), str.tostring(math.round(nearest_bear_dist * 100) / 100),
-        str.tostring(math.round(bpa)), str.tostring(math.round(spa)),
-        str.tostring(math.round(bpb)), str.tostring(math.round(spb)),
-        str.tostring(math.round(bpc)), str.tostring(math.round(spc)),
-        str.tostring(math.round(bpd)), str.tostring(math.round(spd)),
-        str.tostring(math.round(bpe)), str.tostring(math.round(spe)),
-        str.tostring(math.round(bpf)), str.tostring(math.round(spf)),
-        str.tostring(math.round(slope_ema_a * 10000) / 10000), str.tostring(math.round(slope_ema_b * 10000) / 10000),
-        str.tostring(math.round(slope_ema_c * 10000) / 10000), str.tostring(math.round(slope_ema_d * 10000) / 10000),
-        str.tostring(math.round(slope_ema_e * 10000) / 10000), str.tostring(math.round(slope_ema_f * 10000) / 10000))
+      syminfo.ticker, timeframe.period,
+      str.tostring(close), str.tostring(math.round(rsi_14 * 100) / 100),
+      str.tostring(sess_bar_count), str.tostring(math.round(vol_rank)),
+      str.tostring(math.round(volume)), str.tostring(math.round(maxVolEver)),
+      str.tostring(cnt_bull_all), str.tostring(cnt_bear_all),
+      str.tostring(stk_bull), str.tostring(stk_bear),
+      str.tostring(math.round(bull_gap * 100) / 100), str.tostring(math.round(bear_gap * 100) / 100),
+      str.tostring(math.round(nearest_bull_dist * 100) / 100), str.tostring(math.round(nearest_bear_dist * 100) / 100),
+      str.tostring(math.round(bpa)), str.tostring(math.round(spa)),
+      str.tostring(math.round(bpb)), str.tostring(math.round(spb)),
+      str.tostring(math.round(bpc)), str.tostring(math.round(spc)),
+      str.tostring(math.round(bpd)), str.tostring(math.round(spd)),
+      str.tostring(math.round(bpe)), str.tostring(math.round(spe)),
+      str.tostring(math.round(bpf)), str.tostring(math.round(spf)),
+      str.tostring(math.round(slope_ema_a * 10000) / 10000), str.tostring(math.round(slope_ema_b * 10000) / 10000),
+      str.tostring(math.round(slope_ema_c * 10000) / 10000), str.tostring(math.round(slope_ema_d * 10000) / 10000),
+      str.tostring(math.round(slope_ema_e * 10000) / 10000), str.tostring(math.round(slope_ema_f * 10000) / 10000))
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
