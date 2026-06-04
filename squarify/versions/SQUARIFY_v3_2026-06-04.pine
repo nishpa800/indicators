@@ -1,4 +1,24 @@
-// SQUARIFY 46 v2 — every plot is a buy/sell trigger
+// SQUARIFY 46 v3.1 — every plot is a buy/sell trigger
+// ════════════════════════════════════════════════════════════════════════════
+// CHANGELOG v3 → v3.1 (2026-06-04) — TWO UNIVERSAL GATES + PENTAGON-SET (all 46 preserved)
+//   ① "Require UC" (MASTER, default OFF): when ON, EVERY plot additionally requires
+//      SQUARIFY's Unified Combo (UC = csNew3, bull or bear) on the SAME candle.
+//      fire = existing AND uc_on_bar. Reuses csNew3 (the same UC used by SUPER/SDUPER,
+//      UU+UC #31, NPM+UC #40, UC-NAGASAKI #45/46). OFF = no change.
+//   ② "Require HCT V2" (MASTER, default OFF): when ON, EVERY plot additionally
+//      requires HCT V2 (BULLISH heavy-combo set ONLY, bear dropped) on the bar:
+//      hctv2_on_bar = sig_WBUSH_Bull (SQUARIFY's bullish heavy-combo / WBUSH path,
+//      #41) OR the two Pentagon-set specials. Displacement-inclusive variant
+//      hctv2_disp_on_bar also built. OFF = no change.
+//   ③ PENTAGON-SET specials (ported/adapted from Heavy Weapons sigPentHV1K /
+//      sigPentHV500D), broadened to PENTAGON OR WTC OR HIROSHIMA OR NAGASAKI:
+//        • sigPentSetHV500D = Pentagon-set + sigHV500  + main bullish disp (+D)
+//        • sigPentSetHV1KD  = Pentagon-set + sigHV1000 + main bullish disp (+D)
+//      Both REQUIRE +D (main displacement, sigDISPBull — consistent w/ v3 atoms 4-9).
+//   Mechanism: gates folded into a merged _plotGate = _masterGate AND _uc_gate AND
+//   _hctv2_gate; every plotshape + the alert aggregator switched _masterGate→_plotGate.
+//   Both gates independent; if both ON, both must hold. All 46 signals + the v3
+//   atoms-4-9 displacement routing preserved byte-for-byte otherwise.
 // ════════════════════════════════════════════════════════════════════════════
 // CHANGELOG v1 (64 signals) → v2 (46 signals)
 // ──────────────────────────────────────────────────────────────────────────────
@@ -33,7 +53,7 @@
 //   AGGREGATOR BYPASSERS: None.
 // ════════════════════════════════════════════════════════════════════════════
 //@version=5
-indicator("SQUARIFY 46 v3", shorttitle="SQ46 v3", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1500)
+indicator("SQUARIFY 46 v3.1", shorttitle="SQ46 v3.1", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1500)
 import TradingView/ta/7 as tv_ta
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -78,6 +98,23 @@ atr14 = ta.atr(14)
 grpMASTER = "★★★ MASTER TOGGLES ★★★"
 bool master_firstBarOnly = input.bool(false, "First Bar Only", group=grpMASTER, tooltip="ON: requires first bar of session AND any HV rank on bar[0]. Both must be true. Detections blocked if either missing.")
 bool master_aggAlerts = input.bool(true, "Aggregate Alerts", group=grpMASTER, tooltip="ON = one combined alert per bar. OFF = individual alerts per detection.")
+
+// ════════════════════════════════════════════════════════════════════════════
+// v3.1 (2026-06-04) — UNIVERSAL GATES (apply to ALL 46 detection plots + alerts)
+//   ① Require UC      — every plot additionally requires SQUARIFY's Unified Combo
+//                       (UC = csNew3, bull OR bear) on the SAME candle.
+//   ② Require HCT V2  — every plot additionally requires the HCT V2 BULLISH heavy
+//                       -combo set on the same bar. HCT V2 = SQUARIFY's bullish
+//                       WBUSH path (sig_WBUSH_Bull) OR the two Pentagon-set specials
+//                       (PENT-set + HV500 + D, PENT-set + HV1K + D), Pentagon-set =
+//                       Pentagon OR WTC OR Hiroshima OR Nagasaki. Bear dropped.
+//   Both gates independent (default OFF). If both checked, both must hold.
+//   The actual gate booleans (_uc_gate_on_bar / _hctv2_gate_on_bar) and the merged
+//   _plotGate are defined LATER (after WBUSH / csNew3 / Pentagon / HV are computed);
+//   only the two input toggles live here at the top per spec.
+// ════════════════════════════════════════════════════════════════════════════
+bool master_requireUC    = input.bool(false, "Require UC", group=grpMASTER, tooltip="UC GATE — when ON, EVERY SQUARIFY detection plot additionally requires SQUARIFY's Unified Combo (UC = csNew3, bull or bear) on the SAME candle. Each plot fire becomes (existing AND UC). OFF = no change. Default OFF.")
+bool master_requireHCTV2 = input.bool(false, "Require HCT V2", group=grpMASTER, tooltip="HCT V2 GATE — when ON, EVERY SQUARIFY detection plot additionally requires HCT V2 (BULLISH heavy-combo set only) on the same bar: SQUARIFY's bullish WBUSH path OR the Pentagon-set specials (PENT-set+HV500+D, PENT-set+HV1K+D; Pentagon-set = Pentagon OR WTC OR Hiroshima OR Nagasaki). Bear dropped. OFF = no change. Default OFF.")
 
 // Gap qualifier for FIRST/NOT alert format
 float _gapSize = math.abs(open - close[1])
@@ -2111,6 +2148,41 @@ bool sigWMD = sig_WBUSH_Bull
 bool sig_UCNagasakiBull = csNew3_Bull and nz(sigNagasaki[1])
 bool sig_UCNagasakiBear = csNew3_Bear and nz(sigNagasaki[1])
 
+// ════════════════════════════════════════════════════════════════════════════
+// v3.1 UNIVERSAL GATES — PENTAGON-SET SPECIALS + HCT V2 BULLISH SET + UC GATE
+// ────────────────────────────────────────────────────────────────────────────
+// ③ PENTAGON-SET — ported/adapted from Heavy Weapons reference (sigPentHV1K /
+//    sigPentHV500D), broadened per spec to PENTAGON OR WTC OR HIROSHIMA OR NAGASAKI.
+//    Both specials REQUIRE +D (displacement). SQUARIFY's HV ranks: sigHV500 =
+//    volume>=highest(500)[1], sigHV1000 = volume>=highest(1000)[1]. Displacement (+D)
+//    uses the MAIN displacement setting (sigDISPBull), consistent with v3 atom 4-9
+//    routing. (Heavy Weapons used same-candle volume==highest(N) + 5x-stdev range;
+//    here we map to SQUARIFY's existing sigHV500/sigHV1000 + main bullish disp.)
+// ════════════════════════════════════════════════════════════════════════════
+bool hp_pentagonSet   = sigPentagon or sigWTC or sigHiroshima or sigNagasaki
+bool sigPentSetHV500D = conf and hp_pentagonSet and sigHV500  and sigDISPBull
+bool sigPentSetHV1KD  = conf and hp_pentagonSet and sigHV1000 and sigDISPBull
+
+// ② HCT V2 = BULLISH heavy-combo set ONLY (bear dropped):
+//    SQUARIFY's bullish WBUSH path OR the two Pentagon-set specials.
+bool hctv2_on_bar = sig_WBUSH_Bull or sigPentSetHV500D or sigPentSetHV1KD
+// Displacement-inclusive variant (explicit main-displacement requirement on top of
+// the heavy-combo set — WBUSH bull already embeds sigDISPBull; the Pentagon specials
+// already require +D, so this also requires main bullish displacement on the bar).
+bool hctv2_disp_on_bar = hctv2_on_bar and sigDISPBull
+
+// ① UC GATE — SQUARIFY's own Unified Combo (csNew3), either direction, same candle.
+bool uc_on_bar = csNew3_Bull or csNew3_Bear
+
+// Gate booleans honor their input toggles (pass-through when toggle OFF).
+bool _uc_gate_on_bar    = (not master_requireUC)    or uc_on_bar
+bool _hctv2_gate_on_bar = (not master_requireHCTV2) or hctv2_on_bar
+
+// MERGED PLOT GATE — _masterGate (First-Bar-Only / HV) AND the two universal gates.
+// Every detection plot and the alert aggregator use _plotGate instead of _masterGate
+// so both gates apply to ALL 46 plots. Gates independent; both must hold if both ON.
+bool _plotGate = _masterGate and _uc_gate_on_bar and _hctv2_gate_on_bar
+
 bool comboAnyB2B_F2E3=det_b2bPUP and (sBullF2 or sBullE3)
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -2270,75 +2342,75 @@ bool wmd_any_bull=sigWMD and (sigBullRVOL1x or sigGrandSlam or sigFAUNABull or s
 // ════════════════════════════════════════════════════════════════════════════
 
 // USE STANDALONE (1-13)
-plotshape(_masterGate and en_1 and sduperBull, "1 SD!",shape.flag,location.bottom,#FFD700,text="SD!",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and en_2 and superBull and not sduperBull, "2 SUPER",shape.flag,location.top,#00FF00,text="SUPER",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and en_3 and hwBull, "3 HW",shape.xcross,location.abovebar,#FF6D00,text="HW",textcolor=color.white,size=size.large)
-plotshape(_masterGate and en_4 and floor_sq, "4 FLOOR",shape.circle,location.belowbar,#00E5FF,text="FLOOR",textcolor=color.white,size=size.large)
-plotshape(_masterGate and en_5 and floor2_sq and not floor_sq, "5 2F",shape.cross,location.belowbar,#80DEEA,text="2F",textcolor=color.white,size=size.normal)
-plotshape(_masterGate and en_6 and sigP21BullUUUU, "6 UUUU",shape.labelup,location.belowbar,#00FF00,text="UUUU",textcolor=color.white,size=size.large)
-plotshape(_masterGate and en_7 and sigP21BullUUU and not sigP21BullUUUU, "7 UUU",shape.labelup,location.belowbar,#76FF03,text="UUU",textcolor=color.white,size=size.normal)
-plotshape(_masterGate and en_8 and uu_gated and not sigP21BullUUU and not sigP21BullUUUU, "8 UU",shape.labelup,location.belowbar,#A5D6A7,text="UU",textcolor=color.white,size=size.small)
-plotshape(_masterGate and en_9 and sigAlphaStrikeBull_sq, "9 A★",shape.flag,location.belowbar,#00E676,text="A★",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and en_10 and sigOmegaLongA, "10 ΩA",shape.circle,location.abovebar,#FFD700,text="ΩA",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and en_11 and foxtrot_sq, "11 FOX",shape.triangleup,location.top,#1B5E20,text="FOX",textcolor=color.white,size=size.large)
-plotshape(_masterGate and en_12 and sigODBull, "12 OD",shape.flag,location.bottom,#00FFFF,text="OD",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and en_13 and sigGolfBull, "13 GOLF",shape.labelup,location.bottom,color.new(#00FF00,25),text="GOLF",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_1 and sduperBull, "1 SD!",shape.flag,location.bottom,#FFD700,text="SD!",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_2 and superBull and not sduperBull, "2 SUPER",shape.flag,location.top,#00FF00,text="SUPER",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_3 and hwBull, "3 HW",shape.xcross,location.abovebar,#FF6D00,text="HW",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_4 and floor_sq, "4 FLOOR",shape.circle,location.belowbar,#00E5FF,text="FLOOR",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_5 and floor2_sq and not floor_sq, "5 2F",shape.cross,location.belowbar,#80DEEA,text="2F",textcolor=color.white,size=size.normal)
+plotshape(_plotGate and en_6 and sigP21BullUUUU, "6 UUUU",shape.labelup,location.belowbar,#00FF00,text="UUUU",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_7 and sigP21BullUUU and not sigP21BullUUUU, "7 UUU",shape.labelup,location.belowbar,#76FF03,text="UUU",textcolor=color.white,size=size.normal)
+plotshape(_plotGate and en_8 and uu_gated and not sigP21BullUUU and not sigP21BullUUUU, "8 UU",shape.labelup,location.belowbar,#A5D6A7,text="UU",textcolor=color.white,size=size.small)
+plotshape(_plotGate and en_9 and sigAlphaStrikeBull_sq, "9 A★",shape.flag,location.belowbar,#00E676,text="A★",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_10 and sigOmegaLongA, "10 ΩA",shape.circle,location.abovebar,#FFD700,text="ΩA",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_11 and foxtrot_sq, "11 FOX",shape.triangleup,location.top,#1B5E20,text="FOX",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_12 and sigODBull, "12 OD",shape.flag,location.bottom,#00FFFF,text="OD",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_13 and sigGolfBull, "13 GOLF",shape.labelup,location.bottom,color.new(#00FF00,25),text="GOLF",textcolor=color.white,size=size.huge,offset=-1)
 
 // ULTRA 57 (14-21)
-plotshape(_masterGate and en_28 and (comboPBJ_F2_Bull or comboPBJ_E3_Bull), "14 PBJ+F2/E3",shape.labelup,location.belowbar,color.lime,text="PBJ\nF2E3",textcolor=color.white,size=size.large)
-plotshape(_masterGate and en_29 and comboPBJ_Cluster_Bull, "15 PBJ+CL",shape.labelup,location.top,color.lime,text="PBJ\nCL",textcolor=color.white,size=size.large)
-plotshape(_masterGate and en_30 and comboF2Cluster_E3_Bull, "16 F2CL→E3",shape.diamond,location.top,color.aqua,text="F2CL\n→E3",textcolor=color.white,size=size.large)
-plotshape(_masterGate and en_33 and comboE3_2of3PUP_Bull, "17 E3⅔PP",shape.diamond,location.abovebar,color.teal,text="E3\n⅔PP",textcolor=color.white,size=size.normal)
-plotshape(_masterGate and en_34 and comboF2_B2BDays_Bull, "18 F2×2D",shape.flag,location.top,color.lime,text="F2×2D",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and en_35 and comboE3_B2BDays_Bull, "19 E3×2D",shape.flag,location.top,#76FF03,text="E3×2D",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and en_36 and comboF2E3_Consec_Bull, "20 F2E3seq",shape.flag,location.top,#FFFF00,text="F2E3\nseq",textcolor=color.black,size=size.huge)
-plotshape(_masterGate and en_37 and comboCluster_B2BDays_Bull, "21 CL×2D",shape.flag,location.bottom,#FFFF00,text="CL×2D",textcolor=color.black,size=size.huge)
+plotshape(_plotGate and en_28 and (comboPBJ_F2_Bull or comboPBJ_E3_Bull), "14 PBJ+F2/E3",shape.labelup,location.belowbar,color.lime,text="PBJ\nF2E3",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_29 and comboPBJ_Cluster_Bull, "15 PBJ+CL",shape.labelup,location.top,color.lime,text="PBJ\nCL",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_30 and comboF2Cluster_E3_Bull, "16 F2CL→E3",shape.diamond,location.top,color.aqua,text="F2CL\n→E3",textcolor=color.white,size=size.large)
+plotshape(_plotGate and en_33 and comboE3_2of3PUP_Bull, "17 E3⅔PP",shape.diamond,location.abovebar,color.teal,text="E3\n⅔PP",textcolor=color.white,size=size.normal)
+plotshape(_plotGate and en_34 and comboF2_B2BDays_Bull, "18 F2×2D",shape.flag,location.top,color.lime,text="F2×2D",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_35 and comboE3_B2BDays_Bull, "19 E3×2D",shape.flag,location.top,#76FF03,text="E3×2D",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_36 and comboF2E3_Consec_Bull, "20 F2E3seq",shape.flag,location.top,#FFFF00,text="F2E3\nseq",textcolor=color.black,size=size.huge)
+plotshape(_plotGate and en_37 and comboCluster_B2BDays_Bull, "21 CL×2D",shape.flag,location.bottom,#FFFF00,text="CL×2D",textcolor=color.black,size=size.huge)
 
 // NPM (22-26)
-plotshape(_masterGate and en_38 and sig38, "22 NPM+",shape.labelup,location.bottom,#00FFAA,text="NPM+",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and en_39 and npm12, "23 NPM12",shape.triangleup,location.belowbar,#00BCD4,text="NPM12",textcolor=color.white,size=size.normal,offset=-1)
-plotshape(_masterGate and en_41 and npm3 and not npm12, "24 NPM3",shape.triangleup,location.top,#0097A7,text="NPM3",textcolor=color.white,size=size.small,offset=-1)
-plotshape(_masterGate and en_42 and det_b2bBullNapalm, "25 B2BNPM",shape.labelup,location.bottom,#1DE9B6,text="B2B\nNPM",textcolor=color.white,size=size.large,offset=-1)
-plotshape(_masterGate and en_43 and det_npmTntBull, "26 NPM+TNT",shape.labelup,location.belowbar,#089981,text="NPM\nTNT",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_38 and sig38, "22 NPM+",shape.labelup,location.bottom,#00FFAA,text="NPM+",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_39 and npm12, "23 NPM12",shape.triangleup,location.belowbar,#00BCD4,text="NPM12",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(_plotGate and en_41 and npm3 and not npm12, "24 NPM3",shape.triangleup,location.top,#0097A7,text="NPM3",textcolor=color.white,size=size.small,offset=-1)
+plotshape(_plotGate and en_42 and det_b2bBullNapalm, "25 B2BNPM",shape.labelup,location.bottom,#1DE9B6,text="B2B\nNPM",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_43 and det_npmTntBull, "26 NPM+TNT",shape.labelup,location.belowbar,#089981,text="NPM\nTNT",textcolor=color.white,size=size.large,offset=-1)
 
 // HV+D (27-31)
-plotshape(_masterGate and en_44 and co_bull_pbj, "27 CO",shape.diamond,location.belowbar,#FFD700,text="CO",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and en_45 and hvd_pbj_bull and not co_bull_pbj and (tfSec>=180 or cb1_pass_npm), "28 HVD+PBJ",shape.diamond,location.bottom,color.new(color.yellow,25),text="HVD\nPBJ",textcolor=color.white,size=size.normal,offset=-1)
-plotshape(_masterGate and en_46 and b2b_bull_pbj, "29 B2BHVD+PBJ",shape.flag,location.bottom,#E040FB,text="B2B\nHVD\nPBJ",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and en_47 and b2b_bull_nopb and not b2b_bull_pbj, "30 B2BHVD",shape.flag,location.belowbar,#4CAF50,text="B2B\nHVD",textcolor=color.white,size=size.large,offset=-1)
-plotshape(_masterGate and en_48 and sig_uu_combo, "31 UU+UC",shape.labelup,location.bottom,#7C4DFF,text="UU\nUC",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_44 and co_bull_pbj, "27 CO",shape.diamond,location.belowbar,#FFD700,text="CO",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_45 and hvd_pbj_bull and not co_bull_pbj and (tfSec>=180 or cb1_pass_npm), "28 HVD+PBJ",shape.diamond,location.bottom,color.new(color.yellow,25),text="HVD\nPBJ",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(_plotGate and en_46 and b2b_bull_pbj, "29 B2BHVD+PBJ",shape.flag,location.bottom,#E040FB,text="B2B\nHVD\nPBJ",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_47 and b2b_bull_nopb and not b2b_bull_pbj, "30 B2BHVD",shape.flag,location.belowbar,#4CAF50,text="B2B\nHVD",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_48 and sig_uu_combo, "31 UU+UC",shape.labelup,location.bottom,#7C4DFF,text="UU\nUC",textcolor=color.white,size=size.huge,offset=-1)
 
 // FUSIONS (32-39)
-plotshape(_masterGate and en_49 and holy_grail, "32 GRAIL",shape.labelup,location.bottom,#FFD700,text="GRAIL",textcolor=color.black,size=size.huge,offset=-1)
-plotshape(_masterGate and en_50 and floor_npm, "33 FLR+NPM",shape.circle,location.bottom,#00FFFF,text="FLR\nNPM",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and en_51 and npm_pbj_pup and not holy_grail, "34 NPM+PBJ+PUP",shape.labelup,location.belowbar,#00E676,text="NPM\nPBJ\nPUP",textcolor=color.white,size=size.large,offset=-1)
-plotshape(_masterGate and en_52 and nag_any_bull, "35 NAG+",shape.labelup,location.abovebar,#FF00FF,text="NAG+",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and en_53 and uu_hvdpbj, "36 UU+HVD",shape.labelup,location.belowbar,#7C4DFF,text="UU\nHVD",textcolor=color.white,size=size.large,offset=-1)
-plotshape(_masterGate and en_54 and uu_npm, "37 UU+NPM",shape.labelup,location.abovebar,#00BCD4,text="UU\nNPM",textcolor=color.white,size=size.normal,offset=-1)
-plotshape(_masterGate and en_55 and floor_uu, "38 FLR+UU",shape.square,location.belowbar,#00E5FF,text="FLR\nUU",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and en_56 and foster_pup_rvol, "39 FOS+PUP+1x",shape.labelup,location.bottom,#88FF00,text="FOS\nPUP\n1x",textcolor=color.black,size=size.huge)
+plotshape(_plotGate and en_49 and holy_grail, "32 GRAIL",shape.labelup,location.bottom,#FFD700,text="GRAIL",textcolor=color.black,size=size.huge,offset=-1)
+plotshape(_plotGate and en_50 and floor_npm, "33 FLR+NPM",shape.circle,location.bottom,#00FFFF,text="FLR\nNPM",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_51 and npm_pbj_pup and not holy_grail, "34 NPM+PBJ+PUP",shape.labelup,location.belowbar,#00E676,text="NPM\nPBJ\nPUP",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_52 and nag_any_bull, "35 NAG+",shape.labelup,location.abovebar,#FF00FF,text="NAG+",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_53 and uu_hvdpbj, "36 UU+HVD",shape.labelup,location.belowbar,#7C4DFF,text="UU\nHVD",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_54 and uu_npm, "37 UU+NPM",shape.labelup,location.abovebar,#00BCD4,text="UU\nNPM",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(_plotGate and en_55 and floor_uu, "38 FLR+UU",shape.square,location.belowbar,#00E5FF,text="FLR\nUU",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_56 and foster_pup_rvol, "39 FOS+PUP+1x",shape.labelup,location.bottom,#88FF00,text="FOS\nPUP\n1x",textcolor=color.black,size=size.huge)
 
 // NPM+UC (40)
-plotshape(_masterGate and en_60 and sig_npm_combo and not sig_npm_combo_pbj, "40 NPM+UC",shape.labelup,location.belowbar,#00E5FF,text="NPM\nUC",textcolor=color.white,size=size.large,offset=-1)
+plotshape(_plotGate and en_60 and sig_npm_combo and not sig_npm_combo_pbj, "40 NPM+UC",shape.labelup,location.belowbar,#00E5FF,text="NPM\nUC",textcolor=color.white,size=size.large,offset=-1)
 
 // WBUSH (41-43) — replaces WMD slot
-plotshape(_masterGate and en_wbushBull and sig_WBUSH_Bull, "41 WBUSH+ANY Bull",shape.diamond,location.belowbar,#00BFA5,text="WBUSH",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and en_wbushBear and sig_WBUSH_Bear, "42 WBUSH+ANY Bear",shape.diamond,location.abovebar,#C2185B,text="WBUSH",textcolor=color.white,size=size.huge)
-plotshape(_masterGate and en_wbushNeutral and sig_WBUSH_Neutral, "43 WBUSH Neutral",shape.diamond,location.top,#9E9E9E,text="WBUSH N",textcolor=color.white,size=size.normal)
+plotshape(_plotGate and en_wbushBull and sig_WBUSH_Bull, "41 WBUSH+ANY Bull",shape.diamond,location.belowbar,#00BFA5,text="WBUSH",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_wbushBear and sig_WBUSH_Bear, "42 WBUSH+ANY Bear",shape.diamond,location.abovebar,#C2185B,text="WBUSH",textcolor=color.white,size=size.huge)
+plotshape(_plotGate and en_wbushNeutral and sig_WBUSH_Neutral, "43 WBUSH Neutral",shape.diamond,location.top,#9E9E9E,text="WBUSH N",textcolor=color.white,size=size.normal)
 
 // NPM+UC+PBJ (44)
-plotshape(_masterGate and en_63 and sig_npm_combo_pbj, "44 NPM+UC+PBJ",shape.labelup,location.bottom,#FFC107,text="NPM\nUC\nPBJ",textcolor=color.black,size=size.huge,offset=-1)
+plotshape(_plotGate and en_63 and sig_npm_combo_pbj, "44 NPM+UC+PBJ",shape.labelup,location.bottom,#FFC107,text="NPM\nUC\nPBJ",textcolor=color.black,size=size.huge,offset=-1)
 
 // UC NAGASAKI (45-46) — new
-plotshape(_masterGate and en_ucNagBull and sig_UCNagasakiBull, "45 UC NAGASAKI Bull",shape.labelup,location.belowbar,#FF00FF,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(_masterGate and en_ucNagBear and sig_UCNagasakiBear, "46 UC NAGASAKI Bear",shape.labeldown,location.abovebar,#9C27B0,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_ucNagBull and sig_UCNagasakiBull, "45 UC NAGASAKI Bull",shape.labelup,location.belowbar,#FF00FF,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(_plotGate and en_ucNagBear and sig_UCNagasakiBear, "46 UC NAGASAKI Bear",shape.labeldown,location.abovebar,#9C27B0,text="UC\nNAG",textcolor=color.white,size=size.huge,offset=-1)
 
 // ════════════════════════════════════════════════════════════════════════════
 // ALERT AGGREGATOR — Bloomberg format
 // Format: BULL | FIRST !!!/FIRST XXX/NOT !!! | signal_names
 // NEVER ticker/exchange/timeframe — TradingView adds those automatically.
 // ════════════════════════════════════════════════════════════════════════════
-if conf and _masterGate
+if conf and _plotGate
     string s=""
     if en_1 and sduperBull
         s:=f_add(s,"SD!")
