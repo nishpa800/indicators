@@ -1665,7 +1665,7 @@ int   bb_smaLength = input.int(20, "HWS · RVOL SMA Length", minval=1, group=GRP
 string reg_anchorTimeframe = input.timeframe("", "HWS · Reg@Time Anchor (blank=chart)", group=GRP_HWS)
 // TICK-FRIENDLY FIX (RE10023): blank anchor = chart TF; tick-based on tick charts → relativeVolume
 // throws via timeframe.change(). Force "D" only on tick charts; time charts keep original behavior.
-string reg_anchorSafe = ((reg_anchorTimeframe == "" and (na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
+string reg_anchorSafe = ((reg_anchorTimeframe == "" and (str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
 int    reg_length          = input.int(30, "HWS · Reg@Time Length", minval=1, group=GRP_HWS)
 string reg_calculationMode = input.string("Cumulative", "HWS · Reg@Time Mode", options=["Cumulative","Regular"], group=GRP_HWS)
 bool   reg_adjustRealtime  = input.bool(true, "HWS · Reg@Time Adjust Unconfirmed", group=GRP_HWS)

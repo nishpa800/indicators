@@ -764,7 +764,9 @@ bool u5_RVOL1xR = u5_bb_baseBear and u5_bb_inRange(u5_bb_normPrice, u5_th_1x, u5
 // WMD Engine (decoupled Engine B — relativeVolume)
 // TICK-FRIENDLY FIX (RE10023): "" anchor = chart TF; on a tick chart that is tick-based and
 // timeframe.change() throws on bar 0. Force "D" only on tick charts (time charts keep "").
-string u5_regAnchorSafe = (na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0) ? "D" : ""
+// AUTHORITATIVE tick detector = "T" suffix on timeframe.period (e.g. "1000T"). timeframe.in_seconds()
+// is UNRELIABLE on tick charts (returns a positive number, not na/0) — kept only as extra coverage.
+string u5_regAnchorSafe = (str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0) ? "D" : ""
 [u5_currentVol_reg, u5_pastVol_reg, _u5_unused] = tv_ta.relativeVolume(30, u5_regAnchorSafe, true, true)
 float u5_relVolRatio = u5_currentVol_reg / u5_pastVol_reg
 bool u5_WTC = barstate.isconfirmed and (u5_relVolRatio > u5_th_wtc) and (u5_relVolRatio <= u5_th_hiro)

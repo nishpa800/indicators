@@ -133,7 +133,7 @@ reg_anchorTimeframe  = input.timeframe("", "Anchor Timeframe", group=groupReg)
 // Force a real session anchor whenever the resolved anchor is empty or tick-based
 // ("T" suffix). Both relativeVolume calls below use reg_anchorSafe, NEVER the raw
 // input. ("" → "D" matches the Python ports' reg_anchor mapping.)
-reg_anchorSafe       = ((reg_anchorTimeframe == "" and (na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
+reg_anchorSafe       = ((reg_anchorTimeframe == "" and (str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
 reg_length           = input.int(30, "Length", minval=1, group=groupReg)
 reg_calculationMode  = input.string("Cumulative", "Calculation Mode", options=["Cumulative", "Regular"], group=groupReg)
 reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg)

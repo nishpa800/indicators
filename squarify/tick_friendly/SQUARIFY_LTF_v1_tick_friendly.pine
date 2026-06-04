@@ -329,7 +329,7 @@ bb_avgLength = 30, bb_smaLength = 20
 reg_anchorTimeframe = "", reg_length = 30, reg_calculationMode = "Cumulative", reg_adjustRealtime = true
 // TICK-FRIENDLY FIX (RE10023): force "D" anchor only on tick charts (blank="" resolves to the
 // tick-based chart TF → timeframe.change throws). Time charts keep original "" behavior.
-string reg_anchorSafe = ((reg_anchorTimeframe == "" and (na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
+string reg_anchorSafe = ((reg_anchorTimeframe == "" and (str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
 // === HARDCODED — FAUNA NRA ===
 fauna_gg_master = true, fauna_gg_body = 0.80
 
