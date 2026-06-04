@@ -74,3 +74,15 @@ Newest first. Each version = one file in `versions/`.
 - **Plain English recall:** "Hey, did we change Napalm in B2B PUP?" → grep this file for "Napalm" and read the matching version's notes.
 - **Diff between versions:** `diff versions/B2B_PUP_vA.pine versions/B2B_PUP_vB.pine`
 - **Roll back:** `pbcopy < versions/B2B_PUP_vX.pine` then paste into Pine Editor.
+
+## v5.4 tick-friendly — 2026-06-04
+- NEW: b2b-pup/tick_friendly/B2B_PUP_Combined_v5.4_tick_friendly.pine
+- B2B PUP was the ONLY suite indicator with no tick-friendly build; v5.4 had both
+  tick hazards: tfSec = timeframe.in_seconds() (0/na on tick) + 3× tv_ta.relativeVolume
+  with blank "" anchor → RE10023 crash on tick charts.
+- FIX (logic/plots/alerts otherwise byte-identical to v5.4):
+  * tfSec → guarded: int tfSec = (na(_tfSecRaw) or _tfSecRaw<=0) ? 10 : _tfSecRaw
+  * reg_anchorSafe forces "D" ONLY on tick charts (time charts keep "" → no parity drift);
+    applied to all 3 relativeVolume call sites (lines 307/795/796).
+- Uses the suite's live-verified tick-guard convention (proven on 1000T this session:
+  relativeVolume anchor "D" → relVol 4.11, no RE10023). Matches squarify/tnt-od/vob/heavy-weapons-nra.
