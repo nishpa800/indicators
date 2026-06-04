@@ -755,18 +755,18 @@ if volume[1] > maxVolEver
 // LAYER 1 — ORIGINAL T3 SIGNAL CONDITIONS + COOLDOWN (PRESERVED EXACTLY)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-bool plot_t3_buy_a  = show_t3_buy_a  and t3_buy_a  and f_cd_ok(last_t3_buy_a,  cooldown_bars)
-bool plot_t3_sell_a = show_t3_sell_a and t3_sell_a and f_cd_ok(last_t3_sell_a, cooldown_bars)
-bool plot_t3_buy_b  = show_t3_buy_b  and t3_buy_b  and f_cd_ok(last_t3_buy_b,  cooldown_bars)
-bool plot_t3_sell_b = show_t3_sell_b and t3_sell_b and f_cd_ok(last_t3_sell_b, cooldown_bars)
-bool plot_t3_buy_c  = show_t3_buy_c  and t3_buy_c  and f_cd_ok(last_t3_buy_c,  cooldown_bars)
-bool plot_t3_sell_c = show_t3_sell_c and t3_sell_c and f_cd_ok(last_t3_sell_c, cooldown_bars)
-bool plot_t3_buy_d  = show_t3_buy_d  and t3_buy_d  and f_cd_ok(last_t3_buy_d,  cooldown_bars)
-bool plot_t3_sell_d = show_t3_sell_d and t3_sell_d and f_cd_ok(last_t3_sell_d, cooldown_bars)
-bool plot_t3_buy_e  = show_t3_buy_e  and t3_buy_e  and f_cd_ok(last_t3_buy_e,  cooldown_bars)
-bool plot_t3_sell_e = show_t3_sell_e and t3_sell_e and f_cd_ok(last_t3_sell_e, cooldown_bars)
-bool plot_t3_buy_f  = show_t3_buy_f  and t3_buy_f  and f_cd_ok(last_t3_buy_f,  cooldown_bars)
-bool plot_t3_sell_f = show_t3_sell_f and t3_sell_f and f_cd_ok(last_t3_sell_f, cooldown_bars)
+bool plot_t3_buy_a  = t3_buy_a  and f_cd_ok(last_t3_buy_a,  cooldown_bars)
+bool plot_t3_sell_a = t3_sell_a and f_cd_ok(last_t3_sell_a, cooldown_bars)
+bool plot_t3_buy_b  = t3_buy_b  and f_cd_ok(last_t3_buy_b,  cooldown_bars)
+bool plot_t3_sell_b = t3_sell_b and f_cd_ok(last_t3_sell_b, cooldown_bars)
+bool plot_t3_buy_c  = t3_buy_c  and f_cd_ok(last_t3_buy_c,  cooldown_bars)
+bool plot_t3_sell_c = t3_sell_c and f_cd_ok(last_t3_sell_c, cooldown_bars)
+bool plot_t3_buy_d  = t3_buy_d  and f_cd_ok(last_t3_buy_d,  cooldown_bars)
+bool plot_t3_sell_d = t3_sell_d and f_cd_ok(last_t3_sell_d, cooldown_bars)
+bool plot_t3_buy_e  = t3_buy_e  and f_cd_ok(last_t3_buy_e,  cooldown_bars)
+bool plot_t3_sell_e = t3_sell_e and f_cd_ok(last_t3_sell_e, cooldown_bars)
+bool plot_t3_buy_f  = t3_buy_f  and f_cd_ok(last_t3_buy_f,  cooldown_bars)
+bool plot_t3_sell_f = t3_sell_f and f_cd_ok(last_t3_sell_f, cooldown_bars)
 bool plot_nagasaki  = show_nagasaki  and isNagasaki and f_cd_ok(last_nagasaki, cooldown_bars)
 
 // T3 cooldown stamps
@@ -843,14 +843,14 @@ if plot_nagasaki
 // [v11 MULTIPLES-ONLY removed] plotshape(plot_t3_sell_e, "T3e Sell", shape.circle, location.abovebar, color.new(#d50000, 0), size = size.large, text = "T3e", textcolor = color.new(#d50000, 0))
 // [v11 MULTIPLES-ONLY removed] plotshape(plot_t3_sell_f, "T3f Sell", shape.circle, location.abovebar, color.new(#b71c1c, 0), size = size.large, text = "T3f", textcolor = color.new(#b71c1c, 0))
 
-plotshape(plot_nagasaki,  "Nagasaki", shape.diamond, location.top, color.new(color.purple, 0), size = size.normal, text = "NAG", textcolor = color.purple, offset = -1)
+// [multiples-only] plotshape(plot_nagasaki,  "Nagasaki", shape.diamond, location.top, color.new(color.purple, 0), size = size.normal, text = "NAG", textcolor = color.purple, offset = -1)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 1 — CONSOLIDATED ALERTCONDITIONS (2 total — each counts toward 64 limit)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 bool any_t3 = plot_t3_buy_a or plot_t3_sell_a or plot_t3_buy_b or plot_t3_sell_b or plot_t3_buy_c or plot_t3_sell_c or plot_t3_buy_d or plot_t3_sell_d or plot_t3_buy_e or plot_t3_sell_e or plot_t3_buy_f or plot_t3_sell_f or plot_nagasaki
-alertcondition(any_t3, "Any T3 Signal or Nagasaki", "VOB T3 SUPER signal or Nagasaki all-time-high volume fired")
+// [multiples-only] alertcondition(any_t3, "Any T3 Signal or Nagasaki", "VOB T3 SUPER signal or Nagasaki all-time-high volume fired")
 
 // (Zone formation alertcondition uses any_zone bool defined later in the code)
 
@@ -862,49 +862,49 @@ f_bloomberg_t3(string sig, string tier, int sens_val, string dir, float bp, floa
     "T3_SIGNAL" + "|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|SIGNAL:" + sig + "|TIER:" + tier + "|SENS:" + str.tostring(sens_val) + "|DIR:" + dir + "|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|VOL:" + str.tostring(math.round(volume)) + "|VOLRANK:" + str.tostring(math.round(vol_rank)) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|SESS:" + str.tostring(sess_bar_count) + "|BULLPOOL:" + str.tostring(math.round(bp)) + "|BEARPOOL:" + str.tostring(math.round(sp)) + "|BULLZONES:" + str.tostring(cnt_bull_all) + "|BEARZONES:" + str.tostring(cnt_bear_all) + "|BULLSTACK:" + str.tostring(stk_bull) + "|BEARSTACK:" + str.tostring(stk_bear) + "|BULLGAP:" + str.tostring(math.round(bull_gap * 100) / 100) + "|BEARGAP:" + str.tostring(math.round(bear_gap * 100) / 100) + "|NRBULLDIST:" + str.tostring(math.round(nearest_bull_dist * 100) / 100) + "|NRBEARDIST:" + str.tostring(math.round(nearest_bear_dist * 100) / 100) + "|SLOPE:" + str.tostring(math.round(slope_v * 10000) / 10000)
 
 // T3 alert multiplexer
-if plot_t3_buy_a
-    alert(f_bloomberg_t3("T3_SUPER_BUY", "A", sens_a, "BULL", bpa, spa, slope_ema_a), alert.freq_once_per_bar_close)
-if plot_t3_sell_a
-    alert(f_bloomberg_t3("T3_SUPER_SELL", "A", sens_a, "BEAR", bpa, spa, slope_ema_a), alert.freq_once_per_bar_close)
-if plot_t3_buy_b
-    alert(f_bloomberg_t3("T3_SUPER_BUY", "B", sens_b, "BULL", bpb, spb, slope_ema_b), alert.freq_once_per_bar_close)
-if plot_t3_sell_b
-    alert(f_bloomberg_t3("T3_SUPER_SELL", "B", sens_b, "BEAR", bpb, spb, slope_ema_b), alert.freq_once_per_bar_close)
-if plot_t3_buy_c
-    alert(f_bloomberg_t3("T3_SUPER_BUY", "C", sens_c, "BULL", bpc, spc, slope_ema_c), alert.freq_once_per_bar_close)
-if plot_t3_sell_c
-    alert(f_bloomberg_t3("T3_SUPER_SELL", "C", sens_c, "BEAR", bpc, spc, slope_ema_c), alert.freq_once_per_bar_close)
-if plot_t3_buy_d
-    alert(f_bloomberg_t3("T3_SUPER_BUY", "D", sens_d, "BULL", bpd, spd, slope_ema_d), alert.freq_once_per_bar_close)
-if plot_t3_sell_d
-    alert(f_bloomberg_t3("T3_SUPER_SELL", "D", sens_d, "BEAR", bpd, spd, slope_ema_d), alert.freq_once_per_bar_close)
-if plot_t3_buy_e
-    alert(f_bloomberg_t3("T3_SUPER_BUY", "E", sens_e, "BULL", bpe, spe, slope_ema_e), alert.freq_once_per_bar_close)
-if plot_t3_sell_e
-    alert(f_bloomberg_t3("T3_SUPER_SELL", "E", sens_e, "BEAR", bpe, spe, slope_ema_e), alert.freq_once_per_bar_close)
-if plot_t3_buy_f
-    alert(f_bloomberg_t3("T3_SUPER_BUY", "F", sens_f, "BULL", bpf, spf, slope_ema_f), alert.freq_once_per_bar_close)
-if plot_t3_sell_f
-    alert(f_bloomberg_t3("T3_SUPER_SELL", "F", sens_f, "BEAR", bpf, spf, slope_ema_f), alert.freq_once_per_bar_close)
-if plot_nagasaki
-    alert("NAGASAKI_ATH_VOL|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|DIR:NEUTRAL|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|VOL:" + str.tostring(math.round(volume)) + "|ATHVOL:" + str.tostring(math.round(maxVolEver)) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|SESS:" + str.tostring(sess_bar_count), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_buy_a
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_BUY", "A", sens_a, "BULL", bpa, spa, slope_ema_a), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_sell_a
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_SELL", "A", sens_a, "BEAR", bpa, spa, slope_ema_a), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_buy_b
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_BUY", "B", sens_b, "BULL", bpb, spb, slope_ema_b), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_sell_b
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_SELL", "B", sens_b, "BEAR", bpb, spb, slope_ema_b), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_buy_c
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_BUY", "C", sens_c, "BULL", bpc, spc, slope_ema_c), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_sell_c
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_SELL", "C", sens_c, "BEAR", bpc, spc, slope_ema_c), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_buy_d
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_BUY", "D", sens_d, "BULL", bpd, spd, slope_ema_d), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_sell_d
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_SELL", "D", sens_d, "BEAR", bpd, spd, slope_ema_d), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_buy_e
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_BUY", "E", sens_e, "BULL", bpe, spe, slope_ema_e), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_sell_e
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_SELL", "E", sens_e, "BEAR", bpe, spe, slope_ema_e), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_buy_f
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_BUY", "F", sens_f, "BULL", bpf, spf, slope_ema_f), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_t3_sell_f
+// [multiples-only]     alert(f_bloomberg_t3("T3_SUPER_SELL", "F", sens_f, "BEAR", bpf, spf, slope_ema_f), alert.freq_once_per_bar_close)
+// [multiples-only] if plot_nagasaki
+// [multiples-only]     alert("NAGASAKI_ATH_VOL|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|DIR:NEUTRAL|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|VOL:" + str.tostring(math.round(volume)) + "|ATHVOL:" + str.tostring(math.round(maxVolEver)) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|SESS:" + str.tostring(sess_bar_count), alert.freq_once_per_bar_close)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 2 — ZONE-CREATION MARKERS + COOLDOWN + HISTORY (PRESERVED EXACTLY)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-bool fire_zb_a = en_zone_a and nzb_a and f_cd_ok(cd_zb_a, cooldown_bars)
-bool fire_zs_a = en_zone_a and nzs_a and f_cd_ok(cd_zs_a, cooldown_bars)
-bool fire_zb_b = en_zone_b and nzb_b and f_cd_ok(cd_zb_b, cooldown_bars)
-bool fire_zs_b = en_zone_b and nzs_b and f_cd_ok(cd_zs_b, cooldown_bars)
-bool fire_zb_c = en_zone_c and nzb_c and f_cd_ok(cd_zb_c, cooldown_bars)
-bool fire_zs_c = en_zone_c and nzs_c and f_cd_ok(cd_zs_c, cooldown_bars)
-bool fire_zb_d = en_zone_d and nzb_d and f_cd_ok(cd_zb_d, cooldown_bars)
-bool fire_zs_d = en_zone_d and nzs_d and f_cd_ok(cd_zs_d, cooldown_bars)
-bool fire_zb_e = en_zone_e and nzb_e and f_cd_ok(cd_zb_e, cooldown_bars)
-bool fire_zs_e = en_zone_e and nzs_e and f_cd_ok(cd_zs_e, cooldown_bars)
-bool fire_zb_f = en_zone_f and nzb_f and f_cd_ok(cd_zb_f, cooldown_bars)
-bool fire_zs_f = en_zone_f and nzs_f and f_cd_ok(cd_zs_f, cooldown_bars)
+bool fire_zb_a = nzb_a and f_cd_ok(cd_zb_a, cooldown_bars)
+bool fire_zs_a = nzs_a and f_cd_ok(cd_zs_a, cooldown_bars)
+bool fire_zb_b = nzb_b and f_cd_ok(cd_zb_b, cooldown_bars)
+bool fire_zs_b = nzs_b and f_cd_ok(cd_zs_b, cooldown_bars)
+bool fire_zb_c = nzb_c and f_cd_ok(cd_zb_c, cooldown_bars)
+bool fire_zs_c = nzs_c and f_cd_ok(cd_zs_c, cooldown_bars)
+bool fire_zb_d = nzb_d and f_cd_ok(cd_zb_d, cooldown_bars)
+bool fire_zs_d = nzs_d and f_cd_ok(cd_zs_d, cooldown_bars)
+bool fire_zb_e = nzb_e and f_cd_ok(cd_zb_e, cooldown_bars)
+bool fire_zs_e = nzs_e and f_cd_ok(cd_zs_e, cooldown_bars)
+bool fire_zb_f = nzb_f and f_cd_ok(cd_zb_f, cooldown_bars)
+bool fire_zs_f = nzs_f and f_cd_ok(cd_zs_f, cooldown_bars)
 
 if fire_zb_a
     cd_zb_a := bar_index
@@ -1052,7 +1052,7 @@ f_draw_zone(int origin_time, float z_upper, float z_lower, float z_mid, color co
         line lm = line.new(origin_time, z_mid, time, z_mid, xloc.bar_time, extend.right, col, line.style_dotted, 1)
         drawn_lines.push(lm)
 
-f_process_zones(array<level> lvl_arr, array<float> trk_lo, array<float> trk_hi, color col, bool enabled) =>
+// [multiples-only] f_process_zones(array<level> lvl_arr, array<float> trk_lo, array<float> trk_hi, color col, bool enabled) =>
     if enabled and lvl_arr.size() > 0
         for i = 0 to lvl_arr.size() - 1
             level l = lvl_arr.get(i)
@@ -1062,18 +1062,18 @@ f_process_zones(array<level> lvl_arr, array<float> trk_lo, array<float> trk_hi, 
                 trk_lo.push(l.lower)
                 trk_hi.push(l.upper)
 
-f_process_zones(lower_a, ovlp_bull_lo, ovlp_bull_hi, col_bull_a, en_zone_a)
-f_process_zones(lower_b, ovlp_bull_lo, ovlp_bull_hi, col_bull_b, en_zone_b)
-f_process_zones(lower_c, ovlp_bull_lo, ovlp_bull_hi, col_bull_c, en_zone_c)
-f_process_zones(lower_d, ovlp_bull_lo, ovlp_bull_hi, col_bull_d, en_zone_d)
-f_process_zones(lower_e, ovlp_bull_lo, ovlp_bull_hi, col_bull_e, en_zone_e)
-f_process_zones(lower_f, ovlp_bull_lo, ovlp_bull_hi, col_bull_f, en_zone_f)
-f_process_zones(upper_a, ovlp_bear_lo, ovlp_bear_hi, col_bear_a, en_zone_a)
-f_process_zones(upper_b, ovlp_bear_lo, ovlp_bear_hi, col_bear_b, en_zone_b)
-f_process_zones(upper_c, ovlp_bear_lo, ovlp_bear_hi, col_bear_c, en_zone_c)
-f_process_zones(upper_d, ovlp_bear_lo, ovlp_bear_hi, col_bear_d, en_zone_d)
-f_process_zones(upper_e, ovlp_bear_lo, ovlp_bear_hi, col_bear_e, en_zone_e)
-f_process_zones(upper_f, ovlp_bear_lo, ovlp_bear_hi, col_bear_f, en_zone_f)
+// [multiples-only] f_process_zones(lower_a, ovlp_bull_lo, ovlp_bull_hi, col_bull_a, en_zone_a)
+// [multiples-only] f_process_zones(lower_b, ovlp_bull_lo, ovlp_bull_hi, col_bull_b, en_zone_b)
+// [multiples-only] f_process_zones(lower_c, ovlp_bull_lo, ovlp_bull_hi, col_bull_c, en_zone_c)
+// [multiples-only] f_process_zones(lower_d, ovlp_bull_lo, ovlp_bull_hi, col_bull_d, en_zone_d)
+// [multiples-only] f_process_zones(lower_e, ovlp_bull_lo, ovlp_bull_hi, col_bull_e, en_zone_e)
+// [multiples-only] f_process_zones(lower_f, ovlp_bull_lo, ovlp_bull_hi, col_bull_f, en_zone_f)
+// [multiples-only] f_process_zones(upper_a, ovlp_bear_lo, ovlp_bear_hi, col_bear_a, en_zone_a)
+// [multiples-only] f_process_zones(upper_b, ovlp_bear_lo, ovlp_bear_hi, col_bear_b, en_zone_b)
+// [multiples-only] f_process_zones(upper_c, ovlp_bear_lo, ovlp_bear_hi, col_bear_c, en_zone_c)
+// [multiples-only] f_process_zones(upper_d, ovlp_bear_lo, ovlp_bear_hi, col_bear_d, en_zone_d)
+// [multiples-only] f_process_zones(upper_e, ovlp_bear_lo, ovlp_bear_hi, col_bear_e, en_zone_e)
+// [multiples-only] f_process_zones(upper_f, ovlp_bear_lo, ovlp_bear_hi, col_bear_f, en_zone_f)
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1088,18 +1088,18 @@ f_emit_label(bool fire, array<level> arr, string dir, string tier, int sens_val,
             color lc = dir == "BULL" ? color.new(color.green, 60) : color.new(color.red, 60)
             label.new(bar_index, nz.mid, txt, xloc.bar_index, yloc.price, lc, label.style_label_left, color.white, size.tiny)
 
-f_emit_label(nzb_a, lower_a, "BULL", "A", sens_a, bpa, rsi_14, sess_bar_count, slope_ema_a)
-f_emit_label(nzs_a, upper_a, "BEAR", "A", sens_a, spa, rsi_14, sess_bar_count, slope_ema_a)
-f_emit_label(nzb_b, lower_b, "BULL", "B", sens_b, bpb, rsi_14, sess_bar_count, slope_ema_b)
-f_emit_label(nzs_b, upper_b, "BEAR", "B", sens_b, spb, rsi_14, sess_bar_count, slope_ema_b)
-f_emit_label(nzb_c, lower_c, "BULL", "C", sens_c, bpc, rsi_14, sess_bar_count, slope_ema_c)
-f_emit_label(nzs_c, upper_c, "BEAR", "C", sens_c, spc, rsi_14, sess_bar_count, slope_ema_c)
-f_emit_label(nzb_d, lower_d, "BULL", "D", sens_d, bpd, rsi_14, sess_bar_count, slope_ema_d)
-f_emit_label(nzs_d, upper_d, "BEAR", "D", sens_d, spd, rsi_14, sess_bar_count, slope_ema_d)
-f_emit_label(nzb_e, lower_e, "BULL", "E", sens_e, bpe, rsi_14, sess_bar_count, slope_ema_e)
-f_emit_label(nzs_e, upper_e, "BEAR", "E", sens_e, spe, rsi_14, sess_bar_count, slope_ema_e)
-f_emit_label(nzb_f, lower_f, "BULL", "F", sens_f, bpf, rsi_14, sess_bar_count, slope_ema_f)
-f_emit_label(nzs_f, upper_f, "BEAR", "F", sens_f, spf, rsi_14, sess_bar_count, slope_ema_f)
+// [multiples-only] f_emit_label(nzb_a, lower_a, "BULL", "A", sens_a, bpa, rsi_14, sess_bar_count, slope_ema_a)
+// [multiples-only] f_emit_label(nzs_a, upper_a, "BEAR", "A", sens_a, spa, rsi_14, sess_bar_count, slope_ema_a)
+// [multiples-only] f_emit_label(nzb_b, lower_b, "BULL", "B", sens_b, bpb, rsi_14, sess_bar_count, slope_ema_b)
+// [multiples-only] f_emit_label(nzs_b, upper_b, "BEAR", "B", sens_b, spb, rsi_14, sess_bar_count, slope_ema_b)
+// [multiples-only] f_emit_label(nzb_c, lower_c, "BULL", "C", sens_c, bpc, rsi_14, sess_bar_count, slope_ema_c)
+// [multiples-only] f_emit_label(nzs_c, upper_c, "BEAR", "C", sens_c, spc, rsi_14, sess_bar_count, slope_ema_c)
+// [multiples-only] f_emit_label(nzb_d, lower_d, "BULL", "D", sens_d, bpd, rsi_14, sess_bar_count, slope_ema_d)
+// [multiples-only] f_emit_label(nzs_d, upper_d, "BEAR", "D", sens_d, spd, rsi_14, sess_bar_count, slope_ema_d)
+// [multiples-only] f_emit_label(nzb_e, lower_e, "BULL", "E", sens_e, bpe, rsi_14, sess_bar_count, slope_ema_e)
+// [multiples-only] f_emit_label(nzs_e, upper_e, "BEAR", "E", sens_e, spe, rsi_14, sess_bar_count, slope_ema_e)
+// [multiples-only] f_emit_label(nzb_f, lower_f, "BULL", "F", sens_f, bpf, rsi_14, sess_bar_count, slope_ema_f)
+// [multiples-only] f_emit_label(nzs_f, upper_f, "BEAR", "F", sens_f, spf, rsi_14, sess_bar_count, slope_ema_f)
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1107,35 +1107,35 @@ f_emit_label(nzs_f, upper_f, "BEAR", "F", sens_f, spf, rsi_14, sess_bar_count, s
 // ═══════════════════════════════════════════════════════════════════════════════
 
 bool any_zone = fire_zb_a or fire_zs_a or fire_zb_b or fire_zs_b or fire_zb_c or fire_zs_c or fire_zb_d or fire_zs_d or fire_zb_e or fire_zs_e or fire_zb_f or fire_zs_f
-alertcondition(any_zone, "Any Zone Formation", "VOB zone formation event — new bullish or bearish zone created at any sensitivity tier")
+// [multiples-only] alertcondition(any_zone, "Any Zone Formation", "VOB zone formation event — new bullish or bearish zone created at any sensitivity tier")
 
-if any_zone
-    string zmsg = "ZONE_FORMATION|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|VOL:" + str.tostring(math.round(volume)) + "|VOLRANK:" + str.tostring(math.round(vol_rank)) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|SESS:" + str.tostring(sess_bar_count) + "|BULLPOOL_A:" + str.tostring(math.round(bpa)) + "|BEARPOOL_A:" + str.tostring(math.round(spa)) + "|BULLZONES:" + str.tostring(cnt_bull_all) + "|BEARZONES:" + str.tostring(cnt_bear_all) + "|BULLSTACK:" + str.tostring(stk_bull) + "|BEARSTACK:" + str.tostring(stk_bear) + "|BULLGAP:" + str.tostring(math.round(bull_gap * 100) / 100) + "|BEARGAP:" + str.tostring(math.round(bear_gap * 100) / 100) + "|NRBULLDIST:" + str.tostring(math.round(nearest_bull_dist * 100) / 100) + "|NRBEARDIST:" + str.tostring(math.round(nearest_bear_dist * 100) / 100) + "|ZONES:"
-    if fire_zb_a
-        zmsg += "BULL-A(" + str.tostring(sens_a) + "),"
-    if fire_zs_a
-        zmsg += "BEAR-A(" + str.tostring(sens_a) + "),"
-    if fire_zb_b
-        zmsg += "BULL-B(" + str.tostring(sens_b) + "),"
-    if fire_zs_b
-        zmsg += "BEAR-B(" + str.tostring(sens_b) + "),"
-    if fire_zb_c
-        zmsg += "BULL-C(" + str.tostring(sens_c) + "),"
-    if fire_zs_c
-        zmsg += "BEAR-C(" + str.tostring(sens_c) + "),"
-    if fire_zb_d
-        zmsg += "BULL-D(" + str.tostring(sens_d) + "),"
-    if fire_zs_d
-        zmsg += "BEAR-D(" + str.tostring(sens_d) + "),"
-    if fire_zb_e
-        zmsg += "BULL-E(" + str.tostring(sens_e) + "),"
-    if fire_zs_e
-        zmsg += "BEAR-E(" + str.tostring(sens_e) + "),"
-    if fire_zb_f
-        zmsg += "BULL-F(" + str.tostring(sens_f) + "),"
-    if fire_zs_f
-        zmsg += "BEAR-F(" + str.tostring(sens_f) + "),"
-    alert(zmsg, alert.freq_once_per_bar_close)
+// [multiples-only] if any_zone
+// [multiples-only]     string zmsg = "ZONE_FORMATION|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|VOL:" + str.tostring(math.round(volume)) + "|VOLRANK:" + str.tostring(math.round(vol_rank)) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|SESS:" + str.tostring(sess_bar_count) + "|BULLPOOL_A:" + str.tostring(math.round(bpa)) + "|BEARPOOL_A:" + str.tostring(math.round(spa)) + "|BULLZONES:" + str.tostring(cnt_bull_all) + "|BEARZONES:" + str.tostring(cnt_bear_all) + "|BULLSTACK:" + str.tostring(stk_bull) + "|BEARSTACK:" + str.tostring(stk_bear) + "|BULLGAP:" + str.tostring(math.round(bull_gap * 100) / 100) + "|BEARGAP:" + str.tostring(math.round(bear_gap * 100) / 100) + "|NRBULLDIST:" + str.tostring(math.round(nearest_bull_dist * 100) / 100) + "|NRBEARDIST:" + str.tostring(math.round(nearest_bear_dist * 100) / 100) + "|ZONES:"
+// [multiples-only]     if fire_zb_a
+// [multiples-only]         zmsg += "BULL-A(" + str.tostring(sens_a) + "),"
+// [multiples-only]     if fire_zs_a
+// [multiples-only]         zmsg += "BEAR-A(" + str.tostring(sens_a) + "),"
+// [multiples-only]     if fire_zb_b
+// [multiples-only]         zmsg += "BULL-B(" + str.tostring(sens_b) + "),"
+// [multiples-only]     if fire_zs_b
+// [multiples-only]         zmsg += "BEAR-B(" + str.tostring(sens_b) + "),"
+// [multiples-only]     if fire_zb_c
+// [multiples-only]         zmsg += "BULL-C(" + str.tostring(sens_c) + "),"
+// [multiples-only]     if fire_zs_c
+// [multiples-only]         zmsg += "BEAR-C(" + str.tostring(sens_c) + "),"
+// [multiples-only]     if fire_zb_d
+// [multiples-only]         zmsg += "BULL-D(" + str.tostring(sens_d) + "),"
+// [multiples-only]     if fire_zs_d
+// [multiples-only]         zmsg += "BEAR-D(" + str.tostring(sens_d) + "),"
+// [multiples-only]     if fire_zb_e
+// [multiples-only]         zmsg += "BULL-E(" + str.tostring(sens_e) + "),"
+// [multiples-only]     if fire_zs_e
+// [multiples-only]         zmsg += "BEAR-E(" + str.tostring(sens_e) + "),"
+// [multiples-only]     if fire_zb_f
+// [multiples-only]         zmsg += "BULL-F(" + str.tostring(sens_f) + "),"
+// [multiples-only]     if fire_zs_f
+// [multiples-only]         zmsg += "BEAR-F(" + str.tostring(sens_f) + "),"
+// [multiples-only]     alert(zmsg, alert.freq_once_per_bar_close)
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
