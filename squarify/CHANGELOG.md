@@ -4,6 +4,45 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v3 — 2026-06-04
+**File:** `versions/SQUARIFY_v3_2026-06-04.pine` (built from v2; all 46 signals preserved).
+
+**Two changes vs v2 (everything else byte-identical to v2):**
+
+1. **Atoms #4-#9 displacement → MAIN setting.** Atoms #4 FLOOR, #5 2F, #6 UUUU,
+   #7 UUU, #8 UU, #9 A★ now use the main displacement setting (group
+   `"Displacement"`: `i_std_min`/`i_std_max`/`i_req_fvg` → `sigDISPBull`) instead of
+   any separate per-atom multiplier.
+   - **#4 FLOOR / #5 2F:** now require MAIN displacement on the SIGNAL BAR
+     (`floor_disp = anyBullFloor and disp_or_hvd`, where `disp_or_hvd = sigDISPBull or
+     hvd_fire_bull`). v2 had no signal-bar displacement requirement; displacement
+     leaked in only via the separate `d9_bull` (×9.0) checkbox. That separate
+     multiplier is no longer the displacement source for the #4/#5 gate.
+   - **#6 UUUU / #7 UUU / #8 UU:** MAIN displacement may occur on ANY bar of the
+     streak (UUUU any-of-4, UUU any-of-3, UU either-of-2). Already structural via the
+     per-bar streak loop `bdisp = nz(sigDISPBull[i]) or bhvd`; documented inline, no
+     code change.
+   - **#9 A★:** now requires MAIN displacement on the SIGNAL BAR (`... and
+     as_fauna_expanded and disp_or_hvd`). v2 had displacement only as an optional slot.
+   - No Heavy Weapons / HTT momentum tiers were ported — only SQUARIFY atoms 4-9.
+
+2. **LTF / HTF unified.** New input `sq_tf_mode` (`★ SQUARIFY TF MODE ★`, options
+   Auto/LTF/HTF). HTF v1 was byte-identical to v2 except its title; v3 folds LTF and
+   HTF into ONE indicator using the engine's existing `tfSec` sub-2min gating and
+   HTF1/HTF2 HV+D profiles. Auto: `tfSec<=120s` → LTF, else HTF.
+
+**Python conversions** (in `realtime-indicators/rti/`, carry the same atoms-4-9 change):
+`signals/squarify.py` (HTF core), `signals/squarify_ltf.py` (LTF core),
+`signals_tick/squarify_v3.py` (tick entrypoint), `signals_time/squarify_v3.py` (time
+entrypoint). All 36 `tests/test_squarify.py` cases pass.
+
+**Hot-drive copies:** `/Volumes/OWC Envoy Ultra/TradingDataSystem/indicators/squarify/`
+(Pine + Python + tv_ta shim + README handoff).
+
+**Title:** "SQUARIFY 46 v3", short title "SQ46 v3". **Plot count:** 46 / 64.
+
+---
+
 ## ATOMS v1 — 2026-05-08 (Tier 0 atomics, separate companion indicator)
 **File:** `versions/SQUARIFY_ATOMS_v1.pine` (2524 lines, 60 atomic plots — fits under Pine's 64 cap).
 
