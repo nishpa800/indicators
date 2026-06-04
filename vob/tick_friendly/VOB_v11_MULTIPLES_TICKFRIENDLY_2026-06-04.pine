@@ -127,30 +127,30 @@ int sens_f = input.int(1000, "Sensitivity F (Lowest — most, weakest zones)",  
 // INPUTS — T3 Signal Toggles (checkbox = plot + alert for T3 signals)
 // ─────────────────────────────────────────────────────────────────────────────
 
-bool show_t3_buy_a  = input.bool(true, "T3a Buy",  group = "A Signals")
-bool show_t3_sell_a = input.bool(true, "T3a Sell", group = "A Signals")
-bool show_t3_buy_b  = input.bool(true, "T3b Buy",  group = "B Signals")
-bool show_t3_sell_b = input.bool(true, "T3b Sell", group = "B Signals")
-bool show_t3_buy_c  = input.bool(true, "T3c Buy",  group = "C Signals")
-bool show_t3_sell_c = input.bool(true, "T3c Sell", group = "C Signals")
-bool show_t3_buy_d  = input.bool(true, "T3d Buy",  group = "D Signals")
-bool show_t3_sell_d = input.bool(true, "T3d Sell", group = "D Signals")
-bool show_t3_buy_e  = input.bool(true, "T3e Buy",  group = "E Signals")
-bool show_t3_sell_e = input.bool(true, "T3e Sell", group = "E Signals")
-bool show_t3_buy_f  = input.bool(true, "T3f Buy",  group = "F Signals")
-bool show_t3_sell_f = input.bool(true, "T3f Sell", group = "F Signals")
-bool show_nagasaki  = input.bool(true, "Nagasaki (All-Time High Volume)", group = "Nagasaki")
+bool show_t3_buy_a  = input.bool(false, "T3a Buy",  group = "A Signals")
+bool show_t3_sell_a = input.bool(false, "T3a Sell", group = "A Signals")
+bool show_t3_buy_b  = input.bool(false, "T3b Buy",  group = "B Signals")
+bool show_t3_sell_b = input.bool(false, "T3b Sell", group = "B Signals")
+bool show_t3_buy_c  = input.bool(false, "T3c Buy",  group = "C Signals")
+bool show_t3_sell_c = input.bool(false, "T3c Sell", group = "C Signals")
+bool show_t3_buy_d  = input.bool(false, "T3d Buy",  group = "D Signals")
+bool show_t3_sell_d = input.bool(false, "T3d Sell", group = "D Signals")
+bool show_t3_buy_e  = input.bool(false, "T3e Buy",  group = "E Signals")
+bool show_t3_sell_e = input.bool(false, "T3e Sell", group = "E Signals")
+bool show_t3_buy_f  = input.bool(false, "T3f Buy",  group = "F Signals")
+bool show_t3_sell_f = input.bool(false, "T3f Sell", group = "F Signals")
+bool show_nagasaki  = input.bool(false, "Nagasaki (All-Time High Volume)", group = "Nagasaki")
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INPUTS — Zone Line + Marker Toggles
 // ─────────────────────────────────────────────────────────────────────────────
 
-bool en_zone_a = input.bool(true, "Zone Lines + Markers A", group = "Zone Drawing")
-bool en_zone_b = input.bool(true, "Zone Lines + Markers B", group = "Zone Drawing")
-bool en_zone_c = input.bool(true, "Zone Lines + Markers C", group = "Zone Drawing")
-bool en_zone_d = input.bool(true, "Zone Lines + Markers D", group = "Zone Drawing")
-bool en_zone_e = input.bool(true, "Zone Lines + Markers E", group = "Zone Drawing")
-bool en_zone_f = input.bool(true, "Zone Lines + Markers F", group = "Zone Drawing")
+bool en_zone_a = input.bool(false, "Zone Lines + Markers A", group = "Zone Drawing")
+bool en_zone_b = input.bool(false, "Zone Lines + Markers B", group = "Zone Drawing")
+bool en_zone_c = input.bool(false, "Zone Lines + Markers C", group = "Zone Drawing")
+bool en_zone_d = input.bool(false, "Zone Lines + Markers D", group = "Zone Drawing")
+bool en_zone_e = input.bool(false, "Zone Lines + Markers E", group = "Zone Drawing")
+bool en_zone_f = input.bool(false, "Zone Lines + Markers F", group = "Zone Drawing")
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INPUTS — Signal Parameters
