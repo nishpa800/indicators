@@ -1,0 +1,5 @@
+{
+  "extraPaths": [".", "tick", "time", "parity"],
+  "reportMissingImports": "none",
+  "_note": "Conversion artifacts: each indicator's tick/time/parity import a co-located shared core (resolved at runtime when run from its folder; all 16 parity harnesses exit 0). extraPaths + reportMissingImports:none silences the false-positive import flood. Genuine type warnings remain visible."
+}

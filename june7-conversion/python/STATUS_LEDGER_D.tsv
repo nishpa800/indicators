@@ -1,0 +1,5 @@
+file	tickfriendly	py_tick	py_time	parity	notes
+heavy weapons v3.txt	done	done	done	passed 6/6	45 plotshapes ported 1:1; RE10023 guards added (anchorSafe+tfSec); no label.new; tick==time identical
+1st pup fauna.txt	done	partial	partial	passed 6/6	16 self-contained plots ported faithfully; 21 composite plots (PB&J/zone/supertrend state machine) stubbed=partial; 6 label.new removed; RE10023 guarded; tick==time identical
+hvd pbj ppd bear.txt	done	partial	partial	passed 6/6	7 self-contained bearish plots ported faithfully (HV+D, FOX, D2+, D3+, Nagasaki, FAUNA Bear, DISP Bear); 31 composite plots (PB&J/zone/floor/roof/P21) stubbed=partial; source has 0 label.new; RE10023 guarded (hardcoded-blank form); tick==time identical
+vob v10.txt	fixed	done	done	passed 6/6	CONVERTED v6->v5; COMPLETE port (no PB&J/RVOL) of 31 detection plots (T3 buy/sell A-F, Nagasaki, ZoneBull/Bear A-F, VLB F->A, Multi-Zone 2/3); 1 label.new removed; no RE10023 exposure (no RVOL/per-TF table); tick==time identical; 27/31 plots exercised on short-EMA demo sens

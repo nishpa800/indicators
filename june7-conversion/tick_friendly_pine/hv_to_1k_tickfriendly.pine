@@ -1,0 +1,227 @@
+//@version=5
+indicator("HV(100/200/300/400/500/600/700/800/900/1K/HEV/HS) NRA", overlay=true)
+
+// ============================================
+// === NON-REPAINTING ARCHITECTURE ===
+// ============================================
+// PROBLEM 1 — LIVE BAR REPAINTING:
+//   `volume == ta.highest(volume, N)` evaluates on every tick.
+//   Volume accumulates intra-bar, so the condition can flip true→false
+//   or false→true dozens of times before bar close. Signals appear,
+//   disappear, and move to different bars after the fact.
+//
+// PROBLEM 2 — ALERT / PLOT DESYNC:
+//   Original plotshapes used priority filtering (e.g. `not isHEV`)
+//   but alertcondition() did NOT use the same filters. This caused:
+//     • Alerts firing for signals that were never plotted
+//     • Plotted signals that had no corresponding alert
+//
+// FIX — ALL signals now:
+//   1. Use [1] (prior confirmed bar) for ALL volume comparisons
+//      so values can NEVER change once printed.
+//   2. Plot and alert conditions use IDENTICAL boolean expressions
+//      stored in named variables — one source of truth, zero drift.
+//   3. Every plotshape and every alertcondition references the SAME
+//      `plot_*` variable so it is structurally impossible for a plot
+//      to exist without its alert or vice versa.
+// ============================================
+
+// ============================================
+// === INPUTS ===
+// ============================================
+use100  = input.bool(true, "Show 100-Bar High Vol")
+use200  = input.bool(true, "Show 200-Bar High Vol")
+use300  = input.bool(true, "Show 300-Bar High Vol")
+use400  = input.bool(true, "Show 400-Bar High Vol")
+use500  = input.bool(true, "Show 500-Bar High Vol")
+use600  = input.bool(true, "Show 600-Bar High Vol")
+use700  = input.bool(true, "Show 700-Bar High Vol")
+use800  = input.bool(true, "Show 800-Bar High Vol")
+use900  = input.bool(true, "Show 900-Bar High Vol")
+use1000 = input.bool(true, "Show 1000-Bar High Vol")
+useHEV  = input.bool(true, "Show All-Time High Vol (HEV)")
+useHS   = input.bool(true, "Show Hot Spot Signals")
+
+// ============================================
+// === VOLUME HIGH CALCULATIONS (CONFIRMED BARS ONLY) ===
+// ============================================
+// All comparisons use [1] to reference the PRIOR CLOSED bar.
+// ta.highest(volume, N)[1] = highest volume across N bars, ending
+// at the PREVIOUS confirmed bar. volume[1] = that bar's final volume.
+// This means the condition can never change once the bar closes.
+//
+// The signals plot ON the [1] bar (the bar they describe) via
+// offset=-1 on all plotshape calls — NOT on the current forming bar.
+// This locks every marker to the bar whose data was actually tested.
+
+bool is100Bar  = volume[1] == ta.highest(volume, 100)[1]
+bool is200Bar  = volume[1] == ta.highest(volume, 200)[1]
+bool is300Bar  = volume[1] == ta.highest(volume, 300)[1]
+bool is400Bar  = volume[1] == ta.highest(volume, 400)[1]
+bool is500Bar  = volume[1] == ta.highest(volume, 500)[1]
+bool is600Bar  = volume[1] == ta.highest(volume, 600)[1]
+bool is700Bar  = volume[1] == ta.highest(volume, 700)[1]
+bool is800Bar  = volume[1] == ta.highest(volume, 800)[1]
+bool is900Bar  = volume[1] == ta.highest(volume, 900)[1]
+bool is1000Bar = volume[1] == ta.highest(volume, 1000)[1]
+
+// All-Time High Volume (HEV) — confirmed
+// Track max volume using ONLY confirmed bars.
+// On every bar, we update maxVolEver with volume[1] (the just-closed bar).
+// This guarantees the all-time-high marker never appears on a bar
+// that merely spiked intra-bar then closed lower.
+var float maxVolEver = 0.0
+bool isHEV = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    isHEV := true
+
+// ============================================
+// === HOT SPOT — CALENDAR-BASED SIGNALS ===
+// ============================================
+// Hot Spot — fires 3–5 trading days BEFORE ~20 known
+// recurring high-volume events per year.
+//
+// Calendar signals use [1] bar's date info so the flag matches
+// the bar the marker will be drawn on.
+//
+// Events covered (~20 total):
+//  1-12  Monthly Options Expiration (3rd Friday, all 12 months)
+//        — includes Quad Witching in Mar/Jun/Sep/Dec
+//  13-16 Quarter-End Mutual Fund & Index Rebalancing
+//        — last trading days of Mar, Jun, Sep, Dec
+//  17    Russell Reconstitution (last Friday of June)
+//  18    Tax-Loss Selling peak (late December)
+//  19    January Effect / New-Year inflows (early January)
+//  20    Hedge Fund 45-Day Redemption Notices (~May 15, Nov 15)
+// ============================================
+
+// --- A) Monthly OpEx (3rd Friday = dayofmonth 15-21) ---
+// 3-5 trading days before ≈ Mon–Wed of that same week
+opExWindow      = dayofmonth[1] >= 10 and dayofmonth[1] <= 17 and dayofweek[1] >= dayofweek.monday and dayofweek[1] <= dayofweek.wednesday
+
+// --- B) Quarter-End Rebalancing ---
+qtrEndWindow    = (month[1] == 3 or month[1] == 6 or month[1] == 9 or month[1] == 12) and dayofmonth[1] >= 23 and dayofmonth[1] <= 27
+
+// --- C) Russell Reconstitution (last Friday of June) ---
+russellWindow   = month[1] == 6 and dayofmonth[1] >= 19 and dayofmonth[1] <= 24
+
+// --- D) Tax-Loss Selling (peaks last days of Dec) ---
+taxLossWindow   = month[1] == 12 and dayofmonth[1] >= 21 and dayofmonth[1] <= 26
+
+// --- E) January Effect (early-Jan buying surge) ---
+janEffectWindow = month[1] == 12 and dayofmonth[1] >= 27 and dayofmonth[1] <= 30
+
+// --- F) Hedge Fund Redemption Notices (~May 15 & Nov 15) ---
+hfRedemptionWindow = (month[1] == 5 or month[1] == 11) and dayofmonth[1] >= 10 and dayofmonth[1] <= 13
+
+// Combined Hot Spot flag (confirmed bar)
+bool isHotSpot = opExWindow or qtrEndWindow or russellWindow or taxLossWindow or janEffectWindow or hfRedemptionWindow
+
+// ============================================
+// === UNIFIED PLOT+ALERT CONDITIONS ===
+// ============================================
+// Each `plot_*` variable is the SINGLE source of truth used by
+// BOTH the plotshape AND the alertcondition for that signal.
+// This makes alert/plot desync structurally impossible.
+//
+// Priority: HEV > 1000 > 900 > 800 > 700 > 600 > 500 > 400 > 300 > 200 > 100
+// Only the highest active signal is shown — no stacking.
+// Hot Spot is independent and always shown when active.
+
+bool plot_HEV  = useHEV  and isHEV
+bool plot_1000 = use1000 and is1000Bar and not isHEV
+bool plot_900  = use900  and is900Bar  and not is1000Bar and not isHEV
+bool plot_800  = use800  and is800Bar  and not is900Bar  and not is1000Bar and not isHEV
+bool plot_700  = use700  and is700Bar  and not is800Bar  and not is900Bar  and not is1000Bar and not isHEV
+bool plot_600  = use600  and is600Bar  and not is700Bar  and not is800Bar  and not is900Bar  and not is1000Bar and not isHEV
+bool plot_500  = use500  and is500Bar  and not is600Bar  and not is700Bar  and not is800Bar  and not is900Bar  and not is1000Bar and not isHEV
+bool plot_400  = use400  and is400Bar  and not is500Bar  and not is600Bar  and not is700Bar  and not is800Bar  and not is900Bar  and not is1000Bar and not isHEV
+bool plot_300  = use300  and is300Bar  and not is400Bar  and not is500Bar  and not is600Bar  and not is700Bar  and not is800Bar  and not is900Bar  and not is1000Bar and not isHEV
+bool plot_200  = use200  and is200Bar  and not is300Bar  and not is400Bar  and not is500Bar  and not is600Bar  and not is700Bar  and not is800Bar  and not is900Bar  and not is1000Bar and not isHEV
+bool plot_100  = use100  and is100Bar  and not is200Bar  and not is300Bar  and not is400Bar  and not is500Bar  and not is600Bar  and not is700Bar  and not is800Bar  and not is900Bar  and not is1000Bar and not isHEV
+bool plot_HS   = useHS   and isHotSpot
+
+// ============================================
+// === PLOTTING (offset=-1 to land on confirmed bar) ===
+// ============================================
+
+// HEV — Purple Diamond (highest priority)
+plotshape(plot_HEV,  "HEV",          shape.diamond,      location.top,    color.new(color.purple, 0), size=size.normal, text="HEV", textcolor=color.red, offset=-1)
+
+// 1000-Bar — Blue Circle
+plotshape(plot_1000, "1000-Bar High", shape.circle,       location.top,    color.new(color.blue, 0),   size=size.normal, text="1K",  textcolor=color.yellow, offset=-1)
+
+// 900-Bar — Teal Circle
+plotshape(plot_900,  "900-Bar High",  shape.circle,       location.top,    color.new(color.teal, 0),   size=size.normal, text="900", textcolor=color.white,  offset=-1)
+
+// 800-Bar — Aqua Circle
+plotshape(plot_800,  "800-Bar High",  shape.circle,       location.top,    color.new(color.aqua, 0),   size=size.normal, text="800", textcolor=color.aqua,   offset=-1)
+
+// 700-Bar — Orange Circle
+plotshape(plot_700,  "700-Bar High",  shape.circle,       location.top,    color.new(color.orange, 0), size=size.normal, text="700", textcolor=color.white,  offset=-1)
+
+// 600-Bar — Maroon Circle
+plotshape(plot_600,  "600-Bar High",  shape.circle,       location.top,    color.new(color.maroon, 0), size=size.normal, text="600", textcolor=color.white,  offset=-1)
+
+// 500-Bar — Red Circle
+plotshape(plot_500,  "500-Bar High",  shape.circle,       location.top,    color.new(color.red, 0),    size=size.normal, text="500", textcolor=color.silver, offset=-1)
+
+// 400-Bar — Yellow Circle
+plotshape(plot_400,  "400-Bar High",  shape.circle,       location.top,    color.new(color.yellow, 0), size=size.small,  text="400", textcolor=color.white,  offset=-1)
+
+// 300-Bar — Lime Circle
+plotshape(plot_300,  "300-Bar High",  shape.circle,       location.top,    color.new(color.lime, 0),   size=size.small,  text="300", textcolor=color.white,  offset=-1)
+
+// 200-Bar — Aqua Triangle (below bar)
+plotshape(plot_200,  "200-Bar High",  shape.triangledown, location.bottom, color.new(color.aqua, 0),   size=size.small,  text="200", textcolor=color.orange, offset=-1)
+
+// 100-Bar — Purple Triangle (below bar)
+plotshape(plot_100,  "100-Bar High",  shape.triangledown, location.bottom, color.new(color.purple, 0), size=size.small,  text="100", textcolor=color.yellow, offset=-1)
+
+// Hot Spot — Red Cross (below bar)
+plotshape(plot_HS,   "Hot Spot",      shape.cross,        location.bottom, color.new(color.red, 0),    size=size.tiny,   offset=-1)
+
+// ============================================
+// === ALERTS (same variables as plots — guaranteed 1:1) ===
+// ============================================
+alertcondition(plot_HEV,  "Vol: HEV",      "All-Time High Volume Detected (confirmed)")
+alertcondition(plot_1000, "Vol: 1000-Bar", "1000-Bar High Volume Detected (confirmed)")
+alertcondition(plot_900,  "Vol: 900-Bar",  "900-Bar High Volume Detected (confirmed)")
+alertcondition(plot_800,  "Vol: 800-Bar",  "800-Bar High Volume Detected (confirmed)")
+alertcondition(plot_700,  "Vol: 700-Bar",  "700-Bar High Volume Detected (confirmed)")
+alertcondition(plot_600,  "Vol: 600-Bar",  "600-Bar High Volume Detected (confirmed)")
+alertcondition(plot_500,  "Vol: 500-Bar",  "500-Bar High Volume Detected (confirmed)")
+alertcondition(plot_400,  "Vol: 400-Bar",  "400-Bar High Volume Detected (confirmed)")
+alertcondition(plot_300,  "Vol: 300-Bar",  "300-Bar High Volume Detected (confirmed)")
+alertcondition(plot_200,  "Vol: 200-Bar",  "200-Bar High Volume Detected (confirmed)")
+alertcondition(plot_100,  "Vol: 100-Bar",  "100-Bar High Volume Detected (confirmed)")
+alertcondition(plot_HS,   "Hot Spot",      "Approaching Known High-Volume Date (confirmed)")
+
+// ============================================
+// === SIGNAL AGGREGATION (For Combination Studies) ===
+// ============================================
+int activeVolSignals = (is100Bar ? 1 : 0) + (is200Bar ? 1 : 0) + (is300Bar ? 1 : 0) + (is400Bar ? 1 : 0) + (is500Bar ? 1 : 0) + (is600Bar ? 1 : 0) + (is700Bar ? 1 : 0) + (is800Bar ? 1 : 0) + (is900Bar ? 1 : 0) + (is1000Bar ? 1 : 0) + (isHEV ? 1 : 0)
+
+var array<bool> signalStates = array.new_bool(12, false)
+array.set(signalStates,  0, is100Bar)
+array.set(signalStates,  1, is200Bar)
+array.set(signalStates,  2, is300Bar)
+array.set(signalStates,  3, is400Bar)
+array.set(signalStates,  4, is500Bar)
+array.set(signalStates,  5, is600Bar)
+array.set(signalStates,  6, is700Bar)
+array.set(signalStates,  7, is800Bar)
+array.set(signalStates,  8, is900Bar)
+array.set(signalStates,  9, is1000Bar)
+array.set(signalStates, 10, isHEV)
+array.set(signalStates, 11, isHotSpot)
+
+// ============================================
+// === EXPORTS (For Combination Indicator Studies) ===
+// ============================================
+// Individual signals (bool):  is100Bar, is200Bar, is300Bar, is400Bar, is500Bar, is600Bar, is700Bar, is800Bar, is900Bar, is1000Bar, isHEV, isHotSpot
+// Plot/alert conditions:      plot_HEV, plot_1000, plot_900, plot_800, plot_700, plot_600, plot_500, plot_400, plot_300, plot_200, plot_100, plot_HS
+// Aggregations (int):         activeVolSignals
+// Collections (array<bool>):  signalStates
+

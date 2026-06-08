@@ -1,0 +1,1737 @@
+//@version=5
+// Pine is a Pine Editor tick-friendly
+// NINE NINES three-output standard | source: hub 2011.txt
+// Already tick-safe (no import / no tv_ta.relativeVolume / no timeframe.in_seconds -> no RE10023 risk).
+// Transform: market-structure label.new annotations neutralized (graphic objects, not detection plots).
+// All 25 detection signals remain plotshape (the fire matrix is untouched).
+// Pine is a Pine Editor tick-friendly
+// --- Signal Hub Final Version ---
+// This script combines multiple distinct trading indicators into a single, unified study.
+//
+// REVISION 10 (Mango Integration Fix):
+// R1) FIXED syntax error ("Syntax error at input 'label'") in the Mango Swings visualization section by correcting the indentation.
+// R2) FIXED logical error in Mango Swings visualization. The label placement coordinates were incorrect because they were referenced after the underlying variables (ms_lastLowBar/Price) were updated.
+// R3) IMPLEMENTED dedicated variables (ms_swingBottomEventBar/Price) to store the correct coordinates when the Swing Bottom event is triggered, ensuring accurate visualization placement.
+
+indicator("HUB_1020_1153am", shorttitle="Hub102011a", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+// --- Utility function to count TRUE conditions over a lookback period.
+f_sum_true(cond, len) =>
+	float s = 0.0
+	int L = math.max(0, len)
+	for i = 0 to math.max(0, L - 1)
+		s += (cond[i] ? 1.0 : 0.0)
+	s
+
+// --- Utility function to calculate rolling sum manually
+f_rolling_sum(source, len) =>
+	float s = 0.0
+	int L = math.max(1, len)
+	for i = 0 to L - 1
+		s += nz(source[i])
+	s
+
+// --- Utility function for DEMA calculation (required by PB&J)
+f_dema(src, len) =>
+	_ema1 = ta.ema(src, len)
+	_ema2 = ta.ema(_ema1, len)
+	2 * _ema1 - _ema2
+
+// --- Utility function for specific MA types (required by PB&J)
+f_pbj_ma(type, src, len) =>
+	result = 0.0
+	if type == "SMA"
+		result := ta.sma(src, len)
+	else if type == "EMA"
+		result := ta.ema(src, len)
+	else if type == "DEMA"
+		result := f_dema(src, len)
+	result
+
+// =============================================================================
+// === SIGNAL REGISTRY & ORDERING (CONCEPTUAL) ===
+// =============================================================================
+// 1.  White Flag Momentum
+// 2.  OW Overlap
+// 3.  OW Super
+// 4.  OW Combined
+// 5.  FC 2/3 Fauna
+// 6.  FC Overlap
+// 7.  FC Cluster
+// 8.  E3
+// 9.  OoOC
+// 10. Red Plus
+// 11. RVOL U>Th
+// 12. Fauna X-in-Y
+// 13. RVOL Window
+// 14. First Two MB
+// 15. Coincident Cluster
+// 16. Swing Bottom (Mango)
+// --- New Integrated Signals ---
+// 17. PB&J Follow-up Buy
+// 18. MB Individual
+// 19. RE Individual
+// 20. TA Individual
+// --- Custom Composites ---
+// 21. Custom Signal A (Seq)
+// ...
+// 30. Custom Signal J (Density)
+// =============================================================================
+
+
+// =============================================================================
+// === GLOBAL SETTINGS PANELS (PARITY ENFORCED) ===
+// =============================================================================
+grp_global_plots = "★ GLOBAL PLOT SETTINGS ★"
+show_wf_momentum_plots = input.bool(true, "White Flag Momentum", group=grp_global_plots, inline="p1")
+show_ow_overlap_plots = input.bool(true, "OW Overlap", group=grp_global_plots, inline="p2")
+show_ow_super_plots = input.bool(true, "OW Super", group=grp_global_plots, inline="p2")
+show_ow_combined_plots = input.bool(true, "OW Combined", group=grp_global_plots, inline="p3")
+show_fc_2of3_plots = input.bool(true, "FC 2/3 Fauna", group=grp_global_plots, inline="p4")
+show_fc_overlap_plots = input.bool(true, "FC Overlap", group=grp_global_plots, inline="p5")
+show_fc_cluster_plots = input.bool(true, "FC Cluster", group=grp_global_plots, inline="p5")
+show_e3_plots = input.bool(true, "E3", group=grp_global_plots, inline="p6")
+show_oooc_plots = input.bool(true, "OoOC", group=grp_global_plots, inline="p7")
+show_rp_plots = input.bool(true, "Red Plus", group=grp_global_plots, inline="p8")
+show_l7_plots = input.bool(true, "RVOL U>Th", group=grp_global_plots, inline="p9")
+show_fxy_plots = input.bool(true, "Fauna X-in-Y", group=grp_global_plots, inline="p10")
+show_rw_plots = input.bool(true, "RVOL Window", group=grp_global_plots, inline="p11")
+show_ftmb_plots = input.bool(true, "First Two MB", group=grp_global_plots, inline="p13")
+show_cc_plots = input.bool(true, "Coincident Cluster", group=grp_global_plots, inline="p14")
+// Mango Integration
+show_swing_bottom_plots = input.bool(true, "Swing Bottom (Mango)", group=grp_global_plots, inline="p15")
+// Adjusted indexes for subsequent plots
+show_pbj_buy_plots = input.bool(true, "PB&J Follow-up Buy", group=grp_global_plots, inline="p16")
+show_custom_A_plots = input.bool(true, "Custom Signal A", group=grp_global_plots, inline="p19")
+show_custom_B_plots = input.bool(true, "Custom Signal B", group=grp_global_plots, inline="p19")
+show_custom_C_plots = input.bool(true, "Custom Signal C", group=grp_global_plots, inline="p20")
+show_custom_D_plots = input.bool(true, "Custom Signal D", group=grp_global_plots, inline="p20")
+show_custom_E_plots = input.bool(true, "Custom Signal E", group=grp_global_plots, inline="p21")
+show_custom_F_plots = input.bool(true, "Custom Signal F", group=grp_global_plots, inline="p21")
+show_custom_G_plots = input.bool(true, "Custom Signal G", group=grp_global_plots, inline="p22")
+show_custom_H_plots = input.bool(true, "Custom Signal H", group=grp_global_plots, inline="p22")
+show_custom_I_plots = input.bool(true, "Custom Signal I", group=grp_global_plots, inline="p23")
+show_custom_J_plots = input.bool(true, "Custom Signal J", group=grp_global_plots, inline="p23")
+
+
+grp_global_alerts = "★ GLOBAL ALERT SETTINGS ★"
+ga_one_per_signal = input.bool(false, "One alert per signal (off = aggregate)", group=grp_global_alerts)
+enable_wf_momentum_alerts = input.bool(true, "White Flag Momentum", group=grp_global_alerts, inline="a1")
+enable_ow_overlap_alerts = input.bool(true, "OW Overlap", group=grp_global_alerts, inline="a2")
+enable_ow_super_alerts = input.bool(true, "OW Super", group=grp_global_alerts, inline="a2")
+enable_ow_combined_alerts = input.bool(true, "OW Combined", group=grp_global_alerts, inline="a3")
+enable_fc_2of3_alerts = input.bool(true, "FC 2/3 Fauna", group=grp_global_alerts, inline="a4")
+enable_fc_overlap_alerts = input.bool(true, "FC Overlap", group=grp_global_alerts, inline="a5")
+enable_fc_cluster_alerts = input.bool(true, "FC Cluster", group=grp_global_alerts, inline="a5")
+enable_e3_alerts = input.bool(true, "E3", group=grp_global_alerts, inline="a6")
+enable_oooc_alerts = input.bool(true, "OoOC", group=grp_global_alerts, inline="a7")
+enable_rp_alerts = input.bool(true, "Red Plus", group=grp_global_alerts, inline="a8")
+enable_l7_alerts = input.bool(true, "RVOL U>Th", group=grp_global_alerts, inline="a9")
+enable_fxy_alerts = input.bool(true, "Fauna X-in-Y", group=grp_global_alerts, inline="a10")
+enable_rw_alerts = input.bool(true, "RVOL Window", group=grp_global_alerts, inline="a11")
+enable_ftmb_alerts = input.bool(true, "First Two MB", group=grp_global_alerts, inline="a13")
+enable_cc_alerts = input.bool(true, "Coincident Cluster", group=grp_global_alerts, inline="a14")
+// Adjusted indexes for subsequent alerts
+enable_pbj_buy_alerts = input.bool(true, "PB&J Follow-up Buy", group=grp_global_alerts, inline="a16")
+enable_custom_A_alerts = input.bool(true, "Custom Signal A", group=grp_global_alerts, inline="a19")
+enable_custom_B_alerts = input.bool(true, "Custom Signal B", group=grp_global_alerts, inline="a19")
+ga_CustomC = input.bool(true, "Custom Signal C", group=grp_global_alerts, inline="a20")
+ga_CustomD = input.bool(true, "Custom Signal D", group=grp_global_alerts, inline="a20")
+ga_CustomE = input.bool(true, "Custom Signal E", group=grp_global_alerts, inline="a21")
+ga_CustomF = input.bool(true, "Custom Signal F", group=grp_global_alerts, inline="a21")
+ga_CustomG = input.bool(true, "Custom Signal G", group=grp_global_alerts, inline="a22")
+ga_CustomH = input.bool(true, "Custom Signal H", group=grp_global_alerts, inline="a22")
+ga_CustomI = input.bool(true, "Custom Signal I", group=grp_global_alerts, inline="a23")
+ga_CustomJ = input.bool(true, "Custom Signal J", group=grp_global_alerts, inline="a23")
+
+
+// #############################################################################
+// ###  INDICATOR 1: WHITE FLAG (MBRETAseqx3x247)                             ###
+// #############################################################################
+group_wf_mb = "1. White Flag - Momentum Blast (MB)"
+wf_alpha_MB = input.float(1.6, "Body Size × ATR", group=group_wf_mb)
+wf_beta_MB = input.float(0.7, "Body / Range ≥", minval=0.5, maxval=0.99, step=0.01, group=group_wf_mb)
+wf_delta_MB = input.float(1.8, "Volume × Avg", group=group_wf_mb)
+wf_atr_len_MB = input.int(14, "ATR Lookback", group=group_wf_mb)
+wf_vol_len_MB = input.int(20, "Volume Lookback", group=group_wf_mb)
+group_wf_re = "1. White Flag - Range Expansion (RE)"
+wf_gamma_RE = input.float(2.2, "Range × ATR", group=group_wf_re)
+wf_epsilon_RE = input.float(0.15, "Close‑to‑Edge ≤", group=group_wf_re)
+wf_delta_RE = input.float(1.8, "Volume × Avg", group=group_wf_re)
+wf_atr_len_RE = input.int(14, "ATR Lookback", group=group_wf_re)
+wf_vol_len_RE = input.int(20, "Volume Lookback", group=group_wf_re)
+group_wf_ta = "1. White Flag - Trend Accelerant (TA)"
+wf_theta_TA = input.float(1.6, "ΔPrice × AvgΔ", group=group_wf_ta)
+wf_delta_TA = input.float(1.8, "Volume × Avg", group=group_wf_ta)
+wf_trend_ma_len_TA = input.int(50, "Trend MA Len", group=group_wf_ta)
+wf_avg_delta_len = input.int(10, "Avg Δ Len", group=group_wf_ta)
+group_wf_seq = "1. White Flag - Sequence Config"
+wf_useMB = input.bool(true, "Count MB as Event?", group=group_wf_seq)
+wf_useRE = input.bool(true, "Count RE as Event?", group=group_wf_seq)
+wf_useTA = input.bool(true, "Count TA as Event?", group=group_wf_seq)
+wf_ATR = ta.atr(wf_atr_len_MB)
+wf_AvgVol = ta.sma(volume, wf_vol_len_MB)
+wf_AvgDelta = ta.sma(math.abs(close - close[1]), wf_avg_delta_len)
+wf_TrendMA = ta.sma(close, wf_trend_ma_len_TA)
+wf_body = close - open
+wf_candleRange = high - low
+wf_body_up = wf_body > 0
+wf_body_size = math.abs(wf_body)
+wf_body_ratio = wf_candleRange == 0 ? 0 : wf_body_size / wf_candleRange
+wf_MB_bull = wf_body_up and wf_body_size > wf_alpha_MB * wf_ATR and wf_body_ratio > wf_beta_MB and volume > wf_delta_MB * wf_AvgVol
+wf_wide = wf_candleRange > wf_gamma_RE * wf_ATR
+wf_RE_bull = wf_body_up and wf_wide and (high - close) < wf_epsilon_RE * wf_candleRange and volume > wf_delta_RE * wf_AvgVol
+wf_up_trend = wf_TrendMA > wf_TrendMA[1]
+wf_TA_bull = wf_up_trend and (close - close[1]) > wf_theta_TA * wf_AvgDelta and wf_body_up and volume > wf_delta_TA * wf_AvgVol
+wf_isEvent = (wf_useMB and wf_MB_bull) or (wf_useRE and wf_RE_bull) or (wf_useTA and wf_TA_bull)
+var int wf_seqLen = 0
+if ta.change(dayofmonth) != 0
+	wf_seqLen := 0
+else if not wf_isEvent
+	wf_seqLen := 0
+if wf_isEvent
+	wf_seqLen += 1
+bool sWhiteFlagMomentum_raw = wf_isEvent and wf_seqLen == 3
+plotshape(sWhiteFlagMomentum_raw and show_wf_momentum_plots, "White Flag Momentum", location=location.abovebar, style=shape.cross, color=color.new(color.white, 0), size=size.huge)
+
+
+// #############################################################################
+// ###  INDICATOR 2: ORANGE CLUSTER WINDOW (OranWindow)                       ###
+// #############################################################################
+grp_ow_rvol = "2. Orange Window - RVOL"
+ow_avglength = input.int(30, title="Look-back Length", group=grp_ow_rvol)
+ow_smaLength = input.int(20, title="SMA Length (RVOL³)", group=grp_ow_rvol)
+grp_ow_seq = "2. Orange Window - Sequence"
+ow_th_low = input.float(0.0, step=0.1, title="Lower RVOL Price Threshold", group=grp_ow_seq)
+ow_th_high = input.float(3000000.0, step=0.1, title="Upper RVOL Price Threshold", group=grp_ow_seq)
+ow_seqTh = input.float(0.0, step=0.1, title="Sequence Sum Threshold", group=grp_ow_seq)
+grp_ow_cluster = "2. Orange Window - Overlap Cluster"
+ow_ote_windowLen = input.int(75, title="Overlap Lookback Bars", group=grp_ow_cluster)
+ow_ote_minOverlap = input.int(3, title="Min Overlapping Events", minval=1, group=grp_ow_cluster)
+grp_ow_primary_cluster = "2. Orange Window - Super Cluster (Primary)"
+ow_primaryWindowLen = input.int(75, "Lookback Bars", group=grp_ow_primary_cluster)
+ow_minPrimaryOverlap = input.int(2, "Min Overlapping Events", minval=2, group=grp_ow_primary_cluster)
+ow_primaryPaddingMultiplier = input.float(0.5, "Padding Multiplier", step=0.1, group=grp_ow_primary_cluster)
+grp_ow_super_cluster = "2. Orange Window - Super Cluster (Super)"
+ow_superWindowLen = input.int(30, "Lookback Bars", group=grp_ow_super_cluster)
+ow_minSuperClusterOverlap = input.int(2, "Min Overlapping Clusters", minval=2, group=grp_ow_super_cluster)
+ow_superPaddingMultiplier = input.float(0.5, "Padding Multiplier", step=0.1, group=grp_ow_super_cluster)
+grp_ow_combined = "2. Orange Window - Combined Signal"
+ow_rollingWindow = input.int(20, title="Rolling Window Period (Candles)", group=grp_ow_combined, minval=1)
+ow_requiredEvents = input.int(2, title="Number of Events in Window", group=grp_ow_combined, minval=1)
+ow_spike = math.abs(close - open)
+ow_avgSpikeDenom = ta.sma(ow_spike, ow_avglength)[1]
+ow_rvol_price = ow_spike / nz(ow_avgSpikeDenom, 1)
+ow_avgVolDenom = ta.sma(volume, ow_avglength)[1]
+ow_rvol_volume = volume / nz(ow_avgVolDenom, 1)
+ow_rvol_diff = ow_rvol_price - ow_rvol_volume
+ow_rvol3_pos = ow_rvol_diff > 0 ? ow_rvol_diff : na
+ow_sma_rvol3 = ta.sma(ow_rvol3_pos, ow_smaLength)
+ow_baseBull = close > open and nz(ow_rvol3_pos) > nz(ow_sma_rvol3)
+ow_inRange(v) => v > ow_th_low and v < ow_th_high
+ow_uBar_ote = ow_baseBull and ow_inRange(ow_rvol_price)
+ow_uBar_super = ow_baseBull
+var float ow_seqSum_ote = 0.0, var int ow_seqLen_ote = 0, var float ow_seqStartLow_ote = na
+if ow_uBar_ote
+	ow_seqLen_ote += 1, ow_seqSum_ote += ow_rvol_price
+	if ow_seqLen_ote == 1
+		ow_seqStartLow_ote := low
+else
+	ow_seqLen_ote := 0, ow_seqSum_ote := 0.0, ow_seqStartLow_ote := na
+var float ow_seqSum_super = 0.0, var int ow_seqLen_super = 0, var float ow_seqStartLow_super = na
+if ow_uBar_super
+	ow_seqLen_super += 1, ow_seqSum_super += ow_rvol_price
+	if ow_seqLen_super == 1
+		ow_seqStartLow_super := low
+else
+	ow_seqLen_super := 0, ow_seqSum_super := 0.0, ow_seqStartLow_super := na
+ow_conf = barstate.isconfirmed
+ow_sigUU_ote = ow_seqLen_ote == 2 and ow_seqSum_ote >= ow_seqTh and ow_conf
+ow_sigUUU_ote = ow_seqLen_ote == 3 and ow_seqSum_ote >= ow_seqTh and ow_conf
+ow_sigUUUU_ote = ow_seqLen_ote == 4 and ow_seqSum_ote >= ow_seqTh and ow_conf
+ow_isEvent_ote = ow_sigUU_ote or ow_sigUUU_ote or ow_sigUUUU_ote
+ow_sigUU_super = ow_seqLen_super == 2 and ow_seqSum_super >= ow_seqTh and ow_conf
+ow_sigUUU_super = ow_seqLen_super == 3 and ow_seqSum_super >= ow_seqTh and ow_conf
+ow_sigUUUU_super = ow_seqLen_super == 4 and ow_seqSum_super >= ow_seqTh and ow_conf
+ow_isEvent_super = ow_sigUU_super or ow_sigUUU_super or ow_sigUUUU_super
+var int[] ow_ote_evIdx = array.new_int(), var float[] ow_ote_evHi = array.new_float(), var float[] ow_ote_evLo = array.new_float()
+bool sOW_Overlap_raw = false
+if ow_isEvent_ote
+	ow_currentEventHigh = high, ow_currentEventLow = ow_seqStartLow_ote, ow_overlapCount = 0
+	if array.size(ow_ote_evIdx) > 0
+		for i = 0 to array.size(ow_ote_evIdx) - 1
+			if array.get(ow_ote_evLo, i) <= ow_currentEventHigh and array.get(ow_ote_evHi, i) >= ow_currentEventLow
+				ow_overlapCount += 1
+	if (ow_overlapCount + 1) >= ow_ote_minOverlap
+		sOW_Overlap_raw := true
+	array.unshift(ow_ote_evIdx, bar_index), array.unshift(ow_ote_evHi, ow_currentEventHigh), array.unshift(ow_ote_evLo, ow_currentEventLow)
+while array.size(ow_ote_evIdx) > 0
+	if bar_index - array.get(ow_ote_evIdx, array.size(ow_ote_evIdx) - 1) > ow_ote_windowLen
+		array.pop(ow_ote_evIdx)
+		array.pop(ow_ote_evHi)
+		array.pop(ow_ote_evLo)
+	else
+		break
+var int[] ow_evIdx = array.new_int(), var float[] ow_evHi = array.new_float(), var float[] ow_evLo = array.new_float(), var float[] ow_evRvolSum = array.new_float()
+var int[] ow_primaryCluster_Idx = array.new_int(), var float[] ow_primaryCluster_Hi = array.new_float(), var float[] ow_primaryCluster_Lo = array.new_float(), var float[] ow_primaryCluster_RvolSum = array.new_float()
+bool sOW_Super_raw = false
+while array.size(ow_evIdx) > 0
+	if bar_index - array.get(ow_evIdx, array.size(ow_evIdx) - 1) > ow_primaryWindowLen
+		array.pop(ow_evIdx)
+		array.pop(ow_evHi)
+		array.pop(ow_evLo)
+		array.pop(ow_evRvolSum)
+	else
+		break
+while array.size(ow_primaryCluster_Idx) > 0
+	if bar_index - array.get(ow_primaryCluster_Idx, array.size(ow_primaryCluster_Idx) - 1) > ow_superWindowLen
+		array.pop(ow_primaryCluster_Idx)
+		array.pop(ow_primaryCluster_Hi)
+		array.pop(ow_primaryCluster_Lo)
+		array.pop(ow_primaryCluster_RvolSum)
+	else
+		break
+if ow_isEvent_super
+	ow_eventRange = high - ow_seqStartLow_super, ow_padding = ow_eventRange * ow_primaryPaddingMultiplier
+	array.unshift(ow_evIdx, bar_index), array.unshift(ow_evHi, high + ow_padding), array.unshift(ow_evLo, ow_seqStartLow_super - ow_padding), array.unshift(ow_evRvolSum, ow_seqSum_super)
+	ow_numEvents = array.size(ow_evIdx)
+	if ow_numEvents >= ow_minPrimaryOverlap
+		array<bool> ow_visited = array.new_bool(ow_numEvents, false)
+		if not array.get(ow_visited, 0)
+			int[] ow_queue = array.new_int(), int[] ow_currentClusterMembers = array.new_int()
+			array.push(ow_queue, 0), array.set(ow_visited, 0, true)
+			while array.size(ow_queue) > 0
+				u = array.shift(ow_queue), array.push(ow_currentClusterMembers, u)
+				for v = 0 to ow_numEvents - 1
+					if not array.get(ow_visited, v) and array.get(ow_evLo, u) <= array.get(ow_evHi, v) and array.get(ow_evLo, v) <= array.get(ow_evHi, u)
+						array.set(ow_visited, v, true), array.push(ow_queue, v)
+			if array.size(ow_currentClusterMembers) >= ow_minPrimaryOverlap
+				float ow_clusterMaxHi = na, float ow_clusterMinLo = na, float ow_clusterRvolSum = 0.0
+				for i = 0 to array.size(ow_currentClusterMembers) - 1
+					memberIdx = array.get(ow_currentClusterMembers, i)
+					ow_clusterMaxHi := na(ow_clusterMaxHi) ? array.get(ow_evHi, memberIdx) : math.max(ow_clusterMaxHi, array.get(ow_evHi, memberIdx))
+					ow_clusterMinLo := na(ow_clusterMinLo) ? array.get(ow_evLo, memberIdx) : math.min(ow_clusterMinLo, array.get(ow_evLo, memberIdx))
+					ow_clusterRvolSum += array.get(ow_evRvolSum, memberIdx)
+				array.unshift(ow_primaryCluster_Idx, bar_index), array.unshift(ow_primaryCluster_Hi, ow_clusterMaxHi), array.unshift(ow_primaryCluster_Lo, ow_clusterMinLo), array.unshift(ow_primaryCluster_RvolSum, ow_clusterRvolSum)
+				ow_numPrimaryClusters = array.size(ow_primaryCluster_Idx)
+				if ow_numPrimaryClusters >= ow_minSuperClusterOverlap
+					array<bool> ow_visitedClusters = array.new_bool(ow_numPrimaryClusters, false)
+					if not array.get(ow_visitedClusters, 0)
+						int[] ow_superClusterQueue = array.new_int(), int[] ow_superClusterMembers = array.new_int()
+						array.push(ow_superClusterQueue, 0), array.set(ow_visitedClusters, 0, true)
+						while(array.size(ow_superClusterQueue) > 0)
+							u_sc = array.shift(ow_superClusterQueue), array.push(ow_superClusterMembers, u_sc)
+							for v_sc = 1 to ow_numPrimaryClusters - 1
+								if not array.get(ow_visitedClusters, v_sc)
+									u_hi = array.get(ow_primaryCluster_Hi, u_sc), u_lo = array.get(ow_primaryCluster_Lo, u_sc), v_hi = array.get(ow_primaryCluster_Hi, v_sc), v_lo = array.get(ow_primaryCluster_Lo, v_sc)
+									u_padding = (u_hi - u_lo) * ow_superPaddingMultiplier, v_padding = (v_hi - v_lo) * ow_superPaddingMultiplier
+									if (u_lo - u_padding) <= (v_hi + v_padding) and (v_lo - v_padding) <= (u_hi + u_padding)
+										array.set(ow_visitedClusters, v_sc, true), array.push(ow_superClusterQueue, v_sc)
+						if array.size(ow_superClusterMembers) >= ow_minSuperClusterOverlap
+							sOW_Super_raw := true
+var int[] ow_eventBarIndices = array.new_int()
+bool ow_isOverlapStart = sOW_Overlap_raw and not sOW_Overlap_raw[1]
+bool ow_isSuperStart = sOW_Super_raw and not sOW_Super_raw[1]
+bool ow_isCombinedEvent = ow_isOverlapStart or ow_isSuperStart
+if ow_isCombinedEvent
+	array.push(ow_eventBarIndices, bar_index)
+while array.size(ow_eventBarIndices) > 0
+	if bar_index - array.get(ow_eventBarIndices, 0) >= ow_rollingWindow
+		array.shift(ow_eventBarIndices)
+	else
+		break
+bool sOW_Combined_raw = false
+if array.size(ow_eventBarIndices) >= ow_requiredEvents
+	sOW_Combined_raw := true
+	lastEventIndex = array.pop(ow_eventBarIndices)
+	array.clear(ow_eventBarIndices)
+	array.push(ow_eventBarIndices, lastEventIndex)
+plotshape(sOW_Overlap_raw and show_ow_overlap_plots, title="OW Overlap", location=location.bottom, style=shape.cross, size=size.huge, color=color.new(color.red, 0), text="")
+plotshape(sOW_Super_raw and show_ow_super_plots, title="OW Super", location=location.bottom, style=shape.xcross, size=size.huge, color=color.new(color.blue, 0), text="")
+plotshape(sOW_Combined_raw and show_ow_combined_plots, title="OW Combined", location=location.bottom, style=shape.circle, size=size.large, color=color.new(color.aqua, 75), text="")
+
+// #############################################################################
+// ###  INDICATOR 3: FAUNAOVRLP CLUSTER (FROM 5X HUB)                         ###
+// #############################################################################
+grp_fc_final = "3. FaunaOVRLP Cluster - Final Signal"
+fc_signal_text = input.string("CLUSTER", "Signal Text (Unused in Plot)", group=grp_fc_final)
+fc_signal_color = input.color(color.new(color.yellow, 60), "Signal Color", group=grp_fc_final)
+grp_fc_s1_mb = "3. FaunaOVRLP Cluster - 1.1 MB_Sequence"
+fc_s1_alpha_MB = input.float(1.6, "Body Size × ATR", group=grp_fc_s1_mb)
+fc_s1_beta_MB = input.float(0.7, "Body / Range ≥", minval=0.5, maxval=0.99, step=0.01, group=grp_fc_s1_mb)
+fc_s1_delta_MB = input.float(1.8, "Volume × Avg", group=grp_fc_s1_mb)
+fc_s1_atr_len_MB = input.int(14, "ATR Lookback", group=grp_fc_s1_mb)
+fc_s1_vol_len_MB = input.int(20, "Volume Lookback", group=grp_fc_s1_mb)
+fc_s1_ATR = ta.atr(fc_s1_atr_len_MB)
+fc_s1_AvgVol = ta.sma(volume, fc_s1_vol_len_MB)
+fc_s1_body = close - open
+fc_s1_candleRange = high - low
+fc_s1_body_up = fc_s1_body > 0
+fc_s1_body_size = math.abs(fc_s1_body)
+fc_s1_body_ratio = fc_s1_candleRange == 0 ? 0 : fc_s1_body_size / fc_s1_candleRange
+fc_s1_MB_bull = fc_s1_body_up and fc_s1_body_size > fc_s1_alpha_MB * fc_s1_ATR and fc_s1_body_ratio > fc_s1_beta_MB and volume > fc_s1_delta_MB * fc_s1_AvgVol
+fc_s1_isEvent = fc_s1_MB_bull
+var int fc_s1_seqLen = 0
+if fc_s1_isEvent
+	fc_s1_seqLen += 1
+else
+	fc_s1_seqLen := 0
+fc_signal_indicator1 = fc_s1_isEvent and fc_s1_seqLen >= 2
+grp_fc_s2_mb = "3. FaunaOVRLP Cluster - 1.2 MBRETA - MB", grp_fc_s2_re = "3. FaunaOVRLP Cluster - 1.2 MBRETA - RE", grp_fc_s2_ta = "3. FaunaOVRLP Cluster - 1.2 MBRETA - TA", grp_fc_s2_seq = "3. FaunaOVRLP Cluster - 1.2 MBRETA - Events"
+fc_s2_alpha_MB = input.float(1.6, "Body Size × ATR", group=grp_fc_s2_mb), fc_s2_beta_MB = input.float(0.7, "Body / Range ≥", minval=0.5, maxval=0.99, step=0.01, group=grp_fc_s2_mb)
+fc_s2_delta_MB = input.float(1.8, "Volume × Avg", group=grp_fc_s2_mb), fc_s2_atr_len_MB = input.int(14, "ATR Lookback", group=grp_fc_s2_mb), fc_s2_vol_len_MB = input.int(20, "Volume Lookback", group=grp_fc_s2_mb)
+fc_s2_gamma_RE = input.float(2.2, "Range × ATR", group=grp_fc_s2_re), fc_s2_epsilon_RE = input.float(0.15, "Close‑to‑Edge ≤", group=grp_fc_s2_re)
+fc_s2_delta_RE = input.float(1.8, "Volume × Avg", group=grp_fc_s2_re), fc_s2_atr_len_RE = input.int(14, "ATR Lookback", group=grp_fc_s2_re), fc_s2_vol_len_RE = input.int(20, "Volume Lookback", group=grp_fc_s2_re)
+fc_s2_theta_TA = input.float(1.6, "ΔPrice × AvgΔ", group=grp_fc_s2_ta), fc_s2_delta_TA = input.float(1.8, "Volume × Avg", group=grp_fc_s2_ta)
+fc_s2_trend_ma_len_TA = input.int(50, "Trend MA Len", group=grp_fc_s2_ta), fc_s2_avg_delta_len = input.int(10, "Avg Δ Len", group=grp_fc_s2_ta)
+fc_s2_useMB = input.bool(true, "Count MB?", group=grp_fc_s2_seq), fc_s2_useRE = input.bool(true, "Count RE?", group=grp_fc_s2_seq), fc_s2_useTA = input.bool(true, "Count TA?", group=grp_fc_s2_seq)
+fc_s2_ATR = ta.atr(fc_s2_atr_len_MB), fc_s2_AvgVol = ta.sma(volume, fc_s2_vol_len_MB), fc_s2_AvgDelta = ta.sma(math.abs(close - close[1]), fc_s2_avg_delta_len), fc_s2_TrendMA = ta.sma(close, fc_s2_trend_ma_len_TA)
+fc_s2_body = close - open, fc_s2_candleRange = high - low, fc_s2_body_up = fc_s2_body > 0, fc_s2_body_size = math.abs(fc_s2_body), fc_s2_body_ratio = fc_s2_candleRange == 0 ? 0 : fc_s2_body_size / fc_s2_candleRange
+fc_s2_MB_bull = fc_s2_body_up and fc_s2_body_size > fc_s2_alpha_MB * fc_s2_ATR and fc_s2_body_ratio > fc_s2_beta_MB and volume > fc_s2_delta_MB * fc_s2_AvgVol
+fc_s2_wide = fc_s2_candleRange > fc_s2_gamma_RE * fc_s2_ATR, fc_s2_RE_bull = fc_s2_body_up and fc_s2_wide and (high - close) < fc_s2_epsilon_RE * fc_s2_candleRange and volume > fc_s2_delta_RE * fc_s2_AvgVol
+fc_s2_up_trend = fc_s2_TrendMA > fc_s2_TrendMA[1], fc_s2_TA_bull = fc_s2_up_trend and (close - close[1]) > fc_s2_theta_TA * fc_s2_AvgDelta and fc_s2_body_up and volume > fc_s2_delta_TA * fc_s2_AvgVol
+fc_s2_isEvent = (fc_s2_useMB and fc_s2_MB_bull) or (fc_s2_useRE and fc_s2_RE_bull) or (fc_s2_useTA and fc_s2_TA_bull)
+var int fc_s2_seqLen = 0
+if ta.change(dayofmonth) != 0
+	fc_s2_seqLen := 0
+else if not fc_s2_isEvent
+	fc_s2_seqLen := 0
+if fc_s2_isEvent
+	fc_s2_seqLen += 1
+fc_signal_indicator2 = fc_s2_isEvent and fc_s2_seqLen >= 2
+grp_fc_s3_mb = "3. FaunaOVRLP Cluster - 1.3 MB+RE - MB"
+grp_fc_s3_re = "3. FaunaOVRLP Cluster - 1.3 MB+RE - RE"
+grp_fc_s3_seq = "3. FaunaOVRLP Cluster - 1.3 MB+RE - Events"
+grp_fc_s3_session = "3. FaunaOVRLP Cluster - 1.3 MB+RE - Session"
+fc_s3_alpha_MB = input.float(1.6, "Body Size × ATR", group=grp_fc_s3_mb), fc_s3_beta_MB = input.float(0.7, "Body / Range ≥", minval=0.5, maxval=0.99, step=0.01, group=grp_fc_s3_mb)
+fc_s3_delta_MB = input.float(1.8, "Volume × Avg", group=grp_fc_s3_mb), fc_s3_atr_len_MB = input.int(14, "ATR Lookback", group=grp_fc_s3_mb), fc_s3_vol_len_MB = input.int(20, "Volume Lookback", group=grp_fc_s3_mb)
+fc_s3_gamma_RE = input.float(2.2, "Range × ATR", group=grp_fc_s3_re), fc_s3_epsilon_RE = input.float(0.15, "Close‑to‑Edge ≤", group=grp_fc_s3_re)
+fc_s3_delta_RE = input.float(1.8, "Volume × Avg", group=grp_fc_s3_re), fc_s3_atr_len_RE = input.int(14, "ATR Lookback", group=grp_fc_s3_re), fc_s3_vol_len_RE = input.int(20, "Volume Lookback", group=grp_fc_s3_re)
+fc_s3_useMB = input.bool(true, "Count MB?", group=grp_fc_s3_seq), fc_s3_useRE = input.bool(true, "Count RE?", group=grp_fc_s3_seq)
+fc_s3_tradingSession = input.session("0930-1600", "Trading Session", group=grp_fc_s3_session), fc_s3_timeZone = input.string("America/New_York", "Time Zone", group=grp_fc_s3_session, options=["America/New_York", "America/Chicago", "UTC"])
+fc_s3_ATR = ta.atr(fc_s3_atr_len_MB), fc_s3_AvgVol = ta.sma(volume, fc_s3_vol_len_MB), fc_s3_isWithinSession = not na(time((str.endswith(timeframe.period, "T") ? "1" : timeframe.period), fc_s3_tradingSession, fc_s3_timeZone))
+fc_s3_body = close - open, fc_s3_candleRange = high - low, fc_s3_body_up = fc_s3_body > 0, fc_s3_body_size = math.abs(fc_s3_body), fc_s3_body_ratio = fc_s3_candleRange == 0 ? 0 : fc_s3_body_size / fc_s3_candleRange
+fc_s3_MB_bull = fc_s3_body_up and fc_s3_body_size > fc_s3_alpha_MB * fc_s3_ATR and fc_s3_body_ratio > fc_s3_beta_MB and volume > fc_s3_delta_MB * fc_s3_AvgVol
+fc_s3_wide = fc_s3_candleRange > fc_s3_gamma_RE * fc_s3_ATR, fc_s3_RE_bull = fc_s3_body_up and fc_s3_wide and (high - close) < fc_s3_epsilon_RE * fc_s3_candleRange and volume > fc_s3_delta_RE * fc_s3_AvgVol
+fc_s3_isEvent = ((fc_s3_useMB and fc_s3_MB_bull) or (fc_s3_useRE and fc_s3_RE_bull)) and fc_s3_isWithinSession
+var int fc_s3_seqLen = 0
+if fc_s3_isEvent
+	fc_s3_seqLen += 1
+else
+	fc_s3_seqLen := 0
+fc_signal_indicator3 = fc_s3_isEvent and fc_s3_seqLen >= 2
+fc_signal_count = (fc_signal_indicator1 ? 1 : 0) + (fc_signal_indicator2 ? 1 : 0) + (fc_signal_indicator3 ? 1 : 0)
+bool sFC_2of3_raw = fc_signal_count >= 2
+grp_fc_rvol = "3. FaunaOVRLP Cluster - 2.1 RVOL", grp_fc_th_event = "3. FaunaOVRLP Cluster - 2.2 Threshold", grp_fc_seq_event = "3. FaunaOVRLP Cluster - 2.3 Sequence", grp_fc_overlap = "3. FaunaOVRLP Cluster - 2.4 Overlap"
+fc_avglength = input.int(30, title="Look-back", group=grp_fc_rvol), fc_smaLength = input.int(20, title="SMA Length", group=grp_fc_rvol)
+fc_th_low = input.float(2.9, step=0.1, title="Lower Threshold", group=grp_fc_th_event), fc_th_high = input.float(1000000.0, step=0.1, title="Upper Threshold", group=grp_fc_th_event)
+fc_seqTh = input.float(0.1, step=0.1, title="Sequence Sum Threshold", group=grp_fc_seq_event)
+fc_overlapWindowLen = input.int(20, "Lookback Bars", group=grp_fc_overlap), fc_overlapPaddingMultiplier = input.float(0.0, "Padding Multiplier", step=0.1, minval=0, group=grp_fc_overlap)
+fc_spike = math.abs(close - open), fc_avgSpikeDenom = ta.sma(fc_spike, fc_avglength)[1], fc_rvol_price = fc_spike / nz(fc_avgSpikeDenom, 1)
+fc_avgVolDenom = ta.sma(volume, fc_avglength)[1], fc_rvol_volume = volume / nz(fc_avgVolDenom, 1), fc_rvol_diff = fc_rvol_price - fc_rvol_volume
+fc_rvol3_pos = fc_rvol_diff > 0 ? fc_rvol_diff : na, fc_sma_rvol3 = ta.sma(fc_rvol3_pos, fc_smaLength), fc_baseBull_Th = close > open and nz(fc_rvol3_pos) > nz(fc_sma_rvol3)
+fc_inRange_Th(v) => v > fc_th_low and v < fc_th_high
+fc_isThresholdEvent = fc_baseBull_Th and fc_inRange_Th(fc_rvol_price) and barstate.isconfirmed
+fc_uBar = fc_baseBull_Th and fc_inRange_Th(fc_rvol_price)
+var float fc_seqSum = 0.0, var int fc_seqLen = 0
+if fc_uBar
+	fc_seqLen += 1, fc_seqSum += fc_rvol_price
+else
+	fc_seqLen := 0, fc_seqSum := 0.0
+fc_sigUU = fc_seqLen == 2 and fc_seqSum >= fc_seqTh, fc_sigUUU = fc_seqLen == 3 and fc_seqSum >= fc_seqTh, fc_sigUUUU = fc_seqLen == 4 and fc_seqSum >= fc_seqTh
+fc_isSequenceEvent = (fc_sigUU or fc_sigUUU or fc_sigUUUU) and barstate.isconfirmed
+var int[] fc_thEvent_Idx = array.new_int(), var float[] fc_thEvent_Hi = array.new_float(), var float[] fc_thEvent_Lo = array.new_float()
+var int[] fc_seqEvent_Idx = array.new_int(), var float[] fc_seqEvent_Hi = array.new_float(), var float[] fc_seqEvent_Lo = array.new_float()
+bool sFC_Overlap_raw = false
+if array.size(fc_thEvent_Idx) > 0
+	while bar_index - array.get(fc_thEvent_Idx, 0) > fc_overlapWindowLen
+		array.shift(fc_thEvent_Idx), array.shift(fc_thEvent_Hi), array.shift(fc_thEvent_Lo)
+		if array.size(fc_thEvent_Idx) == 0
+			break
+if array.size(fc_seqEvent_Idx) > 0
+	while bar_index - array.get(fc_seqEvent_Idx, 0) > fc_overlapWindowLen
+		array.shift(fc_seqEvent_Idx), array.shift(fc_seqEvent_Hi), array.shift(fc_seqEvent_Lo)
+		if array.size(fc_seqEvent_Idx) == 0
+			break
+fc_checkOverlap(loA, hiA, loB, hiB) => loA <= hiB and loB <= hiA
+if fc_isThresholdEvent
+	eventRange = high - low, padding = eventRange * fc_overlapPaddingMultiplier
+	currentTh_Hi = high + padding, currentTh_Lo = low - padding
+	array.push(fc_thEvent_Idx, bar_index), array.push(fc_thEvent_Hi, currentTh_Hi), array.push(fc_thEvent_Lo, currentTh_Lo)
+	if array.size(fc_seqEvent_Idx) > 0
+		for i = 0 to array.size(fc_seqEvent_Idx) - 1
+			if fc_checkOverlap(currentTh_Lo, currentTh_Hi, array.get(fc_seqEvent_Lo, i), array.get(fc_seqEvent_Hi, i))
+				sFC_Overlap_raw := true, break
+if fc_isSequenceEvent and not sFC_Overlap_raw
+	eventRange = high - low, padding = eventRange * fc_overlapPaddingMultiplier
+	currentSeq_Hi = high + padding, currentSeq_Lo = low - padding
+	array.push(fc_seqEvent_Idx, bar_index), array.push(fc_seqEvent_Hi, currentSeq_Hi), array.push(fc_seqEvent_Lo, currentSeq_Lo)
+	if array.size(fc_thEvent_Idx) > 0
+		for i = 0 to array.size(fc_thEvent_Idx) - 1
+			if fc_checkOverlap(currentSeq_Lo, currentSeq_Hi, array.get(fc_thEvent_Lo, i), array.get(fc_thEvent_Hi, i))
+				sFC_Overlap_raw := true, break
+bool sFC_Cluster_raw = sFC_2of3_raw and sFC_Overlap_raw
+plotshape(series=sFC_Cluster_raw and show_fc_cluster_plots, title="FC Cluster", location=location.belowbar, color=fc_signal_color, style=shape.labeldown, size=size.huge, text="CLUSTER")
+plotshape(series=sFC_2of3_raw and show_fc_2of3_plots, title="FC 2/3 Fauna", style=shape.triangleup, location=location.abovebar, color=color.new(color.orange, 20), size=size.huge, text="")
+plotshape(series=sFC_Overlap_raw and show_fc_overlap_plots, title="FC Overlap", location=location.abovebar, style=shape.diamond, size=size.large, color=color.new(color.red, 50), text="")
+
+// #############################################################################
+// ###  INDICATOR 4: E3 (Fauna Sequence First 3 RTH)                          ###
+// #############################################################################
+grp_e3_mb = "4. E3 - Momentum Blast (MB)", grp_e3_re = "4. E3 - Range Expansion (RE)", grp_e3_ta = "4. E3 - Trend Accelerant (TA)", grp_e3_config = "4. E3 - Session & Config"
+e3_alpha_MB = input.float(1.6, "Body Size × ATR", group=grp_e3_mb), e3_beta_MB = input.float(0.7, "Body / Range ≥", minval=0.5, maxval=0.99, step=0.01, group=grp_e3_mb)
+e3_delta_MB = input.float(1.8, "Volume × Avg", group=grp_e3_mb), e3_atr_len_MB = input.int(14, "ATR Lookback", group=grp_e3_mb), e3_vol_len_MB = input.int(20, "Volume Lookback", group=grp_e3_mb)
+e3_gamma_RE = input.float(2.2, "Range × ATR", group=grp_e3_re), e3_epsilon_RE = input.float(0.15, "Close‑to‑Edge ≤", group=grp_e3_re)
+e3_delta_RE = input.float(1.8, "Volume × Avg", group=grp_e3_re), e3_atr_len_RE = input.int(14, "ATR Lookback", group=grp_e3_re), e3_vol_len_RE = input.int(20, "Volume Lookback", group=grp_e3_re)
+e3_theta_TA = input.float(1.6, "ΔPrice × AvgΔ", group=grp_e3_ta), e3_delta_TA = input.float(1.8, "Volume × Avg", group=grp_e3_ta)
+e3_trend_ma_len_TA = input.int(50, "Trend MA Len", group=grp_e3_ta), e3_avg_delta_len = input.int(10, "Avg Δ Len", group=grp_e3_ta)
+e3_tradingSession = input.session("0930-1600", "RTH Trading Session", group=grp_e3_config), e3_timeZone = input.string("America/New_York", "Time Zone", group=grp_e3_config, options=["America/New_York", "America/Chicago", "UTC"])
+e3_useMB = input.bool(true, "Count MB?", group=grp_e3_config), e3_useRE = input.bool(true, "Count RE?", group=grp_e3_config), e3_useTA = input.bool(true, "Count TA?", group=grp_e3_config)
+e3_ATR = ta.atr(e3_atr_len_MB), e3_AvgVol = ta.sma(volume, e3_vol_len_MB), e3_AvgDelta = ta.sma(math.abs(close - close[1]), e3_avg_delta_len), e3_TrendMA = ta.sma(close, e3_trend_ma_len_TA)
+e3_body = close - open, e3_candleRange = high - low, e3_body_up = e3_body > 0, e3_body_size = math.abs(e3_body), e3_body_ratio = e3_candleRange == 0 ? 0 : e3_body_size / e3_candleRange
+e3_MB_bull = e3_body_up and e3_body_size > e3_alpha_MB * e3_ATR and e3_body_ratio > e3_beta_MB and volume > e3_delta_MB * e3_AvgVol
+e3_wide = e3_candleRange > e3_gamma_RE * e3_ATR, e3_RE_bull = e3_body_up and e3_wide and (high - close) < e3_epsilon_RE * e3_candleRange and volume > e3_delta_RE * e3_AvgVol
+e3_up_trend = e3_TrendMA > e3_TrendMA[1], e3_TA_bull = e3_up_trend and (close - close[1]) > e3_theta_TA * e3_AvgDelta and e3_body_up and volume > e3_delta_TA * e3_AvgVol
+e3_isEvent = (e3_useMB and e3_MB_bull) or (e3_useRE and e3_RE_bull) or (e3_useTA and e3_TA_bull)
+e3_isWithinSession = not na(time((str.endswith(timeframe.period, "T") ? "1" : timeframe.period), e3_tradingSession, e3_timeZone))
+var bool e3_isNewDay = false
+if ta.change(dayofmonth) != 0
+	e3_isNewDay := true
+var int e3_sessionBarCounter = 0
+if e3_isNewDay and e3_isWithinSession
+	e3_sessionBarCounter := 1, e3_isNewDay := false
+else if e3_isWithinSession and e3_sessionBarCounter > 0
+	e3_sessionBarCounter += 1
+else if not e3_isWithinSession
+	e3_sessionBarCounter := 0
+bool sE3_raw = e3_sessionBarCounter == 3 and e3_isEvent and e3_isEvent[1] and e3_isEvent[2]
+plotshape(sE3_raw and show_e3_plots, "E3", location=location.top, style=shape.circle, color=color.new(color.white, 60), size=size.huge, text="E3")
+
+// #############################################################################
+// ###  INDICATOR 5: OoOC Overlap^2 Meta Pink Diamond                         ###
+// #############################################################################
+grp_oooc_rvol = "5. OoOC - RVOL", grp_oooc_bar = "5. OoOC - Bar Threshold", grp_oooc_seq = "5. OoOC - Sequence", grp_oooc_cluster = "5. OoOC - Primary Cluster", grp_oooc_meta = "5. OoOC - Meta-Cluster"
+oooc_avglength = input.int(30, title="Look-back Length", group=grp_oooc_rvol), oooc_smaLength = input.int(20, title="SMA Length (RVOL³)", group=grp_oooc_rvol)
+oooc_th_low = input.float(1.0, step=0.1, title="Lower Threshold", group=grp_oooc_bar), oooc_th_high = input.float(4000000.0, step=0.1, title="Upper Threshold", group=grp_oooc_bar)
+oooc_seqTh = input.float(0.0, step=0.1, title="Sequence Sum Threshold", group=grp_oooc_seq)
+oooc_windowLen = input.int(8, title="Overlap Lookback Bars", group=grp_oooc_cluster), oooc_minOverlap = input.int(2, title="Min Overlapping U-Sequences", minval=1, group=grp_oooc_cluster)
+oooc_metaWindowLen = input.int(8, title="Meta-Cluster Lookback Bars", group=grp_oooc_meta), oooc_minMetaOverlap = input.int(2, title="Min Overlapping Clusters", minval=2, group=grp_oooc_meta)
+oooc_spike = math.abs(close - open), oooc_avgSpikeDenom = ta.sma(oooc_spike, oooc_avglength)[1], oooc_rvol_price = oooc_spike / nz(oooc_avgSpikeDenom, 1)
+oooc_avgVolDenom = ta.sma(volume, oooc_avglength)[1], oooc_rvol_volume = volume / nz(oooc_avgVolDenom, 1), oooc_rvol_diff = oooc_rvol_price - oooc_rvol_volume
+oooc_rvol3_pos = oooc_rvol_diff > 0 ? oooc_rvol_diff : na, oooc_sma_rvol3 = ta.sma(oooc_rvol3_pos, oooc_smaLength)
+oooc_baseBull = close > open and nz(oooc_rvol3_pos) > nz(oooc_sma_rvol3)
+oooc_inRange(v) => v > oooc_th_low and v < oooc_th_high
+oooc_uBar = oooc_baseBull and oooc_inRange(oooc_rvol_price)
+var float oooc_seqSum = 0.0, var int oooc_seqLen = 0, var float oooc_seqStartLow = na
+if oooc_uBar
+	oooc_seqLen += 1, oooc_seqSum += oooc_rvol_price
+	if oooc_seqLen == 1
+		oooc_seqStartLow := low
+else
+	oooc_seqLen := 0, oooc_seqSum := 0.0, oooc_seqStartLow := na
+oooc_conf = barstate.isconfirmed
+oooc_sigUU = oooc_seqLen == 2 and oooc_seqSum >= oooc_seqTh and oooc_conf, oooc_sigUUU = oooc_seqLen == 3 and oooc_seqSum >= oooc_seqTh and oooc_conf, oooc_sigUUUU = oooc_seqLen == 4 and oooc_seqSum >= oooc_seqTh and oooc_conf
+var int[] oooc_evIdx = array.new_int(), var float[] oooc_evHi = array.new_float(), var float[] oooc_evLo = array.new_float()
+oooc_isEvent = oooc_sigUU or oooc_sigUUU or oooc_sigUUUU, oooc_primaryClusterTrigger = false
+if oooc_isEvent
+	currentEventHigh = high, currentEventLow = oooc_seqStartLow, overlapCount = 0
+	if array.size(oooc_evIdx) > 0
+		for i = 0 to array.size(oooc_evIdx) - 1
+			if array.get(oooc_evLo, i) <= currentEventHigh and array.get(oooc_evHi, i) >= currentEventLow
+				overlapCount += 1
+	if (overlapCount + 1) >= oooc_minOverlap
+		oooc_primaryClusterTrigger := true
+	array.unshift(oooc_evIdx, bar_index), array.unshift(oooc_evHi, currentEventHigh), array.unshift(oooc_evLo, currentEventLow)
+while array.size(oooc_evIdx) > 0
+	if bar_index - array.get(oooc_evIdx, array.size(oooc_evIdx) - 1) > oooc_windowLen
+		array.pop(oooc_evIdx)
+		array.pop(oooc_evHi)
+		array.pop(oooc_evLo)
+	else
+		break
+var int[] oooc_meta_evIdx = array.new_int(), var int[] oooc_meta_evUCount = array.new_int(), var float[] oooc_meta_evStartLow = array.new_float()
+bool sOoOC_raw = false
+if oooc_primaryClusterTrigger
+	uCount = oooc_sigUUUU ? 4 : oooc_sigUUU ? 3 : 2
+	array.unshift(oooc_meta_evIdx, bar_index), array.unshift(oooc_meta_evUCount, uCount), array.unshift(oooc_meta_evStartLow, oooc_seqStartLow)
+	metaOverlapCount = 0
+	if array.size(oooc_meta_evIdx) > 1
+		current_UCount = uCount, current_StartLow = oooc_seqStartLow
+		for i = 1 to array.size(oooc_meta_evIdx) - 1
+			past_Idx = array.get(oooc_meta_evIdx, i), past_UCount = array.get(oooc_meta_evUCount, i), past_StartLow = array.get(oooc_meta_evStartLow, i)
+			masterUCount = math.max(current_UCount, past_UCount)
+			currentHighBarLookahead = masterUCount - current_UCount
+			pastHighBarOffset = bar_index - (past_Idx - (past_UCount - 1) + (masterUCount - 1))
+			if bar_index >= currentHighBarLookahead and bar_index >= pastHighBarOffset
+				currentRangeHigh = high[currentHighBarLookahead]
+				currentRangeLow = current_StartLow
+				pastRangeHigh = high[pastHighBarOffset]
+				pastRangeLow = past_StartLow
+				if pastRangeLow <= currentRangeHigh and pastRangeHigh >= currentRangeLow
+					metaOverlapCount += 1
+	if (metaOverlapCount + 1) >= oooc_minMetaOverlap
+		sOoOC_raw := true
+while array.size(oooc_meta_evIdx) > 0
+	if bar_index - array.get(oooc_meta_evIdx, array.size(oooc_meta_evIdx) - 1) > oooc_metaWindowLen
+		array.pop(oooc_meta_evIdx)
+		array.pop(oooc_meta_evUCount)
+		array.pop(oooc_meta_evStartLow)
+	else
+		break
+plotshape(sOoOC_raw and show_oooc_plots, "OoOC", location=location.bottom, style=shape.diamond, size=size.large, color=color.new(color.fuchsia, 50), text="")
+
+// #############################################################################
+// ###  INDICATOR 6: RED PLUS SEQUENCE                                        ###
+// #############################################################################
+group_rp_mb = "6. Red Plus - Momentum Blast (MB)"
+rp_alpha_MB = input.float(1.6, "Body Size × ATR", group=group_rp_mb)
+rp_beta_MB = input.float(0.7, "Body / Range ≥", minval=0.5, maxval=0.99, step=0.01, group=group_rp_mb)
+rp_delta_MB = input.float(1.8, "Volume × Avg", group=group_rp_mb)
+rp_atr_len_MB = input.int(14, "ATR Lookback", group=group_rp_mb)
+rp_vol_len_MB = input.int(20, "Volume Lookback", group=group_rp_mb)
+group_rp_re = "6. Red Plus - Range Expansion (RE)"
+rp_gamma_RE = input.float(2.2, "Range × ATR", group=group_rp_re)
+rp_epsilon_RE = input.float(0.15, "Close‑to‑Edge ≤", group=group_rp_re)
+rp_delta_RE = input.float(1.8, "Volume × Avg", group=group_rp_re)
+rp_atr_len_RE = input.int(14, "ATR Lookback", group=group_rp_re)
+rp_vol_len_RE = input.int(20, "Volume Lookback", group=group_rp_re)
+group_rp_ta = "6. Red Plus - Trend Accelerant (TA)"
+rp_theta_TA = input.float(1.6, "ΔPrice × AvgΔ", group=group_rp_ta)
+rp_delta_TA = input.float(1.8, "Volume × Avg", group=group_rp_ta)
+rp_trend_ma_len_TA = input.int(50, "Trend MA Len", group=group_rp_ta)
+rp_avg_delta_len = input.int(10, "Avg Δ Len", group=group_rp_ta)
+group_rp_seq = "6. Red Plus - Sequence Config"
+rp_useMB = input.bool(true, "Count MB as Event?", group=group_rp_seq)
+rp_useRE = input.bool(true, "Count RE as Event?", group=group_rp_seq)
+rp_useTA = input.bool(true, "Count TA as Event?", group=group_rp_seq)
+rp_ATR = ta.atr(rp_atr_len_MB)
+rp_AvgVol = ta.sma(volume, rp_vol_len_MB)
+rp_AvgDelta = ta.sma(math.abs(close - close[1]), rp_avg_delta_len)
+rp_TrendMA = ta.sma(close, rp_trend_ma_len_TA)
+rp_body = close - open
+rp_candleRange = high - low
+rp_body_up = rp_body > 0
+rp_body_size = math.abs(rp_body)
+rp_body_ratio = rp_candleRange == 0 ? 0 : rp_body_size / rp_candleRange
+rp_MB_bull = rp_body_up and rp_body_size > rp_alpha_MB * rp_ATR and rp_body_ratio > rp_beta_MB and volume > rp_delta_MB * rp_AvgVol
+rp_wide = rp_candleRange > rp_gamma_RE * rp_ATR
+rp_RE_bull = rp_body_up and rp_wide and (high - close) < rp_epsilon_RE * rp_candleRange and volume > rp_delta_RE * rp_AvgVol
+rp_up_trend = rp_TrendMA > rp_TrendMA[1]
+rp_TA_bull = rp_up_trend and (close - close[1]) > rp_theta_TA * rp_AvgDelta and rp_body_up and volume > rp_delta_TA * rp_AvgVol
+rp_isEvent = (rp_useMB and rp_MB_bull) or (rp_useRE and rp_RE_bull) or (rp_useTA and rp_TA_bull)
+var int rp_seqLen = 0
+if ta.change(dayofmonth) != 0
+	rp_seqLen := 0
+else if not rp_isEvent
+	rp_seqLen := 0
+if rp_isEvent
+	rp_seqLen += 1
+bool sRedPlus_raw = rp_isEvent and rp_seqLen >= 2
+plotshape(sRedPlus_raw and show_rp_plots, "Red Plus", location=location.abovebar, style=shape.cross, color=color.new(color.fuchsia, 0), size=size.large)
+
+// #############################################################################
+// ###  INDICATOR 7: RVOL Bullish U>Th (Lucky #7)                             ###
+// #############################################################################
+grp_l7_rvol = "7. RVOL U>Th - RVOL Calculation"
+l7_avglength = input.int(30, title="Look-back Length", group=grp_l7_rvol)
+l7_smaLength = input.int(20, title="SMA Length (RVOL³)", group=grp_l7_rvol)
+grp_l7_th = "7. RVOL U>Th - Bullish Threshold"
+l7_th_low = input.float(19.0, step=0.1, title="Lower Threshold", group=grp_l7_th)
+l7_th_high = input.float(1000000.0, step=0.1, title="Upper Threshold", group=grp_l7_th)
+l7_spike = math.abs(close - open)
+l7_avgSpikeDenom = ta.sma(l7_spike, l7_avglength)[1]
+l7_rvol_price = l7_spike / nz(l7_avgSpikeDenom, 1)
+l7_avgVolDenom = ta.sma(volume, l7_avglength)[1]
+l7_rvol_volume = volume / nz(l7_avgVolDenom, 1)
+l7_rvol_diff = l7_rvol_price - l7_rvol_volume
+l7_rvol3_pos = l7_rvol_diff > 0 ? l7_rvol_diff : na
+l7_sma_rvol3 = ta.sma(l7_rvol3_pos, l7_smaLength)
+l7_baseBull = close > open and nz(l7_rvol3_pos) > nz(l7_sma_rvol3)
+l7_inRange(v) => v > l7_th_low and v < l7_th_high
+bool sRVOL_UgtTh_raw = l7_baseBull and l7_inRange(l7_rvol_price)
+plotshape(sRVOL_UgtTh_raw and show_l7_plots, title="RVOL U>Th", location=location.bottom, style=shape.cross, size=size.small, color=color.new(color.lime, 0), text="RVOL")
+
+// #############################################################################
+// ###  INDICATOR 8: FAUNA X-IN-Y SIGNAL                                      ###
+// #############################################################################
+grp_fxy_win = "8. Fauna X-in-Y - Dynamic Window"
+fxy_requiredEvents = input.int(4, "Required Events in Window (X)", group=grp_fxy_win, minval=1)
+fxy_windowLength = input.int(12, "Window Length in Candles (Y)", group=grp_fxy_win, minval=1)
+group_fxy_mb = "8. Fauna X-in-Y - Momentum Blast (MB)"
+fxy_alpha_MB = input.float(1.6, "Body Size × ATR", group=group_fxy_mb)
+fxy_beta_MB = input.float(0.7, "Body / Range ≥", minval=0.5, maxval=0.99, step=0.01, group=group_fxy_mb)
+fxy_delta_MB = input.float(1.8, "Volume × Avg", group=group_fxy_mb)
+fxy_atr_len_MB = input.int(14, "ATR Lookback", group=group_fxy_mb)
+fxy_vol_len_MB = input.int(20, "Volume Lookback", group=group_fxy_mb)
+group_fxy_re = "8. Fauna X-in-Y - Range Expansion (RE)"
+fxy_gamma_RE = input.float(2.2, "Range × ATR", group=group_fxy_re)
+fxy_epsilon_RE = input.float(0.15, "Close‑to‑Edge ≤", group=group_fxy_re)
+fxy_delta_RE = input.float(1.8, "Volume × Avg", group=group_fxy_re)
+fxy_atr_len_RE = input.int(14, "ATR Lookback", group=group_fxy_re)
+fxy_vol_len_RE = input.int(20, "Volume Lookback", group=group_fxy_re)
+group_fxy_ta = "8. Fauna X-in-Y - Trend Accelerant (TA)"
+fxy_theta_TA = input.float(1.6, "ΔPrice × AvgΔ", group=group_fxy_ta)
+fxy_delta_TA = input.float(1.8, "Volume × Avg", group=group_fxy_ta)
+fxy_trend_ma_len_TA = input.int(50, "Trend MA Len", group=group_fxy_ta)
+fxy_avg_delta_len = input.int(10, "Avg Δ Len", group=group_fxy_ta)
+group_fxy_seq = "8. Fauna X-in-Y - Event Types"
+fxy_useMB = input.bool(true, "Count MB as Event?", group=group_fxy_seq)
+fxy_useRE = input.bool(true, "Count RE as Event?", group=group_fxy_seq)
+fxy_useTA = input.bool(true, "Count TA as Event?", group=group_fxy_seq)
+fxy_ATR = ta.atr(fxy_atr_len_MB)
+fxy_AvgVol = ta.sma(volume, fxy_vol_len_MB)
+fxy_AvgDelta = ta.sma(math.abs(close - close[1]), fxy_avg_delta_len)
+fxy_TrendMA = ta.sma(close, fxy_trend_ma_len_TA)
+fxy_body = close - open
+fxy_candleRange = high - low
+fxy_body_up = fxy_body > 0
+fxy_body_size = math.abs(fxy_body)
+fxy_body_ratio = fxy_candleRange == 0 ? 0 : fxy_body_size / fxy_candleRange
+fxy_MB_bull = fxy_body_up and fxy_body_size > fxy_alpha_MB * fxy_ATR and fxy_body_ratio > fxy_beta_MB and volume > fxy_delta_MB * fxy_AvgVol
+fxy_wide = fxy_candleRange > fxy_gamma_RE * fxy_ATR
+fxy_RE_bull = fxy_body_up and fxy_wide and (high - close) < fxy_epsilon_RE * fxy_candleRange and volume > fxy_delta_RE * fxy_AvgVol
+fxy_up_trend = fxy_TrendMA > fxy_TrendMA[1]
+fxy_TA_bull = fxy_up_trend and (close - close[1]) > fxy_theta_TA * fxy_AvgDelta and fxy_body_up and volume > fxy_delta_TA * fxy_AvgVol
+fxy_isEvent = (fxy_useMB and fxy_MB_bull) or (fxy_useRE and fxy_RE_bull) or (fxy_useTA and fxy_TA_bull)
+fxy_eventAsNumber = fxy_isEvent ? 1 : 0
+float fxy_eventsInWindow = 0.0
+if fxy_windowLength >= 1
+	for i = 0 to fxy_windowLength - 1
+		fxy_eventsInWindow += fxy_eventAsNumber[i]
+bool fxy_conditionMet = fxy_eventsInWindow >= fxy_requiredEvents
+bool sFaunaXinY_raw = fxy_conditionMet and not fxy_conditionMet[1]
+plotshape(sFaunaXinY_raw and show_fxy_plots, "Fauna X-in-Y", location=location.abovebar, style=shape.cross, color=color.new(color.lime, 0), size=size.huge, text="")
+
+// #############################################################################
+// ###  INDICATOR 9: RVOL ROLLING WINDOW                                      ###
+// #############################################################################
+grp_rw_rvol = "9. RVOL Window - RVOL Calculation"
+rw_avglength = input.int(30, title="Look-back Length", group=grp_rw_rvol)
+rw_smaLength = input.int(20, title="SMA Length (RVOL³)", group=grp_rw_rvol)
+grp_rw_event_def = "9. RVOL Window - 1. Single Event Definition"
+rw_th_low = input.float(8.0, step=0.1, title="Event Min RVOL Value", group=grp_rw_event_def)
+rw_th_high = input.float(100000.0, step=0.1, title="Event Max RVOL Value", group=grp_rw_event_def)
+grp_rw_window_cond = "9. RVOL Window - 2. Rolling Window Conditions"
+rw_rollingWindowLen = input.int(60, "Lookback Bars (Window)", group=grp_rw_window_cond)
+rw_minEventsInWindow = input.int(4, "Min Events in Window", minval=2, group=grp_rw_window_cond)
+rw_minEventValue = input.float(8.0, title="Min Value of at least ONE Event", step=0.1, group=grp_rw_window_cond)
+rw_minWindowSumValue = input.float(50.0, title="Min Total Sum of Window", step=0.1, group=grp_rw_window_cond)
+rw_spike = math.abs(close - open)
+rw_avgSpikeDenom = ta.sma(rw_spike, rw_avglength)[1]
+rw_rvol_price = rw_spike / nz(rw_avgSpikeDenom, 1)
+rw_avgVolDenom = ta.sma(volume, rw_avglength)[1]
+rw_rvol_volume = volume / nz(rw_avgVolDenom, 1)
+rw_rvol_diff = rw_rvol_price - rw_rvol_volume
+rw_rvolPos = rw_rvol_diff > 0 ? rw_rvol_diff : na
+rw_smaPos = ta.sma(rw_rvolPos, 20)[1]
+rw_baseBull = close > open and rw_rvol_diff > 0 and nz(rw_rvolPos) > nz(rw_smaPos)
+rw_inRange(v) => v > rw_th_low and v < rw_th_high
+rw_isEvent = rw_baseBull and rw_inRange(rw_rvol_price) and barstate.isconfirmed
+
+var int rw_windowStartBar = na
+var int rw_eventCount = 0
+var float[] rw_windowEventValues = array.new_float()
+bool sRVOL_Window_raw = false
+
+if rw_eventCount > 0 and bar_index - rw_windowStartBar >= rw_rollingWindowLen
+	rw_eventCount := 0
+	rw_windowStartBar := na
+	array.clear(rw_windowEventValues)
+if rw_isEvent
+	if rw_eventCount == 0
+		rw_windowStartBar := bar_index
+		rw_eventCount := 1
+		array.clear(rw_windowEventValues)
+		array.push(rw_windowEventValues, rw_rvol_price)
+	else
+		rw_eventCount += 1
+		array.push(rw_windowEventValues, rw_rvol_price)
+	if rw_eventCount >= rw_minEventsInWindow
+		bool hasHighValue = false
+		for val in rw_windowEventValues
+			if val >= rw_minEventValue
+				hasHighValue := true
+				break
+		bool meetsSum = array.sum(rw_windowEventValues) >= rw_minWindowSumValue
+		if hasHighValue and meetsSum
+			sRVOL_Window_raw := true
+			rw_windowStartBar := bar_index
+			rw_eventCount := 1
+			array.clear(rw_windowEventValues)
+			array.push(rw_windowEventValues, rw_rvol_price)
+
+plotshape(sRVOL_Window_raw and show_rw_plots, title="RVOL Window", location=location.abovebar, style=shape.cross, size=size.small, color=color.new(color.blue, 0), text="WIN")
+
+// #############################################################################
+// ###  INDICATOR 10: FAUNA SEQUENCE (FIRST 2 RTH) [NEW]                      ###
+// #############################################################################
+// Renumbered group from 11 to 10 based on HUB_Final_Cleaned source
+ftmb_group_mb = "10. First Two MB - Momentum Blast (MB) Settings"
+ftmb_alpha_MB = input.float(1.6, "Body Size × ATR", group=ftmb_group_mb)
+ftmb_beta_MB = input.float(0.7, "Body / Range ≥", minval=0.5, maxval=0.99, step=0.01, group=ftmb_group_mb)
+ftmb_delta_MB = input.float(1.8, "Volume × Avg", group=ftmb_group_mb)
+ftmb_atr_len_MB = input.int(14, "ATR Lookback", group=ftmb_group_mb)
+ftmb_vol_len_MB = input.int(20, "Volume Lookback", group=ftmb_group_mb)
+ftmb_group_session = "10. First Two MB - Session Settings"
+ftmb_tradingSession = input.session("0930-1600", "RTH Trading Session", group=ftmb_group_session)
+ftmb_timeZone = input.string("America/New_York", "Time Zone", group=ftmb_group_session, options=["America/New_York", "America/Chicago", "UTC"])
+ftmb_ATR = ta.atr(ftmb_atr_len_MB)
+ftmb_AvgVol = ta.sma(volume, ftmb_vol_len_MB)
+ftmb_body = close - open
+ftmb_candleRange = high - low
+ftmb_body_up = ftmb_body > 0
+ftmb_body_size = math.abs(ftmb_body)
+ftmb_body_ratio = ftmb_candleRange == 0 ? 0 : ftmb_body_size / ftmb_candleRange
+ftmb_isEvent = ftmb_body_up and ftmb_body_size > ftmb_alpha_MB * ftmb_ATR and ftmb_body_ratio > ftmb_beta_MB and volume > ftmb_delta_MB * ftmb_AvgVol
+ftmb_isWithinSession = not na(time((str.endswith(timeframe.period, "T") ? "1" : timeframe.period), ftmb_tradingSession, ftmb_timeZone))
+var bool ftmb_isNewDay = false
+if ta.change(dayofmonth) != 0
+	ftmb_isNewDay := true
+var int ftmb_sessionBarCounter = 0
+if ftmb_isNewDay and ftmb_isWithinSession
+	ftmb_sessionBarCounter := 1
+	ftmb_isNewDay := false
+else if ftmb_isWithinSession and ftmb_sessionBarCounter > 0
+	ftmb_sessionBarCounter += 1
+else if not ftmb_isWithinSession
+	ftmb_sessionBarCounter := 0
+bool sFirstTwoMB_raw = ftmb_sessionBarCounter == 2 and ftmb_isEvent and ftmb_isEvent[1]
+plotshape(sFirstTwoMB_raw and show_ftmb_plots, "First Two MB", location=location.top, style=shape.triangleup, color=color.new(color.aqua, 0), size=size.huge, text="F2")
+
+
+// #############################################################################
+// ###  INDICATOR 11: MANGO SWINGS (Integrated & Fixed)                       ###
+// #############################################################################
+grp_ms = "11. Mango Swings"
+// --- Pivot Settings ---
+ms_leftBars = input.int(5, title="Pivot Left Strength", group=grp_ms, tooltip="Number of bars to the left of a pivot.")
+ms_rightBars = input.int(5, title="Pivot Right Strength", group=grp_ms, tooltip="Number of bars to the right of a pivot. A pivot is only confirmed after this many bars have passed.")
+
+// --- Internal Display Settings (Kept for full code inclusion) ---
+grp_ms_internal = "11. Mango Swings - Internal Visualization (Debug/Advanced)"
+ms_showInternalPlots = input.bool(false, title="⚠️ Enable Original Mango Swings Visuals", group=grp_ms_internal, tooltip="If enabled, the settings below control the original labels/lines from Mango Swings (HH/LL, Tops, Breaks, etc.). This is independent of the HUB Global Plot settings.")
+ms_showHHLL = input.bool(true, title="Show HH/LH/HL/LL Labels", group=grp_ms_internal)
+ms_showPairs = input.bool(true, title="Show Higher/Lower Pair Labels", group=grp_ms_internal)
+ms_showTopsBottoms = input.bool(true, title="Show Swing Top/Bottom Labels", group=grp_ms_internal)
+ms_showBreaks = input.bool(true, title="Show Breakout/Breakdown Lines & Labels", group=grp_ms_internal)
+ms_showDivergences = input.bool(true, title="Show Swing Divergence Labels", group=grp_ms_internal)
+
+// —————— VARIABLE DECLARATIONS (Prefixed with ms_) ——————
+// Swing point tracking variables
+var float ms_lastHighPrice = na
+var int ms_lastHighBar = na
+var float ms_prevHighPrice = na
+var float ms_lastLowPrice = na
+var int ms_lastLowBar = na
+var float ms_prevLowPrice = na
+
+// FIX: Variables specifically for storing the coordinates when the swing bottom event occurs for later visualization.
+var int ms_swingBottomEventBar = na
+var float ms_swingBottomEventPrice = na
+
+// Market structure state
+var int ms_marketStructure = 0
+
+// Variables for tracking resistance/support lines
+var line ms_resistanceLine = na
+var float ms_resistanceLevel = na
+var line ms_supportLine = na
+var float ms_supportLevel = na
+
+// --- Alert Event Flags (Internal) ---
+var bool ms_hh_event = false
+var bool ms_lh_event = false
+var bool ms_hl_event = false
+var bool ms_ll_event = false
+var bool ms_higher_pair_event = false
+var bool ms_lower_pair_event = false
+var bool ms_swing_top_event = false
+var bool ms_swing_bottom_event = false
+var bool ms_breakout_event = false
+var bool ms_breakdown_event = false
+var bool ms_bear_div_event = false
+var bool ms_bull_div_event = false
+
+// --- Reset Alert Flags on Each Bar ---
+ms_hh_event := false
+ms_lh_event := false
+ms_hl_event := false
+ms_ll_event := false
+ms_higher_pair_event := false
+ms_lower_pair_event := false
+ms_swing_top_event := false
+ms_swing_bottom_event := false
+ms_breakout_event := false
+ms_breakdown_event := false
+ms_bear_div_event := false
+ms_bull_div_event := false
+
+// —————— PIVOT DETECTION ——————
+float ms_swingHigh = ta.pivothigh(high, ms_leftBars, ms_rightBars)
+float ms_swingLow = ta.pivotlow(low, ms_leftBars, ms_rightBars)
+
+// —————— CORE LOGIC ——————
+
+// --- Swing High Analysis & Lower Pair Classification ---
+if not na(ms_swingHigh)
+    ms_isHigherHigh = not na(ms_lastHighPrice) and ms_swingHigh > ms_lastHighPrice
+    ms_isLowerHigh = not na(ms_lastHighPrice) and ms_swingHigh < ms_lastHighPrice
+
+    // INTEGRATION MODIFICATION: Decouple event triggering from display settings.
+    if ms_isHigherHigh
+        ms_hh_event := true
+    if ms_isLowerHigh
+        ms_lh_event := true
+    // --- Bearish Swing Divergence ---
+    if ms_marketStructure == -1 and not na(ms_lastHighPrice) and not na(ms_prevLowPrice)
+        ms_isBearDivergence = ms_swingHigh > ms_lastHighPrice and ms_lastLowPrice < ms_prevLowPrice
+        if ms_isBearDivergence
+            ms_bear_div_event := true
+    // --- Pair Analysis (Lower Pair: Low-High) ---
+    if not na(ms_lastLowPrice) and not na(ms_prevLowPrice) and not na(ms_prevHighPrice) and ms_lastLowBar < bar_index[ms_rightBars]
+        ms_isLowerPair = ms_swingHigh < ms_prevHighPrice and ms_lastLowPrice < ms_prevLowPrice
+
+        if ms_isLowerPair
+            ms_lower_pair_event := true
+            if ms_marketStructure == 1
+                ms_swing_top_event := true
+                // Manage resistance line display
+                if not na(ms_resistanceLine)
+                    line.delete(ms_resistanceLine)
+                line_color = ms_showInternalPlots and ms_showBreaks ? color.red : na
+                ms_resistanceLine := line.new(ms_lastHighBar, ms_prevHighPrice, bar_index, ms_prevHighPrice, extend=extend.right, color=line_color, style=line.style_dashed)
+                ms_resistanceLevel := ms_prevHighPrice
+
+            ms_marketStructure := -1
+
+    // Variable updates for Swing Highs
+    ms_prevHighPrice := ms_lastHighPrice
+    ms_lastHighPrice := ms_swingHigh
+    ms_lastHighBar := bar_index[ms_rightBars]
+
+
+// --- Swing Low Analysis & Higher Pair Classification ---
+if not na(ms_swingLow)
+    ms_isHigherLow = not na(ms_lastLowPrice) and ms_swingLow > ms_lastLowPrice
+    ms_isLowerLow = not na(ms_lastLowPrice) and ms_swingLow < ms_lastLowPrice
+
+    // INTEGRATION MODIFICATION: Decouple event triggering from display settings.
+    if ms_isHigherLow
+        ms_hl_event := true
+    if ms_isLowerLow
+        ms_ll_event := true
+    // --- Bullish Swing Divergence ---
+    if ms_marketStructure == 1 and not na(ms_lastLowPrice) and not na(ms_prevHighPrice)
+        ms_isBullDivergence = ms_swingLow < ms_lastLowPrice and ms_lastHighPrice > ms_prevHighPrice
+        if ms_isBullDivergence
+            ms_bull_div_event := true
+    // --- Pair Analysis (Higher Pair: High-Low) ---
+    if not na(ms_lastHighPrice) and not na(ms_prevHighPrice) and not na(ms_prevLowPrice) and ms_lastHighBar < bar_index[ms_rightBars]
+        ms_isHigherPair = ms_lastHighPrice > ms_prevHighPrice and ms_swingLow > ms_prevLowPrice
+
+        if ms_isHigherPair
+            ms_higher_pair_event := true
+            if ms_marketStructure == -1
+                // This is the crucial signal required by the user.
+                ms_swing_bottom_event := true
+                
+                // FIX: Store the coordinates of the pivot (ms_lastLowBar and ms_prevLowPrice) when the event triggers.
+                // These hold the correct values for the Swing Bottom *before* the updates at the end of this block.
+                ms_swingBottomEventBar := ms_lastLowBar
+                ms_swingBottomEventPrice := ms_prevLowPrice
+                
+                // Internal Visualization (if enabled)
+                // Manage support line display
+                if not na(ms_supportLine)
+                    line.delete(ms_supportLine)
+                line_color = ms_showInternalPlots and ms_showBreaks ? color.green : na
+                ms_supportLine := line.new(ms_lastLowBar, ms_prevLowPrice, bar_index, ms_prevLowPrice, extend=extend.right, color=line_color, style=line.style_dashed)
+                ms_supportLevel := ms_prevLowPrice
+            
+            ms_marketStructure := 1
+
+    // Variable updates for Swing Lows
+    ms_prevLowPrice := ms_lastLowPrice
+    ms_lastLowPrice := ms_swingLow
+    ms_lastLowBar := bar_index[ms_rightBars]
+
+
+// —————— BREAKOUT & BREAKDOWN LOGIC ——————
+// INTEGRATION MODIFICATION: Logic runs regardless of display, but visualization depends on settings.
+if not na(ms_resistanceLine) and close > ms_resistanceLevel
+    line.set_x2(ms_resistanceLine, bar_index)
+    line.set_extend(ms_resistanceLine, extend.none)
+    
+    ms_breakout_event := true
+    ms_resistanceLine := na
+    ms_resistanceLevel := na
+
+if not na(ms_supportLine) and close < ms_supportLevel
+    line.set_x2(ms_supportLine, bar_index)
+    line.set_extend(ms_supportLine, extend.none)
+
+    ms_breakdown_event := true
+    ms_supportLine := na
+    ms_supportLevel := na
+
+// —————— FINAL SIGNAL EXPORT ——————
+// We only export the signal requested by the user (Swing Bottom) to the HUB system.
+bool sSwingBottom_raw = ms_swing_bottom_event
+
+// —————— HUB VISUALIZATION (SWING BOTTOM) ——————
+// Controlled by the HUB Global Plot Setting, placed correctly at the pivot using coordinates stored when the event fired.
+// #############################################################################
+// ###  DERIVED & COINCIDENT SIGNALS                                          ###
+// #############################################################################
+bool sCoincidentCluster_raw = sOW_Overlap_raw and sOoOC_raw
+plotshape(sCoincidentCluster_raw and not sCoincidentCluster_raw[1] and show_cc_plots, "Coincident Cluster", location=location.belowbar, style=shape.labeldown, color=color.new(color.yellow, 50), size=size.huge, text="CC")
+
+// #############################################################################
+// ###  NEWLY INTEGRATED SIGNALS                                              ###
+// #############################################################################
+
+// --- 1. PB&J Follow-up Buy (from BelugaLander - Hardcoded) ---
+// --- Step 1.1: Lander Buy Signal Logic ---
+var int pbj_supertrend_dir_val = 1
+float pbj_base_ma_val = ta.vwma(ohlc4, 5)
+float pbj_atr_supertrend = 2.0 * ta.atr(10)
+float pbj_dynamic_longStop = pbj_base_ma_val - pbj_atr_supertrend
+float pbj_dynamic_shortStop = pbj_base_ma_val + pbj_atr_supertrend
+float pbj_current_long_ST = 0.0
+pbj_current_long_ST := pbj_base_ma_val > nz(pbj_current_long_ST[1], pbj_dynamic_longStop) ? math.max(pbj_dynamic_longStop, nz(pbj_current_long_ST[1])) : pbj_dynamic_longStop
+float pbj_current_short_ST = 0.0
+pbj_current_short_ST := pbj_base_ma_val < nz(pbj_current_short_ST[1], pbj_dynamic_shortStop) ? math.min(pbj_dynamic_shortStop, nz(pbj_current_short_ST[1])) : pbj_dynamic_shortStop
+if (pbj_supertrend_dir_val[1] == -1 and ohlc4 > nz(pbj_current_short_ST[1]))
+	pbj_supertrend_dir_val := 1
+else if (pbj_supertrend_dir_val[1] == 1 and ohlc4 < nz(pbj_current_long_ST[1]))
+	pbj_supertrend_dir_val := -1
+float pbj_ma_signal_line_val = pbj_supertrend_dir_val == 1 ? pbj_current_long_ST : pbj_current_short_ST
+bool pbj_lander_buy_signal = ta.crossover(ohlc4, pbj_ma_signal_line_val)
+
+// --- Step 1.2: Original PB&J Filter Logic ---
+float pbj_ma_value = f_pbj_ma("EMA", close, 20)
+float pbj_atr_value = ta.atr(14)
+float pbj_buy_avg_volume = ta.sma(volume, 20)
+float pbj_buy_threshold_perc = close == 0 ? 0 : (pbj_atr_value / close * 3.0)
+bool pbj_price_cond_buy = low < pbj_ma_value * (1 - pbj_buy_threshold_perc)
+bool pbj_ll_cond_buy = low == ta.lowest(low, 25)
+bool pbj_vol_cond_buy = volume > pbj_buy_avg_volume * 0.1
+bool pbj_buy_condition = pbj_price_cond_buy and pbj_ll_cond_buy and pbj_vol_cond_buy
+
+// --- Step 1.3: State Management & Final Signal ---
+var bool pbj_waiting_for_lander_buy = false
+if pbj_buy_condition
+	pbj_waiting_for_lander_buy := true
+bool sPBJFollowupBuy_raw = pbj_lander_buy_signal and pbj_waiting_for_lander_buy
+if sPBJFollowupBuy_raw
+	pbj_waiting_for_lander_buy := false
+
+
+// --- 2, 3, 4. Individual MB, RE, TA Signals ---
+// NOTE: These signals use the parameters from the "1. White Flag" indicator section.
+bool sMB_Individual_raw = wf_MB_bull
+bool sRE_Individual_raw = wf_RE_bull
+bool sTA_Individual_raw = wf_TA_bull
+
+
+// #############################################################################
+// ###  CUSTOM COMPOSITE SIGNALS (A, B, C, D, E, F, G, H, I, J) - PARITY ENFORCED ###
+// #############################################################################
+
+// Initialize Custom Signal variables to prevent forward-referencing errors
+bool sCustomA_raw = false, bool sCustomB_raw = false, bool sCustomC_raw = false, bool sCustomD_raw = false, bool sCustomE_raw = false, bool sCustomF_raw = false, bool sCustomG_raw = false, bool sCustomH_raw = false, bool sCustomI_raw = false, bool sCustomJ_raw = false
+
+// --- CUSTOM A (Sequential) ---
+grp_A = "🔥 CUSTOM COMPOSITE SIGNAL A (Sequential) 🔥"
+window_A = input.int(3, "Proximity Window", group=grp_A, minval=1)
+required_A = input.int(2, "Required Events in Window", group=grp_A, minval=2)
+grp_A_events = "Signal A - Included Events"
+use_A_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_A_events, inline="a1")
+use_A_ow_overlap = input.bool(false, "OW Overlap", group=grp_A_events, inline="a2")
+use_A_ow_super = input.bool(false, "OW Super", group=grp_A_events, inline="a2")
+use_A_ow_combined = input.bool(false, "OW Combined", group=grp_A_events, inline="a3")
+use_A_fc_2of3 = input.bool(false, "FC 2/3 Fauna", group=grp_A_events, inline="a4")
+use_A_fc_overlap = input.bool(true, "FC Overlap", group=grp_A_events, inline="a5")
+use_A_fc_cluster = input.bool(false, "FC Cluster", group=grp_A_events, inline="a5")
+use_A_e3_open = input.bool(false, "E3", group=grp_A_events, inline="a6")
+use_A_oooc_meta = input.bool(false, "OoOC", group=grp_A_events, inline="a7")
+use_A_rp_sequence = input.bool(false, "Red Plus", group=grp_A_events, inline="a8")
+use_A_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_A_events, inline="a9")
+use_A_fxy_signal = input.bool(false, "Fauna X-in-Y", group=grp_A_events, inline="a10")
+use_A_rw_signal = input.bool(false, "RVOL Window", group=grp_A_events, inline="a11")
+use_A_ftmb = input.bool(false, "First Two MB", group=grp_A_events, inline="a13")
+use_A_cc = input.bool(false, "Coincident Cluster", group=grp_A_events, inline="a14")
+// Mango Integration
+use_A_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_A_events, inline="a15")
+// Adjusted indexes
+use_A_pbj_buy = input.bool(false, "PB&J Follow-up Buy", group=grp_A_events, inline="a16")
+use_A_mb_ind = input.bool(false, "MB Individual", group=grp_A_events, inline="a17")
+use_A_re_ind = input.bool(false, "RE Individual", group=grp_A_events, inline="a17")
+use_A_ta_ind = input.bool(false, "TA Individual", group=grp_A_events, inline="a18")
+use_A_CustomB = input.bool(false, "Custom Signal B", group=grp_A_events, inline="a19")
+use_A_CustomC = input.bool(false, "Custom Signal C", group=grp_A_events, inline="a19")
+use_A_CustomD = input.bool(false, "Custom Signal D", group=grp_A_events, inline="a20")
+use_A_CustomE = input.bool(false, "Custom Signal E", group=grp_A_events, inline="a20")
+use_A_CustomF = input.bool(false, "Custom Signal F", group=grp_A_events, inline="a21")
+use_A_CustomG = input.bool(false, "Custom Signal G", group=grp_A_events, inline="a21")
+use_A_CustomH = input.bool(false, "Custom Signal H", group=grp_A_events, inline="a22")
+use_A_CustomI = input.bool(false, "Custom Signal I", group=grp_A_events, inline="a22")
+use_A_CustomJ = input.bool(false, "Custom Signal J", group=grp_A_events, inline="a23")
+
+float eventsOnBar_A = (use_A_wf_momentum and sWhiteFlagMomentum_raw ? 1:0) + (use_A_ow_overlap and sOW_Overlap_raw ? 1:0) + (use_A_ow_super and sOW_Super_raw ? 1:0) + (use_A_ow_combined and sOW_Combined_raw ? 1:0) + (use_A_fc_2of3 and sFC_2of3_raw ? 1:0) + (use_A_fc_overlap and sFC_Overlap_raw ? 1:0) + (use_A_fc_cluster and sFC_Cluster_raw ? 1:0) + (use_A_e3_open and sE3_raw ? 1:0) + (use_A_oooc_meta and sOoOC_raw ? 1:0) + (use_A_rp_sequence and sRedPlus_raw ? 1:0) + (use_A_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1:0) + (use_A_fxy_signal and sFaunaXinY_raw ? 1:0) + (use_A_rw_signal and sRVOL_Window_raw ? 1:0) + (use_A_ftmb and sFirstTwoMB_raw ? 1:0) + (use_A_cc and sCoincidentCluster_raw ? 1:0) + (use_A_swing_bottom and sSwingBottom_raw ? 1:0) + (use_A_pbj_buy and sPBJFollowupBuy_raw ? 1:0) + (use_A_mb_ind and sMB_Individual_raw ? 1:0) + (use_A_re_ind and sRE_Individual_raw ? 1:0) + (use_A_ta_ind and sTA_Individual_raw ? 1:0) + (use_A_CustomB and sCustomB_raw ? 1:0) + (use_A_CustomC and sCustomC_raw ? 1:0) + (use_A_CustomD and sCustomD_raw ? 1:0) + (use_A_CustomE and sCustomE_raw ? 1:0) + (use_A_CustomF and sCustomF_raw ? 1:0) + (use_A_CustomG and sCustomG_raw ? 1:0) + (use_A_CustomH and sCustomH_raw ? 1:0) + (use_A_CustomI and sCustomI_raw ? 1:0) + (use_A_CustomJ and sCustomJ_raw ? 1:0)
+var int csA_windowStartBar = na, var int csA_eventCount = 0
+if csA_eventCount > 0 and bar_index - csA_windowStartBar >= window_A
+	csA_eventCount := 0, csA_windowStartBar := na
+if eventsOnBar_A > 0
+	if csA_eventCount == 0
+		csA_windowStartBar := bar_index, csA_eventCount := int(eventsOnBar_A)
+	else
+		csA_eventCount += int(eventsOnBar_A)
+	if csA_eventCount >= required_A
+		sCustomA_raw := true, csA_windowStartBar := bar_index, csA_eventCount := int(eventsOnBar_A)
+
+// --- CUSTOM B (Sequential) ---
+grp_B = "💧 CUSTOM COMPOSITE SIGNAL B (Sequential) 💧"
+window_B = input.int(2, "Proximity Window", group=grp_B, minval=1)
+required_B = input.int(2, "Required Events in Window", group=grp_B, minval=2)
+grp_B_events = "Signal B - Included Events"
+use_B_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_B_events, inline="b1")
+use_B_ow_overlap = input.bool(false, "OW Overlap", group=grp_B_events, inline="b2")
+use_B_ow_super = input.bool(false, "OW Super", group=grp_B_events, inline="b2")
+use_B_ow_combined = input.bool(false, "OW Combined", group=grp_B_events, inline="b3")
+use_B_fc_2of3 = input.bool(true, "FC 2/3 Fauna", group=grp_B_events, inline="b4")
+use_B_fc_overlap = input.bool(false, "FC Overlap", group=grp_B_events, inline="b5")
+use_B_fc_cluster = input.bool(false, "FC Cluster", group=grp_B_events, inline="b5")
+use_B_e3_open = input.bool(false, "E3", group=grp_B_events, inline="b6")
+use_B_oooc_meta = input.bool(false, "OoOC", group=grp_B_events, inline="b7")
+use_B_rp_sequence = input.bool(false, "Red Plus", group=grp_B_events, inline="b8")
+use_B_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_B_events, inline="b9")
+use_B_fxy_signal = input.bool(false, "Fauna X-in-Y", group=grp_B_events, inline="b10")
+use_B_rw_signal = input.bool(false, "RVOL Window", group=grp_B_events, inline="b11")
+use_B_ftmb = input.bool(false, "First Two MB", group=grp_B_events, inline="b13")
+use_B_cc = input.bool(false, "Coincident Cluster", group=grp_B_events, inline="b14")
+// Mango Integration
+use_B_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_B_events, inline="b15")
+// Adjusted indexes
+use_B_pbj_buy = input.bool(false, "PB&J Follow-up Buy", group=grp_B_events, inline="b16")
+use_B_mb_ind = input.bool(false, "MB Individual", group=grp_B_events, inline="b17")
+use_B_re_ind = input.bool(false, "RE Individual", group=grp_B_events, inline="b17")
+use_B_ta_ind = input.bool(false, "TA Individual", group=grp_B_events, inline="b18")
+use_B_CustomA = input.bool(false, "Custom Signal A", group=grp_B_events, inline="b19")
+use_B_CustomC = input.bool(false, "Custom Signal C", group=grp_B_events, inline="b19")
+use_B_CustomD = input.bool(false, "Custom Signal D", group=grp_B_events, inline="b20")
+use_B_CustomE = input.bool(false, "Custom Signal E", group=grp_B_events, inline="b20")
+use_B_CustomF = input.bool(false, "Custom Signal F", group=grp_B_events, inline="b21")
+use_B_CustomG = input.bool(false, "Custom Signal G", group=grp_B_events, inline="b21")
+use_B_CustomH = input.bool(false, "Custom Signal H", group=grp_B_events, inline="b22")
+use_B_CustomI = input.bool(false, "Custom Signal I", group=grp_B_events, inline="b22")
+use_B_CustomJ = input.bool(false, "Custom Signal J", group=grp_B_events, inline="b23")
+
+float eventsOnBar_B = (use_B_wf_momentum and sWhiteFlagMomentum_raw ? 1:0) + (use_B_ow_overlap and sOW_Overlap_raw ? 1:0) + (use_B_ow_super and sOW_Super_raw ? 1:0) + (use_B_ow_combined and sOW_Combined_raw ? 1:0) + (use_B_fc_2of3 and sFC_2of3_raw ? 1:0) + (use_B_fc_overlap and sFC_Overlap_raw ? 1:0) + (use_B_fc_cluster and sFC_Cluster_raw ? 1:0) + (use_B_e3_open and sE3_raw ? 1:0) + (use_B_oooc_meta and sOoOC_raw ? 1:0) + (use_B_rp_sequence and sRedPlus_raw ? 1:0) + (use_B_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1:0) + (use_B_fxy_signal and sFaunaXinY_raw ? 1:0) + (use_B_rw_signal and sRVOL_Window_raw ? 1:0) + (use_B_ftmb and sFirstTwoMB_raw ? 1:0) + (use_B_cc and sCoincidentCluster_raw ? 1:0) + (use_B_swing_bottom and sSwingBottom_raw ? 1:0) + (use_B_pbj_buy and sPBJFollowupBuy_raw ? 1:0) + (use_B_mb_ind and sMB_Individual_raw ? 1:0) + (use_B_re_ind and sRE_Individual_raw ? 1:0) + (use_B_ta_ind and sTA_Individual_raw ? 1:0) + (use_B_CustomA and sCustomA_raw ? 1:0) + (use_B_CustomC and sCustomC_raw ? 1:0) + (use_B_CustomD and sCustomD_raw ? 1:0) + (use_B_CustomE and sCustomE_raw ? 1:0) + (use_B_CustomF and sCustomF_raw ? 1:0) + (use_B_CustomG and sCustomG_raw ? 1:0) + (use_B_CustomH and sCustomH_raw ? 1:0) + (use_B_CustomI and sCustomI_raw ? 1:0) + (use_B_CustomJ and sCustomJ_raw ? 1:0)
+var int csB_windowStartBar = na, var int csB_eventCount = 0
+if csB_eventCount > 0 and bar_index - csB_windowStartBar >= window_B
+	csB_eventCount := 0, csB_windowStartBar := na
+if eventsOnBar_B > 0
+	if csB_eventCount == 0
+		csB_windowStartBar := bar_index, csB_eventCount := int(eventsOnBar_B)
+	else
+		csB_eventCount += int(eventsOnBar_B)
+	if csB_eventCount >= required_B
+		sCustomB_raw := true, csB_windowStartBar := bar_index, csB_eventCount := int(eventsOnBar_B)
+
+// --- CUSTOM C (Sequential) ---
+grp_C = "⚡ CUSTOM COMPOSITE SIGNAL C (Sequential) ⚡"
+c_use = input.bool(true, "Enable C", group=grp_C)
+c_win = input.int(12, "C Window (bars)", minval=1, maxval=500, group=grp_C)
+c_min = input.int(2, "C Min Signals In Window", minval=1, maxval=500, group=grp_C)
+grp_C_events = "Signal C - Included Events"
+c_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_C_events, inline="c1")
+c_ow_overlap = input.bool(false, "OW Overlap", group=grp_C_events, inline="c2")
+c_ow_super = input.bool(false, "OW Super", group=grp_C_events, inline="c2")
+c_ow_combined = input.bool(false, "OW Combined", group=grp_C_events, inline="c3")
+c_fc_2of3 = input.bool(false, "FC 2/3 Fauna", group=grp_C_events, inline="c4")
+c_fc_overlap = input.bool(false, "FC Overlap", group=grp_C_events, inline="c5")
+c_fc_cluster = input.bool(true, "FC Cluster", group=grp_C_events, inline="c5")
+c_e3_open = input.bool(false, "E3", group=grp_C_events, inline="c6")
+c_oooc_meta = input.bool(false, "OoOC", group=grp_C_events, inline="c7")
+c_rp_sequence = input.bool(false, "Red Plus", group=grp_C_events, inline="c8")
+c_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_C_events, inline="c9")
+c_fxy_signal = input.bool(false, "Fauna X-in-Y", group=grp_C_events, inline="c10")
+c_rw_signal = input.bool(false, "RVOL Window", group=grp_C_events, inline="c11")
+c_ftmb = input.bool(false, "First Two MB", group=grp_C_events, inline="c13")
+c_cc = input.bool(false, "Coincident Cluster", group=grp_C_events, inline="c14")
+// Mango Integration
+c_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_C_events, inline="c15")
+// Adjusted indexes
+c_pbj_buy = input.bool(false, "PB&J Follow-up Buy", group=grp_C_events, inline="c16")
+c_mb_ind = input.bool(false, "MB Individual", group=grp_C_events, inline="c17")
+c_re_ind = input.bool(false, "RE Individual", group=grp_C_events, inline="c17")
+c_ta_ind = input.bool(false, "TA Individual", group=grp_C_events, inline="c18")
+c_CustomA = input.bool(false, "Custom Signal A", group=grp_C_events, inline="c19")
+c_CustomB = input.bool(false, "Custom Signal B", group=grp_C_events, inline="c19")
+c_CustomD = input.bool(false, "Custom Signal D", group=grp_C_events, inline="c20")
+c_CustomE = input.bool(false, "Custom Signal E", group=grp_C_events, inline="c20")
+c_CustomF = input.bool(false, "Custom Signal F", group=grp_C_events, inline="c21")
+c_CustomG = input.bool(false, "Custom Signal G", group=grp_C_events, inline="c21")
+c_CustomH = input.bool(false, "Custom Signal H", group=grp_C_events, inline="c22")
+c_CustomI = input.bool(false, "Custom Signal I", group=grp_C_events, inline="c22")
+c_CustomJ = input.bool(false, "Custom Signal J", group=grp_C_events, inline="c23")
+
+float c_barcount = (c_wf_momentum and sWhiteFlagMomentum_raw ? 1.0 : 0.0) + (c_ow_overlap and sOW_Overlap_raw ? 1.0 : 0.0) + (c_ow_super and sOW_Super_raw ? 1.0 : 0.0) + (c_ow_combined and sOW_Combined_raw ? 1.0 : 0.0) + (c_fc_2of3 and sFC_2of3_raw ? 1.0 : 0.0) + (c_fc_overlap and sFC_Overlap_raw ? 1.0 : 0.0) + (c_fc_cluster and sFC_Cluster_raw ? 1.0 : 0.0) + (c_e3_open and sE3_raw ? 1.0 : 0.0) + (c_oooc_meta and sOoOC_raw ? 1.0 : 0.0) + (c_rp_sequence and sRedPlus_raw ? 1.0 : 0.0) + (c_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1.0 : 0.0) + (c_fxy_signal and sFaunaXinY_raw ? 1.0 : 0.0) + (c_rw_signal and sRVOL_Window_raw ? 1.0 : 0.0) + (c_ftmb and sFirstTwoMB_raw ? 1.0 : 0.0) + (c_cc and sCoincidentCluster_raw ? 1.0 : 0.0) + (c_swing_bottom and sSwingBottom_raw ? 1.0 : 0.0) + (c_pbj_buy and sPBJFollowupBuy_raw ? 1.0 : 0.0) + (c_mb_ind and sMB_Individual_raw ? 1.0 : 0.0) + (c_re_ind and sRE_Individual_raw ? 1.0 : 0.0) + (c_ta_ind and sTA_Individual_raw ? 1.0 : 0.0) + (c_CustomA and sCustomA_raw ? 1.0 : 0.0) + (c_CustomB and sCustomB_raw ? 1.0 : 0.0) + (c_CustomD and sCustomD_raw ? 1.0 : 0.0) + (c_CustomE and sCustomE_raw ? 1.0 : 0.0) + (c_CustomF and sCustomF_raw ? 1.0 : 0.0) + (c_CustomG and sCustomG_raw ? 1.0 : 0.0) + (c_CustomH and sCustomH_raw ? 1.0 : 0.0) + (c_CustomI and sCustomI_raw ? 1.0 : 0.0) + (c_CustomJ and sCustomJ_raw ? 1.0 : 0.0)
+var int csC_windowStartBar = na, var int csC_eventCount = 0
+if csC_eventCount > 0 and bar_index - csC_windowStartBar >= c_win
+	csC_eventCount := 0, csC_windowStartBar := na
+if c_barcount > 0 and c_use
+	if csC_eventCount == 0
+		csC_windowStartBar := bar_index, csC_eventCount := int(c_barcount)
+	else
+		csC_eventCount += int(c_barcount)
+	if csC_eventCount >= c_min
+		sCustomC_raw := true, csC_windowStartBar := bar_index, csC_eventCount := int(c_barcount)
+
+// --- CUSTOM D (Sequential) ---
+grp_D = "👽 CUSTOM COMPOSITE SIGNAL D (Sequential) 👽"
+d_use = input.bool(true, "Enable D", group=grp_D)
+d_win = input.int(1, "D Window (bars)", minval=1, maxval=500, group=grp_D)
+d_min = input.int(2, "D Min Signals In Window", minval=1, maxval=500, group=grp_D)
+grp_D_events = "Signal D - Included Events"
+d_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_D_events, inline="d1")
+d_ow_overlap = input.bool(false, "OW Overlap", group=grp_D_events, inline="d2")
+d_ow_super = input.bool(false, "OW Super", group=grp_D_events, inline="d2")
+d_ow_combined = input.bool(false, "OW Combined", group=grp_D_events, inline="d3")
+d_fc_2of3 = input.bool(false, "FC 2/3 Fauna", group=grp_D_events, inline="d4")
+d_fc_overlap = input.bool(true, "FC Overlap", group=grp_D_events, inline="d5")
+d_fc_cluster = input.bool(false, "FC Cluster", group=grp_D_events, inline="d5")
+d_e3_open = input.bool(false, "E3", group=grp_D_events, inline="d6")
+d_oooc_meta = input.bool(false, "OoOC", group=grp_D_events, inline="d7")
+d_rp_sequence = input.bool(true, "Red Plus", group=grp_D_events, inline="d8")
+d_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_D_events, inline="d9")
+d_fxy_signal = input.bool(false, "Fauna X-in-Y", group=grp_D_events, inline="d10")
+d_rw_signal = input.bool(false, "RVOL Window", group=grp_D_events, inline="d11")
+d_ftmb = input.bool(false, "First Two MB", group=grp_D_events, inline="d13")
+d_cc = input.bool(false, "Coincident Cluster", group=grp_D_events, inline="d14")
+// Mango Integration
+d_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_D_events, inline="d15")
+// Adjusted indexes
+d_pbj_buy = input.bool(false, "PB&J Follow-up Buy", group=grp_D_events, inline="d16")
+d_mb_ind = input.bool(false, "MB Individual", group=grp_D_events, inline="d17")
+d_re_ind = input.bool(false, "RE Individual", group=grp_D_events, inline="d17")
+d_ta_ind = input.bool(false, "TA Individual", group=grp_D_events, inline="d18")
+d_CustomA = input.bool(false, "Custom Signal A", group=grp_D_events, inline="d19")
+d_CustomB = input.bool(false, "Custom Signal B", group=grp_D_events, inline="d19")
+d_CustomC = input.bool(false, "Custom Signal C", group=grp_D_events, inline="d20")
+d_CustomE = input.bool(false, "Custom Signal E", group=grp_D_events, inline="d20")
+d_CustomF = input.bool(false, "Custom Signal F", group=grp_D_events, inline="d21")
+d_CustomG = input.bool(false, "Custom Signal G", group=grp_D_events, inline="d21")
+d_CustomH = input.bool(false, "Custom Signal H", group=grp_D_events, inline="d22")
+d_CustomI = input.bool(false, "Custom Signal I", group=grp_D_events, inline="d22")
+d_CustomJ = input.bool(false, "Custom Signal J", group=grp_D_events, inline="d23")
+
+float d_barcount = (d_wf_momentum and sWhiteFlagMomentum_raw ? 1.0 : 0.0) + (d_ow_overlap and sOW_Overlap_raw ? 1.0 : 0.0) + (d_ow_super and sOW_Super_raw ? 1.0 : 0.0) + (d_ow_combined and sOW_Combined_raw ? 1.0 : 0.0) + (d_fc_2of3 and sFC_2of3_raw ? 1.0 : 0.0) + (d_fc_overlap and sFC_Overlap_raw ? 1.0 : 0.0) + (d_fc_cluster and sFC_Cluster_raw ? 1.0 : 0.0) + (d_e3_open and sE3_raw ? 1.0 : 0.0) + (d_oooc_meta and sOoOC_raw ? 1.0 : 0.0) + (d_rp_sequence and sRedPlus_raw ? 1.0 : 0.0) + (d_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1.0 : 0.0) + (d_fxy_signal and sFaunaXinY_raw ? 1.0 : 0.0) + (d_rw_signal and sRVOL_Window_raw ? 1.0 : 0.0) + (d_ftmb and sFirstTwoMB_raw ? 1.0 : 0.0) + (d_cc and sCoincidentCluster_raw ? 1.0 : 0.0) + (d_swing_bottom and sSwingBottom_raw ? 1.0 : 0.0) + (d_pbj_buy and sPBJFollowupBuy_raw ? 1.0 : 0.0) + (d_mb_ind and sMB_Individual_raw ? 1.0 : 0.0) + (d_re_ind and sRE_Individual_raw ? 1.0 : 0.0) + (d_ta_ind and sTA_Individual_raw ? 1.0 : 0.0) + (d_CustomA and sCustomA_raw ? 1.0 : 0.0) + (d_CustomB and sCustomB_raw ? 1.0 : 0.0) + (d_CustomC and sCustomC_raw ? 1.0 : 0.0) + (d_CustomE and sCustomE_raw ? 1.0 : 0.0) + (d_CustomF and sCustomF_raw ? 1.0 : 0.0) + (d_CustomG and sCustomG_raw ? 1.0 : 0.0) + (d_CustomH and sCustomH_raw ? 1.0 : 0.0) + (d_CustomI and sCustomI_raw ? 1.0 : 0.0) + (d_CustomJ and sCustomJ_raw ? 1.0 : 0.0)
+var int csD_windowStartBar = na, var int csD_eventCount = 0
+if csD_eventCount > 0 and bar_index - csD_windowStartBar >= d_win
+	csD_eventCount := 0, csD_windowStartBar := na
+if d_barcount > 0 and d_use
+	if csD_eventCount == 0
+		csD_windowStartBar := bar_index, csD_eventCount := int(d_barcount)
+	else
+		csD_eventCount += int(d_barcount)
+	if csD_eventCount >= d_min
+		sCustomD_raw := true, csD_windowStartBar := bar_index, csD_eventCount := int(d_barcount)
+
+// --- CUSTOM E (Windowed Density) ---
+grp_E = "📈 CUSTOM COMPOSITE SIGNAL E (Windowed Density) 📈"
+e_use = input.bool(true, "Enable E", group=grp_E)
+e_win = input.int(7, "E Window (bars)", minval=1, maxval=500, group=grp_E)
+e_min = input.int(1, "E Min Signals In Window", minval=1, maxval=500, group=grp_E)
+grp_E_events = "Signal E - Included Events"
+e_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_E_events, inline="e1")
+e_ow_overlap = input.bool(false, "OW Overlap", group=grp_E_events, inline="e2")
+e_ow_super = input.bool(false, "OW Super", group=grp_E_events, inline="e2")
+e_ow_combined = input.bool(false, "OW Combined", group=grp_E_events, inline="e3")
+e_fc_2of3 = input.bool(false, "FC 2/3 Fauna", group=grp_E_events, inline="e4")
+e_fc_overlap = input.bool(false, "FC Overlap", group=grp_E_events, inline="e5")
+e_fc_cluster = input.bool(false, "FC Cluster", group=grp_E_events, inline="e5")
+e_e3_open = input.bool(false, "E3", group=grp_E_events, inline="e6")
+e_oooc_meta = input.bool(false, "OoOC", group=grp_E_events, inline="e7")
+e_rp_sequence = input.bool(false, "Red Plus", group=grp_E_events, inline="e8")
+e_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_E_events, inline="e9")
+e_fxy_signal = input.bool(false, "Fauna X-in-Y", group=grp_E_events, inline="e10")
+e_rw_signal = input.bool(true, "RVOL Window", group=grp_E_events, inline="e11")
+e_ftmb = input.bool(false, "First Two MB", group=grp_E_events, inline="e13")
+e_cc = input.bool(false, "Coincident Cluster", group=grp_E_events, inline="e14")
+// Mango Integration
+e_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_E_events, inline="e15")
+// Adjusted indexes
+e_pbj_buy = input.bool(false, "PB&J Follow-up Buy", group=grp_E_events, inline="e16")
+e_mb_ind = input.bool(false, "MB Individual", group=grp_E_events, inline="e17")
+e_re_ind = input.bool(false, "RE Individual", group=grp_E_events, inline="e17")
+e_ta_ind = input.bool(false, "TA Individual", group=grp_E_events, inline="e18")
+e_CustomA = input.bool(false, "Custom Signal A", group=grp_E_events, inline="e19")
+e_CustomB = input.bool(false, "Custom Signal B", group=grp_E_events, inline="e19")
+e_CustomC = input.bool(false, "Custom Signal C", group=grp_E_events, inline="e20")
+e_CustomD = input.bool(false, "Custom Signal D", group=grp_E_events, inline="e20")
+e_CustomF = input.bool(false, "Custom Signal F", group=grp_E_events, inline="e21")
+e_CustomG = input.bool(false, "Custom Signal G", group=grp_E_events, inline="e21")
+e_CustomH = input.bool(false, "Custom Signal H", group=grp_E_events, inline="e22")
+e_CustomI = input.bool(false, "Custom Signal I", group=grp_E_events, inline="e22")
+e_CustomJ = input.bool(false, "Custom Signal J", group=grp_E_events, inline="e23")
+
+float e_barcount = (e_wf_momentum and sWhiteFlagMomentum_raw ? 1.0 : 0.0) + (e_ow_overlap and sOW_Overlap_raw ? 1.0 : 0.0) + (e_ow_super and sOW_Super_raw ? 1.0 : 0.0) + (e_ow_combined and sOW_Combined_raw ? 1.0 : 0.0) + (e_fc_2of3 and sFC_2of3_raw ? 1.0 : 0.0) + (e_fc_overlap and sFC_Overlap_raw ? 1.0 : 0.0) + (e_fc_cluster and sFC_Cluster_raw ? 1.0 : 0.0) + (e_e3_open and sE3_raw ? 1.0 : 0.0) + (e_oooc_meta and sOoOC_raw ? 1.0 : 0.0) + (e_rp_sequence and sRedPlus_raw ? 1.0 : 0.0) + (e_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1.0 : 0.0) + (e_fxy_signal and sFaunaXinY_raw ? 1.0 : 0.0) + (e_rw_signal and sRVOL_Window_raw ? 1.0 : 0.0) + (e_ftmb and sFirstTwoMB_raw ? 1.0 : 0.0) + (e_cc and sCoincidentCluster_raw ? 1.0 : 0.0) + (e_swing_bottom and sSwingBottom_raw ? 1.0 : 0.0) + (e_pbj_buy and sPBJFollowupBuy_raw ? 1.0 : 0.0) + (e_mb_ind and sMB_Individual_raw ? 1.0 : 0.0) + (e_re_ind and sRE_Individual_raw ? 1.0 : 0.0) + (e_ta_ind and sTA_Individual_raw ? 1.0 : 0.0) + (e_CustomA and sCustomA_raw ? 1.0 : 0.0) + (e_CustomB and sCustomB_raw ? 1.0 : 0.0) + (e_CustomC and sCustomC_raw ? 1.0 : 0.0) + (e_CustomD and sCustomD_raw ? 1.0 : 0.0) + (e_CustomF and sCustomF_raw ? 1.0 : 0.0) + (e_CustomG and sCustomG_raw ? 1.0 : 0.0) + (e_CustomH and sCustomH_raw ? 1.0 : 0.0) + (e_CustomI and sCustomI_raw ? 1.0 : 0.0) + (e_CustomJ and sCustomJ_raw ? 1.0 : 0.0)
+float e_roll = f_rolling_sum(e_barcount, e_win)
+if e_use and e_roll >= e_min
+	sCustomE_raw := true
+
+// --- CUSTOM F (Windowed Density) ---
+grp_F = "📉 CUSTOM COMPOSITE SIGNAL F (Windowed Density) 📉"
+f_use = input.bool(true, "Enable F", group=grp_F)
+f_win = input.int(4, "F Window (bars)", minval=1, maxval=500, group=grp_F)
+f_min = input.int(2, "F Min Signals In Window", minval=1, maxval=500, group=grp_F)
+grp_F_events = "Signal F - Included Events"
+f_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_F_events, inline="f1")
+f_ow_overlap = input.bool(false, "OW Overlap", group=grp_F_events, inline="f2")
+f_ow_super = input.bool(false, "OW Super", group=grp_F_events, inline="f2")
+f_ow_combined = input.bool(false, "OW Combined", group=grp_F_events, inline="f3")
+f_fc_2of3 = input.bool(false, "FC 2/3 Fauna", group=grp_F_events, inline="f4")
+f_fc_overlap = input.bool(false, "FC Overlap", group=grp_F_events, inline="f5")
+f_fc_cluster = input.bool(false, "FC Cluster", group=grp_F_events, inline="f5")
+f_e3_open = input.bool(false, "E3", group=grp_F_events, inline="f6")
+f_oooc_meta = input.bool(false, "OoOC", group=grp_F_events, inline="f7")
+f_rp_sequence = input.bool(false, "Red Plus", group=grp_F_events, inline="f8")
+f_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_F_events, inline="f9")
+f_fxy_signal = input.bool(true, "Fauna X-in-Y", group=grp_F_events, inline="f10")
+f_rw_signal = input.bool(false, "RVOL Window", group=grp_F_events, inline="f11")
+f_ftmb = input.bool(false, "First Two MB", group=grp_F_events, inline="f13")
+f_cc = input.bool(false, "Coincident Cluster", group=grp_F_events, inline="f14")
+// Mango Integration
+f_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_F_events, inline="f15")
+// Adjusted indexes
+f_pbj_buy = input.bool(true, "PB&J Follow-up Buy", group=grp_F_events, inline="f16")
+f_mb_ind = input.bool(false, "MB Individual", group=grp_F_events, inline="f17")
+f_re_ind = input.bool(false, "RE Individual", group=grp_F_events, inline="f17")
+f_ta_ind = input.bool(false, "TA Individual", group=grp_F_events, inline="f18")
+f_CustomA = input.bool(false, "Custom Signal A", group=grp_F_events, inline="f19")
+f_CustomB = input.bool(false, "Custom Signal B", group=grp_F_events, inline="f19")
+f_CustomC = input.bool(false, "Custom Signal C", group=grp_F_events, inline="f20")
+f_CustomD = input.bool(false, "Custom Signal D", group=grp_F_events, inline="f20")
+f_CustomE = input.bool(false, "Custom Signal E", group=grp_F_events, inline="f21")
+f_CustomG = input.bool(false, "Custom Signal G", group=grp_F_events, inline="f21")
+f_CustomH = input.bool(false, "Custom Signal H", group=grp_F_events, inline="f22")
+f_CustomI = input.bool(false, "Custom Signal I", group=grp_F_events, inline="f22")
+f_CustomJ = input.bool(false, "Custom Signal J", group=grp_F_events, inline="f23")
+
+float f_barcount = (f_wf_momentum and sWhiteFlagMomentum_raw ? 1.0 : 0.0) + (f_ow_overlap and sOW_Overlap_raw ? 1.0 : 0.0) + (f_ow_super and sOW_Super_raw ? 1.0 : 0.0) + (f_ow_combined and sOW_Combined_raw ? 1.0 : 0.0) + (f_fc_2of3 and sFC_2of3_raw ? 1.0 : 0.0) + (f_fc_overlap and sFC_Overlap_raw ? 1.0 : 0.0) + (f_fc_cluster and sFC_Cluster_raw ? 1.0 : 0.0) + (f_e3_open and sE3_raw ? 1.0 : 0.0) + (f_oooc_meta and sOoOC_raw ? 1.0 : 0.0) + (f_rp_sequence and sRedPlus_raw ? 1.0 : 0.0) + (f_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1.0 : 0.0) + (f_fxy_signal and sFaunaXinY_raw ? 1.0 : 0.0) + (f_rw_signal and sRVOL_Window_raw ? 1.0 : 0.0) + (f_ftmb and sFirstTwoMB_raw ? 1.0 : 0.0) + (f_cc and sCoincidentCluster_raw ? 1.0 : 0.0) + (f_swing_bottom and sSwingBottom_raw ? 1.0 : 0.0) + (f_pbj_buy and sPBJFollowupBuy_raw ? 1.0 : 0.0) + (f_mb_ind and sMB_Individual_raw ? 1.0 : 0.0) + (f_re_ind and sRE_Individual_raw ? 1.0 : 0.0) + (f_ta_ind and sTA_Individual_raw ? 1.0 : 0.0) + (f_CustomA and sCustomA_raw ? 1.0 : 0.0) + (f_CustomB and sCustomB_raw ? 1.0 : 0.0) + (f_CustomC and sCustomC_raw ? 1.0 : 0.0) + (f_CustomD and sCustomD_raw ? 1.0 : 0.0) + (f_CustomE and sCustomE_raw ? 1.0 : 0.0) + (f_CustomG and sCustomG_raw ? 1.0 : 0.0) + (f_CustomH and sCustomH_raw ? 1.0 : 0.0) + (f_CustomI and sCustomI_raw ? 1.0 : 0.0) + (f_CustomJ and sCustomJ_raw ? 1.0 : 0.0)
+float f_roll = f_rolling_sum(f_barcount, f_win)
+if f_use and f_roll >= f_min
+	sCustomF_raw := true
+
+// --- CUSTOM G (Windowed Density) ---
+grp_G = "🚀 CUSTOM COMPOSITE SIGNAL G (Windowed Density) 🚀"
+g_use = input.bool(true, "Enable G", group=grp_G)
+g_win = input.int(3, "G Window (bars)", minval=1, maxval=500, group=grp_G)
+g_min = input.int(2, "G Min Signals In Window", minval=1, maxval=500, group=grp_G)
+grp_G_events = "Signal G - Included Events"
+g_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_G_events, inline="g1")
+g_ow_overlap = input.bool(false, "OW Overlap", group=grp_G_events, inline="g2")
+g_ow_super = input.bool(false, "OW Super", group=grp_G_events, inline="g2")
+g_ow_combined = input.bool(false, "OW Combined", group=grp_G_events, inline="g3")
+g_fc_2of3 = input.bool(false, "FC 2/3 Fauna", group=grp_G_events, inline="g4")
+g_fc_overlap = input.bool(false, "FC Overlap", group=grp_G_events, inline="g5")
+g_fc_cluster = input.bool(false, "FC Cluster", group=grp_G_events, inline="g5")
+g_e3_open = input.bool(false, "E3", group=grp_G_events, inline="g6")
+g_oooc_meta = input.bool(false, "OoOC", group=grp_G_events, inline="g7")
+g_rp_sequence = input.bool(false, "Red Plus", group=grp_G_events, inline="g8")
+g_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_G_events, inline="g9")
+g_fxy_signal = input.bool(false, "Fauna X-in-Y", group=grp_G_events, inline="g10")
+g_rw_signal = input.bool(false, "RVOL Window", group=grp_G_events, inline="g11")
+g_ftmb = input.bool(false, "First Two MB", group=grp_G_events, inline="g13")
+g_cc = input.bool(false, "Coincident Cluster", group=grp_G_events, inline="g14")
+// Mango Integration
+g_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_G_events, inline="g15")
+// Adjusted indexes
+g_pbj_buy = input.bool(false, "PB&J Follow-up Buy", group=grp_G_events, inline="g16")
+g_mb_ind = input.bool(false, "MB Individual", group=grp_G_events, inline="g17")
+g_re_ind = input.bool(false, "RE Individual", group=grp_G_events, inline="g17")
+g_ta_ind = input.bool(false, "TA Individual", group=grp_G_events, inline="g18")
+g_CustomA = input.bool(false, "Custom Signal A", group=grp_G_events, inline="g19")
+g_CustomB = input.bool(false, "Custom Signal B", group=grp_G_events, inline="g19")
+g_CustomC = input.bool(false, "Custom Signal C", group=grp_G_events, inline="g20")
+g_CustomD = input.bool(true, "Custom Signal D", group=grp_G_events, inline="g20")
+g_CustomE = input.bool(false, "Custom Signal E", group=grp_G_events, inline="g21")
+g_CustomF = input.bool(false, "Custom Signal F", group=grp_G_events, inline="g21")
+g_CustomH = input.bool(false, "Custom Signal H", group=grp_G_events, inline="g22")
+g_CustomI = input.bool(false, "Custom Signal I", group=grp_G_events, inline="g22")
+g_CustomJ = input.bool(false, "Custom Signal J", group=grp_G_events, inline="g23")
+
+float g_barcount = (g_wf_momentum and sWhiteFlagMomentum_raw ? 1.0 : 0.0) + (g_ow_overlap and sOW_Overlap_raw ? 1.0 : 0.0) + (g_ow_super and sOW_Super_raw ? 1.0 : 0.0) + (g_ow_combined and sOW_Combined_raw ? 1.0 : 0.0) + (g_fc_2of3 and sFC_2of3_raw ? 1.0 : 0.0) + (g_fc_overlap and sFC_Overlap_raw ? 1.0 : 0.0) + (g_fc_cluster and sFC_Cluster_raw ? 1.0 : 0.0) + (g_e3_open and sE3_raw ? 1.0 : 0.0) + (g_oooc_meta and sOoOC_raw ? 1.0 : 0.0) + (g_rp_sequence and sRedPlus_raw ? 1.0 : 0.0) + (g_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1.0 : 0.0) + (g_fxy_signal and sFaunaXinY_raw ? 1.0 : 0.0) + (g_rw_signal and sRVOL_Window_raw ? 1.0 : 0.0) + (g_ftmb and sFirstTwoMB_raw ? 1.0 : 0.0) + (g_cc and sCoincidentCluster_raw ? 1.0 : 0.0) + (g_swing_bottom and sSwingBottom_raw ? 1.0 : 0.0) + (g_pbj_buy and sPBJFollowupBuy_raw ? 1.0 : 0.0) + (g_mb_ind and sMB_Individual_raw ? 1.0 : 0.0) + (g_re_ind and sRE_Individual_raw ? 1.0 : 0.0) + (g_ta_ind and sTA_Individual_raw ? 1.0 : 0.0) + (g_CustomA and sCustomA_raw ? 1.0 : 0.0) + (g_CustomB and sCustomB_raw ? 1.0 : 0.0) + (g_CustomC and sCustomC_raw ? 1.0 : 0.0) + (g_CustomD and sCustomD_raw ? 1.0 : 0.0) + (g_CustomE and sCustomE_raw ? 1.0 : 0.0) + (g_CustomF and sCustomF_raw ? 1.0 : 0.0) + (g_CustomH and sCustomH_raw ? 1.0 : 0.0) + (g_CustomI and sCustomI_raw ? 1.0 : 0.0) + (g_CustomJ and sCustomJ_raw ? 1.0 : 0.0)
+float g_roll = f_rolling_sum(g_barcount, g_win)
+if g_use and g_roll >= g_min
+	sCustomG_raw := true
+
+// --- CUSTOM H (Windowed Density) ---
+grp_H = "🛸 CUSTOM COMPOSITE SIGNAL H (Windowed Density) 🛸"
+h_use = input.bool(true, "Enable H", group=grp_H)
+h_win = input.int(3, "H Window (bars)", minval=1, maxval=500, group=grp_H)
+h_min = input.int(7, "H Min Signals In Window", minval=1, maxval=500, group=grp_H)
+grp_H_events = "Signal H - Included Events"
+h_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_H_events, inline="h1")
+h_ow_overlap = input.bool(false, "OW Overlap", group=grp_H_events, inline="h2")
+h_ow_super = input.bool(false, "OW Super", group=grp_H_events, inline="h2")
+h_ow_combined = input.bool(false, "OW Combined", group=grp_H_events, inline="h3")
+h_fc_2of3 = input.bool(false, "FC 2/3 Fauna", group=grp_H_events, inline="h4")
+h_fc_overlap = input.bool(true, "FC Overlap", group=grp_H_events, inline="h5")
+h_fc_cluster = input.bool(false, "FC Cluster", group=grp_H_events, inline="h5")
+h_e3_open = input.bool(false, "E3", group=grp_H_events, inline="h6")
+h_oooc_meta = input.bool(false, "OoOC", group=grp_H_events, inline="h7")
+h_rp_sequence = input.bool(false, "Red Plus", group=grp_H_events, inline="h8")
+h_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_H_events, inline="h9")
+h_fxy_signal = input.bool(false, "Fauna X-in-Y", group=grp_H_events, inline="h10")
+h_rw_signal = input.bool(false, "RVOL Window", group=grp_H_events, inline="h11")
+h_ftmb = input.bool(false, "First Two MB", group=grp_H_events, inline="h13")
+h_cc = input.bool(false, "Coincident Cluster", group=grp_H_events, inline="h14")
+// Mango Integration
+h_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_H_events, inline="h15")
+// Adjusted indexes
+h_pbj_buy = input.bool(false, "PB&J Follow-up Buy", group=grp_H_events, inline="h16")
+h_mb_ind = input.bool(false, "MB Individual", group=grp_H_events, inline="h17")
+h_re_ind = input.bool(false, "RE Individual", group=grp_H_events, inline="h17")
+h_ta_ind = input.bool(false, "TA Individual", group=grp_H_events, inline="h18")
+h_CustomA = input.bool(false, "Custom Signal A", group=grp_H_events, inline="h19")
+h_CustomB = input.bool(false, "Custom Signal B", group=grp_H_events, inline="h19")
+h_CustomC = input.bool(false, "Custom Signal C", group=grp_H_events, inline="h20")
+h_CustomD = input.bool(false, "Custom Signal D", group=grp_H_events, inline="h20")
+h_CustomE = input.bool(false, "Custom Signal E", group=grp_H_events, inline="h21")
+h_CustomF = input.bool(false, "Custom Signal F", group=grp_H_events, inline="h21")
+h_CustomG = input.bool(false, "Custom Signal G", group=grp_H_events, inline="h22")
+h_CustomI = input.bool(false, "Custom Signal I", group=grp_H_events, inline="h22")
+h_CustomJ = input.bool(false, "Custom Signal J", group=grp_H_events, inline="h23")
+
+float h_barcount = (h_wf_momentum and sWhiteFlagMomentum_raw ? 1.0 : 0.0) + (h_ow_overlap and sOW_Overlap_raw ? 1.0 : 0.0) + (h_ow_super and sOW_Super_raw ? 1.0 : 0.0) + (h_ow_combined and sOW_Combined_raw ? 1.0 : 0.0) + (h_fc_2of3 and sFC_2of3_raw ? 1.0 : 0.0) + (h_fc_overlap and sFC_Overlap_raw ? 1.0 : 0.0) + (h_fc_cluster and sFC_Cluster_raw ? 1.0 : 0.0) + (h_e3_open and sE3_raw ? 1.0 : 0.0) + (h_oooc_meta and sOoOC_raw ? 1.0 : 0.0) + (h_rp_sequence and sRedPlus_raw ? 1.0 : 0.0) + (h_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1.0 : 0.0) + (h_fxy_signal and sFaunaXinY_raw ? 1.0 : 0.0) + (h_rw_signal and sRVOL_Window_raw ? 1.0 : 0.0) + (h_ftmb and sFirstTwoMB_raw ? 1.0 : 0.0) + (h_cc and sCoincidentCluster_raw ? 1.0 : 0.0) + (h_swing_bottom and sSwingBottom_raw ? 1.0 : 0.0) + (h_pbj_buy and sPBJFollowupBuy_raw ? 1.0 : 0.0) + (h_mb_ind and sMB_Individual_raw ? 1.0 : 0.0) + (h_re_ind and sRE_Individual_raw ? 1.0 : 0.0) + (h_ta_ind and sTA_Individual_raw ? 1.0 : 0.0) + (h_CustomA and sCustomA_raw ? 1.0 : 0.0) + (h_CustomB and sCustomB_raw ? 1.0 : 0.0) + (h_CustomC and sCustomC_raw ? 1.0 : 0.0) + (h_CustomD and sCustomD_raw ? 1.0 : 0.0) + (h_CustomE and sCustomE_raw ? 1.0 : 0.0) + (h_CustomF and sCustomF_raw ? 1.0 : 0.0) + (h_CustomG and sCustomG_raw ? 1.0 : 0.0) + (h_CustomI and sCustomI_raw ? 1.0 : 0.0) + (h_CustomJ and sCustomJ_raw ? 1.0 : 0.0)
+float h_roll = f_rolling_sum(h_barcount, h_win)
+if h_use and h_roll >= h_min
+	sCustomH_raw := true
+
+// --- CUSTOM I (Windowed Density) ---
+grp_I = "🌌 CUSTOM COMPOSITE SIGNAL I (Windowed Density) 🌌"
+i_use = input.bool(true, "Enable I", group=grp_I)
+i_win = input.int(2, "I Window (bars)", minval=1, maxval=500, group=grp_I)
+i_min = input.int(2, "I Min Signals In Window", minval=1, maxval=500, group=grp_I)
+grp_I_events = "Signal I - Included Events"
+i_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_I_events, inline="i1")
+i_ow_overlap = input.bool(false, "OW Overlap", group=grp_I_events, inline="i2")
+i_ow_super = input.bool(false, "OW Super", group=grp_I_events, inline="i2")
+i_ow_combined = input.bool(false, "OW Combined", group=grp_I_events, inline="i3")
+i_fc_2of3 = input.bool(true, "FC 2/3 Fauna", group=grp_I_events, inline="i4")
+i_fc_overlap = input.bool(false, "FC Overlap", group=grp_I_events, inline="i5")
+i_fc_cluster = input.bool(false, "FC Cluster", group=grp_I_events, inline="i5")
+i_e3_open = input.bool(false, "E3", group=grp_I_events, inline="i6")
+i_oooc_meta = input.bool(false, "OoOC", group=grp_I_events, inline="i7")
+i_rp_sequence = input.bool(false, "Red Plus", group=grp_I_events, inline="i8")
+i_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_I_events, inline="i9")
+i_fxy_signal = input.bool(false, "Fauna X-in-Y", group=grp_I_events, inline="i10")
+i_rw_signal = input.bool(false, "RVOL Window", group=grp_I_events, inline="i11")
+i_ftmb = input.bool(false, "First Two MB", group=grp_I_events, inline="i13")
+i_cc = input.bool(false, "Coincident Cluster", group=grp_I_events, inline="i14")
+// Mango Integration
+i_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_I_events, inline="i15")
+// Adjusted indexes
+i_pbj_buy = input.bool(false, "PB&J Follow-up Buy", group=grp_I_events, inline="i16")
+i_mb_ind = input.bool(false, "MB Individual", group=grp_I_events, inline="i17")
+i_re_ind = input.bool(false, "RE Individual", group=grp_I_events, inline="i17")
+i_ta_ind = input.bool(false, "TA Individual", group=grp_I_events, inline="i18")
+i_CustomA = input.bool(false, "Custom Signal A", group=grp_I_events, inline="i19")
+i_CustomB = input.bool(false, "Custom Signal B", group=grp_I_events, inline="i19")
+i_CustomC = input.bool(false, "Custom Signal C", group=grp_I_events, inline="i20")
+i_CustomD = input.bool(false, "Custom Signal D", group=grp_I_events, inline="i20")
+i_CustomE = input.bool(false, "Custom Signal E", group=grp_I_events, inline="i21")
+i_CustomF = input.bool(false, "Custom Signal F", group=grp_I_events, inline="i21")
+i_CustomG = input.bool(false, "Custom Signal G", group=grp_I_events, inline="i22")
+i_CustomH = input.bool(false, "Custom Signal H", group=grp_I_events, inline="i22")
+i_CustomJ = input.bool(false, "Custom Signal J", group=grp_I_events, inline="i23")
+
+float i_barcount = (i_wf_momentum and sWhiteFlagMomentum_raw ? 1.0 : 0.0) + (i_ow_overlap and sOW_Overlap_raw ? 1.0 : 0.0) + (i_ow_super and sOW_Super_raw ? 1.0 : 0.0) + (i_ow_combined and sOW_Combined_raw ? 1.0 : 0.0) + (i_fc_2of3 and sFC_2of3_raw ? 1.0 : 0.0) + (i_fc_overlap and sFC_Overlap_raw ? 1.0 : 0.0) + (i_fc_cluster and sFC_Cluster_raw ? 1.0 : 0.0) + (i_e3_open and sE3_raw ? 1.0 : 0.0) + (i_oooc_meta and sOoOC_raw ? 1.0 : 0.0) + (i_rp_sequence and sRedPlus_raw ? 1.0 : 0.0) + (i_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1.0 : 0.0) + (i_fxy_signal and sFaunaXinY_raw ? 1.0 : 0.0) + (i_rw_signal and sRVOL_Window_raw ? 1.0 : 0.0) + (i_ftmb and sFirstTwoMB_raw ? 1.0 : 0.0) + (i_cc and sCoincidentCluster_raw ? 1.0 : 0.0) + (i_swing_bottom and sSwingBottom_raw ? 1.0 : 0.0) + (i_pbj_buy and sPBJFollowupBuy_raw ? 1.0 : 0.0) + (i_mb_ind and sMB_Individual_raw ? 1.0 : 0.0) + (i_re_ind and sRE_Individual_raw ? 1.0 : 0.0) + (i_ta_ind and sTA_Individual_raw ? 1.0 : 0.0) + (i_CustomA and sCustomA_raw ? 1.0 : 0.0) + (i_CustomB and sCustomB_raw ? 1.0 : 0.0) + (i_CustomC and sCustomC_raw ? 1.0 : 0.0) + (i_CustomD and sCustomD_raw ? 1.0 : 0.0) + (i_CustomE and sCustomE_raw ? 1.0 : 0.0) + (i_CustomF and sCustomF_raw ? 1.0 : 0.0) + (i_CustomG and sCustomG_raw ? 1.0 : 0.0) + (i_CustomH and sCustomH_raw ? 1.0 : 0.0) + (i_CustomJ and sCustomJ_raw ? 1.0 : 0.0)
+float i_roll = f_rolling_sum(i_barcount, i_win)
+if i_use and i_roll >= i_min
+	sCustomI_raw := true
+
+// --- CUSTOM J (Windowed Density) ---
+grp_J = "🧩 CUSTOM COMPOSITE SIGNAL J (Windowed Density) 🧩"
+j_use = input.bool(true, "Enable J", group=grp_J)
+j_win = input.int(3, "J Window (bars)", minval=1, maxval=500, group=grp_J)
+j_min = input.int(4, "J Min Signals In Window", minval=1, maxval=500, group=grp_J)
+grp_J_events = "Signal J - Included Events"
+j_wf_momentum = input.bool(false, "White Flag Momentum", group=grp_J_events, inline="j1")
+j_ow_overlap = input.bool(false, "OW Overlap", group=grp_J_events, inline="j2")
+j_ow_super = input.bool(false, "OW Super", group=grp_J_events, inline="j2")
+j_ow_combined = input.bool(false, "OW Combined", group=grp_J_events, inline="j3")
+j_fc_2of3 = input.bool(false, "FC 2/3 Fauna", group=grp_J_events, inline="j4")
+j_fc_overlap = input.bool(false, "FC Overlap", group=grp_J_events, inline="j5")
+j_fc_cluster = input.bool(true, "FC Cluster", group=grp_J_events, inline="j5")
+j_e3_open = input.bool(true, "E3", group=grp_J_events, inline="j6")
+j_oooc_meta = input.bool(false, "OoOC", group=grp_J_events, inline="j7")
+j_rp_sequence = input.bool(false, "Red Plus", group=grp_J_events, inline="j8")
+j_l7_bullish_rvol = input.bool(false, "RVOL U>Th", group=grp_J_events, inline="j9")
+j_fxy_signal = input.bool(false, "Fauna X-in-Y", group=grp_J_events, inline="j10")
+j_rw_signal = input.bool(false, "RVOL Window", group=grp_J_events, inline="j11")
+j_ftmb = input.bool(true, "First Two MB", group=grp_J_events, inline="j13")
+j_cc = input.bool(false, "Coincident Cluster", group=grp_J_events, inline="j14")
+// Mango Integration
+j_swing_bottom = input.bool(false, "Swing Bottom (Mango)", group=grp_J_events, inline="j15")
+// Adjusted indexes
+j_pbj_buy = input.bool(true, "PB&J Follow-up Buy", group=grp_J_events, inline="j16")
+j_mb_ind = input.bool(false, "MB Individual", group=grp_J_events, inline="j17")
+j_re_ind = input.bool(false, "RE Individual", group=grp_J_events, inline="j17")
+j_ta_ind = input.bool(false, "TA Individual", group=grp_J_events, inline="j18")
+j_CustomA = input.bool(false, "Custom Signal A", group=grp_J_events, inline="j19")
+j_CustomB = input.bool(false, "Custom Signal B", group=grp_J_events, inline="j19")
+j_CustomC = input.bool(false, "Custom Signal C", group=grp_J_events, inline="j20")
+j_CustomD = input.bool(false, "Custom Signal D", group=grp_J_events, inline="j20")
+j_CustomE = input.bool(false, "Custom Signal E", group=grp_J_events, inline="j21")
+j_CustomF = input.bool(false, "Custom Signal F", group=grp_J_events, inline="j21")
+j_CustomG = input.bool(false, "Custom Signal G", group=grp_J_events, inline="j22")
+j_CustomH = input.bool(false, "Custom Signal H", group=grp_J_events, inline="j22")
+j_CustomI = input.bool(false, "Custom Signal I", group=grp_J_events, inline="j23")
+
+float j_barcount = (j_wf_momentum and sWhiteFlagMomentum_raw ? 1.0 : 0.0) + (j_ow_overlap and sOW_Overlap_raw ? 1.0 : 0.0) + (j_ow_super and sOW_Super_raw ? 1.0 : 0.0) + (j_ow_combined and sOW_Combined_raw ? 1.0 : 0.0) + (j_fc_2of3 and sFC_2of3_raw ? 1.0 : 0.0) + (j_fc_overlap and sFC_Overlap_raw ? 1.0 : 0.0) + (j_fc_cluster and sFC_Cluster_raw ? 1.0 : 0.0) + (j_e3_open and sE3_raw ? 1.0 : 0.0) + (j_oooc_meta and sOoOC_raw ? 1.0 : 0.0) + (j_rp_sequence and sRedPlus_raw ? 1.0 : 0.0) + (j_l7_bullish_rvol and sRVOL_UgtTh_raw ? 1.0 : 0.0) + (j_fxy_signal and sFaunaXinY_raw ? 1.0 : 0.0) + (j_rw_signal and sRVOL_Window_raw ? 1.0 : 0.0) + (j_ftmb and sFirstTwoMB_raw ? 1.0 : 0.0) + (j_cc and sCoincidentCluster_raw ? 1.0 : 0.0) + (j_swing_bottom and sSwingBottom_raw ? 1.0 : 0.0) + (j_pbj_buy and sPBJFollowupBuy_raw ? 1.0 : 0.0) + (j_mb_ind and sMB_Individual_raw ? 1.0 : 0.0) + (j_re_ind and sRE_Individual_raw ? 1.0 : 0.0) + (j_ta_ind and sTA_Individual_raw ? 1.0 : 0.0) + (j_CustomA and sCustomA_raw ? 1.0 : 0.0) + (j_CustomB and sCustomB_raw ? 1.0 : 0.0) + (j_CustomC and sCustomC_raw ? 1.0 : 0.0) + (j_CustomD and sCustomD_raw ? 1.0 : 0.0) + (j_CustomE and sCustomE_raw ? 1.0 : 0.0) + (j_CustomF and sCustomF_raw ? 1.0 : 0.0) + (j_CustomG and sCustomG_raw ? 1.0 : 0.0) + (j_CustomH and sCustomH_raw ? 1.0 : 0.0) + (j_CustomI and sCustomI_raw ? 1.0 : 0.0)
+float j_roll = f_rolling_sum(j_barcount, j_win)
+if j_use and j_roll >= j_min
+	sCustomJ_raw := true
+    
+// #############################################################################
+// ###  MASTER ALERT LOGIC & FINAL PLOTS                                      ###
+// #############################################################################
+f_pulse(cond) => barstate.isconfirmed and cond and not cond[1]
+
+// Base Signals
+bool fire_wf_momentum = f_pulse(sWhiteFlagMomentum_raw)
+bool fire_ow_overlap = f_pulse(sOW_Overlap_raw)
+bool fire_ow_super = f_pulse(sOW_Super_raw)
+bool fire_ow_combined = f_pulse(sOW_Combined_raw)
+bool fire_fc_2of3 = f_pulse(sFC_2of3_raw)
+bool fire_fc_overlap = f_pulse(sFC_Overlap_raw)
+bool fire_fc_cluster = f_pulse(sFC_Cluster_raw)
+bool fire_e3 = f_pulse(sE3_raw)
+bool fire_oooc = f_pulse(sOoOC_raw)
+bool fire_rp = f_pulse(sRedPlus_raw)
+bool fire_rvol_ugtth = f_pulse(sRVOL_UgtTh_raw)
+bool fire_fxy = f_pulse(sFaunaXinY_raw)
+bool fire_rvol_window = f_pulse(sRVOL_Window_raw)
+bool fire_ftmb = f_pulse(sFirstTwoMB_raw)
+bool fire_cc = f_pulse(sCoincidentCluster_raw)
+// Mango Integration. sSwingBottom_raw is inherently a pulse, we just ensure confirmation.
+bool fire_swing_bottom = barstate.isconfirmed and sSwingBottom_raw
+
+// New Integrated Signals
+bool fire_pbj_buy = f_pulse(sPBJFollowupBuy_raw)
+
+// Custom Signals
+bool sCustomA_fire = f_pulse(sCustomA_raw)
+bool sCustomB_fire = f_pulse(sCustomB_raw)
+bool sCustomC_fire = f_pulse(sCustomC_raw)
+bool sCustomD_fire = f_pulse(sCustomD_raw)
+bool sCustomE_fire = f_pulse(sCustomE_raw)
+bool sCustomF_fire = f_pulse(sCustomF_raw)
+bool sCustomG_fire = f_pulse(sCustomG_raw)
+bool sCustomH_fire = f_pulse(sCustomH_raw)
+bool sCustomI_fire = f_pulse(sCustomI_raw)
+bool sCustomJ_fire = f_pulse(sCustomJ_raw)
+
+// Plot Custom Signals & New Signals
+plotshape(sCustomA_fire and show_custom_A_plots, "Custom Signal A", location=location.abovebar, style=shape.circle, color=color.new(color.orange, 80), size=size.huge, text="A")
+plotshape(sCustomB_fire and show_custom_B_plots, "Custom Signal B", location=location.belowbar, style=shape.triangleup, color=color.new(#CD853F, 25), size=size.huge, text="B")
+plotshape(sCustomC_fire and show_custom_C_plots, "Custom Signal C", location=location.abovebar, style=shape.triangledown, color=color.new(color.purple, 25), size=size.huge, text="C")
+plotshape(sCustomD_fire and show_custom_D_plots, "Custom Signal D", location=location.belowbar, style=shape.xcross, color=color.new(color.purple, 0), size=size.huge, text="D")
+plotshape(sCustomE_fire and show_custom_E_plots, title="Custom Signal E", style=shape.circle, size=size.huge, location=location.belowbar, text="E", color=color.new(color.fuchsia, 60))
+plotshape(sCustomF_fire and show_custom_F_plots, title="Custom Signal F", style=shape.triangleup, size=size.huge, location=location.abovebar, text="F", color=color.new(color.maroon, 25))
+plotshape(sCustomG_fire and show_custom_G_plots, title="Custom Signal G", style=shape.triangledown, size=size.huge, location=location.belowbar, text="G", color=color.new(color.teal, 25))
+plotshape(sCustomH_fire and show_custom_H_plots, title="Custom Signal H", style=shape.xcross, size=size.huge, location=location.abovebar, text="H", color=color.new(color.silver, 0))
+plotshape(sCustomI_fire and show_custom_I_plots, title="Custom Signal I", style=shape.labeldown, size=size.huge, location=location.bottom, text="iii", color=color.new(color.white, 80), textcolor=color.white)
+plotshape(sCustomJ_fire and show_custom_J_plots, title="Custom Signal J", style=shape.square, size=size.huge, location=location.bottom, text="J", color=color.new(color.gray, 50))
+
+// --- Plot New Integrated Signals ---
+// Note: Swing Bottom visualization is handled via label.new in Indicator 11 section for accurate placement.
+
+plotchar(fire_pbj_buy and show_pbj_buy_plots, "PB&J Follow-up Buy", char='★', location=location.belowbar, color=color.new(color.green, 0), size=size.small)
+
+
+// #############################################################################
+// ###  GLOBAL ALERTS MULTIPLEXER                                             ###
+// #############################################################################
+var string _galert_msg = ""
+var int _galert_cnt = 0
+_galert_msg := ""
+_galert_cnt := 0
+
+string rvol_str = str.tostring(l7_rvol_price, "#.#")
+string rvol_name_full = "RVOL U>Th (Value: " + rvol_str + ")"
+string ohlc_string = " O={{open}} H={{high}} L={{low}} C={{close}}"
+
+if barstate.isconfirmed
+	// --- Aggregation Phase: Build the message string in registry order ---
+	if enable_wf_momentum_alerts and fire_wf_momentum
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "White Flag Momentum"
+		_galert_cnt += 1
+	if enable_ow_overlap_alerts and fire_ow_overlap
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OW Overlap"
+		_galert_cnt += 1
+	if enable_ow_super_alerts and fire_ow_super
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OW Super"
+		_galert_cnt += 1
+	if enable_ow_combined_alerts and fire_ow_combined
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OW Combined"
+		_galert_cnt += 1
+	if enable_fc_2of3_alerts and fire_fc_2of3
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "FC 2/3 Fauna"
+		_galert_cnt += 1
+	if enable_fc_overlap_alerts and fire_fc_overlap
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "FC Overlap"
+		_galert_cnt += 1
+	if enable_fc_cluster_alerts and fire_fc_cluster
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "FC Cluster"
+		_galert_cnt += 1
+	if enable_e3_alerts and fire_e3
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "E3"
+		_galert_cnt += 1
+	if enable_oooc_alerts and fire_oooc
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OoOC"
+		_galert_cnt += 1
+	if enable_rp_alerts and fire_rp
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Red Plus"
+		_galert_cnt += 1
+	if enable_l7_alerts and fire_rvol_ugtth
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + rvol_name_full
+		_galert_cnt += 1
+	if enable_fxy_alerts and fire_fxy
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Fauna X-in-Y"
+		_galert_cnt += 1
+	if enable_rw_alerts and fire_rvol_window
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "RVOL Window"
+		_galert_cnt += 1
+	if enable_ftmb_alerts and fire_ftmb
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "First Two MB"
+		_galert_cnt += 1
+	if enable_cc_alerts and fire_cc
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Coincident Cluster"
+		_galert_cnt += 1
+	if enable_pbj_buy_alerts and fire_pbj_buy
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "PB&J Follow-up Buy"
+		_galert_cnt += 1
+	if enable_custom_A_alerts and sCustomA_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal A"
+		_galert_cnt += 1
+	if enable_custom_B_alerts and sCustomB_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal B"
+		_galert_cnt += 1
+	if ga_CustomC and sCustomC_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal C"
+		_galert_cnt += 1
+	if ga_CustomD and sCustomD_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal D"
+		_galert_cnt += 1
+	if ga_CustomE and sCustomE_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal E"
+		_galert_cnt += 1
+	if ga_CustomF and sCustomF_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal F"
+		_galert_cnt += 1
+	if ga_CustomG and sCustomG_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal G"
+		_galert_cnt += 1
+	if ga_CustomH and sCustomH_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal H"
+		_galert_cnt += 1
+	if ga_CustomI and sCustomI_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal I"
+		_galert_cnt += 1
+	if ga_CustomJ and sCustomJ_fire
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal J"
+		_galert_cnt += 1
+
+	// --- Emission Phase: Fire alerts based on user settings ---
+	if _galert_cnt > 0
+		string alert_base_string = "| {{ticker}} {{interval}} {{time}}" + ohlc_string
+		if ga_one_per_signal
+			if enable_wf_momentum_alerts and fire_wf_momentum
+				alert("White Flag Momentum " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_ow_overlap_alerts and fire_ow_overlap
+				alert("OW Overlap " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_ow_super_alerts and fire_ow_super
+				alert("OW Super " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_ow_combined_alerts and fire_ow_combined
+				alert("OW Combined " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_fc_2of3_alerts and fire_fc_2of3
+				alert("FC 2/3 Fauna " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_fc_overlap_alerts and fire_fc_overlap
+				alert("FC Overlap " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_fc_cluster_alerts and fire_fc_cluster
+				alert("FC Cluster " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_e3_alerts and fire_e3
+				alert("E3 " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_oooc_alerts and fire_oooc
+				alert("OoOC " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_rp_alerts and fire_rp
+				alert("Red Plus " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_l7_alerts and fire_rvol_ugtth
+				alert(rvol_name_full + " " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_fxy_alerts and fire_fxy
+				alert("Fauna X-in-Y " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_rw_alerts and fire_rvol_window
+				alert("RVOL Window " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_ftmb_alerts and fire_ftmb
+				alert("First Two MB " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_cc_alerts and fire_cc
+				alert("Coincident Cluster " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_pbj_buy_alerts and fire_pbj_buy
+				alert("PB&J Follow-up Buy " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_custom_A_alerts and sCustomA_fire
+				alert("Custom Signal A " + alert_base_string, alert.freq_once_per_bar_close)
+			if enable_custom_B_alerts and sCustomB_fire
+				alert("Custom Signal B " + alert_base_string, alert.freq_once_per_bar_close)
+			if ga_CustomC and sCustomC_fire
+				alert("Custom Signal C " + alert_base_string, alert.freq_once_per_bar_close)
+			if ga_CustomD and sCustomD_fire
+				alert("Custom Signal D " + alert_base_string, alert.freq_once_per_bar_close)
+			if ga_CustomE and sCustomE_fire
+				alert("Custom Signal E " + alert_base_string, alert.freq_once_per_bar_close)
+			if ga_CustomF and sCustomF_fire
+				alert("Custom Signal F " + alert_base_string, alert.freq_once_per_bar_close)
+			if ga_CustomG and sCustomG_fire
+				alert("Custom Signal G " + alert_base_string, alert.freq_once_per_bar_close)
+			if ga_CustomH and sCustomH_fire
+				alert("Custom Signal H " + alert_base_string, alert.freq_once_per_bar_close)
+			if ga_CustomI and sCustomI_fire
+				alert("Custom Signal I " + alert_base_string, alert.freq_once_per_bar_close)
+			if ga_CustomJ and sCustomJ_fire
+				alert("Custom Signal J " + alert_base_string, alert.freq_once_per_bar_close)
+		else
+			alert("Signals: " + _galert_msg + " " + alert_base_string, alert.freq_once_per_bar_close)
+
+// #############################################################################
+// ### LEGACY ALERTCONDITIONS (FOR BACKWARD COMPATIBILITY)                    ###
+// #############################################################################
+alertcondition(fire_wf_momentum and enable_wf_momentum_alerts, "White Flag Momentum", "White Flag Momentum on {{ticker}}")
+alertcondition(fire_ow_overlap and enable_ow_overlap_alerts, "OW: Overlap Cluster", "OW: Overlap Cluster on {{ticker}}")
+alertcondition(fire_ow_super and enable_ow_super_alerts, "OW: Super Cluster", "OW: Super Cluster on {{ticker}}")
+alertcondition(fire_ow_combined and enable_ow_combined_alerts, "OW: Combined Event", "OW: Combined Event on {{ticker}}")
+alertcondition(fire_fc_2of3 and enable_fc_2of3_alerts, "FC: 2/3 Fauna Signal", "FC: 2/3 Fauna Signal on {{ticker}}")
+alertcondition(fire_fc_overlap and enable_fc_overlap_alerts, "FC: Overlap Signal", "FC: Overlap Signal on {{ticker}}")
+alertcondition(fire_fc_cluster and enable_fc_cluster_alerts, "FC: FaunaOVRLP CLUSTER", "FC: FaunaOVRLP CLUSTER on {{ticker}}")
+alertcondition(fire_e3 and enable_e3_alerts, "E3 RTH Open x3", "E3 RTH Open x3 on {{ticker}}")
+alertcondition(fire_oooc and enable_oooc_alerts, "OoOC Meta-Cluster", "OoOC Meta-Cluster on {{ticker}}")
+alertcondition(fire_rp and enable_rp_alerts, "Red Plus Sequence", "Red Plus Sequence on {{ticker}}")
+alertcondition(fire_rvol_ugtth and enable_l7_alerts, "RVOL U>Th", "RVOL U>Th on {{ticker}}")
+alertcondition(fire_fxy and enable_fxy_alerts, "Fauna X-in-Y", "Fauna X-in-Y on {{ticker}}")
+alertcondition(fire_rvol_window and enable_rw_alerts, "RVOL Rolling Window", "RVOL Rolling Window on {{ticker}}")
+alertcondition(fire_ftmb and enable_ftmb_alerts, "First Two MB", "First Two MB on {{ticker}}")
+alertcondition(fire_cc and enable_cc_alerts, "Coincident Cluster", "Coincident Cluster on {{ticker}}")
+alertcondition(fire_pbj_buy and enable_pbj_buy_alerts, "PB&J Follow-up Buy", "PB&J Follow-up Buy on {{ticker}}")
+alertcondition(sCustomA_fire and enable_custom_A_alerts, "Custom Signal A", "Custom Signal A on {{ticker}}")
+alertcondition(sCustomB_fire and enable_custom_B_alerts, "Custom Signal B", "Custom Signal B on {{ticker}}")
+alertcondition(sCustomC_fire and ga_CustomC, "Custom Signal C", "Custom Signal C on {{ticker}}")
+alertcondition(sCustomD_fire and ga_CustomD, "Custom Signal D", "Custom Signal D on {{ticker}}")
+alertcondition(sCustomE_fire and ga_CustomE, "Custom Signal E", "Custom Signal E on {{ticker}}")
+alertcondition(sCustomF_fire and ga_CustomF, "Custom Signal F", "Custom Signal F on {{ticker}}")
+alertcondition(sCustomG_fire and ga_CustomG, "Custom Signal G", "Custom Signal G on {{ticker}}")
+alertcondition(sCustomH_fire and ga_CustomH, "Custom Signal H", "Custom Signal H on {{ticker}}")
+alertcondition(sCustomI_fire and ga_CustomI, "Custom Signal I", "Custom Signal I on {{ticker}}")
+alertcondition(sCustomJ_fire and ga_CustomJ, "Custom Signal J", "Custom Signal J on {{ticker}}")
