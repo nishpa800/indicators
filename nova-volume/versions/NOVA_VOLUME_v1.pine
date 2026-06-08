@@ -42,7 +42,7 @@
 //   today; the Python port carries the full horizons.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-indicator("NOVA VOLUME — Multi-Horizon Anomaly Engine v1", "NOVAVOL", overlay = true, max_labels_count = 200)
+indicator("NOVA VOLUME — Multi-Horizon Anomaly Engine v1", "NOVAVOL", overlay = true)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INPUTS — Horizon windows (in BARS; retune per tick interval)
@@ -71,10 +71,14 @@ float z12_t = input.float(12, "σ12 threshold", group = grpZ)
 // INPUTS — Ratio-to-median tiers ("X times normal")
 // ─────────────────────────────────────────────────────────────────────────────
 grpR = "Magnitude — Ratio (X× median)"
-bool show_x2  = input.bool(true, "X2  (≥2× median)",  group = grpR)
-bool show_x4  = input.bool(true, "X4  (≥4× median)",  group = grpR)
-bool show_x8  = input.bool(true, "X8  (≥8× median)",  group = grpR)
-bool show_x16 = input.bool(true, "X16 (≥16× median)", group = grpR)
+bool show_x2  = input.bool(true, "X2 tier on",  group = grpR)
+bool show_x4  = input.bool(true, "X4 tier on",  group = grpR)
+bool show_x8  = input.bool(true, "X8 tier on",  group = grpR)
+bool show_x16 = input.bool(true, "X16 tier on", group = grpR)
+float x2_t  = input.float(2,  "X2 threshold (× median)",  minval = 0, step = 0.5, group = grpR)
+float x4_t  = input.float(4,  "X4 threshold (× median)",  minval = 0, step = 0.5, group = grpR)
+float x8_t  = input.float(8,  "X8 threshold (× median)",  minval = 0, step = 0.5, group = grpR)
+float x16_t = input.float(16, "X16 threshold (× median)", minval = 0, step = 0.5, group = grpR)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INPUTS — Horizon-extreme percentile tiers (the "missed-HEV" catch)
@@ -98,11 +102,8 @@ bool show_dv  = input.bool(true,  "DV-EXTREME (dollar-vol anomaly)",  group = gr
 float dv_z_t  = input.float(8,    "DV σ threshold",  group = grpD)
 float dv_pct  = input.float(99.5, "DV pct threshold", minval = 50, maxval = 100, group = grpD)
 
-// ─────────────────────────────────────────────────────────────────────────────
-// INPUTS — Labels
-// ─────────────────────────────────────────────────────────────────────────────
-grpL = "Magnitude Labels"
-bool show_lbl = input.bool(true, "Show magnitude label on top-tier fires", group = grpL, tooltip = "Prints σ | pct | X× on the rarest fires (year-extreme or σ12) so the size is never lost.")
+// NOTE: NO graphic-object text labels anywhere — banned by mandate.
+// Magnitude lives entirely in detection plotshapes + numeric data-window plots.
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CORE — robust statistics per window (computed on `volume`, referenced via [1])
@@ -151,10 +152,10 @@ bool z5  = show_z5  and not na(z_base[1]) and z_base[1] >= z5_t  and not z8 and 
 bool z3  = show_z3  and not na(z_base[1]) and z_base[1] >= z3_t  and not z5 and not z8 and not z12
 
 // Magnitude — ratio (mutually exclusive)
-bool x16 = show_x16 and not na(ratio_base[1]) and ratio_base[1] >= 16
-bool x8  = show_x8  and not na(ratio_base[1]) and ratio_base[1] >= 8  and not x16
-bool x4  = show_x4  and not na(ratio_base[1]) and ratio_base[1] >= 4  and not x8 and not x16
-bool x2  = show_x2  and not na(ratio_base[1]) and ratio_base[1] >= 2  and not x4 and not x8 and not x16
+bool x16 = show_x16 and not na(ratio_base[1]) and ratio_base[1] >= x16_t
+bool x8  = show_x8  and not na(ratio_base[1]) and ratio_base[1] >= x8_t  and not x16
+bool x4  = show_x4  and not na(ratio_base[1]) and ratio_base[1] >= x4_t  and not x8 and not x16
+bool x2  = show_x2  and not na(ratio_base[1]) and ratio_base[1] >= x2_t  and not x4 and not x8 and not x16
 
 // Horizon extreme (independent of all-time-high)
 bool moX  = show_mo  and not na(pr_month[1])   and pr_month[1]   >= mo_pct
@@ -174,7 +175,7 @@ bool dvX = show_dv and use_dv and ((not na(dv_z[1]) and dv_z[1] >= dv_z_t) or (n
 // PLOTS — markers land on the [1] bar via offset=-1
 // ═══════════════════════════════════════════════════════════════════════════════
 plotshape(ath,     "NOVA-ATH",        shape.diamond,      location.top,    color.new(color.fuchsia, 0), size = size.normal, text = "ATH",  textcolor = color.white,  offset = -1)
-plotshape(z12,     "NOVA σ12",        shape.labelup,      location.top,    color.new(color.red, 0),     size = size.normal, text = "σ12", textcolor = color.white,  offset = -1)
+plotshape(z12,     "NOVA σ12",        shape.triangleup,   location.top,    color.new(color.red, 0),     size = size.normal, text = "σ12", textcolor = color.white,  offset = -1)
 plotshape(z8,      "NOVA σ8",         shape.triangleup,   location.top,    color.new(color.orange, 0),  size = size.small,  text = "σ8",  textcolor = color.white,  offset = -1)
 plotshape(z5,      "NOVA σ5",         shape.triangleup,   location.top,    color.new(color.yellow, 0),  size = size.tiny,   text = "σ5",  textcolor = color.black,  offset = -1)
 plotshape(z3,      "NOVA σ3",         shape.circle,       location.top,    color.new(color.aqua, 0),    size = size.tiny,   text = "σ3",  textcolor = color.black,  offset = -1)
@@ -202,13 +203,6 @@ plot(pr_quarter[1], "pct_rank_quarter",        color = color.teal,   display = d
 plot(pr_month[1],   "pct_rank_month",          color = color.blue,   display = display.data_window)
 plot(dv_z[1],       "dollar_vol_z",            color = color.green,  display = display.data_window)
 plot(volume[1],     "volume_confirmed",        color = color.gray,   display = display.data_window)
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAGNITUDE LABEL — only on the rarest fires so the size is never lost
-// ═══════════════════════════════════════════════════════════════════════════════
-if show_lbl and (yrX or z12) and barstate.isconfirmed
-    string s = "σ" + str.tostring(math.round(z_base[1] * 10) / 10) + " | " + str.tostring(math.round(pr_year[1] * 100) / 100) + "%1Y | " + str.tostring(math.round(ratio_base[1] * 10) / 10) + "×"
-    label.new(bar_index - 1, high[1], s, style = label.style_label_down, color = color.new(color.black, 20), textcolor = color.white, size = size.small)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ALERTS — one boolean per plot (1:1 plot/alert parity, NRA)
