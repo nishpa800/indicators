@@ -11,3 +11,8 @@
 - Tick-safe by construction: no tv_ta/relativeVolume, no timeframe.in_seconds, no request.security.
 - NRA non-repaint ([1] + offset=-1). Legacy HV indicator left untouched.
 - Proven live on NASDAQ:CLSK @ 100T. Passed NINE NINES 78/78 action gate.
+
+## v1.1 (2026-06-08)
+- Raised default thresholds to cut signal count (sigma 4/6/10/16, ratio 3/6/12/24, pct 99.5/99.8/99.95, DV 10/99.8). ALL adjustable inputs.
+- Added 3 streak detection plots (base = ANY NOVA tier): STREAK2 (2 in a row), STREAK3 (3 in a row), STREAK ROLLING (>=N fires within W bars; defaults 3-in-7, adjustable).
+- roll_cnt numeric export added. Recompiled clean on CLSK 100T.
