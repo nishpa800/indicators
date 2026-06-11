@@ -116,25 +116,11 @@ reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg)
 
 groupHybrid = "RVOL - Hybrid Regime Settings"
 
-hyb_addReg1 = input.float(5.0, "Momentum 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
-hyb_addCum1 = input.float(3.0, "Momentum 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
-hyb_bodyRat1 = input.float(0.65, "Momentum 1 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-
-hyb_addReg2 = input.float(5.0, "Momentum 2 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
-hyb_addCum2 = input.float(3.0, "Momentum 2 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
-hyb_bodyRat2 = input.float(0.65, "Momentum 2 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-
-hyb_addReg3 = input.float(5.0, "Momentum 3 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
-hyb_addCum3 = input.float(3.0, "Momentum 3 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
-hyb_bodyRat3 = input.float(0.65, "Momentum 3 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-
-hyb_addReg4 = input.float(5.0, "Momentum 4 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
-hyb_addCum4 = input.float(3.0, "Momentum 4 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
-hyb_bodyRat4 = input.float(0.65, "Momentum 4 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-
-hyb_addReg5 = input.float(5.0, "Momentum 5 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
-hyb_addCum5 = input.float(3.0, "Momentum 5 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
-hyb_bodyRat5 = input.float(0.65, "Momentum 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+// Long/Short 1-5 floors are AUTO-DERIVED from the Hiroshima threshold (matches HW Single v3).
+// These % inputs scale ALL 5 auto-derived floors uniformly. 100 = use auto-derived as-is.
+reg_pct  = input.int(100, "Reg Floor %",  minval=0, group=groupHybrid, tooltip="Percentage multiplier applied uniformly to ALL 5 auto-derived Reg floors (M1-M5), each = th_hiroshima ladder. 100 = use auto-derived as-is. 90 = 90% of auto-derived. No max cap.")
+cum_pct  = input.int(100, "Cum Floor %",  minval=0, group=groupHybrid, tooltip="Percentage multiplier applied uniformly to ALL 5 auto-derived Cum floors. 100 = default.")
+body_pct = input.int(100, "Body Ratio %", minval=0, group=groupHybrid, tooltip="Percentage multiplier applied uniformly to ALL 5 auto-derived Body ratios. 100 = default.")
 
 groupNaga = "RVOL - Nagasaki"
 enableNagasaki = input.bool(true, "Enable Nagasaki", group=groupNaga)
@@ -340,6 +326,51 @@ th_gs_moab     = f_gs_moab_threshold(chartSec)
 th_wtc         = f_wtc_threshold(chartSec)
 th_hiroshima   = th_gs_moab
 
+// ── HYBRID MOMENTUM AUTO-DERIVE LADDER (from Hiroshima) — matches HW Single v3 ──
+// Long/Short 1-5 Reg/Cum/Body floors are derived from th_hiroshima, NOT hard-coded.
+// M1 = strongest (highest Reg floor), M5 = weakest. reg_pct/cum_pct/body_pct scale them.
+hybAutoReg1 = th_hiroshima * 2.85
+hybAutoReg5 = th_hiroshima * 1.1875
+hybAutoStep = (hybAutoReg1 - hybAutoReg5) / 4.0
+hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep
+hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep
+hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep
+
+float hybCumPhi = 1.398 * 1.33
+hybAutoCum1 = hybCumPhi * math.sqrt(math.log(hybAutoReg1))
+hybAutoCum2 = hybCumPhi * math.sqrt(math.log(hybAutoReg2))
+hybAutoCum3 = hybCumPhi * math.sqrt(math.log(hybAutoReg3))
+hybAutoCum4 = hybCumPhi * math.sqrt(math.log(hybAutoReg4))
+hybAutoCum5 = hybCumPhi * math.sqrt(math.log(hybAutoReg5))
+
+float hybAutoBody1 = 0.69
+float hybAutoBody2 = 0.72
+float hybAutoBody3 = 0.75
+float hybAutoBody4 = 0.78
+float hybAutoBody5 = 0.81
+
+float regMult  = reg_pct  / 100.0
+float cumMult  = cum_pct  / 100.0
+float bodyMult = body_pct / 100.0
+
+hybReg1Eff  = hybAutoReg1  * regMult
+hybReg2Eff  = hybAutoReg2  * regMult
+hybReg3Eff  = hybAutoReg3  * regMult
+hybReg4Eff  = hybAutoReg4  * regMult
+hybReg5Eff  = hybAutoReg5  * regMult
+
+hybCum1Eff  = hybAutoCum1  * cumMult
+hybCum2Eff  = hybAutoCum2  * cumMult
+hybCum3Eff  = hybAutoCum3  * cumMult
+hybCum4Eff  = hybAutoCum4  * cumMult
+hybCum5Eff  = hybAutoCum5  * cumMult
+
+hybBody1Eff = hybAutoBody1 * bodyMult
+hybBody2Eff = hybAutoBody2 * bodyMult
+hybBody3Eff = hybAutoBody3 * bodyMult
+hybBody4Eff = hybAutoBody4 * bodyMult
+hybBody5Eff = hybAutoBody5 * bodyMult
+
 bb_spike = math.abs(close - open)
 bb_avgSpikeDenom = ta.sma(bb_spike, bb_avgLength)[1]
 bb_normalizedPrice = bb_spike / nz(bb_avgSpikeDenom, 1.0)
@@ -383,22 +414,22 @@ hybBodySz  = math.abs(close - open)
 hybRange   = high - low
 hybBodyRat = hybRange == 0 ? 0.0 : hybBodySz / hybRange
 
-hybMom1      = conf and (hybRegRatio > hyb_addReg1) and (hybCumRatio > hyb_addCum1)
-sigAddLong1  = hybMom1 and (close > open) and (hybBodyRat >= hyb_bodyRat1)
-sigAddShort1 = hybMom1 and (close < open) and (hybBodyRat >= hyb_bodyRat1)
+hybMom1      = conf and (hybRegRatio > hybReg1Eff) and (hybCumRatio > hybCum1Eff)
+sigAddLong1  = hybMom1 and (close > open) and (hybBodyRat >= hybBody1Eff)
+sigAddShort1 = hybMom1 and (close < open) and (hybBodyRat >= hybBody1Eff)
 
-hybMom2      = conf and (hybRegRatio > hyb_addReg2) and (hybCumRatio > hyb_addCum2)
-sigAddLong2  = hybMom2 and (close > open) and (hybBodyRat >= hyb_bodyRat2)
-sigAddShort2 = hybMom2 and (close < open) and (hybBodyRat >= hyb_bodyRat2)
+hybMom2      = conf and (hybRegRatio > hybReg2Eff) and (hybCumRatio > hybCum2Eff)
+sigAddLong2  = hybMom2 and (close > open) and (hybBodyRat >= hybBody2Eff)
+sigAddShort2 = hybMom2 and (close < open) and (hybBodyRat >= hybBody2Eff)
 
-hybMom3      = conf and (hybRegRatio > hyb_addReg3) and (hybCumRatio > hyb_addCum3)
-sigAddLong3  = hybMom3 and (close > open) and (hybBodyRat >= hyb_bodyRat3)
+hybMom3      = conf and (hybRegRatio > hybReg3Eff) and (hybCumRatio > hybCum3Eff)
+sigAddLong3  = hybMom3 and (close > open) and (hybBodyRat >= hybBody3Eff)
 
-hybMom4      = conf and (hybRegRatio > hyb_addReg4) and (hybCumRatio > hyb_addCum4)
-sigAddLong4  = hybMom4 and (close > open) and (hybBodyRat >= hyb_bodyRat4)
+hybMom4      = conf and (hybRegRatio > hybReg4Eff) and (hybCumRatio > hybCum4Eff)
+sigAddLong4  = hybMom4 and (close > open) and (hybBodyRat >= hybBody4Eff)
 
-hybMom5      = conf and (hybRegRatio > hyb_addReg5) and (hybCumRatio > hyb_addCum5)
-sigAddLong5  = hybMom5 and (close > open) and (hybBodyRat >= hyb_bodyRat5)
+hybMom5      = conf and (hybRegRatio > hybReg5Eff) and (hybCumRatio > hybCum5Eff)
+sigAddLong5  = hybMom5 and (close > open) and (hybBodyRat >= hybBody5Eff)
 
 // =============================================================================
 // NAGASAKI
