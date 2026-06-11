@@ -22,8 +22,10 @@
 //      lowercase `barstate.isconfirmed`. No method-call / array syntax here is
 //      v6-only (all `.size()/.get()/.unshift()/.remove()`, `array.new<lvl>()`,
 //      and `switch` are valid Pine v5).
-// Detection plots preserved: all ~31 combo plotshapes + NAGA, plus the new
-//   numeric data-window fire matrix appended at the end. No label.new anywhere.
+// Detection plots: all 35 combo plotshapes + NAGA, on-chart only. No label.new
+//   anywhere. The earlier display.data_window numeric "fire matrix" (37 extra
+//   plot() calls) was REMOVED — combined with the 35 plotshapes it pushed the
+//   script to 72 plots and tripped RE10140 (plot limit is 64). Total plots = 35.
 // =============================================================================
 indicator("Ultra Combo v57 [tickfriendly]", shorttitle="ULTRA v57 TF", overlay=true, max_labels_count=500, max_bars_back=2000)
 
@@ -1172,46 +1174,3 @@ alertcondition(comboHW_AnyBull or comboHW_AnyBear, "HW+Any", "HW+ANY")
 alertcondition(comboGZHV_AnyBull or comboGZHV_AnyBear, "GZ/HV+Any", "GZ/HV+ANY")
 alertcondition(hvGziComboBull or hvGziComboBear, "HV+GZI Combo", "HV+GZI COMBO")
 
-
-// =============================================================================
-// NINE NINES NUMERIC FIRE MATRIX (display.data_window) — 0/1 per detection plot
-// Machine-readable fire matrix mirroring every plotshape above. No graphics.
-// =============================================================================
-plot(comboPBJ_F2_Bull or comboPBJ_F2_Bear ? 1:0, "f_PBJ_F2", display=display.data_window)
-plot(comboPBJ_E3_Bull or comboPBJ_E3_Bear ? 1:0, "f_PBJ_E3", display=display.data_window)
-plot(comboPBJ_Cluster_Bull or comboPBJ_Cluster_Bear ? 1:0, "f_PBJ_CL", display=display.data_window)
-plot(comboPB_F2_Bull or comboPB_F2_Bear ? 1:0, "f_PB_F2", display=display.data_window)
-plot(comboPB_E3_Bull or comboPB_E3_Bear ? 1:0, "f_PB_E3", display=display.data_window)
-plot(comboPB_Cluster_Bull or comboPB_Cluster_Bear ? 1:0, "f_PB_CL", display=display.data_window)
-plot(comboF2Cluster_E3_Bull or comboF2Cluster_E3_Bear ? 1:0, "f_F2CL_E3", display=display.data_window)
-plot(comboF2ClusterB2B_Bull or comboF2ClusterB2B_Bear ? 1:0, "f_F2CL_B2B", display=display.data_window)
-plot(comboB2B_F2_Bull or comboB2B_F2_Bear ? 1:0, "f_B2B_F2", display=display.data_window)
-plot(comboE3_2of3PUP_Bull or comboE3_2of3PPD_Bear ? 1:0, "f_E3_23PP", display=display.data_window)
-plot(comboF2_B2BDays_Bull or comboF2_B2BDays_Bear ? 1:0, "f_F2_2D", display=display.data_window)
-plot(comboE3_B2BDays_Bull or comboE3_B2BDays_Bear ? 1:0, "f_E3_2D", display=display.data_window)
-plot(comboF2E3_Consec_Bull or comboF2E3_Consec_Bear ? 1:0, "f_F2E3seq", display=display.data_window)
-plot(comboCluster_B2BDays_Bull or comboCluster_B2BDays_Bear ? 1:0, "f_CL_2D", display=display.data_window)
-plot(comboHW_AnyBull ? 1:0, "f_HW_Bull", display=display.data_window)
-plot(comboHW_AnyBear ? 1:0, "f_HW_Bear", display=display.data_window)
-plot(comboGZHV_AnyBull ? 1:0, "f_GZHV_Bull", display=display.data_window)
-plot(comboGZHV_AnyBear ? 1:0, "f_GZHV_Bear", display=display.data_window)
-plot(hvGziComboBull ? 1:0, "f_HVGZI_Bull", display=display.data_window)
-plot(hvGziComboBear ? 1:0, "f_HVGZI_Bear", display=display.data_window)
-plot(gzHvMegaBull ? 1:0, "f_MEGA_Bull", display=display.data_window)
-plot(gzHvMegaBear ? 1:0, "f_MEGA_Bear", display=display.data_window)
-plot(gz1hvMegaBull ? 1:0, "f_GZ1HVMEGA_Bull", display=display.data_window)
-plot(gz1hvMegaBear ? 1:0, "f_GZ1HVMEGA_Bear", display=display.data_window)
-plot(openerBull ? 1:0, "f_Opener_Bull", display=display.data_window)
-plot(openerBear ? 1:0, "f_Opener_Bear", display=display.data_window)
-plot(threeBar_Bull ? 1:0, "f_3Bar_Bull", display=display.data_window)
-plot(threeBar_Bear ? 1:0, "f_3Bar_Bear", display=display.data_window)
-plot(fosterHeavyBull ? 1:0, "f_FosterHvy_Bull", display=display.data_window)
-plot(tbHeavyBear ? 1:0, "f_TBHvy_Bear", display=display.data_window)
-plot(gzHvHeavyBull ? 1:0, "f_GZHVHvy_Bull", display=display.data_window)
-plot(gzHvHeavyBear ? 1:0, "f_GZHVHvy_Bear", display=display.data_window)
-plot(superB2BDaysBull ? 1:0, "f_Super2D_Bull", display=display.data_window)
-plot(superB2BDaysBear ? 1:0, "f_Super2D_Bear", display=display.data_window)
-plot(sigNagasaki ? 1:0, "f_NAGA", display=display.data_window)
-// numeric levels for the heavy-weapon RVOL detections
-plot(relVolRatio, "lvl_relVolRatio", display=display.data_window)
-plot(bb_normalizedPrice, "lvl_bbNormPrice", display=display.data_window)
