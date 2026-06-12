@@ -24,11 +24,13 @@ import TradingView/ta/7 as tv_ta
 // SHARED
 // ============================================================================
 conf = barstate.isconfirmed
-// TICK-FRIENDLY GUARD: timeframe.in_seconds() can be na on tick resolutions → per-TF threshold
-// tables (f_*_threshold(tfSec)) would silently go na and stop firing. Fall back to 10s (tightest
-// sub-minute) on tick; time charts and tick TFs that report a real number keep the raw value.
+// TICK-FRIENDLY GUARD: on a tick chart timeframe.period ends "T" and timeframe.in_seconds() is
+// unreliable (na, or a positive value that is NOT seconds-per-bar), so the per-TF threshold tables
+// (f_*_threshold(tfSec)) would silently misfire. Detect tick via the authoritative "T" suffix and
+// fall back to 10s (tightest sub-minute bucket); time charts keep the real value (parity preserved).
 int _tfSecRaw = timeframe.in_seconds(timeframe.period)
-int tfSec = (na(_tfSecRaw) or _tfSecRaw <= 0) ? 10 : _tfSecRaw
+bool _isTickChart = str.endswith(timeframe.period, "T") or na(_tfSecRaw) or _tfSecRaw <= 0
+int tfSec = _isTickChart ? 10 : _tfSecRaw
 f_add(string base, string part) => base == "" ? part : base + " + " + part
 atr14 = ta.atr(14)
 
