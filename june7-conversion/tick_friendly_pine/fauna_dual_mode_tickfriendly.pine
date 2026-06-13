@@ -322,22 +322,6 @@ plotshape(bullActive, title="FAUNA Bull", location=location.belowbar, style=shap
 plotshape(bearActive, title="FAUNA Bear", location=location.abovebar, style=shape.labeldown, color=bearLabelColor, textcolor=color.white, size=size.normal, text="FAUNA")
 
 // numeric fire matrix (data window) — resolved combo codes + family booleans
-plot(bullActive ? bullCode : 0, "BULL_COMBO_CODE", display=display.data_window)
-plot(bearActive ? bearCode : 0, "BEAR_COMBO_CODE", display=display.data_window)
-plot(MB_bull ? 1 : 0, "MB_bull", display=display.data_window)
-plot(RE_bull ? 1 : 0, "RE_bull", display=display.data_window)
-plot(GG_bull ? 1 : 0, "GG_bull", display=display.data_window)
-plot(TA_bull ? 1 : 0, "TA_bull", display=display.data_window)
-plot(TR_bull ? 1 : 0, "TR_bull", display=display.data_window)
-plot(ES_bull ? 1 : 0, "ES_bull", display=display.data_window)
-plot(GDR_bull ? 1 : 0, "GDR_bull", display=display.data_window)
-plot(MB_bear ? 1 : 0, "MB_bear", display=display.data_window)
-plot(RE_bear ? 1 : 0, "RE_bear", display=display.data_window)
-plot(GG_bear ? 1 : 0, "GG_bear", display=display.data_window)
-plot(TA_bear ? 1 : 0, "TA_bear", display=display.data_window)
-plot(TR_bear ? 1 : 0, "TR_bear", display=display.data_window)
-plot(ES_bear ? 1 : 0, "ES_bear", display=display.data_window)
-plot(GDR_bear ? 1 : 0, "GDR_bear", display=display.data_window)
 
 // ── BAR COLOR (not a graphic object; retained) ──
 barcolor(bearActive ? bearLabelColor : bullActive ? bullLabelColor : na)

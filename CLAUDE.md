@@ -74,6 +74,14 @@ indicators/
 - **Alpha Strike trusted ONLY from SQUARIFY 64.** Always filter alerts by source indicator.
 - **WMD is DEPRECATED** → use Heavy Combo Toggles. Squarify's `35 NAG+` (Nagasaki Plus) still valid.
 - **Plot naming:** every plot is `S<N>: <descriptor>`. Never letter abbreviations.
+- **🚫 64-PLOT CEILING — NO `display.data_window` PLOT MATRICES.** TradingView caps a
+  script at **64 plot-objects**; EVERY `plot*()`/`alertcondition()` counts, including
+  `plot(..., display=display.data_window)` (draws nothing, still burns budget, litters the
+  Style tab with junk blue lines). Shipping a "numeric data-window fire matrix" blew ULTRA 57
+  past 64 → **RE10140** (2026-06-13). NEVER add `display.data_window` plots. If a
+  machine-readable fire matrix is needed, emit it via **`log.info()`** (does NOT count).
+  Gate before "done": `tools/check_plot_budget.sh` must exit 0 (≤64 plot-objects, zero
+  `display.data_window` plots) for every tick-friendly build.
 - **Never label "canonical" prematurely.** Ingest all variants verbatim. "Which is canonical?" is the OUTPUT of root extraction + TV verification, never the input.
 - **Always commit + push every change in the same turn.** Paste the GitHub URL.
 
