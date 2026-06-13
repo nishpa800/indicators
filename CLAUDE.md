@@ -82,6 +82,15 @@ indicators/
   machine-readable fire matrix is needed, emit it via **`log.info()`** (does NOT count).
   Gate before "done": `tools/check_plot_budget.sh` must exit 0 (≤64 plot-objects, zero
   `display.data_window` plots) for every tick-friendly build.
+- **🚫 RE10008 — NEVER scan bars for "yesterday" / multi-day lookback.** A loop like
+  `for i = 1 to barsPerDay*2` or `... to bar_index` that reads `sig[i]` forces Pine to
+  reserve a history buffer as deep as the bound; on fine intraday/tick sessions that
+  exceeds Pine's hard **5000-bar** history limit → **RE10008** (blew up ULTRA 57's
+  `f_hadSignalYesterday`, 2026-06-13). Track days with **date-rolled `var` state**, never
+  bar offsets — reference impl `f_firedPrevDay()` in
+  `ultra-combo/tick_friendly/ULTRA_COMBO_v57_tick_friendly.pine` (O(1), zero history
+  references, correct on every timeframe). A small fixed cap (e.g. `to 500`) dodges the
+  crash but silently fails to reach "yesterday" on tick — still wrong, just quieter.
 - **Never label "canonical" prematurely.** Ingest all variants verbatim. "Which is canonical?" is the OUTPUT of root extraction + TV verification, never the input.
 - **Always commit + push every change in the same turn.** Paste the GitHub URL.
 
