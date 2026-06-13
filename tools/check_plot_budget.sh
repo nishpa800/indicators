@@ -26,7 +26,7 @@ if [ ${#files[@]} -eq 0 ]; then
     # every tick-friendly build. Verbatim imports/ and vendor/ libraries are
     # read-only references and intentionally excluded. Pass explicit file args to
     # check anything else (e.g. a versions/ file before promoting it).
-    mapfile -t files < <(git ls-files '*.pine' | grep -E 'tick_friendly|/dateroll/')
+    mapfile -t files < <(git ls-files '*.pine' | grep -E 'tick_friendly|(^|/)dateroll/')
 fi
 
 printf "%-68s %6s %6s  %s\n" "FILE" "PLOTS" "DWIN" "STATUS"
@@ -38,17 +38,21 @@ for f in "${files[@]}"; do
     pf=$(printf '%s\n' "$code" | grep -cE '(^|[^a-zA-Z_.])(plot|plotshape|plotchar|plotarrow|plotcandle|plotbar)\(')
     ac=$(printf '%s\n' "$code" | grep -cE 'alertcondition\(')
     dw=$(printf '%s\n' "$code" | grep -cE 'display[[:space:]]*=[[:space:]]*display\.data_window')
+    tt=$(printf '%s\n' "$code" | grep -cE 'time(_close)?\(timeframe\.period,')
+    ba=$(printf '%s\n' "$code" | grep -cE 'relativeVolume\([^,]+,[[:space:]]*""')
     tot=$((pf + ac))
     status="ok"
     if [ "$tot" -gt "$LIMIT" ]; then status="OVER-64 ($tot)"; fail=1; fi
     if [ "$dw" -gt 0 ]; then status="$status DATA_WINDOW-BANNED"; fail=1; fi
+    if [ "$tt" -gt 0 ]; then status="$status RE10023-time(tf)"; fail=1; fi
+    if [ "$ba" -gt 0 ]; then status="$status RE10023-blank-anchor"; fail=1; fi
     printf "%-68s %6s %6s  %s\n" "${f#./}" "$tot" "$dw" "$status"
 done
 
 echo
 if [ "$fail" -eq 0 ]; then
-    echo "PASS — every .pine within the 64-plot budget, zero display.data_window plots."
+    echo "PASS — within 64-plot budget; zero data_window plots; zero RE10023 patterns (time(timeframe.period,…) or blank relativeVolume anchor)."
 else
-    echo "FAIL — fix the files flagged above (strip data_window plots; emit matrices via log.info)."
+    echo "FAIL — fix the files flagged above (plots>64 / data_window / time(timeframe.period,…) / blank relativeVolume anchor)."
 fi
 exit "$fail"

@@ -91,6 +91,14 @@ indicators/
   `ultra-combo/tick_friendly/ULTRA_COMBO_v57_tick_friendly.pine` (O(1), zero history
   references, correct on every timeframe). A small fixed cap (e.g. `to 500`) dodges the
   crash but silently fails to reach "yesterday" on tick — still wrong, just quieter.
+- **🚫 RE10023 #2 — `time(timeframe.period, …)` ALSO crashes on tick.** It is NOT only
+  `relativeVolume`/`timeframe.change`: calling `time()`/`time_close()` with the chart's tick
+  `timeframe.period` as the resolution arg — e.g. session checks like
+  `not na(time(timeframe.period, "0930-1600", tz))` — throws **RE10023 on bar 0** of a tick chart
+  (blew up SQUARIFY v2 + HUB, 2026-06-13). Route the resolution through a tick-safe value:
+  `time(str.endswith(timeframe.period,"T") ? "1" : timeframe.period, session, tz)` ("1" = 1-min
+  session eval on tick; time charts keep `timeframe.period` for parity). `tools/check_plot_budget.sh`
+  now hard-fails on `time(timeframe.period,` and on any blank `relativeVolume(..., "")` anchor.
 - **Never label "canonical" prematurely.** Ingest all variants verbatim. "Which is canonical?" is the OUTPUT of root extraction + TV verification, never the input.
 - **Always commit + push every change in the same turn.** Paste the GitHub URL.
 

@@ -1852,7 +1852,7 @@ bool b2b_bear_nopb = b2b_bear_raw and not b2b_bear_pbj and not b2b_bear_pb
 // ════════════════════════════════════════════════════════════════════════════
 // ULTRA 57 FAUNA COMBOS
 // ════════════════════════════════════════════════════════════════════════════
-bool u57_inSession=not na(time(timeframe.period,"0930-1600","America/New_York"))
+bool u57_inSession=not na(time((str.endswith(timeframe.period, "T") ? "1" : timeframe.period),"0930-1600","America/New_York"))
 var bool u57_newDay=false
 if ta.change(dayofmonth)!=0
     u57_newDay:=true
@@ -2417,7 +2417,7 @@ if conf and _masterGate
 //   - Forward returns at +5/+10/+20/+40 bars (computed live via offset lookback)
 // Read via pine_get_console; parse pipe-delimited fields offline.
 
-bool stats_inWindow = not na(time(timeframe.period, "0930-1000", "America/New_York"))
+bool stats_inWindow = not na(time((str.endswith(timeframe.period, "T") ? "1" : timeframe.period), "0930-1000", "America/New_York"))
 
 // Volume percentile rank (continuous 0-100)
 float stats_volRank = ta.percentrank(volume, 200)

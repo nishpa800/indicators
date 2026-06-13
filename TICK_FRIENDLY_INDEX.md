@@ -25,7 +25,7 @@ Branch: `claude/keen-faraday-mzq2i2`. "Raw" = one-click plain text to paste into
 | Study | Chart label | Status | Raw |
 |---|---|---|---|
 | **ULTRA Combo v57** | `ULTRA v57 TF` | 🟡 RE10023 + RE10140 + RE10008 all fixed in code (`f833541`). **Re-paste the raw — TV cached the old one.** | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/ultra-combo/tick_friendly/ULTRA_COMBO_v57_tick_friendly.pine) |
-| SQUARIFY 46 v2 | `SQ46 v2` | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/squarify/tick_friendly/SQUARIFY_46_v2_tick_friendly.pine) |
+| SQUARIFY 46 v2 | `SQ46 v2` | 🟡 RE10023 (anchor **+ time-session**) + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/squarify/tick_friendly/SQUARIFY_46_v2_tick_friendly.pine) |
 | SQUARIFY 46 v3.1 | `SQ46 v3.1 TF` | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/squarify/tick_friendly/SQUARIFY_46_v3.1_tick_friendly.pine) |
 | HVD↔PBJ↔PPD Bearish | `HVD PBJ BEAR TF` | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/hvd-pbj-ppd/tick_friendly/HVD_PBJ_PPD_BEARISH_v1_tick_friendly.pine) |
 | HVD↔PBJ↔PPD Bullish | `HVD PBJ BULL TF` | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/hvd-pbj-ppd/tick_friendly/HVD_PBJ_PPD_BULLISH_v1_tick_friendly.pine) |
@@ -36,7 +36,7 @@ Branch: `claude/keen-faraday-mzq2i2`. "Raw" = one-click plain text to paste into
 | VOB v11 MULTIPLES | (long title) | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/vob/tick_friendly/VOB_v11_MULTIPLES_TICKFRIENDLY_2026-06-04.pine) |
 | Heavy Weapons NRA v1 | `RVOL NRAFR x2` | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/heavy-weapons-nra/tick_friendly/HEAVY_WEAPONS_NRA_v1_tick_friendly.pine) |
 | Heavy Weapons ULTRA v1 | `HW ULTRA b2b1` | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/heavy-weapons-ultra/tick_friendly/HEAVY_WEAPONS_ULTRA_v1_tick_friendly.pine) |
-| HUB 1020 1153am | `Hub102011a` | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/hub-1020-1153am/tick_friendly/HUB_1020_1153am_Hub102011a_v20260604_tick_friendly.pine) |
+| HUB 1020 1153am | `Hub102011a` | 🟡 RE10023 (**time-session**) fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/hub-1020-1153am/tick_friendly/HUB_1020_1153am_Hub102011a_v20260604_tick_friendly.pine) |
 
 ## SET B — date-roll experimental (`dateroll/`, shorttitle ` DR`)
 Same builds, relabeled ` DR` so they load **beside** Set A for A/B. The 3 marked **DR-logic** answer "fired yesterday?" with day-rolled state (works on tick, no RE10008); the other 10 are logic-identical copies of Set A.
@@ -61,6 +61,7 @@ Same builds, relabeled ` DR` so they load **beside** Set A for A/B. The 3 marked
 | Error | What it was | Where | Status |
 |---|---|---|---|
 | RE10023 | blank `relativeVolume` anchor crashes `timeframe.change` on tick | all builds | fixed in code (anchor → `"D"` on tick) |
+| RE10023 #2 | `time(timeframe.period, session)` crashes on tick (session detection) — MISSED in the first pass | SQUARIFY v2 + HUB | fixed in code (resolution → `"1"` on tick) |
 | RE10140 | >64 plot-objects (data-window matrix) | ULTRA 57 only | fixed in code (matrix removed → 50) |
 | RE10008 | `f_hadSignalYesterday` scanned `sig[i]` past 5000 bars | ULTRA 57 only | fixed in code (`f_firedPrevDay` date-roll, `f833541`) |
 | RE10008 (watch) | `ta.highest(volume,5000)[1]` sits at the 5000-bar boundary | ULTRA 57 + others | not changed — report if it recurs at ~5000 and I'll harden |

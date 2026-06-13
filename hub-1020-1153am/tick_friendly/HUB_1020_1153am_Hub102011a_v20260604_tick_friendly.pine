@@ -404,7 +404,7 @@ fc_s3_gamma_RE = input.float(2.2, "Range × ATR", group=grp_fc_s3_re), fc_s3_eps
 fc_s3_delta_RE = input.float(1.8, "Volume × Avg", group=grp_fc_s3_re), fc_s3_atr_len_RE = input.int(14, "ATR Lookback", group=grp_fc_s3_re), fc_s3_vol_len_RE = input.int(20, "Volume Lookback", group=grp_fc_s3_re)
 fc_s3_useMB = input.bool(true, "Count MB?", group=grp_fc_s3_seq), fc_s3_useRE = input.bool(true, "Count RE?", group=grp_fc_s3_seq)
 fc_s3_tradingSession = input.session("0930-1600", "Trading Session", group=grp_fc_s3_session), fc_s3_timeZone = input.string("America/New_York", "Time Zone", group=grp_fc_s3_session, options=["America/New_York", "America/Chicago", "UTC"])
-fc_s3_ATR = ta.atr(fc_s3_atr_len_MB), fc_s3_AvgVol = ta.sma(volume, fc_s3_vol_len_MB), fc_s3_isWithinSession = not na(time(timeframe.period, fc_s3_tradingSession, fc_s3_timeZone))
+fc_s3_ATR = ta.atr(fc_s3_atr_len_MB), fc_s3_AvgVol = ta.sma(volume, fc_s3_vol_len_MB), fc_s3_isWithinSession = not na(time((str.endswith(timeframe.period, "T") ? "1" : timeframe.period), fc_s3_tradingSession, fc_s3_timeZone))
 fc_s3_body = close - open, fc_s3_candleRange = high - low, fc_s3_body_up = fc_s3_body > 0, fc_s3_body_size = math.abs(fc_s3_body), fc_s3_body_ratio = fc_s3_candleRange == 0 ? 0 : fc_s3_body_size / fc_s3_candleRange
 fc_s3_MB_bull = fc_s3_body_up and fc_s3_body_size > fc_s3_alpha_MB * fc_s3_ATR and fc_s3_body_ratio > fc_s3_beta_MB and volume > fc_s3_delta_MB * fc_s3_AvgVol
 fc_s3_wide = fc_s3_candleRange > fc_s3_gamma_RE * fc_s3_ATR, fc_s3_RE_bull = fc_s3_body_up and fc_s3_wide and (high - close) < fc_s3_epsilon_RE * fc_s3_candleRange and volume > fc_s3_delta_RE * fc_s3_AvgVol
@@ -488,7 +488,7 @@ e3_MB_bull = e3_body_up and e3_body_size > e3_alpha_MB * e3_ATR and e3_body_rati
 e3_wide = e3_candleRange > e3_gamma_RE * e3_ATR, e3_RE_bull = e3_body_up and e3_wide and (high - close) < e3_epsilon_RE * e3_candleRange and volume > e3_delta_RE * e3_AvgVol
 e3_up_trend = e3_TrendMA > e3_TrendMA[1], e3_TA_bull = e3_up_trend and (close - close[1]) > e3_theta_TA * e3_AvgDelta and e3_body_up and volume > e3_delta_TA * e3_AvgVol
 e3_isEvent = (e3_useMB and e3_MB_bull) or (e3_useRE and e3_RE_bull) or (e3_useTA and e3_TA_bull)
-e3_isWithinSession = not na(time(timeframe.period, e3_tradingSession, e3_timeZone))
+e3_isWithinSession = not na(time((str.endswith(timeframe.period, "T") ? "1" : timeframe.period), e3_tradingSession, e3_timeZone))
 var bool e3_isNewDay = false
 if ta.change(dayofmonth) != 0
 	e3_isNewDay := true
@@ -778,7 +778,7 @@ ftmb_body_up = ftmb_body > 0
 ftmb_body_size = math.abs(ftmb_body)
 ftmb_body_ratio = ftmb_candleRange == 0 ? 0 : ftmb_body_size / ftmb_candleRange
 ftmb_isEvent = ftmb_body_up and ftmb_body_size > ftmb_alpha_MB * ftmb_ATR and ftmb_body_ratio > ftmb_beta_MB and volume > ftmb_delta_MB * ftmb_AvgVol
-ftmb_isWithinSession = not na(time(timeframe.period, ftmb_tradingSession, ftmb_timeZone))
+ftmb_isWithinSession = not na(time((str.endswith(timeframe.period, "T") ? "1" : timeframe.period), ftmb_tradingSession, ftmb_timeZone))
 var bool ftmb_isNewDay = false
 if ta.change(dayofmonth) != 0
 	ftmb_isNewDay := true
