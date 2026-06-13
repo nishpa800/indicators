@@ -36,6 +36,7 @@ Branch: `claude/keen-faraday-mzq2i2`. "Raw" = one-click plain text to paste into
 | VOB v11 MULTIPLES | (long title) | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/vob/tick_friendly/VOB_v11_MULTIPLES_TICKFRIENDLY_2026-06-04.pine) |
 | Heavy Weapons NRA v1 | `RVOL NRAFR x2` | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/heavy-weapons-nra/tick_friendly/HEAVY_WEAPONS_NRA_v1_tick_friendly.pine) |
 | Heavy Weapons ULTRA v1 | `HW ULTRA b2b1` | 🟡 RE10023 + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/heavy-weapons-ultra/tick_friendly/HEAVY_WEAPONS_ULTRA_v1_tick_friendly.pine) |
+| Heavy Weapons Single v3 | `HW Single v3` | 🟡 RE10023 (anchor) + tfSec fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/heavy-weapons-single/tick_friendly/HEAVY_WEAPONS_SINGLE_v3_tick_friendly.pine) |
 | HUB 1020 1153am | `Hub102011a` | 🟡 RE10023 (**time-session**) fixed | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/hub-1020-1153am/tick_friendly/HUB_1020_1153am_Hub102011a_v20260604_tick_friendly.pine) |
 
 ## SET B — date-roll experimental (`dateroll/`, shorttitle ` DR`)
@@ -55,6 +56,7 @@ Same builds, relabeled ` DR` so they load **beside** Set A for A/B. The 3 marked
 | VOB v11 MULTIPLES | `VOB v11 MULT DR` | 🟡 copy of Set A | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/dateroll/VOB_v11_MULTIPLES_DR.pine) |
 | Heavy Weapons NRA v1 | `RVOL NRAFR x2 DR` | 🟡 copy of Set A | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/dateroll/HEAVY_WEAPONS_NRA_v1_DR.pine) |
 | Heavy Weapons ULTRA v1 | `HW ULTRA b2b1 DR` | 🟡 copy of Set A | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/dateroll/HEAVY_WEAPONS_ULTRA_v1_DR.pine) |
+| Heavy Weapons Single v3 | `HW Single v3 DR` | 🟡 copy of Set A | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/dateroll/HEAVY_WEAPONS_SINGLE_v3_DR.pine) |
 | HUB 1020 1153am | `Hub102011a DR` | 🟡 copy of Set A | [raw](https://raw.githubusercontent.com/nishpa800/indicators/claude/keen-faraday-mzq2i2/dateroll/HUB_1020_1153am_v20260604_DR.pine) |
 
 ## Errors tracked so far
