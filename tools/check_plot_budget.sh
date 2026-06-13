@@ -26,7 +26,7 @@ if [ ${#files[@]} -eq 0 ]; then
     # every tick-friendly build. Verbatim imports/ and vendor/ libraries are
     # read-only references and intentionally excluded. Pass explicit file args to
     # check anything else (e.g. a versions/ file before promoting it).
-    mapfile -t files < <(git ls-files '*.pine' | grep -E 'tick_friendly')
+    mapfile -t files < <(git ls-files '*.pine' | grep -E 'tick_friendly|/dateroll/')
 fi
 
 printf "%-68s %6s %6s  %s\n" "FILE" "PLOTS" "DWIN" "STATUS"
