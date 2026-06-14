@@ -197,7 +197,7 @@ else if not wf_isEvent
 if wf_isEvent
 	wf_seqLen += 1
 bool sWhiteFlagMomentum_raw = wf_isEvent and wf_seqLen == 3
-plotshape(sWhiteFlagMomentum_raw and show_wf_momentum_plots, "White Flag Momentum", location=location.abovebar, style=shape.cross, color=color.new(color.red, 0), size=size.huge)
+plotshape(sWhiteFlagMomentum_raw and show_wf_momentum_plots, "White Flag Momentum Bear", location=location.belowbar, style=shape.cross, color=color.new(color.rgb(255, 87, 34), 0), size=size.huge)
 
 
 // #############################################################################
@@ -351,16 +351,16 @@ if array.size(ow_eventBarIndices) >= ow_requiredEvents
 	lastEventIndex = array.pop(ow_eventBarIndices)
 	array.clear(ow_eventBarIndices)
 	array.push(ow_eventBarIndices, lastEventIndex)
-plotshape(sOW_Overlap_raw and show_ow_overlap_plots, title="OW Overlap", location=location.bottom, style=shape.cross, size=size.huge, color=color.new(color.red, 0), text="")
-plotshape(sOW_Super_raw and show_ow_super_plots, title="OW Super", location=location.bottom, style=shape.xcross, size=size.huge, color=color.new(color.blue, 0), text="")
-plotshape(sOW_Combined_raw and show_ow_combined_plots, title="OW Combined", location=location.bottom, style=shape.circle, size=size.large, color=color.new(color.red, 75), text="")
+plotshape(sOW_Overlap_raw and show_ow_overlap_plots, title="OW Overlap Bear", location=location.top, style=shape.cross, size=size.huge, color=color.new(color.rgb(255, 87, 34), 0), text="")
+plotshape(sOW_Super_raw and show_ow_super_plots, title="OW Super Bear", location=location.top, style=shape.xcross, size=size.huge, color=color.new(color.orange, 0), text="")
+plotshape(sOW_Combined_raw and show_ow_combined_plots, title="OW Combined Bear", location=location.top, style=shape.circle, size=size.large, color=color.new(color.rgb(255, 87, 34), 75), text="")
 
 // #############################################################################
 // ###  INDICATOR 3: FAUNAOVRLP CLUSTER (FROM 5X HUB)                         ###
 // #############################################################################
 grp_fc_final = "3. FaunaOVRLP Cluster - Final Signal"
 fc_signal_text = input.string("CLUSTER", "Signal Text (Unused in Plot)", group=grp_fc_final)
-fc_signal_color = input.color(color.new(color.yellow, 60), "Signal Color", group=grp_fc_final)
+fc_signal_color = input.color(color.new(color.rgb(199, 0, 57), 60), "Signal Color", group=grp_fc_final)
 grp_fc_s1_mb = "3. FaunaOVRLP Cluster - 1.1 MB_Sequence"
 fc_s1_alpha_MB = input.float(1.6, "Body Size × ATR", group=grp_fc_s1_mb)
 fc_s1_beta_MB = input.float(0.7, "Body / Range ≥", minval=0.5, maxval=0.99, step=0.01, group=grp_fc_s1_mb)
@@ -476,9 +476,9 @@ if fc_isSequenceEvent and not sFC_Overlap_raw
 			if fc_checkOverlap(currentSeq_Lo, currentSeq_Hi, array.get(fc_thEvent_Lo, i), array.get(fc_thEvent_Hi, i))
 				sFC_Overlap_raw := true, break
 bool sFC_Cluster_raw = sFC_2of3_raw and sFC_Overlap_raw
-plotshape(series=sFC_Cluster_raw and show_fc_cluster_plots, title="FC Cluster", location=location.belowbar, color=fc_signal_color, style=shape.labeldown, size=size.huge, text="CLUSTER")
-plotshape(series=sFC_2of3_raw and show_fc_2of3_plots, title="FC 2/3 Fauna", style=shape.triangledown, location=location.abovebar, color=color.new(color.orange, 20), size=size.huge, text="")
-plotshape(series=sFC_Overlap_raw and show_fc_overlap_plots, title="FC Overlap", location=location.abovebar, style=shape.diamond, size=size.large, color=color.new(color.red, 50), text="")
+plotshape(series=sFC_Cluster_raw and show_fc_cluster_plots, title="FC Cluster Bear", location=location.abovebar, color=fc_signal_color, style=shape.labeldown, size=size.huge, text="CLUSTER")
+plotshape(series=sFC_2of3_raw and show_fc_2of3_plots, title="FC 2/3 Fauna Bear", style=shape.triangledown, location=location.belowbar, color=color.new(color.rgb(178, 34, 34), 20), size=size.huge, text="")
+plotshape(series=sFC_Overlap_raw and show_fc_overlap_plots, title="FC Overlap Bear", location=location.belowbar, style=shape.diamond, size=size.large, color=color.new(color.rgb(255, 87, 34), 50), text="")
 
 // #############################################################################
 // ###  INDICATOR 4: E3 (Fauna Sequence First 3 RTH)                          ###
@@ -510,7 +510,7 @@ else if e3_isWithinSession and e3_sessionBarCounter > 0
 else if not e3_isWithinSession
 	e3_sessionBarCounter := 0
 bool sE3_raw = e3_sessionBarCounter == 3 and e3_isEvent and e3_isEvent[1] and e3_isEvent[2]
-plotshape(sE3_raw and show_e3_plots, "E3", location=location.top, style=shape.circle, color=color.new(color.red, 60), size=size.huge, text="E3")
+plotshape(sE3_raw and show_e3_plots, "E3 Bear", location=location.bottom, style=shape.circle, color=color.new(color.rgb(255, 87, 34), 60), size=size.huge, text="E3")
 
 // #############################################################################
 // ###  INDICATOR 5: OoOC Overlap^2 Meta Pink Diamond                         ###
@@ -583,7 +583,7 @@ while array.size(oooc_meta_evIdx) > 0
 		array.pop(oooc_meta_evStartHigh)
 	else
 		break
-plotshape(sOoOC_raw and show_oooc_plots, "OoOC", location=location.bottom, style=shape.diamond, size=size.large, color=color.new(color.fuchsia, 50), text="")
+plotshape(sOoOC_raw and show_oooc_plots, "OoOC Bear", location=location.top, style=shape.diamond, size=size.large, color=color.new(color.rgb(255, 82, 82), 50), text="")
 
 // #############################################################################
 // ###  INDICATOR 6: RED PLUS SEQUENCE                                        ###
@@ -632,7 +632,7 @@ else if not rp_isEvent
 if rp_isEvent
 	rp_seqLen += 1
 bool sRedPlus_raw = rp_isEvent and rp_seqLen >= 2
-plotshape(sRedPlus_raw and show_rp_plots, "Red Plus", location=location.abovebar, style=shape.cross, color=color.new(color.fuchsia, 0), size=size.large)
+plotshape(sRedPlus_raw and show_rp_plots, "Red Plus Bear", location=location.belowbar, style=shape.cross, color=color.new(color.rgb(255, 82, 82), 0), size=size.large)
 
 // #############################################################################
 // ###  INDICATOR 7: RVOL Bearish D>Th (Lucky #7)                             ###
@@ -654,7 +654,7 @@ l7_sma_rvol3 = ta.sma(l7_rvol3_pos, l7_smaLength)
 l7_baseBear = close < open and nz(l7_rvol3_pos) > nz(l7_sma_rvol3)
 l7_inRange(v) => v > l7_th_low and v < l7_th_high
 bool sRVOL_UgtTh_raw = l7_baseBear and l7_inRange(l7_rvol_price)
-plotshape(sRVOL_UgtTh_raw and show_l7_plots, title="RVOL D>Th", location=location.bottom, style=shape.cross, size=size.small, color=color.new(color.red, 0), text="RVOL")
+plotshape(sRVOL_UgtTh_raw and show_l7_plots, title="RVOL D>Th Bear", location=location.top, style=shape.cross, size=size.small, color=color.new(color.rgb(255, 87, 34), 0), text="RVOL")
 
 // #############################################################################
 // ###  INDICATOR 8: FAUNA X-IN-Y SIGNAL                                      ###
@@ -705,7 +705,7 @@ if fxy_windowLength >= 1
 		fxy_eventsInWindow += fxy_eventAsNumber[i]
 bool fxy_conditionMet = fxy_eventsInWindow >= fxy_requiredEvents
 bool sFaunaXinY_raw = fxy_conditionMet and not fxy_conditionMet[1]
-plotshape(sFaunaXinY_raw and show_fxy_plots, "Fauna X-in-Y", location=location.abovebar, style=shape.cross, color=color.new(color.red, 0), size=size.huge, text="")
+plotshape(sFaunaXinY_raw and show_fxy_plots, "Fauna X-in-Y Bear", location=location.belowbar, style=shape.cross, color=color.new(color.rgb(255, 87, 34), 0), size=size.huge, text="")
 
 // #############################################################################
 // ###  INDICATOR 9: RVOL ROLLING WINDOW                                      ###
@@ -765,7 +765,7 @@ if rw_isEvent
 			array.clear(rw_windowEventValues)
 			array.push(rw_windowEventValues, rw_rvol_price)
 
-plotshape(sRVOL_Window_raw and show_rw_plots, title="RVOL Window", location=location.abovebar, style=shape.cross, size=size.small, color=color.new(color.blue, 0), text="WIN")
+plotshape(sRVOL_Window_raw and show_rw_plots, title="RVOL Window Bear", location=location.belowbar, style=shape.cross, size=size.small, color=color.new(color.orange, 0), text="WIN")
 
 // #############################################################################
 // ###  INDICATOR 10: FAUNA SEQUENCE (FIRST 2 RTH) [NEW]                      ###
@@ -801,7 +801,7 @@ else if ftmb_isWithinSession and ftmb_sessionBarCounter > 0
 else if not ftmb_isWithinSession
 	ftmb_sessionBarCounter := 0
 bool sFirstTwoMB_raw = ftmb_sessionBarCounter == 2 and ftmb_isEvent and ftmb_isEvent[1]
-plotshape(sFirstTwoMB_raw and show_ftmb_plots, "First Two MB", location=location.top, style=shape.triangledown, color=color.new(color.red, 0), size=size.huge, text="F2")
+plotshape(sFirstTwoMB_raw and show_ftmb_plots, "First Two MB Bear", location=location.bottom, style=shape.triangledown, color=color.new(color.rgb(255, 87, 34), 0), size=size.huge, text="F2")
 
 
 // #############################################################################
@@ -1020,14 +1020,14 @@ bool sSwingTop_raw = ms_swing_top_event
 
 // —————— HUB VISUALIZATION (SWING TOP) ——————
 // Controlled by the HUB Global Plot Setting, placed correctly at the pivot using coordinates stored when the event fired.
-plotshape(sSwingTop_raw and show_swing_top_plots and barstate.isconfirmed, "Swing Top (Mango)", location=location.abovebar, style=shape.labeldown, color=color.new(color.red, 0), textcolor=color.white, size=size.normal, text="ST")  //BEAR_FINAL
+plotshape(sSwingTop_raw and show_swing_top_plots and barstate.isconfirmed, "Swing Top (Mango) Bear", location=location.belowbar, style=shape.labeldown, color=color.new(color.rgb(255, 87, 34), 0), textcolor=color.white, size=size.normal, text="ST")  //BEAR_FINAL
 
 
 // #############################################################################
 // ###  DERIVED & COINCIDENT SIGNALS                                          ###
 // #############################################################################
 bool sCoincidentCluster_raw = sOW_Overlap_raw and sOoOC_raw
-plotshape(sCoincidentCluster_raw and not sCoincidentCluster_raw[1] and show_cc_plots, "Coincident Cluster", location=location.belowbar, style=shape.labeldown, color=color.new(color.yellow, 50), size=size.huge, text="CC")
+plotshape(sCoincidentCluster_raw and not sCoincidentCluster_raw[1] and show_cc_plots, "Coincident Cluster Bear", location=location.abovebar, style=shape.labeldown, color=color.new(color.rgb(178, 34, 34), 50), size=size.huge, text="CC")
 
 // #############################################################################
 // ###  NEWLY INTEGRATED SIGNALS                                              ###
@@ -1580,21 +1580,21 @@ bool sCustomI_fire = f_pulse(sCustomI_raw)
 bool sCustomJ_fire = f_pulse(sCustomJ_raw)
 
 // Plot Custom Signals & New Signals
-plotshape(sCustomA_fire and show_custom_A_plots, "Custom Signal A", location=location.abovebar, style=shape.circle, color=color.new(color.orange, 80), size=size.huge, text="A")
-plotshape(sCustomB_fire and show_custom_B_plots, "Custom Signal B", location=location.belowbar, style=shape.triangledown, color=color.new(#CD853F, 25), size=size.huge, text="B")
-plotshape(sCustomC_fire and show_custom_C_plots, "Custom Signal C", location=location.abovebar, style=shape.triangledown, color=color.new(color.purple, 25), size=size.huge, text="C")
-plotshape(sCustomD_fire and show_custom_D_plots, "Custom Signal D", location=location.belowbar, style=shape.xcross, color=color.new(color.purple, 0), size=size.huge, text="D")
-plotshape(sCustomE_fire and show_custom_E_plots, title="Custom Signal E", style=shape.circle, size=size.huge, location=location.belowbar, text="E", color=color.new(color.fuchsia, 60))
-plotshape(sCustomF_fire and show_custom_F_plots, title="Custom Signal F", style=shape.triangledown, size=size.huge, location=location.abovebar, text="F", color=color.new(color.maroon, 25))
-plotshape(sCustomG_fire and show_custom_G_plots, title="Custom Signal G", style=shape.triangledown, size=size.huge, location=location.belowbar, text="G", color=color.new(color.maroon, 25))
-plotshape(sCustomH_fire and show_custom_H_plots, title="Custom Signal H", style=shape.xcross, size=size.huge, location=location.abovebar, text="H", color=color.new(color.silver, 0))
-plotshape(sCustomI_fire and show_custom_I_plots, title="Custom Signal I", style=shape.labeldown, size=size.huge, location=location.bottom, text="iii", color=color.new(color.red, 80), textcolor=color.white)
-plotshape(sCustomJ_fire and show_custom_J_plots, title="Custom Signal J", style=shape.square, size=size.huge, location=location.bottom, text="J", color=color.new(color.gray, 50))
+plotshape(sCustomA_fire and show_custom_A_plots, "Custom Signal A Bear", location=location.belowbar, style=shape.circle, color=color.new(color.rgb(178, 34, 34), 80), size=size.huge, text="A")
+plotshape(sCustomB_fire and show_custom_B_plots, "Custom Signal B Bear", location=location.abovebar, style=shape.triangledown, color=color.new(#B22222, 25), size=size.huge, text="B")
+plotshape(sCustomC_fire and show_custom_C_plots, "Custom Signal C Bear", location=location.belowbar, style=shape.triangledown, color=color.new(color.rgb(199, 0, 57), 25), size=size.huge, text="C")
+plotshape(sCustomD_fire and show_custom_D_plots, "Custom Signal D Bear", location=location.abovebar, style=shape.xcross, color=color.new(color.rgb(199, 0, 57), 0), size=size.huge, text="D")
+plotshape(sCustomE_fire and show_custom_E_plots, title="Custom Signal E Bear", style=shape.circle, size=size.huge, location=location.abovebar, text="E", color=color.new(color.rgb(255, 82, 82), 60))
+plotshape(sCustomF_fire and show_custom_F_plots, title="Custom Signal F Bear", style=shape.triangledown, size=size.huge, location=location.belowbar, text="F", color=color.new(color.rgb(255, 69, 0), 25))
+plotshape(sCustomG_fire and show_custom_G_plots, title="Custom Signal G Bear", style=shape.triangledown, size=size.huge, location=location.abovebar, text="G", color=color.new(color.rgb(255, 69, 0), 25))
+plotshape(sCustomH_fire and show_custom_H_plots, title="Custom Signal H Bear", style=shape.xcross, size=size.huge, location=location.belowbar, text="H", color=color.new(color.rgb(205, 92, 92), 0))
+plotshape(sCustomI_fire and show_custom_I_plots, title="Custom Signal I Bear", style=shape.labeldown, size=size.huge, location=location.top, text="iii", color=color.new(color.rgb(255, 87, 34), 80), textcolor=color.white)
+plotshape(sCustomJ_fire and show_custom_J_plots, title="Custom Signal J Bear", style=shape.square, size=size.huge, location=location.top, text="J", color=color.new(color.rgb(165, 42, 42), 50))
 
 // --- Plot New Integrated Signals ---
 // Note: Swing Top visualization is handled via label.new in Indicator 11 section for accurate placement.
 
-plotchar(fire_pbj_sell and show_pbj_sell_plots, "PB&J Follow-up Sell", char='★', location=location.belowbar, color=color.new(color.maroon, 0), size=size.small)
+plotchar(fire_pbj_sell and show_pbj_sell_plots, "PB&J Follow-up Sell Bear", char='★', location=location.abovebar, color=color.new(color.rgb(255, 69, 0), 0), size=size.small)
 
 
 // #############################################################################
@@ -1606,88 +1606,88 @@ _galert_msg := ""
 _galert_cnt := 0
 
 string rvol_str = str.tostring(l7_rvol_price, "#.#")
-string rvol_name_full = "RVOL D>Th (Value: " + rvol_str + ")"
+string rvol_name_full = "RVOL D>Th Bear (Value: " + rvol_str + ")"
 string ohlc_string = " O={{open}} H={{high}} L={{low}} C={{close}}"
 
 if barstate.isconfirmed
 	// --- Aggregation Phase: Build the message string in registry order ---
 	if enable_wf_momentum_alerts and fire_wf_momentum
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "White Flag Momentum"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "White Flag Momentum Bear"
 		_galert_cnt += 1
 	if enable_ow_overlap_alerts and fire_ow_overlap
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OW Overlap"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OW Overlap Bear"
 		_galert_cnt += 1
 	if enable_ow_super_alerts and fire_ow_super
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OW Super"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OW Super Bear"
 		_galert_cnt += 1
 	if enable_ow_combined_alerts and fire_ow_combined
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OW Combined"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OW Combined Bear"
 		_galert_cnt += 1
 	if enable_fc_2of3_alerts and fire_fc_2of3
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "FC 2/3 Fauna"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "FC 2/3 Fauna Bear"
 		_galert_cnt += 1
 	if enable_fc_overlap_alerts and fire_fc_overlap
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "FC Overlap"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "FC Overlap Bear"
 		_galert_cnt += 1
 	if enable_fc_cluster_alerts and fire_fc_cluster
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "FC Cluster"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "FC Cluster Bear"
 		_galert_cnt += 1
 	if enable_e3_alerts and fire_e3
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "E3"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "E3 Bear"
 		_galert_cnt += 1
 	if enable_oooc_alerts and fire_oooc
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OoOC"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "OoOC Bear"
 		_galert_cnt += 1
 	if enable_rp_alerts and fire_rp
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Red Plus"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Red Plus Bear"
 		_galert_cnt += 1
 	if enable_l7_alerts and fire_rvol_ugtth
 		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + rvol_name_full
 		_galert_cnt += 1
 	if enable_fxy_alerts and fire_fxy
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Fauna X-in-Y"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Fauna X-in-Y Bear"
 		_galert_cnt += 1
 	if enable_rw_alerts and fire_rvol_window
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "RVOL Window"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "RVOL Window Bear"
 		_galert_cnt += 1
 	if enable_ftmb_alerts and fire_ftmb
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "First Two MB"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "First Two MB Bear"
 		_galert_cnt += 1
 	if enable_cc_alerts and fire_cc
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Coincident Cluster"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Coincident Cluster Bear"
 		_galert_cnt += 1
 	if enable_pbj_sell_alerts and fire_pbj_sell
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "PB&J Follow-up Sell"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "PB&J Follow-up Sell Bear"
 		_galert_cnt += 1
 	if enable_custom_A_alerts and sCustomA_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal A"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal A Bear"
 		_galert_cnt += 1
 	if enable_custom_B_alerts and sCustomB_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal B"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal B Bear"
 		_galert_cnt += 1
 	if ga_CustomC and sCustomC_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal C"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal C Bear"
 		_galert_cnt += 1
 	if ga_CustomD and sCustomD_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal D"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal D Bear"
 		_galert_cnt += 1
 	if ga_CustomE and sCustomE_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal E"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal E Bear"
 		_galert_cnt += 1
 	if ga_CustomF and sCustomF_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal F"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal F Bear"
 		_galert_cnt += 1
 	if ga_CustomG and sCustomG_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal G"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal G Bear"
 		_galert_cnt += 1
 	if ga_CustomH and sCustomH_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal H"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal H Bear"
 		_galert_cnt += 1
 	if ga_CustomI and sCustomI_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal I"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal I Bear"
 		_galert_cnt += 1
 	if ga_CustomJ and sCustomJ_fire
-		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal J"
+		_galert_msg := _galert_msg + (str.length(_galert_msg) > 0 ? "|" : "") + "Custom Signal J Bear"
 		_galert_cnt += 1
 
 	// --- Emission Phase: Fire alerts based on user settings ---
@@ -1695,86 +1695,86 @@ if barstate.isconfirmed
 		string alert_base_string = "| {{ticker}} {{interval}} {{time}}" + ohlc_string
 		if ga_one_per_signal
 			if enable_wf_momentum_alerts and fire_wf_momentum
-				alert("White Flag Momentum " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("White Flag Momentum Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_ow_overlap_alerts and fire_ow_overlap
-				alert("OW Overlap " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("OW Overlap Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_ow_super_alerts and fire_ow_super
-				alert("OW Super " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("OW Super Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_ow_combined_alerts and fire_ow_combined
-				alert("OW Combined " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("OW Combined Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_fc_2of3_alerts and fire_fc_2of3
-				alert("FC 2/3 Fauna " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("FC 2/3 Fauna Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_fc_overlap_alerts and fire_fc_overlap
-				alert("FC Overlap " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("FC Overlap Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_fc_cluster_alerts and fire_fc_cluster
-				alert("FC Cluster " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("FC Cluster Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_e3_alerts and fire_e3
-				alert("E3 " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("E3 Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_oooc_alerts and fire_oooc
-				alert("OoOC " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("OoOC Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_rp_alerts and fire_rp
-				alert("Red Plus " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Red Plus Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_l7_alerts and fire_rvol_ugtth
 				alert(rvol_name_full + " " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_fxy_alerts and fire_fxy
-				alert("Fauna X-in-Y " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Fauna X-in-Y Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_rw_alerts and fire_rvol_window
-				alert("RVOL Window " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("RVOL Window Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_ftmb_alerts and fire_ftmb
-				alert("First Two MB " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("First Two MB Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_cc_alerts and fire_cc
-				alert("Coincident Cluster " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Coincident Cluster Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_pbj_sell_alerts and fire_pbj_sell
-				alert("PB&J Follow-up Sell " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("PB&J Follow-up Sell Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_custom_A_alerts and sCustomA_fire
-				alert("Custom Signal A " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal A Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if enable_custom_B_alerts and sCustomB_fire
-				alert("Custom Signal B " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal B Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if ga_CustomC and sCustomC_fire
-				alert("Custom Signal C " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal C Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if ga_CustomD and sCustomD_fire
-				alert("Custom Signal D " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal D Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if ga_CustomE and sCustomE_fire
-				alert("Custom Signal E " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal E Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if ga_CustomF and sCustomF_fire
-				alert("Custom Signal F " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal F Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if ga_CustomG and sCustomG_fire
-				alert("Custom Signal G " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal G Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if ga_CustomH and sCustomH_fire
-				alert("Custom Signal H " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal H Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if ga_CustomI and sCustomI_fire
-				alert("Custom Signal I " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal I Bear " + alert_base_string, alert.freq_once_per_bar_close)
 			if ga_CustomJ and sCustomJ_fire
-				alert("Custom Signal J " + alert_base_string, alert.freq_once_per_bar_close)
+				alert("Custom Signal J Bear " + alert_base_string, alert.freq_once_per_bar_close)
 		else
-			alert("Signals: " + _galert_msg + " " + alert_base_string, alert.freq_once_per_bar_close)
+			alert("BEAR Signals: " + _galert_msg + " " + alert_base_string, alert.freq_once_per_bar_close)
 
 // #############################################################################
 // ### LEGACY ALERTCONDITIONS (FOR BACKWARD COMPATIBILITY)                    ###
 // #############################################################################
-alertcondition(fire_wf_momentum and enable_wf_momentum_alerts, "White Flag Momentum", "White Flag Momentum on {{ticker}}")
-alertcondition(fire_ow_overlap and enable_ow_overlap_alerts, "OW: Overlap Cluster", "OW: Overlap Cluster on {{ticker}}")
-alertcondition(fire_ow_super and enable_ow_super_alerts, "OW: Super Cluster", "OW: Super Cluster on {{ticker}}")
-alertcondition(fire_ow_combined and enable_ow_combined_alerts, "OW: Combined Event", "OW: Combined Event on {{ticker}}")
-alertcondition(fire_fc_2of3 and enable_fc_2of3_alerts, "FC: 2/3 Fauna Signal", "FC: 2/3 Fauna Signal on {{ticker}}")
-alertcondition(fire_fc_overlap and enable_fc_overlap_alerts, "FC: Overlap Signal", "FC: Overlap Signal on {{ticker}}")
-alertcondition(fire_fc_cluster and enable_fc_cluster_alerts, "FC: FaunaOVRLP CLUSTER", "FC: FaunaOVRLP CLUSTER on {{ticker}}")
-alertcondition(fire_e3 and enable_e3_alerts, "E3 RTH Open x3", "E3 RTH Open x3 on {{ticker}}")
-alertcondition(fire_oooc and enable_oooc_alerts, "OoOC Meta-Cluster", "OoOC Meta-Cluster on {{ticker}}")
-alertcondition(fire_rp and enable_rp_alerts, "Red Plus Sequence", "Red Plus Sequence on {{ticker}}")
-alertcondition(fire_rvol_ugtth and enable_l7_alerts, "RVOL D>Th", "RVOL D>Th on {{ticker}}")
-alertcondition(fire_fxy and enable_fxy_alerts, "Fauna X-in-Y", "Fauna X-in-Y on {{ticker}}")
-alertcondition(fire_rvol_window and enable_rw_alerts, "RVOL Rolling Window", "RVOL Rolling Window on {{ticker}}")
-alertcondition(fire_ftmb and enable_ftmb_alerts, "First Two MB", "First Two MB on {{ticker}}")
-alertcondition(fire_cc and enable_cc_alerts, "Coincident Cluster", "Coincident Cluster on {{ticker}}")
-alertcondition(fire_pbj_sell and enable_pbj_sell_alerts, "PB&J Follow-up Sell", "PB&J Follow-up Sell on {{ticker}}")
-alertcondition(sCustomA_fire and enable_custom_A_alerts, "Custom Signal A", "Custom Signal A on {{ticker}}")
-alertcondition(sCustomB_fire and enable_custom_B_alerts, "Custom Signal B", "Custom Signal B on {{ticker}}")
-alertcondition(sCustomC_fire and ga_CustomC, "Custom Signal C", "Custom Signal C on {{ticker}}")
-alertcondition(sCustomD_fire and ga_CustomD, "Custom Signal D", "Custom Signal D on {{ticker}}")
-alertcondition(sCustomE_fire and ga_CustomE, "Custom Signal E", "Custom Signal E on {{ticker}}")
-alertcondition(sCustomF_fire and ga_CustomF, "Custom Signal F", "Custom Signal F on {{ticker}}")
-alertcondition(sCustomG_fire and ga_CustomG, "Custom Signal G", "Custom Signal G on {{ticker}}")
-alertcondition(sCustomH_fire and ga_CustomH, "Custom Signal H", "Custom Signal H on {{ticker}}")
-alertcondition(sCustomI_fire and ga_CustomI, "Custom Signal I", "Custom Signal I on {{ticker}}")
-alertcondition(sCustomJ_fire and ga_CustomJ, "Custom Signal J", "Custom Signal J on {{ticker}}")
+alertcondition(fire_wf_momentum and enable_wf_momentum_alerts, "White Flag Momentum Bear", "White Flag Momentum Bear on {{ticker}}")
+alertcondition(fire_ow_overlap and enable_ow_overlap_alerts, "OW: Overlap Cluster Bear", "OW: Overlap Cluster Bear on {{ticker}}")
+alertcondition(fire_ow_super and enable_ow_super_alerts, "OW: Super Cluster Bear", "OW: Super Cluster Bear on {{ticker}}")
+alertcondition(fire_ow_combined and enable_ow_combined_alerts, "OW: Combined Event Bear", "OW: Combined Event Bear on {{ticker}}")
+alertcondition(fire_fc_2of3 and enable_fc_2of3_alerts, "FC: 2/3 Fauna Signal Bear", "FC: 2/3 Fauna Signal Bear on {{ticker}}")
+alertcondition(fire_fc_overlap and enable_fc_overlap_alerts, "FC: Overlap Signal Bear", "FC: Overlap Signal Bear on {{ticker}}")
+alertcondition(fire_fc_cluster and enable_fc_cluster_alerts, "FC: FaunaOVRLP CLUSTER Bear", "FC: FaunaOVRLP CLUSTER Bear on {{ticker}}")
+alertcondition(fire_e3 and enable_e3_alerts, "E3 RTH Open x3 Bear", "E3 RTH Open x3 Bear on {{ticker}}")
+alertcondition(fire_oooc and enable_oooc_alerts, "OoOC Meta-Cluster Bear", "OoOC Meta-Cluster Bear on {{ticker}}")
+alertcondition(fire_rp and enable_rp_alerts, "Red Plus Sequence Bear", "Red Plus Sequence Bear on {{ticker}}")
+alertcondition(fire_rvol_ugtth and enable_l7_alerts, "RVOL D>Th Bear", "RVOL D>Th Bear on {{ticker}}")
+alertcondition(fire_fxy and enable_fxy_alerts, "Fauna X-in-Y Bear", "Fauna X-in-Y Bear on {{ticker}}")
+alertcondition(fire_rvol_window and enable_rw_alerts, "RVOL Rolling Window Bear", "RVOL Rolling Window Bear on {{ticker}}")
+alertcondition(fire_ftmb and enable_ftmb_alerts, "First Two MB Bear", "First Two MB Bear on {{ticker}}")
+alertcondition(fire_cc and enable_cc_alerts, "Coincident Cluster Bear", "Coincident Cluster Bear on {{ticker}}")
+alertcondition(fire_pbj_sell and enable_pbj_sell_alerts, "PB&J Follow-up Sell Bear", "PB&J Follow-up Sell Bear on {{ticker}}")
+alertcondition(sCustomA_fire and enable_custom_A_alerts, "Custom Signal A Bear", "Custom Signal A Bear on {{ticker}}")
+alertcondition(sCustomB_fire and enable_custom_B_alerts, "Custom Signal B Bear", "Custom Signal B Bear on {{ticker}}")
+alertcondition(sCustomC_fire and ga_CustomC, "Custom Signal C Bear", "Custom Signal C Bear on {{ticker}}")
+alertcondition(sCustomD_fire and ga_CustomD, "Custom Signal D Bear", "Custom Signal D Bear on {{ticker}}")
+alertcondition(sCustomE_fire and ga_CustomE, "Custom Signal E Bear", "Custom Signal E Bear on {{ticker}}")
+alertcondition(sCustomF_fire and ga_CustomF, "Custom Signal F Bear", "Custom Signal F Bear on {{ticker}}")
+alertcondition(sCustomG_fire and ga_CustomG, "Custom Signal G Bear", "Custom Signal G Bear on {{ticker}}")
+alertcondition(sCustomH_fire and ga_CustomH, "Custom Signal H Bear", "Custom Signal H Bear on {{ticker}}")
+alertcondition(sCustomI_fire and ga_CustomI, "Custom Signal I Bear", "Custom Signal I Bear on {{ticker}}")
+alertcondition(sCustomJ_fire and ga_CustomJ, "Custom Signal J Bear", "Custom Signal J Bear on {{ticker}}")
