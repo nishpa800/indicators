@@ -1,5 +1,20 @@
 # CHANGELOG — indicator suite
 
+## 2026-06-14 — Fair Value Gap: tick-friendly + non-repainting build
+
+New `fvg/` folder (first appearance of the "Fair Value Gap (Anish)" study in the suite):
+- `fvg/versions/FAIR_VALUE_GAP_v1.pine` — the V1, 2022.4.12 original, ingested verbatim.
+- `fvg/tick_friendly/FAIR_VALUE_GAP_v1_tick_friendly.pine` — tick-friendly, **non-repainting** derivative.
+- `fvg/CHANGELOG.md` — full detail.
+
+Non-repaint fix: every box/line/label create, mutate and delete is gated on
+`conf = barstate.isconfirmed` (v1 mutated its `var` drawing-arrays on every intrabar
+tick → orphan boxes / destructive intrabar fills). History is byte-identical to v1;
+only the live bar now commits at close. Tick-safety: new `i_tfSafe` coerces an empty
+or tick (`"…T"`) MTF anchor to `"D"` before it reaches `request.security()`/`time()`
+(no `relativeVolume`/`timeframe.change` here, so no RE10023 vector). `lookahead_on`
+HTF requests kept verbatim — they are the canonical non-repaint idiom, not a leak.
+
 ## 2026-05-06 — Sync from TradingView
 
 Pulled latest source for all 5 canonical indicators directly from TradingView via MCP. Findings vs prior local copies:
