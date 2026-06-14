@@ -758,6 +758,46 @@ if rw_isEvent
 plotshape(sRVOL_Window_raw and show_rw_plots, title="RVOL Window", location=location.abovebar, style=shape.cross, size=size.small, color=color.new(color.blue, 0), text="WIN")
 
 // #############################################################################
+// ###  RVOL TIER LADDER - interval-adaptive (ported from Heavy Weapons NRA)  ###
+// ###  Threshold auto-picks per chart interval; TICK charts fall back to the  ###
+// ###  10s bucket (rvt_tickOverride pins another). 1x band + Grand Slam/MOAB. ###
+// #############################################################################
+grp_rvt = "RVOL TIER LADDER (interval-adaptive)"
+rvt_tickOverride = input.int(0, "Tick threshold-bucket seconds (0=auto 10s)", minval=0, group=grp_rvt, tooltip="On tick charts timeframe.in_seconds()=0. Set >0 to PIN the per-interval RVOL bucket (e.g. 10/30/60). 0 = auto fallback to tightest sub-minute bucket.")
+rvt_tol = input.float(0.90, "Tier fire tolerance (x per-interval threshold)", minval=0.1, step=0.01, group=grp_rvt, tooltip="Fire a tier when RVOL >= this x the per-interval threshold. 0.90 = 10% below nominal.")
+rvt_avgLength = input.int(30, "RVOL Look-back", minval=1, group=grp_rvt)
+rvt_smaLength = input.int(20, "RVOL SMA Length", minval=1, group=grp_rvt)
+int RVT_TICK_FALLBACK_SEC = 10
+float rvt_tfSecRaw = timeframe.in_seconds(timeframe.period)
+bool rvt_isTick = na(rvt_tfSecRaw) or rvt_tfSecRaw <= 0
+rvt_tfSec = rvt_tickOverride > 0 ? rvt_tickOverride : (rvt_isTick ? RVT_TICK_FALLBACK_SEC : int(rvt_tfSecRaw))
+f_rvt_1x(_s) =>
+	float th = _s <= 10 ? 38.0 : _s <= 15 ? 33.0 : _s <= 30 ? 28.0 : _s <= 45 ? 23.0 : _s <= 60 ? 20.0 : _s <= 120 ? 19.0 : _s <= 180 ? 17.0 : _s <= 240 ? 16.0 : _s <= 300 ? 15.0 : _s <= 360 ? 14.0 : _s <= 420 ? 12.0 : _s <= 480 ? 11.0 : _s <= 540 ? 10.0 : _s <= 600 ? 10.0 : _s <= 900 ? 8.4 : _s <= 1800 ? 6.9 : _s <= 3600 ? 5.9 : _s <= 7200 ? 3.0 : 1.8
+	th
+f_rvt_gs(_s) =>
+	float th = _s <= 10 ? 114.0 : _s <= 15 ? 99.0 : _s <= 30 ? 84.0 : _s <= 45 ? 69.0 : _s <= 60 ? 35.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 900 ? 20.0 : _s <= 3600 ? 10.0 : 8.0
+	th
+float rvt_th_1x = f_rvt_1x(rvt_tfSec) * rvt_tol
+float rvt_th_gs = f_rvt_gs(rvt_tfSec) * rvt_tol
+rvt_spike = math.abs(close - open)
+rvt_normPrice = rvt_spike / nz(ta.sma(rvt_spike, rvt_avgLength)[1], 1.0)
+rvt_normVol = volume / nz(ta.sma(volume, rvt_avgLength)[1], 1.0)
+rvt_diff = rvt_normPrice - rvt_normVol
+rvt_pos = rvt_diff > 0 ? rvt_diff : na
+rvt_smaDiff = ta.sma(rvt_pos, rvt_smaLength)
+rvt_baseBull = close > open and nz(rvt_pos) > nz(rvt_smaDiff)
+rvt_baseBear = close < open and nz(rvt_pos) > nz(rvt_smaDiff)
+show_rvt_1x_plots = input.bool(true, "RVOL Window 1x Bull", group=grp_rvt)
+show_rvt_gs_plots = input.bool(true, "RVOL Window Grand Slam", group=grp_rvt)
+bool sRVOL_Win_1x_raw = barstate.isconfirmed and rvt_baseBull and rvt_normPrice >= rvt_th_1x and rvt_normPrice < rvt_th_gs
+bool sRVOL_Win_GS_raw = barstate.isconfirmed and rvt_baseBull and rvt_normPrice >= rvt_th_gs
+plotshape(sRVOL_Win_1x_raw and show_rvt_1x_plots, "RVOL Window 1x Bull", location=location.belowbar, style=shape.cross, size=size.small, color=color.new(color.lime, 0), text="1x")
+plotshape(sRVOL_Win_GS_raw and show_rvt_gs_plots, "RVOL Window Grand Slam", location=location.belowbar, style=shape.triangleup, size=size.large, color=color.new(color.aqua, 0), text="GS")
+alertcondition(sRVOL_Win_1x_raw, "RVOL Window 1x Bull", "RVOL Window 1x Bull on {{ticker}}")
+alertcondition(sRVOL_Win_GS_raw, "RVOL Window Grand Slam", "RVOL Window Grand Slam on {{ticker}}")
+
+
+// #############################################################################
 // ###  INDICATOR 10: FAUNA SEQUENCE (FIRST 2 RTH) [NEW]                      ###
 // #############################################################################
 // Renumbered group from 11 to 10 based on HUB_Final_Cleaned source
