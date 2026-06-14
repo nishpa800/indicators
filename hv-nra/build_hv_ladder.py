@@ -169,6 +169,17 @@ agg += ["",
         "// Collections (array<bool>): signalStates[22]  // [0..19]=tiers, [20]=HEV, [21]=HotSpot"]
 
 doc = "\n".join([HEADER] + inputs + calcs + [hotspot] + plotvars + plots + alerts + agg) + "\n"
+
+# ASCII-ONLY guard: TradingView's Pine lexer rejects non-ASCII punctuation pasted
+# into source (em-dash U+2014 -> "Syntax error at input 'use50'"). Normalize, then assert.
+doc = (doc.replace("—", "-").replace("–", "-")   # em/en dash -> hyphen
+          .replace("‘", "'").replace("’", "'")   # smart single quotes
+          .replace("“", '"').replace("”", '"'))  # smart double quotes
+bad = [(i + 1, repr(ch)) for i, ln in enumerate(doc.splitlines())
+       for ch in ln if ord(ch) > 0x7F]
+if bad:
+    raise SystemExit(f"NON-ASCII REMAINS (Pine will reject): {bad[:10]}")
+
 OUT.write_text(doc)
 print(f"wrote {OUT}")
 print(f"tiers={len(TIERS)}  lines={len(doc.splitlines())}")

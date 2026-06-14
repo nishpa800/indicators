@@ -4,26 +4,26 @@ indicator("HV(50-1000 step50 / HEV / HS) NRA", overlay=true)
 // ============================================
 // === NON-REPAINTING ARCHITECTURE ===
 // ============================================
-// PROBLEM 1 — LIVE BAR REPAINTING:
+// PROBLEM 1 - LIVE BAR REPAINTING:
 //   `volume == ta.highest(volume, N)` evaluates on every tick.
 //   Volume accumulates intra-bar, so the condition can flip true->false
 //   or false->true dozens of times before bar close. Signals appear,
 //   disappear, and move to different bars after the fact.
 //
-// PROBLEM 2 — ALERT / PLOT DESYNC:
+// PROBLEM 2 - ALERT / PLOT DESYNC:
 //   Original plotshapes used priority filtering (e.g. `not isHEV`)
 //   but alertcondition() did NOT use the same filters.
 //
-// FIX — ALL signals now:
+// FIX - ALL signals now:
 //   1. Use [1] (prior confirmed bar) for ALL volume comparisons
 //      so values can NEVER change once printed.
 //   2. Plot and alert conditions use IDENTICAL boolean expressions
-//      stored in named variables — one source of truth, zero drift.
+//      stored in named variables - one source of truth, zero drift.
 //   3. Every plotshape and every alertcondition references the SAME
 //      `plot_*` variable so a plot can never exist without its alert.
 //
 // LADDER CHANGE (this version): the lookback tiers are now a FULL
-//   50-bar step ladder — 50, 100, 150, 200, ... 900, 950, 1000 (20 tiers) —
+//   50-bar step ladder - 50, 100, 150, 200, ... 900, 950, 1000 (20 tiers) -
 //   replacing the original sparse 50/150/250/500/1000.
 //   Tiers are NESTED (a 1000-bar high is also a 50-bar high), so exactly
 //   ONE marker prints per bar: the highest tier reached.
@@ -83,7 +83,7 @@ bool is900Bar = volume[1] == ta.highest(volume, 900)[1]
 bool is950Bar = volume[1] == ta.highest(volume, 950)[1]
 bool is1000Bar = volume[1] == ta.highest(volume, 1000)[1]
 
-// All-Time High Volume (HEV) — running max over CONFIRMED bars only.
+// All-Time High Volume (HEV) - running max over CONFIRMED bars only.
 var float maxVolEver = 0.0
 bool isHEV = false
 if volume[1] > maxVolEver
@@ -91,7 +91,7 @@ if volume[1] > maxVolEver
     isHEV := true
 
 // ============================================
-// === HOT SPOT — CALENDAR-BASED SIGNALS ===
+// === HOT SPOT - CALENDAR-BASED SIGNALS ===
 // ============================================
 // Fires 3-5 trading days BEFORE ~20 known recurring high-volume events/year.
 // Calendar flags use [1] bar's date so the flag matches the drawn bar.
@@ -169,7 +169,7 @@ plotshape(plot_1000, "1000-Bar High", shape.circle, location.top, color.rgb(255,
 plotshape(plot_HS, "Hot Spot", shape.cross, location.bottom, color.new(color.red, 0), size=size.tiny, offset=-1)
 
 // ============================================
-// === ALERTS (same variables as plots — guaranteed 1:1) ===
+// === ALERTS (same variables as plots - guaranteed 1:1) ===
 // ============================================
 alertcondition(plot_HEV, "Vol: HEV", "All-Time High Volume Detected (confirmed)")
 alertcondition(plot_50, "Vol: 50-Bar", "50-Bar High Volume Detected (confirmed)")
