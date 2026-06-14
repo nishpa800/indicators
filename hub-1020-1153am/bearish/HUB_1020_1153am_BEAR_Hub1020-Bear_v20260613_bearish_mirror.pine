@@ -707,65 +707,6 @@ bool fxy_conditionMet = fxy_eventsInWindow >= fxy_requiredEvents
 bool sFaunaXinY_raw = fxy_conditionMet and not fxy_conditionMet[1]
 plotshape(sFaunaXinY_raw and show_fxy_plots, "Fauna X-in-Y Bear", location=location.belowbar, style=shape.cross, color=color.new(color.rgb(255, 87, 34), 0), size=size.huge, text="")
 
-// #############################################################################
-// ###  INDICATOR 9: RVOL ROLLING WINDOW                                      ###
-// #############################################################################
-grp_rw_rvol = "9. RVOL Window - RVOL Calculation"
-rw_avglength = input.int(30, title="Look-back Length", group=grp_rw_rvol)
-rw_smaLength = input.int(20, title="SMA Length (RVOL³)", group=grp_rw_rvol)
-grp_rw_event_def = "9. RVOL Window - 1. Single Event Definition"
-rw_th_low = input.float(8.0, step=0.1, title="Event Min RVOL Value", group=grp_rw_event_def)
-rw_th_high = input.float(100000.0, step=0.1, title="Event Max RVOL Value", group=grp_rw_event_def)
-grp_rw_window_cond = "9. RVOL Window - 2. Rolling Window Conditions"
-rw_rollingWindowLen = input.int(60, "Lookback Bars (Window)", group=grp_rw_window_cond)
-rw_minEventsInWindow = input.int(4, "Min Events in Window", minval=2, group=grp_rw_window_cond)
-rw_minEventValue = input.float(8.0, title="Min Value of at least ONE Event", step=0.1, group=grp_rw_window_cond)
-rw_minWindowSumValue = input.float(50.0, title="Min Total Sum of Window", step=0.1, group=grp_rw_window_cond)
-rw_spike = math.abs(close - open)
-rw_avgSpikeDenom = ta.sma(rw_spike, rw_avglength)[1]
-rw_rvol_price = rw_spike / nz(rw_avgSpikeDenom, 1)
-rw_avgVolDenom = ta.sma(volume, rw_avglength)[1]
-rw_rvol_volume = volume / nz(rw_avgVolDenom, 1)
-rw_rvol_diff = rw_rvol_price - rw_rvol_volume
-rw_rvolPos = rw_rvol_diff > 0 ? rw_rvol_diff : na
-rw_smaPos = ta.sma(rw_rvolPos, 20)[1]
-rw_baseBear = close < open and rw_rvol_diff > 0 and nz(rw_rvolPos) > nz(rw_smaPos)
-rw_inRange(v) => v > rw_th_low and v < rw_th_high
-rw_isEvent = rw_baseBear and rw_inRange(rw_rvol_price) and barstate.isconfirmed
-
-var int rw_windowStartBar = na
-var int rw_eventCount = 0
-var float[] rw_windowEventValues = array.new_float()
-bool sRVOL_Window_raw = false
-
-if rw_eventCount > 0 and bar_index - rw_windowStartBar >= rw_rollingWindowLen
-	rw_eventCount := 0
-	rw_windowStartBar := na
-	array.clear(rw_windowEventValues)
-if rw_isEvent
-	if rw_eventCount == 0
-		rw_windowStartBar := bar_index
-		rw_eventCount := 1
-		array.clear(rw_windowEventValues)
-		array.push(rw_windowEventValues, rw_rvol_price)
-	else
-		rw_eventCount += 1
-		array.push(rw_windowEventValues, rw_rvol_price)
-	if rw_eventCount >= rw_minEventsInWindow
-		bool hasHighValue = false
-		for val in rw_windowEventValues
-			if val >= rw_minEventValue
-				hasHighValue := true
-				break
-		bool meetsSum = array.sum(rw_windowEventValues) >= rw_minWindowSumValue
-		if hasHighValue and meetsSum
-			sRVOL_Window_raw := true
-			rw_windowStartBar := bar_index
-			rw_eventCount := 1
-			array.clear(rw_windowEventValues)
-			array.push(rw_windowEventValues, rw_rvol_price)
-
-plotshape(sRVOL_Window_raw and show_rw_plots, title="RVOL Window Bear", location=location.belowbar, style=shape.cross, size=size.small, color=color.new(color.orange, 0), text="WIN")
 
 // #############################################################################
 // ###  RVOL TIER LADDER - interval-adaptive (ported from Heavy Weapons NRA)  ###
@@ -797,14 +738,24 @@ rvt_pos = rvt_diff > 0 ? rvt_diff : na
 rvt_smaDiff = ta.sma(rvt_pos, rvt_smaLength)
 rvt_baseBull = close > open and nz(rvt_pos) > nz(rvt_smaDiff)
 rvt_baseBear = close < open and nz(rvt_pos) > nz(rvt_smaDiff)
+// --- TRUE ROLLING (sliding) windows: fire when M events at the tier threshold land in trailing N bars ---
+rvt_1x_winBars = input.int(20, "1x Rolling Window Bars", minval=1, group=grp_rvt)
+rvt_1x_minEv = input.int(1, "1x Min Events in Rolling Window", minval=1, group=grp_rvt)
+rvt_moab_winBars = input.int(20, "MOAB Rolling Window Bars", minval=1, group=grp_rvt)
+rvt_moab_minEv = input.int(1, "MOAB Min Events in Rolling Window", minval=1, group=grp_rvt)
 show_rvt_1x_plots = input.bool(true, "RVOL Window 1x Bear", group=grp_rvt)
-show_rvt_moab_plots = input.bool(true, "RVOL Window MOAB", group=grp_rvt)
-bool sRVOL_Win_1x_raw = barstate.isconfirmed and rvt_baseBear and rvt_normPrice >= rvt_th_1x and rvt_normPrice < rvt_th_gs
-bool sRVOL_Win_MOAB_raw = barstate.isconfirmed and rvt_baseBear and rvt_normPrice >= rvt_th_gs
+show_rvt_moab_plots = input.bool(true, "RVOL Window MOAB Bear", group=grp_rvt)
+rvt_evt_1x = barstate.isconfirmed and rvt_baseBear and rvt_normPrice >= rvt_th_1x and rvt_normPrice < rvt_th_gs
+rvt_evt_moab = barstate.isconfirmed and rvt_baseBear and rvt_normPrice >= rvt_th_gs
+rvt_cond_1x = f_sum_true(rvt_evt_1x, rvt_1x_winBars) >= rvt_1x_minEv
+rvt_cond_moab = f_sum_true(rvt_evt_moab, rvt_moab_winBars) >= rvt_moab_minEv
+bool sRVOL_Win_1x_raw = rvt_cond_1x and not rvt_cond_1x[1]
+bool sRVOL_Win_MOAB_raw = rvt_cond_moab and not rvt_cond_moab[1]
+bool sRVOL_Window_raw = sRVOL_Win_1x_raw
 plotshape(sRVOL_Win_1x_raw and show_rvt_1x_plots, "RVOL Window 1x Bear", location=location.abovebar, style=shape.cross, size=size.small, color=color.new(color.rgb(255, 87, 34), 0), text="1x")
-plotshape(sRVOL_Win_MOAB_raw and show_rvt_moab_plots, "RVOL Window MOAB", location=location.abovebar, style=shape.triangledown, size=size.large, color=color.new(color.rgb(199, 0, 57), 0), text="MOAB")
+plotshape(sRVOL_Win_MOAB_raw and show_rvt_moab_plots, "RVOL Window MOAB Bear", location=location.abovebar, style=shape.triangledown, size=size.large, color=color.new(color.rgb(199, 0, 57), 0), text="MOAB")
 alertcondition(sRVOL_Win_1x_raw, "RVOL Window 1x Bear", "RVOL Window 1x Bear on {{ticker}}")
-alertcondition(sRVOL_Win_MOAB_raw, "RVOL Window MOAB", "RVOL Window MOAB on {{ticker}}")
+alertcondition(sRVOL_Win_MOAB_raw, "RVOL Window MOAB Bear", "RVOL Window MOAB Bear on {{ticker}}")
 
 
 // #############################################################################
