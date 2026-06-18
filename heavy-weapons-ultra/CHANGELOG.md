@@ -1,5 +1,15 @@
 # Heavy Weapons ULTRA — CHANGELOG
 
+## Variants tracked (time vs tick) — kept separate, not merged
+- **Added the TICK build to the repo:** `tick_friendly/HEAVY_WEAPONS_ULTRA_tickfriendly_b2b1.pine`
+  (`shorttitle="HW ULTRA b2b1"`), verbatim — no logic changes. Previously it lived nowhere
+  version-controlled.
+- **Added `VARIANTS.md`** documenting the two intentionally-separate builds and their 4 material
+  differences: (1) tick-safety guard, (2) hybrid Long/Short floors (Hiroshima-derived vs hard-coded
+  5.0/3.0/0.65), (3) alert layer (queryable per-atom vs OR-collapsed tier), (4) FAUNA emitted vs not.
+- All other atomic gate formulas are identical between the two (see `GATES_REFERENCE.md`).
+- Per user decision: **keep both separate**; no merge performed.
+
 ## v1 — Queryable alert layer (atomic deconstruction)
 - **Replaced the OR-collapsed tier-based alert with a queryable per-atom emitter.** The single
   `alert()` per closed bar now carries a bar header plus **one self-describing record per fired atom**
