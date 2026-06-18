@@ -1,5 +1,17 @@
 # Heavy Weapons ULTRA — CHANGELOG
 
+## v1 — Queryable alert layer (atomic deconstruction)
+- **Replaced the OR-collapsed tier-based alert with a queryable per-atom emitter.** The single
+  `alert()` per closed bar now carries a bar header plus **one self-describing record per fired atom**
+  (66 atoms across engines R/T/N/M/Q/B/D/V/P/H/K/G/C/U/F):
+  `atom=<ID>|name=<NAME>|eng=<ENGINE>|dir=<bull|bear|neutral>|val=<metric>`.
+  Output is now a database feed — every detection is individually queryable with an explicit direction;
+  composites are reconstructed downstream by joining records on the shared `t`.
+- **FAUNA (F1–F14) surfaced** — previously computed internally but never emitted; now queryable.
+- Emitted regardless of `show_*` visual toggles, so the DB always has the data.
+- Plots unchanged in this pass (visual dir-split for `HV+D+Any`/`HVD+PBJ+Any` is the next phase).
+- New docs: `ATOM_REGISTRY.md` (the wire/DB contract), `GATES_REFERENCE.md`, `DETECTION_PLOT_INVENTORY.md`.
+
 ## v1
 - Initial repo copy of **Heavy Weapons ULTRA** (`shorttitle="HW ULTRA"`) composite architecture.
 - **Added `B2B PBJ + Any`** — the back-to-back form of the existing `PBJ + Any` detection.

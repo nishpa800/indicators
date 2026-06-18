@@ -1437,67 +1437,101 @@ plotshape(show_PUP and sigPUP, title="PUP", style=shape.labelup, location=locati
 // AGGREGATED ALERT — DEDUPLICATION
 // One alert per bar, composites first, then conditional standalone signals.
 // =============================================================================
+// QUERYABLE ALERT EMITTER — appends ONE self-describing record per fired atom.
+// Schema (per atom):  atom=<ID>|name=<NAME>|eng=<ENGINE>|dir=<bull|bear|neutral>|val=<metric>
+// The bar header (ticker/tf/time) is prepended once; downstream the DB joins records by `t`
+// to reconstruct composites (PBJ+X, HV+D+X, …). No OR-collapsing — every atom is queryable.
+f_q(string _p, bool _fired, string _id, string _name, string _eng, string _dir, string _val) =>
+    _fired ? _p + "\natom=" + _id + "|name=" + _name + "|eng=" + _eng + "|dir=" + _dir + "|val=" + _val : _p
+
 if conf
-    string msg = ""
+    string q = ""
+    // ── Engine R — RVOL 0.56 (val = bb_normalizedPrice) ─────────────
+    q := f_q(q, sigSAAB,        "R1", "SAAB",         "RVOL", "bull",    str.tostring(bb_normalizedPrice, "#.##"))
+    q := f_q(q, sigKratos,      "R2", "KRATOS",       "RVOL", "bear",    str.tostring(bb_normalizedPrice, "#.##"))
+    q := f_q(q, sigBullRVOL1x,  "R3", "BULL_RVOL_1X", "RVOL", "bull",    str.tostring(bb_normalizedPrice, "#.##"))
+    q := f_q(q, sigBearRVOL1x,  "R4", "BEAR_RVOL_1X", "RVOL", "bear",    str.tostring(bb_normalizedPrice, "#.##"))
+    q := f_q(q, sigGrandSlam,   "R5", "GRAND_SLAM",   "RVOL", "bull",    str.tostring(bb_normalizedPrice, "#.##"))
+    q := f_q(q, sigMOAB,        "R6", "MOAB",         "RVOL", "bear",    str.tostring(bb_normalizedPrice, "#.##"))
+    // ── Engine T — Reg@Time (val = relVolRatio) ─────────────────────
+    q := f_q(q, sigPentagon,    "T1", "PENTAGON",     "REGT", "neutral", str.tostring(relVolRatio, "#.##"))
+    q := f_q(q, sigWTC,         "T2", "WTC",          "REGT", "neutral", str.tostring(relVolRatio, "#.##"))
+    q := f_q(q, sigHiroshima,   "T3", "HIROSHIMA",    "REGT", "neutral", str.tostring(relVolRatio, "#.##"))
+    // ── Engine N — Nagasaki (val = volume) ──────────────────────────
+    q := f_q(q, sigNagasaki,    "N1", "NAGASAKI",     "NAG",  "neutral", str.tostring(volume, "#"))
+    // ── Engine M — Hybrid momentum (val = hybRegRatio) ──────────────
+    q := f_q(q, sigAddLong1,    "M1", "LONG1",  "MOM", "bull", str.tostring(hybRegRatio, "#.##"))
+    q := f_q(q, sigAddLong2,    "M2", "LONG2",  "MOM", "bull", str.tostring(hybRegRatio, "#.##"))
+    q := f_q(q, sigAddLong3,    "M3", "LONG3",  "MOM", "bull", str.tostring(hybRegRatio, "#.##"))
+    q := f_q(q, sigAddLong4,    "M4", "LONG4",  "MOM", "bull", str.tostring(hybRegRatio, "#.##"))
+    q := f_q(q, sigAddLong5,    "M5", "LONG5",  "MOM", "bull", str.tostring(hybRegRatio, "#.##"))
+    q := f_q(q, sigAddShort1,   "M6", "SHORT1", "MOM", "bear", str.tostring(hybRegRatio, "#.##"))
+    q := f_q(q, sigAddShort2,   "M7", "SHORT2", "MOM", "bear", str.tostring(hybRegRatio, "#.##"))
+    // ── Engine Q — RVOL sequences ───────────────────────────────────
+    q := f_q(q, sig_bull_UU,    "Q1", "UU",   "SEQ", "bull", "")
+    q := f_q(q, sig_bull_UUU,   "Q2", "UUU",  "SEQ", "bull", "")
+    q := f_q(q, sig_bull_UUUU,  "Q3", "UUUU", "SEQ", "bull", "")
+    q := f_q(q, sig_bear_DD,    "Q4", "DD",   "SEQ", "bear", "")
+    q := f_q(q, sig_bear_DDD,   "Q5", "DDD",  "SEQ", "bear", "")
+    q := f_q(q, sig_bear_DDDD,  "Q6", "DDDD", "SEQ", "bear", "")
+    // ── Engine B — back-to-back RVOL ────────────────────────────────
+    q := f_q(q, sig_B2B_2xSAAB,   "B1", "2X_SAAB",    "B2B", "bull", "")
+    q := f_q(q, sig_B2B_2xBull1x, "B3", "2X_BULL_1X", "B2B", "bull", "")
+    q := f_q(q, sig_B2B_MidBull,  "B5", "MID_BULL",   "B2B", "bull", "")
+    q := f_q(q, sig_B2B_2xKratos, "B2", "2X_KRATOS",  "B2B", "bear", "")
+    q := f_q(q, sig_B2B_2xBear1x, "B4", "2X_BEAR_1X", "B2B", "bear", "")
+    q := f_q(q, sig_B2B_MidBear,  "B6", "MID_BEAR",   "B2B", "bear", "")
+    // ── Engine D — displacement (val = streak) ──────────────────────
+    q := f_q(q, sigDispBull,   "D1", "DISP_BULL",     "DISP", "bull", str.tostring(disp_bullStreak))
+    q := f_q(q, sigDispBear,   "D2", "DISP_BEAR",     "DISP", "bear", str.tostring(disp_bearStreak))
+    q := f_q(q, sigCDispBull2, "D3", "CDISP_BULL_2P", "DISP", "bull", str.tostring(disp_bullStreak))
+    q := f_q(q, sigCDispBear2, "D4", "CDISP_BEAR_2P", "DISP", "bear", str.tostring(disp_bearStreak))
+    q := f_q(q, sigCDispBull3, "D5", "CDISP_BULL_3P", "DISP", "bull", str.tostring(disp_bullStreak))
+    q := f_q(q, sigCDispBear3, "D6", "CDISP_BEAR_3P", "DISP", "bear", str.tostring(disp_bearStreak))
+    // ── Engine V — HV rank tiers (offset −1: describes prior bar) ───
+    q := f_q(q, is75Bar,   "V75",   "HV75",   "HV", "neutral", "")
+    q := f_q(q, is150Bar,  "V150",  "HV150",  "HV", "neutral", "")
+    q := f_q(q, is250Bar,  "V250",  "HV250",  "HV", "neutral", "")
+    q := f_q(q, is500Bar,  "V500",  "HV500",  "HV", "neutral", "")
+    q := f_q(q, is1000Bar, "V1000", "HV1000", "HV", "neutral", "")
+    // ── Engine P — PBJ (directional) ────────────────────────────────
+    q := f_q(q, sigBullPBJ, "P1", "PBJ_BULL", "PBJ", "bull", "")
+    q := f_q(q, sigBearPBJ, "P2", "PBJ_BEAR", "PBJ", "bear", "")
+    // ── Engine H — HV+D (offset −1, val = baseRank) ─────────────────
+    q := f_q(q, hvd_bull, "H1", "HVD_BULL", "HVD", "bull", str.tostring(baseRank))
+    q := f_q(q, hvd_bear, "H2", "HVD_BEAR", "HVD", "bear", str.tostring(baseRank))
+    // ── Engine K — HVD+PBJ ──────────────────────────────────────────
+    q := f_q(q, hvdpbj_bull, "K1", "HVD_PBJ_BULL", "HVDPBJ", "bull", "")
+    q := f_q(q, hvdpbj_bear, "K2", "HVD_PBJ_BEAR", "HVDPBJ", "bear", "")
+    // ── Engine G — GZI / HV-FVG ─────────────────────────────────────
+    q := f_q(q, gzi_bullHV,  "G1", "GZI_BULL_HV",  "GZI", "bull", "")
+    q := f_q(q, gzi_bullGZI, "G2", "GZI_BULL_GZI", "GZI", "bull", "")
+    // ── Engine C — confluence sets ──────────────────────────────────
+    q := f_q(q, sigCS1Bull,  "C1", "CS1_BULL",     "CS", "bull", "")
+    q := f_q(q, sigCS2Bull,  "C2", "CS2_BULL",     "CS", "bull", "")
+    q := f_q(q, sigCS12Bull, "C3", "CS1_CS2_BULL", "CS", "bull", "")
+    // ── Engine U — PUP ──────────────────────────────────────────────
+    q := f_q(q, sigPUP, "U1", "PUP", "PUP", "bull", "")
+    // ── Engine F — FAUNA (newly surfaced; was computed but never emitted) ──
+    q := f_q(q, fn_MB_bull,  "F1",  "FAUNA_MB_BULL",  "FAUNA", "bull", "")
+    q := f_q(q, fn_RE_bull,  "F2",  "FAUNA_RE_BULL",  "FAUNA", "bull", "")
+    q := f_q(q, fn_TA_bull,  "F3",  "FAUNA_TA_BULL",  "FAUNA", "bull", "")
+    q := f_q(q, fn_GG_bull,  "F4",  "FAUNA_GG_BULL",  "FAUNA", "bull", "")
+    q := f_q(q, fn_TR_bull,  "F5",  "FAUNA_TR_BULL",  "FAUNA", "bull", "")
+    q := f_q(q, fn_ES_bull,  "F6",  "FAUNA_ES_BULL",  "FAUNA", "bull", "")
+    q := f_q(q, fn_GDR_bull, "F7",  "FAUNA_GDR_BULL", "FAUNA", "bull", "")
+    q := f_q(q, fn_MB_bear,  "F8",  "FAUNA_MB_BEAR",  "FAUNA", "bear", "")
+    q := f_q(q, fn_RE_bear,  "F9",  "FAUNA_RE_BEAR",  "FAUNA", "bear", "")
+    q := f_q(q, fn_TA_bear,  "F10", "FAUNA_TA_BEAR",  "FAUNA", "bear", "")
+    q := f_q(q, fn_GG_bear,  "F11", "FAUNA_GG_BEAR",  "FAUNA", "bear", "")
+    q := f_q(q, fn_TR_bear,  "F12", "FAUNA_TR_BEAR",  "FAUNA", "bear", "")
+    q := f_q(q, fn_ES_bear,  "F13", "FAUNA_ES_BEAR",  "FAUNA", "bear", "")
+    q := f_q(q, fn_GDR_bear, "F14", "FAUNA_GDR_BEAR", "FAUNA", "bear", "")
 
-    // ── TIER 0: NAGASAKI (always fires, unconditional) ──────────────
-    if nagStandFired
-        msg := f_add(msg, nagStandMsg)
-    if nagStrongFired and show_NagStrong
-        msg := f_add(msg, nagStrongMsg)
-    if nagHVD and show_NagStrong
-        msg := f_add(msg, nagHVDMsg)
-
-    // ── TIER 1: PBJ COMPOSITES ──────────────────────────────────────
-    if show_PBJplusLong and pbjLongFired
-        msg := f_add(msg, pbjLongMsg)
-    if show_PBJplusShortHV and pbjShortHVFired
-        msg := f_add(msg, pbjShortHVMsg)
-    // ★ B2B PBJ+ANY fires first; when present it subsumes the single PBJ+Any line
-    if show_B2B_PBJplusAny and b2bPbjAnyFired
-        msg := f_add(msg, b2bPbjAnyMsg)
-    if show_PBJplusAny and pbjAnyFired and not (show_B2B_PBJplusAny and b2bPbjAnyFired)
-        msg := f_add(msg, pbjAnyMsg)
-
-    // ── TIER 2: HV+D / HVD+PBJ COMPOSITES ──────────────────────────
-    if show_HVDplusPBJany and hvdpbjAnyFired
-        msg := f_add(msg, hvdpbjAnyMsg)
-    if show_HVplusDany and hvdAnyFired
-        msg := f_add(msg, hvdAnyMsg)
-
-    // ── TIER 3: LONG + HV ──────────────────────────────────────────
-    if show_LongPlusHV and longHVFired
-        msg := f_add(msg, longHVMsg)
-
-    // ── TIER 4: CONDITIONAL STANDALONE — Long 1/2 ──────────────────
-    if cond_Long1
-        msg := f_add(msg, "LONG 1")
-    if cond_Long2
-        msg := f_add(msg, "LONG 2")
-
-    // ── TIER 5: CONDITIONAL — Long 3/4/5 (only with HV500/1K) ─────
-    if cond_Long3
-        msg := f_add(msg, "LONG 3+HV")
-    if cond_Long4
-        msg := f_add(msg, "LONG 4+HV")
-    if cond_Long5
-        msg := f_add(msg, "LONG 5+HV")
-
-    // ── TIER 6: HV+D / HVD+PBJ standalone ─────────────────────────
-    if hvd_bull and not hvdAnyFired
-        string hvTag = hev_hit ? "HEV" : ("HV" + str.tostring(baseRank))
-        msg := f_add(msg, hvTag + "+D Bull")
-    if hvd_bear and not hvdAnyFired
-        string hvTag = hev_hit ? "HEV" : ("HV" + str.tostring(baseRank))
-        msg := f_add(msg, hvTag + "+D Bear")
-    if hvdpbj_bull and not hvdpbjAnyFired
-        msg := f_add(msg, "HVD+PBJ Bull")
-    if hvdpbj_bear and not hvdpbjAnyFired
-        msg := f_add(msg, "HVD+PBJ Bear")
-
-    // ── FIRE ────────────────────────────────────────────────────────
-    if msg != ""
-        alert("{{ticker}} {{interval}} — " + msg, alert.freq_once_per_bar_close)
+    // ── FIRE — one alert per bar carrying every fired atom as a queryable record ──
+    if q != ""
+        string hdr = "HWULTRA|v=1|tkr=" + syminfo.tickerid + "|tf=" + timeframe.period + "|t=" + str.tostring(time)
+        alert(hdr + q, alert.freq_once_per_bar_close)
 
 // =============================================================================
 // END
