@@ -1,6 +1,22 @@
-//@version=5
+// Pine is a Pine Editor tick-friendly
 // ══════════════════════════════════════════════════════════════════════════════
-// TNT OPENING DRIVE (OD) v3 — Extreme Anomaly Detection
+// TNT OPENING DRIVE (OD) v3 — Extreme Anomaly Detection — TICK-FRIENDLY BUILD
+// ══════════════════════════════════════════════════════════════════════════════
+// TICK-FRIENDLY NOTES (this build only; logic/plots/alerts identical to v3):
+//   On TradingView tick intervals timeframe.in_seconds(timeframe.period) returns
+//   0 (or na). Every per-TF threshold table (f_u5_1x/gs/saab/wtc/hiro, f_hct_*)
+//   keys off u5_tfSec, so an unguarded 0 would force the tightest-bucket OR
+//   misbucket. Guards added below:
+//     • u5_tfSecRaw = timeframe.in_seconds(timeframe.period)
+//     • tickTfSecOverride input lets the user PIN the threshold bucket on tick
+//       charts. When >0 it wins. When 0 and the chart is a tick chart
+//       (u5_tfSecRaw<=0/na), we fall back to TICK_FALLBACK_SEC (=10s → tightest
+//       sub-minute bucket) so thresholds stay defined and conservative.
+//     • isSubMinute is TRUE on tick charts (sub-minute treatment).
+//   session.isfirstbar / ta.change(time("D")): tick bars still carry time, so
+//   day detection and session-first-bar logic are KEPT AS-IS (valid on ticks).
+//   No fixed bar-duration / wall-clock math exists in this script beyond the
+//   per-TF threshold tables, which are now guarded above.
 // ══════════════════════════════════════════════════════════════════════════════
 // CHANGELOG v2 → v3 (2026-05-08)
 // ──────────────────────────────────────────────────────────────────────────────
@@ -187,36 +203,11 @@
 //
 // ══════════════════════════════════════════════════════════════════════════════
 
-// =============================================================================
-// Pine is a Pine Editor tick-friendly   (NINE NINES three-output standard)
-// Source: "tnt od v3.txt"   (June 7 batch). Already Pine v5.
-// =============================================================================
-// TICK-SAFE STATUS: FIXED (two landmines guarded; logic otherwise preserved).
-// CHANGES vs source:
-//   1. RE10023 FIX (line ~738): the WMD/relativeVolume engine called
-//      `tv_ta.relativeVolume(30, "", true, true)` with a literal "" anchor,
-//      which HARD-CRASHES on bar 0 of any tick chart (timeframe.change cannot
-//      take a tick TF). Replaced "" with `t_regAnchorSafe` — "" on time charts
-//      (chart-TF rel-vol, parity preserved), "D" on tick charts. Tick detected
-//      authoritatively via str.endswith(timeframe.period,"T").
-//   2. in_seconds guard (line ~327): `u5_tfSec = timeframe.in_seconds(
-//      timeframe.period)` returns na/0 on tick -> `isSubMinute` and any tfSec
-//      math silently die. Guarded with TICK_FALLBACK_SEC.
-//   Detection plots (the ~58 plotshapes p_*/sig_*) are UNCHANGED and already
-//   use plotshape (no label.new). The two label.new(na,na,na) calls in the
-//   Zone constructor are inert placeholders for zone-line cosmetics, NOT
-//   detection markers, and are left as-is.
-//   A numeric data-window fire matrix is appended at the end.
-// =============================================================================
-indicator("TNT Opening Drive OD v3 [tickfriendly]", "TNT OD v3 TF", overlay = true,
-     max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500, max_bars_back=1500)
+//@version=5
+indicator("TNT Opening Drive OD v3 (Tick-Friendly)", "TNT OD v3 TF DR", overlay = true,
+     max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500, max_bars_back=2500)
 
 import TradingView/ta/7 as tv_ta
-
-// --- TICK GUARD (RE10023 + in_seconds na/0) -------------------------------
-int    T_TICK_FALLBACK_SEC = input.int(10, "Tick fallback seconds", minval=1, group="★ MASTER ★")
-bool   t_isTickChart       = str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0
-string t_regAnchorSafe     = t_isTickChart ? "D" : ""
 
 // ─── MASTER ─────────────────────────────────────────────────────────────────
 grpM = "★ MASTER ★"
@@ -224,6 +215,11 @@ bool masterFirstBar  = input.bool(true, "First Bar Only Alerts", group = grpM,
      tooltip = "When ON, alerts require first bar of session AND any HV rank (vol ≥ highest in 50 bars) on the plot bar.")
 bool masterAggregate = input.bool(true, "Aggregate Alerts", group = grpM,
      tooltip = "When ON, one combined alert per bar. When OFF, individual alerts per detection.")
+// TICK-FRIENDLY: pin the per-TF threshold bucket on tick charts (where
+// timeframe.in_seconds() returns 0/na). 0 = auto (use real tfSec on time
+// charts; fall back to TICK_FALLBACK_SEC on tick charts).
+int tickTfSecOverride = input.int(0, "Tick TF Seconds Override (tick charts only)", minval = 0, group = grpM,
+     tooltip = "On TICK intervals timeframe.in_seconds() returns 0, so the per-TF threshold tables (f_u5_*, f_hct_*) cannot bucket. Set this to the equivalent seconds bucket you want to emulate (e.g. 5 for ~5s behavior). 0 = auto: real seconds on time charts, TICK_FALLBACK_SEC (10s, tightest sub-minute) on tick charts.")
 
 // ─── ENGINE INPUTS ──────────────────────────────────────────────────────────
 grpE = "Engine (Displacement #1 — MAIN ENGINE)"
@@ -350,8 +346,13 @@ bool isFirstBar = session.isfirstbar
 var int sessionFirstBarIdx = na
 if isFirstBar
     sessionFirstBarIdx := bar_index
-int u5_tfSec = t_isTickChart ? T_TICK_FALLBACK_SEC : timeframe.in_seconds(timeframe.period)  // tick-guarded (na/0 on tick)
-bool isSubMinute = u5_tfSec <= 60
+// TICK-FRIENDLY GUARD: timeframe.in_seconds() is 0/na on tick charts.
+int TICK_FALLBACK_SEC = 10                              // tightest sub-minute bucket
+int u5_tfSecRaw = timeframe.in_seconds(timeframe.period)
+bool isTickChart = na(u5_tfSecRaw) or u5_tfSecRaw <= 0
+int u5_tfSec = tickTfSecOverride > 0 ? tickTfSecOverride : (isTickChart ? TICK_FALLBACK_SEC : u5_tfSecRaw)
+// On tick charts treat as sub-minute (true). Also true for any <=60s time TF.
+bool isSubMinute = isTickChart or u5_tfSec <= 60
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 type Zone
@@ -365,6 +366,7 @@ type Zone
     bool   isActive     = true
     bool   returnFired  = false
     line   lvlLine
+    label  sigLabel
 
 type SuperZone
     int    formBar
@@ -375,6 +377,8 @@ type SuperZone
     bool   isActive     = true
     bool   returnFired  = false
     box    zoneBox
+    label  formLabel
+    label  returnLabel
     line   returnLine
 
 type SwingPoint
@@ -564,13 +568,13 @@ if raw_bullTNT
     lastBullSigBar := bar_index
     int origin = f_bull_origin()
     float oU = math.min(nz(vob_bull_u, high), nz(anish_bull_ob_upper, high)), float oL = math.max(nz(vob_bull_l, low), nz(anish_bull_ob_lower, low)), float lvl = math.avg(oU, oL)
-    tnt_zones.push(Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bull_vol), true, true, false, line.new(origin, lvl, bar_index, lvl, color = c_bullTNT, width = 2)))
+    tnt_zones.push(Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bull_vol), true, true, false, line.new(origin, lvl, bar_index, lvl, color = c_bullTNT, width = 2), label.new(na, na, na)))
     charge_levels.push(ChargeLevel.new(lvl, true, bar_index))
 if raw_bearTNT
     lastBearSigBar := bar_index
     int origin = f_bear_origin()
     float oU = math.min(nz(vob_bear_u, high), nz(anish_bear_ob_upper, high)), float oL = math.max(nz(vob_bear_l, low), nz(anish_bear_ob_lower, low)), float lvl = math.avg(oU, oL)
-    tnt_zones.push(Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bear_vol), false, true, false, line.new(origin, lvl, bar_index, lvl, color = c_bearTNT, width = 2)))
+    tnt_zones.push(Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bear_vol), false, true, false, line.new(origin, lvl, bar_index, lvl, color = c_bearTNT, width = 2), label.new(na, na, na)))
     charge_levels.push(ChargeLevel.new(lvl, false, bar_index))
 
 // Return
@@ -596,7 +600,7 @@ if tnt_zones.size() > 0
                         z.returnFired := true, raw_retBearTNT := true
     while tnt_zones.size() > maxZones
         Zone old = tnt_zones.shift()
-        old.lvlLine.delete()
+        old.lvlLine.delete(), old.sigLabel.delete()
 
 // Displacement
 float disp_range = DISP_TYPE == "Open to Close" ? math.abs(open - close) : high - low
@@ -758,8 +762,12 @@ bool u5_RVOL1xB = u5_bb_baseBull and u5_bb_inRange(u5_bb_normPrice, u5_th_1x, u5
 bool u5_RVOL1xR = u5_bb_baseBear and u5_bb_inRange(u5_bb_normPrice, u5_th_1x, u5_th_gs) and not u5_MOAB
 
 // WMD Engine (decoupled Engine B — relativeVolume)
-// RE10023 FIX: "" anchor -> t_regAnchorSafe ("" on time charts, "D" on tick charts).
-[u5_currentVol_reg, u5_pastVol_reg, _u5_unused] = tv_ta.relativeVolume(30, t_regAnchorSafe, true, true)
+// TICK-FRIENDLY FIX (RE10023): "" anchor = chart TF; on a tick chart that is tick-based and
+// timeframe.change() throws on bar 0. Force "D" only on tick charts (time charts keep "").
+// AUTHORITATIVE tick detector = "T" suffix on timeframe.period (e.g. "1000T"). timeframe.in_seconds()
+// is UNRELIABLE on tick charts (returns a positive number, not na/0) — kept only as extra coverage.
+string u5_regAnchorSafe = (str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0) ? "D" : ""
+[u5_currentVol_reg, u5_pastVol_reg, _u5_unused] = tv_ta.relativeVolume(30, u5_regAnchorSafe, true, true)
 float u5_relVolRatio = u5_currentVol_reg / u5_pastVol_reg
 bool u5_WTC = barstate.isconfirmed and (u5_relVolRatio > u5_th_wtc) and (u5_relVolRatio <= u5_th_hiro)
 bool u5_Hiroshima = barstate.isconfirmed and (u5_relVolRatio > u5_th_hiro)
@@ -2172,8 +2180,3 @@ if u5_Nagasaki and en_nagAlert
 // ══════════════════════════════════════════════════════════════════════════════
 // END — TNT OPENING DRIVE (OD)
 // ══════════════════════════════════════════════════════════════════════════════
-// =============================================================================
-// NINE NINES NUMERIC FIRE MATRIX (display.data_window) — 0/1 per detection plot
-// Machine-readable mirror of every plotshape p_*/sig_* above. No graphics.
-// =============================================================================
-// numeric level for the WMD/relativeVolume engine

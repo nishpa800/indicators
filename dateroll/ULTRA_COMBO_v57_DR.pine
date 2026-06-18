@@ -25,7 +25,7 @@
 // Detection plots preserved: all ~31 combo plotshapes + NAGA, plus the new
 //   numeric data-window fire matrix appended at the end. No label.new anywhere.
 // =============================================================================
-indicator("Ultra Combo v57 [tickfriendly]", shorttitle="ULTRA v57 TF", overlay=true, max_labels_count=500, max_bars_back=2000)
+indicator("Ultra Combo v57 [tickfriendly]", shorttitle="ULTRA v57 TF DR", overlay=true, max_labels_count=500, max_bars_back=2000)
 
 // --- TICK GUARD (RE10023 + in_seconds na/0) -------------------------------
 int    TICK_FALLBACK_SEC = input.int(10, "Tick fallback seconds (sub-minute bucket)", minval=1)
@@ -34,16 +34,8 @@ int    u_tfSecGuarded    = u_isTickChart ? TICK_FALLBACK_SEC : timeframe.in_seco
 // "" anchor (chart TF) crashes tv_ta.relativeVolume on tick -> coerce to "D" on tick only.
 string u_regAnchorSafe   = u_isTickChart ? "D" : ""
 
-// =============================================================================
-// RTH BARS PER DAY
-// =============================================================================
-f_barsPerDay() =>
-    int tfMin = u_tfSecGuarded / 60
-    int rawBars = tfMin >= 390 ? 1 : (tfMin <= 0 ? 1 : math.ceil(390.0 / tfMin))
-    int buffered = math.ceil(rawBars * 1.25)
-    buffered
-
-barsPerDay = f_barsPerDay()
+// (RTH-bars-per-day helper removed 2026-06-13 — it only fed the old bar-scan
+//  f_hadSignalYesterday, now replaced by the date-based f_firedPrevDay.)
 
 // =============================================================================
 // GLOBAL SETTINGS
@@ -876,22 +868,35 @@ bool comboE3_2of3PUP_Bull = sBullE3 and pupCountE3 >= 2
 int ppdCountE3 = (sPPBear ? 1 : 0) + (sPPBear[1] ? 1 : 0) + (sPPBear[2] ? 1 : 0)
 bool comboE3_2of3PPD_Bear = sBearE3 and ppdCountE3 >= 2
 
-f_hadSignalYesterday(sig) =>
-    found = false
-    for i = 1 to math.min(barsPerDay * 2, bar_index)
-        if sig[i]
-            found := true
-            break
-    found
+// =============================================================================
+// DATE-BASED "fired on the previous trading day" (RE10008 fix, 2026-06-13)
+// The old f_hadSignalYesterday scanned sig[i] for i up to barsPerDay*2 bars back.
+// On fine/long intraday sessions that reference exceeds Pine's hard 5000-bar
+// history ceiling -> RE10008 ("...5234 bars back..."). This version holds O(1)
+// state per call site (firedToday/firedPrev, rolled at the day boundary) and makes
+// ZERO historical bar references, so it can never exceed the history limit — and it
+// is a truer "fired yesterday" than the old rolling bar window. Renamed to mark the
+// changed mechanism (bar-window scan -> day-roll state).
+// =============================================================================
+f_firedPrevDay(bool sig) =>
+    bool _newDay = ta.change(dayofmonth) != 0
+    var bool _firedToday = false
+    var bool _firedPrev  = false
+    if _newDay
+        _firedPrev  := _firedToday
+        _firedToday := false
+    if sig
+        _firedToday := true
+    _firedPrev
 
-bool comboF2_B2BDays_Bull = sBullF2 and f_hadSignalYesterday(sBullF2)
-bool comboF2_B2BDays_Bear = sBearF2 and f_hadSignalYesterday(sBearF2)
-bool comboE3_B2BDays_Bull = sBullE3 and f_hadSignalYesterday(sBullE3)
-bool comboE3_B2BDays_Bear = sBearE3 and f_hadSignalYesterday(sBearE3)
-bool comboF2E3_Consec_Bull = (sBullF2 and f_hadSignalYesterday(sBullE3)) or (sBullE3 and f_hadSignalYesterday(sBullF2))
-bool comboF2E3_Consec_Bear = (sBearF2 and f_hadSignalYesterday(sBearE3)) or (sBearE3 and f_hadSignalYesterday(sBearF2))
-bool comboCluster_B2BDays_Bull = sBullFC and f_hadSignalYesterday(sBullFC)
-bool comboCluster_B2BDays_Bear = sBearFC and f_hadSignalYesterday(sBearFC)
+bool comboF2_B2BDays_Bull = sBullF2 and f_firedPrevDay(sBullF2)
+bool comboF2_B2BDays_Bear = sBearF2 and f_firedPrevDay(sBearF2)
+bool comboE3_B2BDays_Bull = sBullE3 and f_firedPrevDay(sBullE3)
+bool comboE3_B2BDays_Bear = sBearE3 and f_firedPrevDay(sBearE3)
+bool comboF2E3_Consec_Bull = (sBullF2 and f_firedPrevDay(sBullE3)) or (sBullE3 and f_firedPrevDay(sBullF2))
+bool comboF2E3_Consec_Bear = (sBearF2 and f_firedPrevDay(sBearE3)) or (sBearE3 and f_firedPrevDay(sBearF2))
+bool comboCluster_B2BDays_Bull = sBullFC and f_firedPrevDay(sBullFC)
+bool comboCluster_B2BDays_Bear = sBearFC and f_firedPrevDay(sBearFC)
 
 bool anyBullHW = sigBullRVOL1x or sigGrandSlam or sigWTC or sigHiroshima or sigNagasaki or sigROCBull or sigSuperBullPBJ or sigSuperBullPB
 bool anyBearHW = sigBearRVOL1x or sigMOAB or sigWTC or sigHiroshima or sigNagasaki or sigROCBear or sigSuperBearPBJ or sigSuperBearPB
@@ -939,8 +944,8 @@ bool tbHeavyBear = anyTB and (sigROCBear or anyBearHW or anySuperBear)
 bool gzHvHeavyBull = (bullGZI or bullHV) and (anyBullHW or anySuperBull or sigROCBull)
 bool gzHvHeavyBear = (bearGZI or bearHV) and (anyBearHW or anySuperBear or sigROCBear)
 
-bool superB2BDaysBull = anySuperBull and f_hadSignalYesterday(anySuperBull)
-bool superB2BDaysBear = anySuperBear and f_hadSignalYesterday(anySuperBear)
+bool superB2BDaysBull = anySuperBull and f_firedPrevDay(anySuperBull)
+bool superB2BDaysBear = anySuperBear and f_firedPrevDay(anySuperBear)
 bool superB2BDays = superB2BDaysBull or superB2BDaysBear
 
 bool scanTrigger = sigSuperBullPBJ or sigSuperBullPB or sigSuperBearPBJ or sigSuperBearPB or sigGrandSlam or sigMOAB
@@ -1172,9 +1177,13 @@ alertcondition(comboHW_AnyBull or comboHW_AnyBear, "HW+Any", "HW+ANY")
 alertcondition(comboGZHV_AnyBull or comboGZHV_AnyBear, "GZ/HV+Any", "GZ/HV+ANY")
 alertcondition(hvGziComboBull or hvGziComboBear, "HV+GZI Combo", "HV+GZI COMBO")
 
-
 // =============================================================================
-// NINE NINES NUMERIC FIRE MATRIX (display.data_window) — 0/1 per detection plot
-// Machine-readable fire matrix mirroring every plotshape above. No graphics.
+// NUMERIC FIRE MATRIX REMOVED (2026-06-13) — RE10140 fix
+// 37 numeric data-window outputs pushed this script to 72 plot-objects
+// (+15 alertcondition) > TradingView's 64-plot ceiling -> RE10140
+// "too many plots". That data-window matrix was debug/parity scaffolding, never
+// chart output (it only showed up as junk blue lines in the Style tab). Removed.
+// Plot budget now: 35 plotshape + 15 alertcondition, well under 64.
+// If a machine-readable fire matrix is ever needed, emit it via log.info() (as
+// SQUARIFY v2 does) — log lines do NOT count against the 64-plot limit.
 // =============================================================================
-// numeric levels for the heavy-weapon RVOL detections
