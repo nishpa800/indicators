@@ -1,0 +1,263 @@
+//@version=5
+// =============================================================================
+// AP BOUNCE PRO — v2.0
+// =============================================================================
+// Stripped + extended rebuild of "AP Bounce Pro v1.022".
+//
+// KEEPS only the two bounce detections from the source; ADDS four rolling /
+// confluence detections; replaces the old per-plot alertcondition() mess with
+// ONE non-repainting "Any alert() function call" alert that names the exact
+// signal(s) AND each candle's low–high range.
+//
+// 8 DETECTION PLOTS (each = one boolean driving BOTH a plotshape and the alert):
+//   S1 Bullish Bounce Up                 offset  0          range candle bar[0]
+//   S2 Bearish Bounce Down               offset  0          range candle bar[0]
+//   S3 Bullish Window (X-at-level)       offset  0          range candle bar[0]
+//   S4 Bearish Window (X-at-level)       offset  0          range candle bar[0]
+//   S5 Bull Bounce + Disp/HiVol          offset -1          range candle bar[1]
+//   S6 Bear Bounce + Disp/HiVol          offset -1          range candle bar[1]
+//   S7 Bull Bounce + Bull OB             offset -ob_period  range candle bar[ob_period]
+//   S8 Bear Bounce + Bear OB             offset -ob_period  range candle bar[ob_period]
+//
+// NON-REPAINT + 1:1 PARITY: every signal is gated on barstate.isconfirmed and is
+// plotted at the SAME offset its alert range is read from, so the marker and the
+// alert always describe the identical CLOSED candle. The single alert fires once
+// per bar close via alert.freq_once_per_bar_close.
+//
+// ROLLING (not fixed) windows: S3/S4 use a trailing rolling lookback only — no
+// anchored start bar — so the repo gate check_no_fixed_windows.sh passes.
+//
+// NOTE on S5/S6 offset: per the source "Displacement 4x" engine (and its header),
+// the displaced candle is bar[1] and co-signals must be compared at bar[1]; the
+// confluence therefore confirms one bar after the bounce candle and is drawn back
+// onto it with offset -1 (same candle as S1/S2). This is the only non-repainting
+// way to put displacement on the bounce candle.
+// =============================================================================
+
+indicator(title="AP Bounce Pro v2.0", shorttitle="AP Bounce Pro", overlay=false, max_bars_back=5000)
+
+// =============================================================================
+// INPUTS
+// =============================================================================
+grpBounce = "Bounce Engine"
+n1 = input.int(9, "WT | master", minval=1, group=grpBounce, inline="wt")
+n2 = input.int(6, "Time 1",      minval=1, group=grpBounce, inline="wt")
+n3 = input.int(3, "Time 2",      minval=1, group=grpBounce, inline="wt")
+
+grpWin = "Rolling Window (S3/S4)"
+winX = input.int(3,   "Bounces at same level (X)",  minval=2, group=grpWin)
+winY = input.int(100, "Rolling lookback bars (Y)",  minval=1, group=grpWin)
+winN = input.int(10,  "Remember last N bounces",    minval=2, group=grpWin)
+
+grpConf = "Confluence (S5–S8)"
+hvLook      = input.int(50,  "High-Vol: highest-volume lookback (≥ bars)", minval=1, group=grpConf)
+dispLen     = input.int(100, "Displacement: Std Dev length",  minval=1,   group=grpConf)
+dispMult    = input.float(5.0, "Displacement: Std Dev mult",  minval=0.1, step=0.1, group=grpConf)
+obPeriods   = input.int(5,   "OB: relevant periods",          minval=1,   group=grpConf)
+obThreshold = input.float(0.0, "OB: min % move",              step=0.1,   group=grpConf)
+obProx      = input.int(5,   "OB: proximity to bounce (± bars)", minval=0, group=grpConf)
+
+grpVis = "Visual Plots"
+visS1 = input.bool(true, "S1: Bullish Bounce Up",        group=grpVis)
+visS2 = input.bool(true, "S2: Bearish Bounce Down",      group=grpVis)
+visS3 = input.bool(true, "S3: Bullish Window",           group=grpVis)
+visS4 = input.bool(true, "S4: Bearish Window",           group=grpVis)
+visS5 = input.bool(true, "S5: Bull Bounce + Disp/Vol",   group=grpVis)
+visS6 = input.bool(true, "S6: Bear Bounce + Disp/Vol",   group=grpVis)
+visS7 = input.bool(true, "S7: Bull Bounce + Bull OB",    group=grpVis)
+visS8 = input.bool(true, "S8: Bear Bounce + Bear OB",    group=grpVis)
+
+grpAlert = "Global Alerts"
+alS1 = input.bool(true, "S1: Bullish Bounce Up",         group=grpAlert)
+alS2 = input.bool(true, "S2: Bearish Bounce Down",       group=grpAlert)
+alS3 = input.bool(true, "S3: Bullish Window",            group=grpAlert)
+alS4 = input.bool(true, "S4: Bearish Window",            group=grpAlert)
+alS5 = input.bool(true, "S5: Bull Bounce + Disp/Vol",    group=grpAlert)
+alS6 = input.bool(true, "S6: Bear Bounce + Disp/Vol",    group=grpAlert)
+alS7 = input.bool(true, "S7: Bull Bounce + Bull OB",     group=grpAlert)
+alS8 = input.bool(true, "S8: Bear Bounce + Bear OB",     group=grpAlert)
+
+// =============================================================================
+// FUNCTIONS
+// =============================================================================
+// Bounce engine — LSMA Wave-Trend "tradition" oscillator (verbatim from source).
+tci(src) =>
+    ta.ema((src - ta.ema(src, n1)) / (0.025 * ta.ema(math.abs(src - ta.ema(src, n1)), n1)), n2) + 50
+
+mf(src) =>
+    100.0 - 100.0 / (1.0 + math.sum(volume * (ta.change(src) <= 0 ? 0 : src), n3) / math.sum(volume * (ta.change(src) >= 0 ? 0 : src), n3))
+
+tradition(src) =>
+    math.avg(tci(src), mf(src), ta.rsi(src, n3))
+
+// Rolling-window fire test (S3/S4): given per-direction buffers of bounce candle
+// highs/lows/bars, returns true ONCE when the newest bounce completes a fresh
+// group of exactly xReq events that share a common price level (inclusive
+// overlap / stabbing), counting only events within the trailing yWin bars.
+// Leading edge = maxDepthWithout == xReq-1 (the newest is what tips it to xReq;
+// if a group of >=xReq already existed it fired earlier, so it won't re-fire).
+f_window_fire(hiArr, loArr, barArr, xReq, yWin) =>
+    int n = array.size(hiArr)
+    bool fire = false
+    if n >= xReq
+        float lnNew = array.get(loArr, n - 1)
+        float hnNew = array.get(hiArr, n - 1)
+        int   bnNew = array.get(barArr, n - 1)
+        int maxDepthWithout = 0
+        for ci = 0 to n - 1
+            float s = array.get(loArr, ci)
+            if s >= lnNew and s <= hnNew
+                int depth = 0
+                for j = 0 to n - 2
+                    if (bnNew - array.get(barArr, j)) <= yWin
+                        if array.get(loArr, j) <= s and s <= array.get(hiArr, j)
+                            depth := depth + 1
+                if depth > maxDepthWithout
+                    maxDepthWithout := depth
+        fire := maxDepthWithout == (xReq - 1)
+    fire
+
+// Alert message helpers (single any-call alert, HCT pattern).
+f_add(base, part) => base == "" ? part : base + "  +  " + part
+f_rng(off) => "(L-H " + str.tostring(low[off], format.mintick) + "-" + str.tostring(high[off], format.mintick) + ")"
+
+// =============================================================================
+// BOUNCE ENGINE + RAW BOUNCE CONDITIONS
+// =============================================================================
+conf = barstate.isconfirmed
+src5 = hlc3
+wt1  = tradition(src5)
+wt2  = ta.sma(wt1, 6)
+
+// Bounce definitions — identical to source, coerced to non-na so historical refs
+// (bounceUp[i], bounceUp[1]) can never propagate na into the OB/confluence logic.
+bounceUpRaw   = ta.barssince(ta.crossunder(wt2, 20)) <= 1 and ta.crossover(wt2, 20)
+bounceDownRaw = ta.barssince(ta.crossover(wt2, 80)) <= 1 and ta.crossunder(wt2, 80)
+bounceUp   = not na(bounceUpRaw)   and bounceUpRaw
+bounceDown = not na(bounceDownRaw) and bounceDownRaw
+
+// =============================================================================
+// S1 / S2 — single bounces (offset 0, bar[0])
+// =============================================================================
+sigBounceUp   = conf and bounceUp
+sigBounceDown = conf and bounceDown
+
+// =============================================================================
+// S3 / S4 — rolling windows (offset 0, bar[0]) — gate-compliant rolling buffers
+// =============================================================================
+var upHi  = array.new_float()
+var upLo  = array.new_float()
+var upBar = array.new_int()
+var dnHi  = array.new_float()
+var dnLo  = array.new_float()
+var dnBar = array.new_int()
+
+sigBullWindow = false
+if conf and bounceUp
+    array.push(upHi, high)
+    array.push(upLo, low)
+    array.push(upBar, bar_index)
+    if array.size(upHi) > winN
+        array.shift(upHi)
+        array.shift(upLo)
+        array.shift(upBar)
+    sigBullWindow := f_window_fire(upHi, upLo, upBar, winX, winY)
+
+sigBearWindow = false
+if conf and bounceDown
+    array.push(dnHi, high)
+    array.push(dnLo, low)
+    array.push(dnBar, bar_index)
+    if array.size(dnHi) > winN
+        array.shift(dnHi)
+        array.shift(dnLo)
+        array.shift(dnBar)
+    sigBearWindow := f_window_fire(dnHi, dnLo, dnBar, winX, winY)
+
+// =============================================================================
+// S5 / S6 — bounce + displacement / high-volume on the SAME candle (bar[1], offset -1)
+// =============================================================================
+// High volume = bar[1] is the highest volume over the trailing hvLook bars (HV ladder ≥-tier).
+highVol = volume[1] == ta.highest(volume, hvLook)[1]
+
+// Displacement engine (displaced candle = bar[1], FVG confirms on bar[0]).
+dispRng  = math.abs(open - close)
+dispThr  = ta.stdev(dispRng, dispLen) * dispMult
+prevDisp = dispRng[1] > dispThr[1]
+dispBull = prevDisp and low > high[2] and close[1] > open[1]
+dispBear = prevDisp and high < low[2] and close[1] < open[1]
+
+// Bounce on bar[1] AND (high-vol OR displacement) on that same bar[1].
+sigBullConf = conf and bounceUp[1]   and (highVol or dispBull)
+sigBearConf = conf and bounceDown[1] and (highVol or dispBear)
+
+// =============================================================================
+// S7 / S8 — bounce + Order Block within ±P bars (OB candle = bar[ob_period], offset -ob_period)
+// =============================================================================
+ob_period = obPeriods + 1
+absmove   = math.abs(close[ob_period] - close[1]) / close[ob_period] * 100
+relmove   = absmove >= obThreshold
+
+bullishOB = close[ob_period] < open[ob_period]
+int upCandles = 0
+for i = 1 to obPeriods
+    upCandles := upCandles + (close[i] > open[i] ? 1 : 0)
+OB_bull = bullishOB and upCandles == obPeriods and relmove
+
+bearishOB = close[ob_period] > open[ob_period]
+int dnCandles = 0
+for i = 1 to obPeriods
+    dnCandles := dnCandles + (close[i] < open[i] ? 1 : 0)
+OB_bear = bearishOB and dnCandles == obPeriods and relmove
+
+// A same-direction bounce within ±P bars of the OB candle (all offsets are >=0 =>
+// already-confirmed past bars => non-repainting).
+int obLo = math.max(0, ob_period - obProx)
+int obHi = ob_period + obProx
+nearBounceUp = false
+for i = obLo to obHi
+    nearBounceUp := nearBounceUp or bounceUp[i]
+nearBounceDown = false
+for i = obLo to obHi
+    nearBounceDown := nearBounceDown or bounceDown[i]
+
+sigBullOB = conf and OB_bull and nearBounceUp
+sigBearOB = conf and OB_bear and nearBounceDown
+
+// =============================================================================
+// PLOTS — gated by Visual Plots checkboxes; offsets match each signal's range candle
+// =============================================================================
+plotshape(visS1 and sigBounceUp,   title="S1: Bullish Bounce Up",      style=shape.triangleup,   location=location.bottom, size=size.large, color=color.green, offset=0)
+plotshape(visS2 and sigBounceDown, title="S2: Bearish Bounce Down",    style=shape.triangledown, location=location.top,    size=size.large, color=color.red,   offset=0)
+plotshape(visS3 and sigBullWindow, title="S3: Bullish Window",         style=shape.diamond,      location=location.bottom, size=size.large, color=color.green, offset=0)
+plotshape(visS4 and sigBearWindow, title="S4: Bearish Window",         style=shape.diamond,      location=location.top,    size=size.large, color=color.red,   offset=0)
+plotshape(visS5 and sigBullConf,   title="S5: Bull Bounce + Disp/Vol", style=shape.circle,       location=location.bottom, size=size.large, color=color.green, offset=-1)
+plotshape(visS6 and sigBearConf,   title="S6: Bear Bounce + Disp/Vol", style=shape.circle,       location=location.top,    size=size.large, color=color.red,   offset=-1)
+plotshape(visS7 and sigBullOB,     title="S7: Bull Bounce + Bull OB",  style=shape.flag,         location=location.bottom, size=size.large, color=color.green, offset=-ob_period)
+plotshape(visS8 and sigBearOB,     title="S8: Bear Bounce + Bear OB",  style=shape.flag,         location=location.top,    size=size.large, color=color.red,   offset=-ob_period)
+
+// =============================================================================
+// ALERT — ONE "Any alert() function call". Set ONE TradingView alert with
+// condition "Any alert() function call" on this indicator. The message lists
+// every Global-Alerts-enabled signal that fired this bar + its candle's L-H range.
+// =============================================================================
+string parts = ""
+if alS1 and sigBounceUp
+    parts := f_add(parts, "BULLISH BOUNCE UP " + f_rng(0))
+if alS2 and sigBounceDown
+    parts := f_add(parts, "BEARISH BOUNCE DOWN " + f_rng(0))
+if alS3 and sigBullWindow
+    parts := f_add(parts, "BULLISH WINDOW " + f_rng(0))
+if alS4 and sigBearWindow
+    parts := f_add(parts, "BEARISH WINDOW " + f_rng(0))
+if alS5 and sigBullConf
+    parts := f_add(parts, "BULL BOUNCE + DISP/VOL " + f_rng(1))
+if alS6 and sigBearConf
+    parts := f_add(parts, "BEAR BOUNCE + DISP/VOL " + f_rng(1))
+if alS7 and sigBullOB
+    parts := f_add(parts, "BULL BOUNCE + OB " + f_rng(ob_period))
+if alS8 and sigBearOB
+    parts := f_add(parts, "BEAR BOUNCE + OB " + f_rng(ob_period))
+
+if str.length(parts) > 0
+    alert(syminfo.ticker + " | " + timeframe.period + " | " + parts, alert.freq_once_per_bar_close)
