@@ -1,0 +1,272 @@
+//@version=5
+// ============================================================================
+// HV ROLLING CLUSTERS NRA  --  10 rolling-window high-volume cluster detectors
+// ============================================================================
+// WHAT THIS IS
+//   A rebuild of "HV(50/150/250/500/1K/HEV/HS) NRA" that REPLACES the per-tier
+//   single-bar markers and per-tier alerts with TEN rolling-window CLUSTER
+//   detectors. The individual volume tiers (50/150/250/500/1000-bar highs, the
+//   all-time-high = Nagasaki/HEV, and Hot Spot) are STILL computed -- they are
+//   the raw material the windows count -- but they no longer paint their own
+//   shapes or fire their own alerts. ONLY the 10 cluster windows plot and alert.
+//
+//   Each window answers one question:
+//     "Did at least <COUNT> events of <CLASS> occur within the last <BARS> bars?"
+//   COUNT (events) and BARS (window length) are user inputs on EVERY window.
+//
+// THE 10 WINDOWS  (CLASS that each one counts)
+//   W1  Nagasaki        all-time-high volume   (== HEV; Heavy Weapons "Nagasaki")
+//   W2  1000+           a 1000-bar volume high (or rarer)
+//   W3  500 or greater  a 500-bar high or rarer  (500 / 1000 / all-time)
+//   W4  500 only        a 500-bar high that is NOT also a 1000-bar high
+//   W5  250 or 500      exactly a 250-bar OR 500-bar high (not 1000+)
+//   W6  250 only        a 250-bar high that is NOT also a 500-bar high
+//   W7  150 or 250      exactly a 150-bar OR 250-bar high (not 500+)
+//   W8  150 only        a 150-bar high that is NOT also a 250-bar high
+//   W9  50 or above     ANY high-volume tier (a 50-bar high or rarer)
+//   W10 50 only         a 50-bar high that is NOT also a 150-bar high
+//
+//   NESTING: a 1000-bar high is automatically a 500/250/150/50-bar high, so the
+//   "or greater" classes use the raw tier flag and the "only" / "A or B" classes
+//   subtract the higher tier. This is exactly the priority logic of the original.
+//
+// NON-REPAINTING (NRA) + CONSTITUTIONAL ROLLING WINDOWS
+//   * Every tier compares the PRIOR CLOSED bar: volume[1] == ta.highest(volume,N)[1].
+//   * Each window is a TRUE SLIDING trailing-N count via f_sum_true(), with the
+//     base event gated on barstate.isconfirmed (closed bars only). There is NO
+//     anchored "wait N bars then reset" window anywhere (constitutional gate).
+//   * Fire = LEADING EDGE of (count >= COUNT):  cond and not cond[1]  -- it fires
+//     once when the cluster completes, then re-arms automatically.
+//   * Plot and alert for each window share ONE boolean  -> 1:1, can never desync.
+//   * Markers plot with offset=-1 onto the closed bar that completed the cluster.
+//
+// ALERTS
+//   * One alertcondition per window (10).
+//   * One "ANY" alertcondition that fires if ANY window fires.
+//   * One alert() FUNCTION CALL (the "any-call") so a single TradingView alert set
+//     to "Any alert() function call" catches every window, with a payload naming
+//     which windows fired on the bar.
+//
+// ASCII-ONLY source (TradingView's Pine lexer rejects non-ASCII punctuation).
+// ============================================================================
+
+indicator("HV ROLLING CLUSTERS (Nagasaki/1K/500/250/150/50) NRA", shorttitle="HV ROLL", overlay=true, max_bars_back=5000)
+
+// --- Canonical suite helper: count TRUE over a trailing SLIDING window of len bars.
+f_sum_true(cond, len) =>
+    float s = 0.0
+    int L = math.max(1, len)
+    for i = 0 to L - 1
+        s += (cond[i] ? 1.0 : 0.0)
+    s
+
+// ============================================================================
+// === INPUTS -- per window: Enable + COUNT (events) + within BARS (window) ===
+// ============================================================================
+// Defaults are sensible STARTING points reflecting each class's rarity. Tune freely.
+
+grp1  = "W1: Nagasaki (all-time-high vol)"
+w1_on  = input.bool(true, "Enable W1 Nagasaki", group=grp1)
+w1_cnt = input.int(2,   "Count (events)", minval=1,             inline="w1", group=grp1)
+w1_win = input.int(200, "within Bars",    minval=1, maxval=5000, inline="w1", group=grp1)
+
+grp2  = "W2: 1000-bar high or greater"
+w2_on  = input.bool(true, "Enable W2 1000+", group=grp2)
+w2_cnt = input.int(2,   "Count (events)", minval=1,             inline="w2", group=grp2)
+w2_win = input.int(150, "within Bars",    minval=1, maxval=5000, inline="w2", group=grp2)
+
+grp3  = "W3: 500 or greater"
+w3_on  = input.bool(true, "Enable W3 500+", group=grp3)
+w3_cnt = input.int(2,   "Count (events)", minval=1,             inline="w3", group=grp3)
+w3_win = input.int(100, "within Bars",    minval=1, maxval=5000, inline="w3", group=grp3)
+
+grp4  = "W4: 500 only (not 1000+)"
+w4_on  = input.bool(true, "Enable W4 500-only", group=grp4)
+w4_cnt = input.int(2,   "Count (events)", minval=1,             inline="w4", group=grp4)
+w4_win = input.int(100, "within Bars",    minval=1, maxval=5000, inline="w4", group=grp4)
+
+grp5  = "W5: 250 or 500"
+w5_on  = input.bool(true, "Enable W5 250-or-500", group=grp5)
+w5_cnt = input.int(2,  "Count (events)", minval=1,            inline="w5", group=grp5)
+w5_win = input.int(75, "within Bars",    minval=1, maxval=5000, inline="w5", group=grp5)
+
+grp6  = "W6: 250 only (not 500+)"
+w6_on  = input.bool(true, "Enable W6 250-only", group=grp6)
+w6_cnt = input.int(3,  "Count (events)", minval=1,            inline="w6", group=grp6)
+w6_win = input.int(75, "within Bars",    minval=1, maxval=5000, inline="w6", group=grp6)
+
+grp7  = "W7: 150 or 250"
+w7_on  = input.bool(true, "Enable W7 150-or-250", group=grp7)
+w7_cnt = input.int(3,  "Count (events)", minval=1,            inline="w7", group=grp7)
+w7_win = input.int(50, "within Bars",    minval=1, maxval=5000, inline="w7", group=grp7)
+
+grp8  = "W8: 150 only (not 250+)"
+w8_on  = input.bool(true, "Enable W8 150-only", group=grp8)
+w8_cnt = input.int(3,  "Count (events)", minval=1,            inline="w8", group=grp8)
+w8_win = input.int(50, "within Bars",    minval=1, maxval=5000, inline="w8", group=grp8)
+
+grp9  = "W9: 50 or above (any HV)"
+w9_on  = input.bool(true, "Enable W9 50+", group=grp9)
+w9_cnt = input.int(4,  "Count (events)", minval=1,            inline="w9", group=grp9)
+w9_win = input.int(30, "within Bars",    minval=1, maxval=5000, inline="w9", group=grp9)
+
+grp10 = "W10: 50 only (not 150+)"
+w10_on  = input.bool(true, "Enable W10 50-only", group=grp10)
+w10_cnt = input.int(4,  "Count (events)", minval=1,            inline="w10", group=grp10)
+w10_win = input.int(30, "within Bars",    minval=1, maxval=5000, inline="w10", group=grp10)
+
+// ============================================================================
+// === INDIVIDUAL TIER CALCULATIONS  (kept for COUNTING only -- no own plot/alert)
+// ============================================================================
+// All comparisons use [1] (prior CLOSED bar): volume[1] == ta.highest(volume,N)[1]
+// can never change once the bar closes -> non-repainting by construction.
+bool is50Bar   = volume[1] == ta.highest(volume, 50)[1]
+bool is150Bar  = volume[1] == ta.highest(volume, 150)[1]
+bool is250Bar  = volume[1] == ta.highest(volume, 250)[1]
+bool is500Bar  = volume[1] == ta.highest(volume, 500)[1]
+bool is1000Bar = volume[1] == ta.highest(volume, 1000)[1]
+
+// All-time-high volume (HEV) -- running max over CONFIRMED bars only.
+// HEV == Nagasaki: the Heavy Weapons "Nagasaki" signal is the identical
+// all-time-high-volume test (see heavy-weapons-nra + DEFINITIONS_HV_NAGASAKI.md).
+var float maxVolEver = 0.0
+bool isHEV = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    isHEV := true
+bool isNagasaki = isHEV
+
+// Hot Spot calendar (kept for calculation/export only -- no own plot or alert).
+opExWindow         = dayofmonth[1] >= 10 and dayofmonth[1] <= 17 and dayofweek[1] >= dayofweek.monday and dayofweek[1] <= dayofweek.wednesday
+qtrEndWindow       = (month[1] == 3 or month[1] == 6 or month[1] == 9 or month[1] == 12) and dayofmonth[1] >= 23 and dayofmonth[1] <= 27
+russellWindow      = month[1] == 6 and dayofmonth[1] >= 19 and dayofmonth[1] <= 24
+taxLossWindow      = month[1] == 12 and dayofmonth[1] >= 21 and dayofmonth[1] <= 26
+janEffectWindow    = month[1] == 12 and dayofmonth[1] >= 27 and dayofmonth[1] <= 30
+hfRedemptionWindow = (month[1] == 5 or month[1] == 11) and dayofmonth[1] >= 10 and dayofmonth[1] <= 13
+bool isHotSpot = opExWindow or qtrEndWindow or russellWindow or taxLossWindow or janEffectWindow or hfRedemptionWindow
+
+// ============================================================================
+// === CLASS EVENTS (confirmed bars only) -- the raw material each window counts
+// ============================================================================
+// Nesting: isHEV -> is1000Bar -> is500Bar -> is250Bar -> is150Bar -> is50Bar.
+bool conf = barstate.isconfirmed
+bool evt_nag      = conf and isHEV                       // W1  Nagasaki / all-time high
+bool evt_1000     = conf and is1000Bar                   // W2  1000-bar high or greater
+bool evt_500up    = conf and is500Bar                    // W3  500 or greater
+bool evt_500only  = conf and is500Bar and not is1000Bar  // W4  500 only
+bool evt_250or500 = conf and is250Bar and not is1000Bar  // W5  250 or 500
+bool evt_250only  = conf and is250Bar and not is500Bar   // W6  250 only
+bool evt_150or250 = conf and is150Bar and not is500Bar   // W7  150 or 250
+bool evt_150only  = conf and is150Bar and not is250Bar   // W8  150 only
+bool evt_50up     = conf and is50Bar                     // W9  50 or above (any HV)
+bool evt_50only   = conf and is50Bar and not is150Bar    // W10 50 only
+
+// ============================================================================
+// === ROLLING-WINDOW CLUSTER DETECTIONS (sliding trailing-N, leading-edge fire)
+// ============================================================================
+// nN = events of the class in trailing winN bars.  condN = nN >= countN.
+// fire_WN = leading edge of condN (fires once when the cluster completes).
+float n1  = f_sum_true(evt_nag,      w1_win)
+float n2  = f_sum_true(evt_1000,     w2_win)
+float n3  = f_sum_true(evt_500up,    w3_win)
+float n4  = f_sum_true(evt_500only,  w4_win)
+float n5  = f_sum_true(evt_250or500, w5_win)
+float n6  = f_sum_true(evt_250only,  w6_win)
+float n7  = f_sum_true(evt_150or250, w7_win)
+float n8  = f_sum_true(evt_150only,  w8_win)
+float n9  = f_sum_true(evt_50up,     w9_win)
+float n10 = f_sum_true(evt_50only,   w10_win)
+
+bool c1  = n1  >= w1_cnt
+bool c2  = n2  >= w2_cnt
+bool c3  = n3  >= w3_cnt
+bool c4  = n4  >= w4_cnt
+bool c5  = n5  >= w5_cnt
+bool c6  = n6  >= w6_cnt
+bool c7  = n7  >= w7_cnt
+bool c8  = n8  >= w8_cnt
+bool c9  = n9  >= w9_cnt
+bool c10 = n10 >= w10_cnt
+
+bool fire_W1  = w1_on  and c1  and not c1[1]
+bool fire_W2  = w2_on  and c2  and not c2[1]
+bool fire_W3  = w3_on  and c3  and not c3[1]
+bool fire_W4  = w4_on  and c4  and not c4[1]
+bool fire_W5  = w5_on  and c5  and not c5[1]
+bool fire_W6  = w6_on  and c6  and not c6[1]
+bool fire_W7  = w7_on  and c7  and not c7[1]
+bool fire_W8  = w8_on  and c8  and not c8[1]
+bool fire_W9  = w9_on  and c9  and not c9[1]
+bool fire_W10 = w10_on and c10 and not c10[1]
+
+// ============================================================================
+// === PLOTS -- the 10 NEW detection plots (offset=-1 -> lands on the closed bar
+// === that completed the cluster). No individual-tier shapes anymore.
+// ============================================================================
+plotshape(fire_W1,  "W1 Nagasaki cluster",   shape.diamond,      location.top,    color.new(color.purple,  0), size=size.normal, text="NAG",     textcolor=color.white, offset=-1)
+plotshape(fire_W2,  "W2 1000+ cluster",      shape.circle,       location.top,    color.new(color.red,     0), size=size.normal, text="1K+",     textcolor=color.white, offset=-1)
+plotshape(fire_W3,  "W3 500-or-greater",     shape.circle,       location.top,    color.new(color.orange,  0), size=size.small,  text="500+",    textcolor=color.black, offset=-1)
+plotshape(fire_W4,  "W4 500-only cluster",   shape.circle,       location.top,    color.new(color.yellow,  0), size=size.small,  text="500",     textcolor=color.black, offset=-1)
+plotshape(fire_W5,  "W5 250-or-500",         shape.triangleup,   location.top,    color.new(color.aqua,    0), size=size.small,  text="250/500", textcolor=color.black, offset=-1)
+plotshape(fire_W6,  "W6 250-only cluster",   shape.triangleup,   location.top,    color.new(color.teal,    0), size=size.tiny,   text="250",     textcolor=color.white, offset=-1)
+plotshape(fire_W7,  "W7 150-or-250",         shape.triangledown, location.bottom, color.new(color.blue,    0), size=size.small,  text="150/250", textcolor=color.white, offset=-1)
+plotshape(fire_W8,  "W8 150-only cluster",   shape.triangledown, location.bottom, color.new(color.navy,    0), size=size.tiny,   text="150",     textcolor=color.white, offset=-1)
+plotshape(fire_W9,  "W9 50-or-above",        shape.cross,        location.bottom, color.new(color.gray,    0), size=size.small,  text="50+",     textcolor=color.white, offset=-1)
+plotshape(fire_W10, "W10 50-only cluster",   shape.cross,        location.bottom, color.new(color.silver,  0), size=size.tiny,   text="50",      textcolor=color.black, offset=-1)
+
+// Numeric counts (data-window only -- helps tune COUNT/BARS; off-chart, no overlay clutter).
+plot(n1,  "W1 count (Nagasaki)", color=color.purple, display=display.data_window)
+plot(n2,  "W2 count (1000+)",    color=color.red,    display=display.data_window)
+plot(n3,  "W3 count (500+)",     color=color.orange, display=display.data_window)
+plot(n4,  "W4 count (500 only)", color=color.yellow, display=display.data_window)
+plot(n5,  "W5 count (250/500)",  color=color.aqua,   display=display.data_window)
+plot(n6,  "W6 count (250 only)", color=color.teal,   display=display.data_window)
+plot(n7,  "W7 count (150/250)",  color=color.blue,   display=display.data_window)
+plot(n8,  "W8 count (150 only)", color=color.navy,   display=display.data_window)
+plot(n9,  "W9 count (50+)",      color=color.gray,   display=display.data_window)
+plot(n10, "W10 count (50 only)", color=color.silver, display=display.data_window)
+
+// ============================================================================
+// === ALERTS -- per-window (1:1 with plots), plus ANY alertcondition + any-call()
+// ============================================================================
+alertcondition(fire_W1,  "W1 Nagasaki cluster",  "W1: Nagasaki cluster (count within window) on {{ticker}}")
+alertcondition(fire_W2,  "W2 1000+ cluster",     "W2: 1000-bar-high cluster on {{ticker}}")
+alertcondition(fire_W3,  "W3 500-or-greater",    "W3: 500-or-greater cluster on {{ticker}}")
+alertcondition(fire_W4,  "W4 500-only cluster",  "W4: 500-only cluster on {{ticker}}")
+alertcondition(fire_W5,  "W5 250-or-500",        "W5: 250-or-500 cluster on {{ticker}}")
+alertcondition(fire_W6,  "W6 250-only cluster",  "W6: 250-only cluster on {{ticker}}")
+alertcondition(fire_W7,  "W7 150-or-250",        "W7: 150-or-250 cluster on {{ticker}}")
+alertcondition(fire_W8,  "W8 150-only cluster",  "W8: 150-only cluster on {{ticker}}")
+alertcondition(fire_W9,  "W9 50-or-above",       "W9: 50-or-above cluster on {{ticker}}")
+alertcondition(fire_W10, "W10 50-only cluster",  "W10: 50-only cluster on {{ticker}}")
+
+// ANY window fired (one boolean used by both the ANY alertcondition and the any-call alert()).
+bool any_fire = fire_W1 or fire_W2 or fire_W3 or fire_W4 or fire_W5 or fire_W6 or fire_W7 or fire_W8 or fire_W9 or fire_W10
+alertcondition(any_fire, "ANY HV rolling cluster", "ANY HV rolling-window cluster fired on {{ticker}}")
+
+// any-call alert() function: set ONE TradingView alert to "Any alert() function call"
+// and it catches every window. Payload names which windows fired this bar.
+if any_fire and conf
+    string m = ""
+    m := fire_W1  ? m + "NAG "      : m
+    m := fire_W2  ? m + "1K+ "      : m
+    m := fire_W3  ? m + "500+ "     : m
+    m := fire_W4  ? m + "500only "  : m
+    m := fire_W5  ? m + "250/500 "  : m
+    m := fire_W6  ? m + "250only "  : m
+    m := fire_W7  ? m + "150/250 "  : m
+    m := fire_W8  ? m + "150only "  : m
+    m := fire_W9  ? m + "50+ "      : m
+    m := fire_W10 ? m + "50only "   : m
+    alert("HV_ROLL|TICKER:" + syminfo.ticker + "|TF:" + timeframe.period + "|FIRED:" + m, alert.freq_once_per_bar_close)
+
+// ============================================================================
+// === EXPORTS (for combination / fire-matrix consumers)
+// ============================================================================
+// Individual tiers (bool): is50Bar, is150Bar, is250Bar, is500Bar, is1000Bar,
+//                          isHEV (== isNagasaki), isHotSpot   (calc/export only)
+// Window fires (bool):     fire_W1 .. fire_W10
+// Window counts (float):   n1 .. n10
+// Aggregate:               activeWindows = how many windows fired this bar (0..10)
+int activeWindows = (fire_W1?1:0)+(fire_W2?1:0)+(fire_W3?1:0)+(fire_W4?1:0)+(fire_W5?1:0)+(fire_W6?1:0)+(fire_W7?1:0)+(fire_W8?1:0)+(fire_W9?1:0)+(fire_W10?1:0)
+plot(activeWindows, "activeWindows (0..10)", color=color.white, display=display.data_window)
