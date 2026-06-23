@@ -1,5 +1,41 @@
 # VOB Indicator Suite — Changelog
 
+## VOB v10 — +T3 Cluster, −zone markers/labels — 2026-06-23
+
+New file (does NOT replace any existing v10): `versions/VOB_v10_T3cluster_noZoneMarkers_2026-06-23.pine`.
+Built from Anish's working `//@version=6` "VOB v10" body by explicit request.
+
+### Added
+- **T3 Cluster** detection (`T3x`, yellow flag, top) — ported verbatim from VOB
+  v11. Fires when **2+ of the six T3 tiers** (T3a..T3f, buy OR sell) paint on the
+  SAME candle. Direction-agnostic. One plotshape + alertcondition + Bloomberg
+  `alert()`. Non-repainting (`barstate.isconfirmed`), cooldown-gated. Counts off
+  the gated `plot_t3_*` booleans.
+
+### Removed
+- The **12 zone-formation marker plotshapes** (zA..zF Bull + Bear cross markers).
+- Their alerts: the `Any Zone Formation` alertcondition **and** the
+  `ZONE_FORMATION` `alert()` payload (`any_zone` is now unreferenced and gone).
+- The **zone-formation labels** (`f_emit_label` + the `en_emission_labels` input).
+
+### Kept (unchanged)
+- Individual T3a..f Buy/Sell circles + their per-tier Bloomberg alerts.
+- Nagasaki (`offset = -1`), VLB Bull/Bear, Multi-Zone Bull/Bear 2 & 3+.
+- The shaded **order-block zone boxes/midlines** (MutEx line engine) and per-bar
+  `log.info` console stream. `en_zone_*` toggles retained (default true) — they
+  still gate the boxes AND the `fire_zb_*/fire_zs_*` booleans the Multi-Zone
+  detection counts.
+
+### Tally
+- Plotshapes 31 → **20** (−12 zone markers, +1 T3 Cluster).
+- Alertconditions 7 → **7** (−`Any Zone Formation`, +`T3 Cluster`).
+- `alert()` payloads 20 → **20** (−`ZONE_FORMATION`, +`T3_CLUSTER`).
+
+### Note
+- `f_vob`'s neighbor-dedup reads `get(i - 1)` unconditionally (no `if i > 0`
+  guard) — **preserved verbatim** from Anish's pasted v10; only the five
+  requested changes were made.
+
 ## VOB v11 — HW-Single Coincidence + T3 Cluster — 2026-06-04
 
 Two new files (NOT replacing v10). Built on the v10 body. **Host bumped to
