@@ -31,6 +31,26 @@ Public repo: **github.com/nishpa800/indicators**
 > Full doctrine: `~/.claude/projects/-Users-anishpatel/memory/pine_tick_relativevolume_re10023.md`
 > + skill `pine-editor-to-pine-tick-friendly`.
 
+> ## ⭐ MANDATE — DEFAULT-DENY on diagnostic `plot()` lines (count / debug / numeric)
+> Do NOT add diagnostic plot lines to indicators. EVER. By DEFAULT a study emits ONLY
+> the `plotshape()` markers the user asked for. **NEVER** `plot()` a count, sum, ratio,
+> score, or any aggregate, and **NEVER** write a plot to `display.data_window` /
+> `display.none`, unless the user EXPLICITLY asks for that exact series. Every `plot()`
+> adds a row to the Style/Settings tab; "tuning helper" count lines are junk nobody
+> ordered. Internal aggregates stay as **UNPLOTTED export variables only**.
+> (Origin: builds kept shipping `display.data_window` count lines nobody requested.)
+>
+> **HOW IT IS ENFORCED (mechanical, DEFAULT-ON, auto-armed):**
+> 1. `check_no_debug_plots.sh` is DEFAULT-DENY: in ANY `.pine`, a `plot(...)` to
+>    `display.data_window` / `display.none` is a violation — NO marker needed.
+> 2. `// NO-DEBUG-PLOTS` (detection-only studies) tightens it to ban EVERY `plot(`.
+> 3. `// ALLOW-DEBUG-PLOTS` is the ONLY escape hatch (legacy fire-matrix exporters).
+> 4. `hooks/pre-commit` runs the gate (+ `check_no_fixed_windows.sh`) on every staged
+>    `.pine` and BLOCKS the commit on any violation.
+> 5. `.claude/settings.json` runs `git config core.hooksPath hooks` on SessionStart, so
+>    the blocker is AUTO-ARMED for EVERY Claude agent / session / fresh clone.
+> Gate before "done": `bash check_no_debug_plots.sh <file>` must print PASS.
+
 ## Before doing anything
 
 **Read the master registry first:**
@@ -74,6 +94,7 @@ indicators/
 - **Alpha Strike trusted ONLY from SQUARIFY 64.** Always filter alerts by source indicator.
 - **WMD is DEPRECATED** → use Heavy Combo Toggles. Squarify's `35 NAG+` (Nagasaki Plus) still valid.
 - **Plot naming:** every plot is `S<N>: <descriptor>`. Never letter abbreviations.
+- **🚫 NO diagnostic `plot()` lines (count / debug / numeric / `data_window`) — DEFAULT-DENY, see the ⭐ MANDATE.** `check_no_debug_plots.sh` + `hooks/pre-commit` BLOCK any commit that adds a `display.data_window`/`display.none` plot (or ANY `plot(` in a `// NO-DEBUG-PLOTS` file). Only `// ALLOW-DEBUG-PLOTS` (legacy fire-matrix exporters) opts out. Internal aggregates stay UNPLOTTED.
 - **Never label "canonical" prematurely.** Ingest all variants verbatim. "Which is canonical?" is the OUTPUT of root extraction + TV verification, never the input.
 - **Always commit + push every change in the same turn.** Paste the GitHub URL.
 
