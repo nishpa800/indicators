@@ -1,4 +1,6 @@
 //@version=5
+// NO-DEBUG-PLOTS  -- detection-only: ONLY plotshape() markers + alerts. ZERO plot()
+//   lines (no count/aggregate/data_window readouts). Enforced by check_no_debug_plots.sh.
 // ============================================================================
 // HV ROLLING CLUSTERS NRA  --  10 rolling-window high-volume cluster detectors
 // ============================================================================
@@ -214,18 +216,6 @@ plotshape(fire_W8,  "W8 150-only cluster",   shape.triangledown, location.bottom
 plotshape(fire_W9,  "W9 50-or-above",        shape.cross,        location.bottom, color.new(color.gray,    0), size=size.small,  text="50+",     textcolor=color.white, offset=-1)
 plotshape(fire_W10, "W10 50-only cluster",   shape.cross,        location.bottom, color.new(color.silver,  0), size=size.tiny,   text="50",      textcolor=color.black, offset=-1)
 
-// Numeric counts (data-window only -- helps tune COUNT/BARS; off-chart, no overlay clutter).
-plot(n1,  "W1 count (Nagasaki)", color=color.purple, display=display.data_window)
-plot(n2,  "W2 count (1000+)",    color=color.red,    display=display.data_window)
-plot(n3,  "W3 count (500+)",     color=color.orange, display=display.data_window)
-plot(n4,  "W4 count (500 only)", color=color.yellow, display=display.data_window)
-plot(n5,  "W5 count (250/500)",  color=color.aqua,   display=display.data_window)
-plot(n6,  "W6 count (250 only)", color=color.teal,   display=display.data_window)
-plot(n7,  "W7 count (150/250)",  color=color.blue,   display=display.data_window)
-plot(n8,  "W8 count (150 only)", color=color.navy,   display=display.data_window)
-plot(n9,  "W9 count (50+)",      color=color.gray,   display=display.data_window)
-plot(n10, "W10 count (50 only)", color=color.silver, display=display.data_window)
-
 // ============================================================================
 // === ALERTS -- per-window (1:1 with plots), plus ANY alertcondition + any-call()
 // ============================================================================
@@ -267,6 +257,5 @@ if any_fire and conf
 //                          isHEV (== isNagasaki), isHotSpot   (calc/export only)
 // Window fires (bool):     fire_W1 .. fire_W10
 // Window counts (float):   n1 .. n10
-// Aggregate:               activeWindows = how many windows fired this bar (0..10)
+// Aggregate (UNPLOTTED export only -- never plot()): activeWindows (0..10)
 int activeWindows = (fire_W1?1:0)+(fire_W2?1:0)+(fire_W3?1:0)+(fire_W4?1:0)+(fire_W5?1:0)+(fire_W6?1:0)+(fire_W7?1:0)+(fire_W8?1:0)+(fire_W9?1:0)+(fire_W10?1:0)
-plot(activeWindows, "activeWindows (0..10)", color=color.white, display=display.data_window)

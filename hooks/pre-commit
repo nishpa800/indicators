@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Repo pre-commit constitutional gate. Runs on STAGED *.pine files and BLOCKS the
+# commit (exit 1) on any violation:
+#   1. no fixed/anchored windows                       -> check_no_fixed_windows.sh
+#   2. no debug/count plot() in NO-DEBUG-PLOTS files    -> check_no_debug_plots.sh
+#
+# Auto-armed via .claude/settings.json (SessionStart runs: git config core.hooksPath hooks).
+# Manual enable in any clone:  git config core.hooksPath hooks
+set -u
+ROOT="$(git rev-parse --show-toplevel)"
+staged=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.pine$' || true)
+[ -z "$staged" ] && exit 0
+rc=0
+while IFS= read -r f; do
+  [ -n "$f" ] && [ -f "$ROOT/$f" ] || continue
+  if out=$(bash "$ROOT/check_no_fixed_windows.sh" "$ROOT/$f" 2>&1); then :; else echo "$out"; rc=1; fi
+  if out=$(bash "$ROOT/check_no_debug_plots.sh"  "$ROOT/$f" 2>&1); then :; else echo "$out"; rc=1; fi
+done <<< "$staged"
+if [ "$rc" -ne 0 ]; then
+  echo ""
+  echo "PRE-COMMIT BLOCKED: fix the violations above (see CLAUDE.md Hard rules / top MANDATE)."
+fi
+exit $rc

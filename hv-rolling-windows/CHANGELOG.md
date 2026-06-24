@@ -47,8 +47,9 @@ identical running-max test as the HV indicator's HEV. Confirmed against
   function call (the "any-call") so a single TradingView alert set to
   "Any alert() function call" catches every window, with a payload naming which
   windows fired.
-- **Numeric exports:** per-window counts (`n1..n10`) and `activeWindows` to the
-  data window for threshold tuning.
+- **Exactly 10 plots, nothing else:** only the 10 detection `plotshape()` markers.
+  NO numeric/count/debug `plot()` lines (they clutter the Style tab). Internal
+  aggregates (`n1..n10`, `activeWindows`) are UNPLOTTED export variables only.
 - **Tick-safe by construction:** no `tv_ta`/`relativeVolume`, no
   `timeframe.in_seconds`, so no RE10023 risk. Pure ASCII source.
 

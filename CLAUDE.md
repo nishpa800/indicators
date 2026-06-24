@@ -31,6 +31,25 @@ Public repo: **github.com/nishpa800/indicators**
 > Full doctrine: `~/.claude/projects/-Users-anishpatel/memory/pine_tick_relativevolume_re10023.md`
 > + skill `pine-editor-to-pine-tick-friendly`.
 
+> ## ⭐ MANDATE — NO unrequested `plot()` lines (numeric / count / debug / aggregate)
+> A detection study emits ONLY the exact `plotshape()` markers the user asked for.
+> **NEVER** add a `plot()` of a count, sum, ratio, score, distance, or any aggregate
+> — **not even `display=display.data_window`** — unless the user EXPLICITLY asks for
+> that exact series. Every `plot()` adds its own row to the Style/Settings tab; a
+> wall of "tuning helper" count lines is junk the user did not order. Internal
+> aggregates stay as **UNPLOTTED export variables only**. Default = ZERO extra plots.
+> (Origin: a build shipped 11 `display.data_window` count lines nobody requested.)
+>
+> **HOW IT IS ENFORCED (mechanical, not honor-system):**
+> 1. Every detection-only `.pine` carries the marker `// NO-DEBUG-PLOTS` near the top.
+> 2. `check_no_debug_plots.sh` HARD-FAILS any marked file that contains a `plot(` call
+>    (legacy files that legitimately export to the fire-matrix simply omit the marker).
+> 3. `hooks/pre-commit` runs that gate (+ `check_no_fixed_windows.sh`) on every staged
+>    `.pine` and BLOCKS the commit on any violation.
+> 4. `.claude/settings.json` runs `git config core.hooksPath hooks` on SessionStart, so
+>    the pre-commit block is auto-armed for EVERY Claude agent / session / fresh clone.
+> Gate before "done": `bash check_no_debug_plots.sh <file>` must print PASS.
+
 ## Before doing anything
 
 **Read the master registry first:**
@@ -74,6 +93,7 @@ indicators/
 - **Alpha Strike trusted ONLY from SQUARIFY 64.** Always filter alerts by source indicator.
 - **WMD is DEPRECATED** → use Heavy Combo Toggles. Squarify's `35 NAG+` (Nagasaki Plus) still valid.
 - **Plot naming:** every plot is `S<N>: <descriptor>`. Never letter abbreviations.
+- **🚫 NO unrequested `plot()` lines (numeric / count / debug / aggregate) — see the ⭐ MANDATE at the top.** Detection studies = only the `plotshape()` markers the user asked for. Mark such files `// NO-DEBUG-PLOTS`; `check_no_debug_plots.sh` + the `hooks/pre-commit` gate will BLOCK any commit that puts a `plot()` in a marked file. Internal aggregates stay UNPLOTTED.
 - **Never label "canonical" prematurely.** Ingest all variants verbatim. "Which is canonical?" is the OUTPUT of root extraction + TV verification, never the input.
 - **Always commit + push every change in the same turn.** Paste the GitHub URL.
 
