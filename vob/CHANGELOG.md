@@ -1,5 +1,53 @@
 # VOB Indicator Suite — Changelog
 
+## VOB v11 — V×HW Coincidence split into Bull / Bear — 2026-06-25
+
+The **VOB × HW-Single Coincidence** detection (v11 new detection #2) used to be
+direction-agnostic: one magenta `V×HW` label and one alert with no bull/bear
+verdict. It now ALWAYS declares a direction — every fire and every alert is
+BULL or BEAR. Nothing else in v11 changed.
+
+### What changed
+- The single magenta `V×HW` plot is replaced by two plots:
+  - **Bull** — green `V×HW↑` label BELOW the bar.
+  - **Bear** — red `V×HW↓` label ABOVE the bar.
+- Two alertconditions ("VOB × HW-Single Coincidence Bull" / "… Bear") replace
+  the one direction-agnostic alertcondition.
+- The Bloomberg `alert()` payload gains three leading fields after `TF`:
+  `DIR:BULL|BEAR`, `DIRRULE:…`, `CONFLICT:0|1`. Event token stays `VOB_X_HWS`
+  and every pre-existing field is preserved (backward-compatible parsers keep
+  working; they just gain a DIR they can now key on).
+
+### Direction rule (deterministic — never neutral, never both, never none)
+The embedded HW-Single engine already classifies each signal as `hws_bull`
+(SAAB, bullish RVOL1x, Grand Slam, bullish UU/UUU/UUUU, bullish B2B/FAUNA/
+displacement, HV150..1000, hybrid LONG, HCT bull), `hws_bear` (KRATOS, bearish
+RVOL1x, MOAB, bearish DD/DDD/DDDD, bearish B2B/FAUNA/displacement, hybrid SHORT,
+HCT bear), or `hws_neutral` (WTC, Hiroshima, Nagasaki, Pentagon HV). The
+coincidence resolves to:
+- pure bull (`hws_bull and not hws_bear`) → **BULL**;
+- pure bear (`hws_bear and not hws_bull`) → **BEAR**;
+- conflict (both bull AND bear this candle) → **candle-body tiebreak**;
+- neutral-only (only `hws_neutral`) → **candle-body tiebreak**.
+Body tiebreak: `close >= open` → BULL, else BEAR. `DIRRULE` records which path
+fired (`PURE_BULL` / `PURE_BEAR` / `CONFLICT_BODY_TIEBREAK` /
+`NEUTRAL_BODY_TIEBREAK`) and `CONFLICT` flags the both-sides case.
+
+### Cooldown
+Bull and bear carry independent cooldown stamps (`last_vobhws_b` /
+`last_vobhws_s`) so a bull fire no longer suppresses a following bear (matches
+how VLB and MZ already gate per-direction).
+
+### Files (all four kept in lockstep — byte-identical block)
+- `versions/VOB_v11_FULL_HWcoincidence_2026-06-04.pine` (`//@version=6`)
+- `versions/VOB_v11_MULTIPLES_HWcoincidence_2026-06-04.pine` (`//@version=6`)
+- `tick_friendly/VOB_v11_FULL_TICKFRIENDLY_2026-06-04.pine` (`//@version=5`)
+- `tick_friendly/VOB_v11_MULTIPLES_TICKFRIENDLY_2026-06-04.pine` (`//@version=5`)
+
+Output budget after the +1 plotshape / +1 alertcondition: MULTIPLES 17/64,
+FULL 44/64. Tick anchor gate clean (no `relativeVolume(.., "")`). HW Single v3
+standalone is untouched — only its read-only embedded copy is consumed.
+
 ## VOB v11 — HW-Single Coincidence + T3 Cluster — 2026-06-04
 
 Two new files (NOT replacing v10). Built on the v10 body. **Host bumped to

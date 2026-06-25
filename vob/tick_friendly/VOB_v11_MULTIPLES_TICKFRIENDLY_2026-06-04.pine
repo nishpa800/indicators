@@ -2100,24 +2100,57 @@ if plot_tc_cluster
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ███ v11 NEW DETECTION PLOT #2 — VOB × HW-SINGLE COINCIDENCE ███
+// ███ v11 NEW DETECTION PLOT #2 — VOB × HW-SINGLE COINCIDENCE (BULL / BEAR SPLIT) ███
 // ═══════════════════════════════════════════════════════════════════════════════
-// Fires when ANY VOB T3 (T3a..T3f) OR ANY VOB zone-formation marker (zA..zF),
-// bullish OR bearish (direction is not filtered), lands on the SAME candle as
-// ANY HW Single v3 detection (high-volume, displacement, or any other HWS plot
-// — captured by hws_any above). One single plot; non-repainting; 1:1 alert.
-bool show_vobhws = input.bool(true, "VOB × HW-Single Coincidence (TC/zone + any HWS same candle)",
+// Fires when ANY VOB T3 (T3a..T3f) OR ANY VOB zone-formation marker (zA..zF)
+// lands on the SAME candle as ANY HW Single v3 detection (high-volume,
+// displacement, RVOL, sequence, B2B, FAUNA, HCT, Pentagon, HV — captured by
+// hws_any above). The coincidence is now FORCED to a single direction so every
+// fire and every alert declares BULL or BEAR — it is never directionless.
+//
+// DIRECTION RULE (deterministic — always resolves to exactly one side):
+//   The embedded HW-Single engine already tags each signal:
+//     hws_bull    = SAAB, bullish RVOL1x, Grand Slam, bullish UU/UUU/UUUU,
+//                   bullish B2B, bullish FAUNA, bullish displacement, HV150..1000,
+//                   hybrid LONG, HCT bull.
+//     hws_bear    = KRATOS, bearish RVOL1x, MOAB, bearish DD/DDD/DDDD,
+//                   bearish B2B, bearish FAUNA, bearish displacement, hybrid SHORT,
+//                   HCT bear.
+//     hws_neutral = WTC, Hiroshima, Nagasaki, Pentagon HV specials.
+//   Verdict:
+//     • pure bull (hws_bull and not hws_bear)      → BULL
+//     • pure bear (hws_bear and not hws_bull)      → BEAR
+//     • conflict  (both bull AND bear this candle) → candle-body tiebreak
+//     • neutral   (only hws_neutral, no bull/bear) → candle-body tiebreak
+//   Body tiebreak: close >= open → BULL, else BEAR. Guarantees one verdict —
+//   never both, never none. The alert carries DIR + DIRRULE + CONFLICT so the
+//   tiebreak path is auditable. Non-repainting; 1:1 plot/alert parity per side.
+bool show_vobhws = input.bool(true, "VOB × HW-Single Coincidence (TC/zone + any HWS same candle — Bull/Bear)",
      group = "Detection — v11 New",
-     tooltip = "Fires when any VOB T3 or any VOB zone-formation marker (either direction) coincides on the same candle with ANY Heavy Weapons Single v3 detection (high volume, displacement, RVOL, sequence, B2B, FAUNA, HCT, Pentagon, HV). HW Single v3 itself is untouched — its detection math is embedded read-only.")
+     tooltip = "Fires when any VOB T3 or any VOB zone-formation marker coincides on the same candle with ANY Heavy Weapons Single v3 detection (high volume, displacement, RVOL, sequence, B2B, FAUNA, HCT, Pentagon, HV). Split into BULL (green V×HW↑ below bar) and BEAR (red V×HW↓ above bar): a pure-bull HWS candle → BULL, a pure-bear HWS candle → BEAR; when both sides fire on one candle, or only neutral HWS (WTC/Hiroshima/Nagasaki/Pentagon) fire, the candle body breaks the tie (close>=open → BULL, else BEAR). HW Single v3 itself is untouched — its detection math is embedded read-only.")
 bool vob_tc_any = plot_t3_buy_a or plot_t3_sell_a or plot_t3_buy_b or plot_t3_sell_b or plot_t3_buy_c or plot_t3_sell_c or plot_t3_buy_d or plot_t3_sell_d or plot_t3_buy_e or plot_t3_sell_e or plot_t3_buy_f or plot_t3_sell_f
 bool vob_left_side = vob_tc_any or any_zone
-var int last_vobhws = na
-bool plot_vobhws = show_vobhws and vob_left_side and hws_any and barstate.isconfirmed and f_cd_ok(last_vobhws, cooldown_bars)
-if plot_vobhws
-    last_vobhws := bar_index
-plotshape(plot_vobhws, "VOB × HW-Single Coincidence", shape.labelup, location.top, color.new(#FF00FF, 0), size = size.normal, text = "V×HW", textcolor = color.white)
-alertcondition(plot_vobhws, "VOB × HW-Single Coincidence", "VOB v11 — VOB T3/zone coincides with any HW Single v3 detection on the same candle")
-if plot_vobhws
+// Direction resolver — collapses the coincidence to exactly one of bull/bear.
+bool vobhws_bias_bull = hws_bull and not hws_bear
+bool vobhws_bias_bear = hws_bear and not hws_bull
+bool vobhws_dir_bull  = vobhws_bias_bull or (not vobhws_bias_bear and close >= open)
+bool vobhws_raw = show_vobhws and vob_left_side and hws_any and barstate.isconfirmed
+var int last_vobhws_b = na
+var int last_vobhws_s = na
+bool plot_vobhws_bull = vobhws_raw and vobhws_dir_bull     and f_cd_ok(last_vobhws_b, cooldown_bars)
+bool plot_vobhws_bear = vobhws_raw and not vobhws_dir_bull and f_cd_ok(last_vobhws_s, cooldown_bars)
+if plot_vobhws_bull
+    last_vobhws_b := bar_index
+if plot_vobhws_bear
+    last_vobhws_s := bar_index
+plotshape(plot_vobhws_bull, "VOB × HW-Single Coincidence Bull", shape.labelup,   location.belowbar, color.new(color.lime, 0), size = size.normal, text = "V×HW↑", textcolor = color.white)
+plotshape(plot_vobhws_bear, "VOB × HW-Single Coincidence Bear", shape.labeldown, location.abovebar, color.new(color.red,  0), size = size.normal, text = "V×HW↓", textcolor = color.white)
+alertcondition(plot_vobhws_bull, "VOB × HW-Single Coincidence Bull", "VOB v11 — BULLISH VOB T3/zone coincides with an HW Single v3 detection on the same candle")
+alertcondition(plot_vobhws_bear, "VOB × HW-Single Coincidence Bear", "VOB v11 — BEARISH VOB T3/zone coincides with an HW Single v3 detection on the same candle")
+if plot_vobhws_bull or plot_vobhws_bear
     string vh_src = (vob_tc_any ? "T3," : "") + (any_zone ? "ZONE," : "")
     string vh_hws = (hws_bull ? "HWS_BULL," : "") + (hws_bear ? "HWS_BEAR," : "") + (hws_neutral ? "HWS_NEU," : "")
-    alert("VOB_X_HWS|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|VOBSRC:" + vh_src + "|HWS:" + vh_hws + "|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|VOL:" + str.tostring(math.round(volume)) + "|VOLRANK:" + str.tostring(math.round(vol_rank)) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|SESS:" + str.tostring(sess_bar_count) + "|BULLZONES:" + str.tostring(cnt_bull_all) + "|BEARZONES:" + str.tostring(cnt_bear_all) + "|BULLSTACK:" + str.tostring(stk_bull) + "|BEARSTACK:" + str.tostring(stk_bear) + "|BULLGAP:" + str.tostring(math.round(bull_gap * 100) / 100) + "|BEARGAP:" + str.tostring(math.round(bear_gap * 100) / 100), alert.freq_once_per_bar_close)
+    string vh_dir = plot_vobhws_bull ? "BULL" : "BEAR"
+    bool   vh_conflict = hws_bull and hws_bear
+    string vh_rule = vobhws_bias_bull ? "PURE_BULL" : vobhws_bias_bear ? "PURE_BEAR" : vh_conflict ? "CONFLICT_BODY_TIEBREAK" : "NEUTRAL_BODY_TIEBREAK"
+    alert("VOB_X_HWS|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|DIR:" + vh_dir + "|DIRRULE:" + vh_rule + "|CONFLICT:" + (vh_conflict ? "1" : "0") + "|VOBSRC:" + vh_src + "|HWS:" + vh_hws + "|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|VOL:" + str.tostring(math.round(volume)) + "|VOLRANK:" + str.tostring(math.round(vol_rank)) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|SESS:" + str.tostring(sess_bar_count) + "|BULLZONES:" + str.tostring(cnt_bull_all) + "|BEARZONES:" + str.tostring(cnt_bear_all) + "|BULLSTACK:" + str.tostring(stk_bull) + "|BEARSTACK:" + str.tostring(stk_bear) + "|BULLGAP:" + str.tostring(math.round(bull_gap * 100) / 100) + "|BEARGAP:" + str.tostring(math.round(bear_gap * 100) / 100), alert.freq_once_per_bar_close)
