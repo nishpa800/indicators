@@ -4,6 +4,35 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## SQUARIFY 64 — 2026-07-01 — docs-only: displacement self-documentation
+**File:** `versions/SQUARIFY_v1.pine` (the "SQUARIFY 64" / `SQ64` build).
+
+**Zero logic change — tooltips + group labels only. Signal behavior and alerts are byte-identical.**
+
+Purpose: make it possible to tell, from Settings alone, which detection plot maps to
+which displacement engine (previously undiscoverable — no info buttons, opaque group names).
+
+1. **Every checkbox (`en_1..en_64`) tooltip** now ends with a `⟶ DISP:` line stating
+   `REQUIRED` / `OPTIONAL` / `NONE` and the exact engine that drives it
+   (D1 / D2 / D3 / HVD / TNT). Tally: 28 REQUIRED, 16 OPTIONAL, 18 NONE (+2 reserved).
+2. **The six displacement group headers were renamed** to embed their engine code and,
+   for `Displacement 2+` (D2) and `Displacement 3+` (D3), a **DORMANT** flag — neither
+   has a dedicated plot in the 64 build (D2 only feeds #44 CO's gate; D3 only nudges
+   #10 ΩA). Each group's first field carries an "info" tooltip listing the plots it drives.
+3. **The hidden 7th displacement is now exposed.** `TNT Engine` is relabeled
+   `= Displacement #7 (hidden)` and its `TNT Std Dev Mult` tooltip lists the full
+   Napalm/Charge family it powers (#23, 26, 38, 39, 41–43, 49–51, 54, 57, 59, 60, 63).
+4. **Documented two coupling gotchas** in the `Displacement (D1)` tooltip: (a) #3 HW and
+   the `Disp (9 strength)` checkbox borrow only D1's Std Dev Length + Range Type at a
+   fixed 5×/9× with NO FVG (D1's Min/Max Mult + Require FVG do not affect them);
+   (b) a bearish D1 reading BLOCKS #10 ΩA.
+
+**Note for TradingView:** pasting the update over an existing chart instance may reset the
+renamed displacement groups' inputs to defaults (D1 Range=Open to Close, Len=100, Min=3,
+Max=100, FVG on; HV+D mults 5/2.5/1.5; TNT Len=100, Mult=5). Re-enter if you had tuned them.
+
+---
+
 ## v3 — 2026-06-04
 **File:** `versions/SQUARIFY_v3_2026-06-04.pine` (built from v2; all 46 signals preserved).
 
