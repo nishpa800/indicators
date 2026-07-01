@@ -1,5 +1,16 @@
 # Heavy Weapons ULTRA — CHANGELOG
 
+## Naming ontology + 1:1 parity + master toggles + info buttons (both builds) — adversarially verified
+- **1:1 parity**: alert rewritten so each fired detection emits EXACTLY one record whose `det=` name is
+  the same string literal as the plot title (and the DB name). 40 visual plots ↔ 40 alert records.
+  Schema `det=<Name>|dir=<bull|bear>|off=<0|-1>`. No name drift across plot / alert / database.
+- **Master toggle on every detection plot**: added `show_HVDstd`, `show_HVDPBJstd`, `show_NagStd`,
+  `show_PPD`; each gates its plot AND its alert record identically (parity preserved).
+- **Info buttons**: human-readable required-gate `tooltip=` on every detection toggle.
+- **PPD** 52-week band made a clean structural mirror of PUP.
+- **Adversarial audit**: both builds pass with ZERO DEFECTS (compile, parity, naming, offsets,
+  non-repainting, rolling windows, tick-safety on the tick build).
+
 ## Bull/Bear split — NO mixed, NO neutral detection plots (both builds)
 - Split the 5 direction-mixed composite plots into separate bull/bear markers:
   `PBJ+Any`, `B2B PBJ+Any`, `HVD+PBJ+Any`, `HV+D+Any`, `Nag+Strong` → each now Bull (green, below)
