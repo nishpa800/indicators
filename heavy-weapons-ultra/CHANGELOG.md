@@ -1,5 +1,16 @@
 # Heavy Weapons ULTRA — CHANGELOG
 
+## Bull/Bear split — NO mixed, NO neutral detection plots (both builds)
+- Split the 5 direction-mixed composite plots into separate bull/bear markers:
+  `PBJ+Any`, `B2B PBJ+Any`, `HVD+PBJ+Any`, `HV+D+Any`, `Nag+Strong` → each now Bull (green, below)
+  and Bear (red, above). Fixes the green-arrow-on-bear bug on `HV+D+Any`.
+- Formerly-neutral plots (`Nagasaki`, `HV 75/150/250/500/1000`) are no longer neutral: they inherit
+  direction from the **directional anchors on the same candle** (`barDirBull`), tiebreak by candle color.
+- Added **directional anchors**: directional RVOL (SAAB/Bull1x/GrandSlam vs Kratos/Bear1x/MOAB),
+  Long/Short, PBJ bull/bear, displacement bull/bear, FAUNA bull/bear, PUP, PPD, CS.
+- Added **PPD (Pocket Pivot Down)** — bearish structural mirror of PUP (new bear anchor + plot + DB atom U2).
+- 40 plots per build (≤ 64). Alert DB unchanged in structure (atoms already carry explicit `dir`).
+
 ## Variants tracked (time vs tick) — kept separate, not merged
 - **Added the TICK build to the repo:** `tick_friendly/HEAVY_WEAPONS_ULTRA_tickfriendly_b2b1.pine`
   (`shorttitle="HW ULTRA b2b1"`), verbatim — no logic changes. Previously it lived nowhere

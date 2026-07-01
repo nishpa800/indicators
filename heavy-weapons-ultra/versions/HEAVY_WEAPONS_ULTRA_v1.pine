@@ -943,6 +943,28 @@ bool pup_volBull = volume > pup_hiRedVol
 
 bool sigPUP = conf and pup_priceUp and pup_volBull and pup_bullPass
 
+// =============================================================================
+// PPD — POCKET PIVOT DOWN (bearish counterpart of PUP; clean structural mirror)
+// =============================================================================
+float pup_greenVol   = close > open ? volume : 0.0
+float ppd_hiGreenVol = ta.highest(pup_greenVol[1], pup_ppLookback)
+bool  ppd_priceDn    = ((open - close) / open) * 100 > pup_barSize
+bool  ppd_volBear    = volume > ppd_hiGreenVol
+bool  ppd_bearPass   = close < pup_ema50 and close <= pup_ema150 and close <= pup_ema200 and pup_ema50 < pup_ema150 and pup_ema50 < pup_ema200 and pup_ema150 <= pup_ema200 and pup_ema200 < pup_ema200_1m and close < (pup_w52Hi * 0.75) and close <= (pup_w52Lo * 1.25)
+bool  sigPPD = conf and ppd_priceDn and ppd_volBear and ppd_bearPass
+
+// =============================================================================
+// DIRECTIONAL ANCHORS — resolve any directionless signal to bull/bear (NO neutral)
+// A directionless event (HV tier, WTC, Hiroshima, Pentagon, Nagasaki) never plots as
+// "neutral"; it inherits the direction of the DIRECTIONAL anchors on the same candle.
+// =============================================================================
+bool fn_anyBull = fn_MB_bull or fn_RE_bull or fn_TA_bull or fn_GG_bull or fn_TR_bull or fn_ES_bull or fn_GDR_bull
+bool fn_anyBear = fn_MB_bear or fn_RE_bear or fn_TA_bear or fn_GG_bear or fn_TR_bear or fn_ES_bear or fn_GDR_bear
+bool anchorBull = sigSAAB or sigBullRVOL1x or sigGrandSlam or sigAddLong1 or sigAddLong2 or sigAddLong3 or sigAddLong4 or sigAddLong5 or sigBullPBJ or sigDispBull or fn_anyBull or sigPUP or sigCS1Bull or sigCS2Bull or sigCS12Bull
+bool anchorBear = sigKratos or sigBearRVOL1x or sigMOAB or sigAddShort1 or sigAddShort2 or sigBearPBJ or sigDispBear or fn_anyBear or sigPPD
+// One resolved direction per bar; tiebreak on candle close vs open when both/neither anchor present.
+bool barDirBull = anchorBull and not anchorBear ? true : anchorBear and not anchorBull ? false : close >= open
+
 
 // =============================================================================
 // COMPOSITE SIGNAL BUILDING
@@ -1327,6 +1349,24 @@ if nagHVD
     nagHVDMsg := "★★★ NAGASAKI+STRONG: " + hvTag + "+D" + (nagHVDPBJ ? "+PBJ" : "") + " ★★★"
 
 // =============================================================================
+// DIRECTION-SPLIT FLAGS — every composite marker is bull XOR bear (no mixed / no neutral)
+// Intrinsic-direction composites (HV+D, HVD+PBJ) use their own bull/bear booleans; the
+// direction-agnostic ones (PBJ+Any, B2B PBJ+Any, Nag+Strong, Nagasaki) inherit barDirBull.
+// =============================================================================
+bool pbjAnyBullFired    = pbjAnyFired    and barDirBull
+bool pbjAnyBearFired    = pbjAnyFired    and not barDirBull
+bool b2bPbjAnyBullFired = b2bPbjAnyFired and barDirBull
+bool b2bPbjAnyBearFired = b2bPbjAnyFired and not barDirBull
+bool hvdAnyBullFired    = hvdAnyFired    and hvd_bull
+bool hvdAnyBearFired    = hvdAnyFired    and hvd_bear
+bool hvdpbjAnyBullFired = hvdpbjAnyFired and hvdpbj_bull
+bool hvdpbjAnyBearFired = hvdpbjAnyFired and hvdpbj_bear
+bool nagStrongBullFired = nagStrongFired and barDirBull
+bool nagStrongBearFired = nagStrongFired and not barDirBull
+bool nagStandBull       = nagStandFired  and barDirBull
+bool nagStandBear       = nagStandFired  and not barDirBull
+
+// =============================================================================
 // CONDITIONAL PLOTTING LOGIC
 // =============================================================================
 // HV75/150/250: only plot when PBJ on same candle (2-bar window for offset)
@@ -1367,32 +1407,38 @@ bool cond_Long2 = show_Long2 and sigAddLong2
 // =============================================================================
 // PLOTS — COMPOSITE SIGNALS
 // =============================================================================
-// PBJ + Any
-plotshape(show_PBJplusAny and pbjAnyFired, title="PBJ+Any", style=shape.diamond, location=location.belowbar, size=size.normal, color=color.new(color.yellow, 0), text="PBJ+", textcolor=color.black)
+// PBJ + Any — SPLIT bull/bear (green diamond below = bull, red diamond above = bear)
+plotshape(show_PBJplusAny and pbjAnyBullFired, title="PBJ+Any Bull", style=shape.diamond, location=location.belowbar, size=size.normal, color=color.new(color.green, 0), text="PBJ+", textcolor=color.white)
+plotshape(show_PBJplusAny and pbjAnyBearFired, title="PBJ+Any Bear", style=shape.diamond, location=location.abovebar, size=size.normal, color=color.new(color.red, 0), text="PBJ+", textcolor=color.white)
 
-// ★ B2B PBJ+Any — orange diamond, stacks below the yellow PBJ+ on the 2nd bar of a run
-plotshape(show_B2B_PBJplusAny and b2bPbjAnyFired, title="B2B PBJ+Any", style=shape.diamond, location=location.belowbar, size=size.normal, color=color.new(color.orange, 0), text="B2B\nPBJ+", textcolor=color.black)
+// ★ B2B PBJ+Any — SPLIT bull/bear
+plotshape(show_B2B_PBJplusAny and b2bPbjAnyBullFired, title="B2B PBJ+Any Bull", style=shape.diamond, location=location.belowbar, size=size.normal, color=color.new(#00C853, 0), text="B2B\nPBJ+", textcolor=color.white)
+plotshape(show_B2B_PBJplusAny and b2bPbjAnyBearFired, title="B2B PBJ+Any Bear", style=shape.diamond, location=location.abovebar, size=size.normal, color=color.new(#D50000, 0), text="B2B\nPBJ+", textcolor=color.white)
 
-// PBJ + Long
+// PBJ + Long (bull)
 plotshape(show_PBJplusLong and pbjLongFired, title="PBJ+Long", style=shape.labelup, location=location.belowbar, size=size.normal, color=color.new(#FFD700, 0), text="PBJ+L", textcolor=color.black)
 
-// PBJ + Short + HV
+// PBJ + Short + HV (bear)
 plotshape(show_PBJplusShortHV and pbjShortHVFired, title="PBJ+Short+HV", style=shape.labeldown, location=location.abovebar, size=size.normal, color=color.new(#FF4500, 0), text="PBJ+S+HV", textcolor=color.white)
 
-// Long + 500/1K (offset=-1 to land on the HV candle)
+// Long + 500/1K (bull, offset=-1 to land on the HV candle)
 plotshape(show_LongPlusHV and longHVFired, title="Long+HV", style=shape.labelup, location=location.belowbar, size=size.normal, color=color.new(color.blue, 0), text="L+HV", textcolor=color.yellow, offset=-1)
 
-// HVD+PBJ + Any (offset=-1)
-plotshape(show_HVDplusPBJany and hvdpbjAnyFired, title="HVD+PBJ+Any", style=shape.diamond, location=location.belowbar, size=size.normal, color=color.new(#AA00FF, 0), text="HVD\nPBJ+", textcolor=color.white, offset=-1)
+// HVD+PBJ + Any — SPLIT bull/bear (offset=-1)
+plotshape(show_HVDplusPBJany and hvdpbjAnyBullFired, title="HVD+PBJ+Any Bull", style=shape.diamond, location=location.belowbar, size=size.normal, color=color.new(#00C853, 0), text="HVD\nPBJ+", textcolor=color.white, offset=-1)
+plotshape(show_HVDplusPBJany and hvdpbjAnyBearFired, title="HVD+PBJ+Any Bear", style=shape.diamond, location=location.abovebar, size=size.normal, color=color.new(#D50000, 0), text="HVD\nPBJ+", textcolor=color.white, offset=-1)
 
-// HV+D + Any (offset=-1)
-plotshape(show_HVplusDany and hvdAnyFired, title="HV+D+Any", style=shape.triangleup, location=location.belowbar, size=size.small, color=color.new(#00E676, 0), text="HV+D+", textcolor=color.white, offset=-1)
+// HV+D + Any — SPLIT bull/bear (fixes green-on-bear; offset=-1)
+plotshape(show_HVplusDany and hvdAnyBullFired, title="HV+D+Any Bull", style=shape.triangleup, location=location.belowbar, size=size.small, color=color.new(#00E676, 0), text="HV+D+", textcolor=color.white, offset=-1)
+plotshape(show_HVplusDany and hvdAnyBearFired, title="HV+D+Any Bear", style=shape.triangledown, location=location.abovebar, size=size.small, color=color.new(#FF1744, 0), text="HV+D+", textcolor=color.white, offset=-1)
 
-// Nagasaki standalone (always fires)
-plotshape(nagStandFired, title="Nagasaki", style=shape.flag, location=location.top, size=size.normal, color=color.purple, text="N")
+// Nagasaki standalone — SPLIT bull/bear (no neutral; direction from anchors on the candle)
+plotshape(nagStandBull, title="Nagasaki Bull", style=shape.flag, location=location.top, size=size.normal, color=color.new(color.green, 0), text="N", textcolor=color.white)
+plotshape(nagStandBear, title="Nagasaki Bear", style=shape.flag, location=location.top, size=size.normal, color=color.new(color.red, 0), text="N", textcolor=color.white)
 
-// Nagasaki + Strong (same bar)
-plotshape(show_NagStrong and nagStrongFired, title="Nag+Strong", style=shape.labelup, location=location.belowbar, size=size.large, color=color.new(#FF00FF, 0), text="N★★★", textcolor=color.white)
+// Nagasaki + Strong — SPLIT bull/bear
+plotshape(show_NagStrong and nagStrongBullFired, title="Nag+Strong Bull", style=shape.labelup, location=location.belowbar, size=size.large, color=color.new(#00C853, 0), text="N★★★", textcolor=color.white)
+plotshape(show_NagStrong and nagStrongBearFired, title="Nag+Strong Bear", style=shape.labeldown, location=location.abovebar, size=size.large, color=color.new(#D50000, 0), text="N★★★", textcolor=color.white)
 
 // Nagasaki + HV+D (offset=-1 since HV+D describes prev bar)
 plotshape(show_NagStrong and nagHVD, title="Nag+HV+D", style=shape.labelup, location=location.belowbar, size=size.large, color=color.new(#FF00FF, 0), text="N★HVD", textcolor=color.white, offset=-1)
@@ -1417,20 +1463,38 @@ plotshape(cond_Long3, title="LONG 3", style=shape.labelup, location=location.bel
 plotshape(cond_Long4, title="LONG 4", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.orange, 10), text="LONG 4", textcolor=color.white)
 plotshape(cond_Long5, title="LONG 5", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.fuchsia, 10), text="LONG 5", textcolor=color.white)
 
-// HV tiers (conditional)
-plotshape(cond_HV1000, title="HV 1000", style=shape.circle, location=location.top, color=color.new(color.blue, 0), size=size.normal, text="1K", textcolor=color.yellow, offset=-1)
-plotshape(cond_HV500,  title="HV 500",  style=shape.circle, location=location.top, color=color.new(color.red, 0),  size=size.normal, text="500", textcolor=color.silver, offset=-1)
-plotshape(cond_HV250,  title="HV 250",  style=shape.circle, location=location.top, color=color.new(color.yellow, 0), size=size.small, text="250", textcolor=color.teal, offset=-1)
-plotshape(cond_HV150,  title="HV 150",  style=shape.triangledown, location=location.bottom, color=color.new(color.aqua, 0), size=size.tiny, text="150", textcolor=color.orange, offset=-1)
-plotshape(cond_HV75,   title="HV 75",   style=shape.triangledown, location=location.bottom, color=color.new(color.purple, 0), size=size.tiny, text="75", textcolor=color.yellow, offset=-1)
+// HV tiers (conditional) — SPLIT bull/bear (offset -1 describes the prior bar → barDirBull[1])
+bool cond_HV1000_bull = cond_HV1000 and barDirBull[1]
+bool cond_HV1000_bear = cond_HV1000 and not barDirBull[1]
+bool cond_HV500_bull  = cond_HV500  and barDirBull[1]
+bool cond_HV500_bear  = cond_HV500  and not barDirBull[1]
+bool cond_HV250_bull  = cond_HV250  and barDirBull[1]
+bool cond_HV250_bear  = cond_HV250  and not barDirBull[1]
+bool cond_HV150_bull  = cond_HV150  and barDirBull[1]
+bool cond_HV150_bear  = cond_HV150  and not barDirBull[1]
+bool cond_HV75_bull   = cond_HV75   and barDirBull[1]
+bool cond_HV75_bear   = cond_HV75   and not barDirBull[1]
+plotshape(cond_HV1000_bull, title="HV 1000 Bull", style=shape.circle, location=location.bottom, color=color.new(color.green, 0), size=size.normal, text="1K", textcolor=color.white, offset=-1)
+plotshape(cond_HV1000_bear, title="HV 1000 Bear", style=shape.circle, location=location.top,    color=color.new(color.red, 0),   size=size.normal, text="1K", textcolor=color.white, offset=-1)
+plotshape(cond_HV500_bull,  title="HV 500 Bull",  style=shape.circle, location=location.bottom, color=color.new(color.green, 0), size=size.normal, text="500", textcolor=color.white, offset=-1)
+plotshape(cond_HV500_bear,  title="HV 500 Bear",  style=shape.circle, location=location.top,    color=color.new(color.red, 0),   size=size.normal, text="500", textcolor=color.white, offset=-1)
+plotshape(cond_HV250_bull,  title="HV 250 Bull",  style=shape.circle, location=location.bottom, color=color.new(color.green, 0), size=size.small, text="250", textcolor=color.white, offset=-1)
+plotshape(cond_HV250_bear,  title="HV 250 Bear",  style=shape.circle, location=location.top,    color=color.new(color.red, 0),   size=size.small, text="250", textcolor=color.white, offset=-1)
+plotshape(cond_HV150_bull,  title="HV 150 Bull",  style=shape.triangleup,   location=location.bottom, color=color.new(color.green, 0), size=size.tiny, text="150", textcolor=color.white, offset=-1)
+plotshape(cond_HV150_bear,  title="HV 150 Bear",  style=shape.triangledown, location=location.top,    color=color.new(color.red, 0),   size=size.tiny, text="150", textcolor=color.white, offset=-1)
+plotshape(cond_HV75_bull,   title="HV 75 Bull",   style=shape.triangleup,   location=location.bottom, color=color.new(color.green, 0), size=size.tiny, text="75", textcolor=color.white, offset=-1)
+plotshape(cond_HV75_bear,   title="HV 75 Bear",   style=shape.triangledown, location=location.top,    color=color.new(color.red, 0),   size=size.tiny, text="75", textcolor=color.white, offset=-1)
 
 // CS1/CS2 (offset=-1)
 plotshape(show_CS1Bull and sigCS1Bull, title="CS1 Bull", style=shape.labelup, location=location.belowbar, color=color.green, text="CS1", textcolor=color.white, offset=-1)
 plotshape(show_CS2Bull and sigCS2Bull, title="CS2 Bull", style=shape.labelup, location=location.belowbar, color=color.aqua, text="CS2", textcolor=color.black, offset=-1)
 plotshape(show_CS12Bull and sigCS12Bull, title="CS1+CS2 Bull", style=shape.labelup, location=location.belowbar, color=color.blue, text="CS12", textcolor=color.white, size=size.normal, offset=-1)
 
-// PUP
+// PUP (bull)
 plotshape(show_PUP and sigPUP, title="PUP", style=shape.labelup, location=location.belowbar, color=color.lime, size=size.normal, text="PUP", textcolor=color.black)
+
+// PPD — Pocket Pivot Down (bear; mirror of PUP)
+plotshape(sigPPD, title="PPD", style=shape.labeldown, location=location.abovebar, color=color.maroon, size=size.normal, text="PPD", textcolor=color.white)
 
 
 // =============================================================================
@@ -1512,6 +1576,7 @@ if conf
     q := f_q(q, sigCS12Bull, "C3", "CS1_CS2_BULL", "CS", "bull", "")
     // ── Engine U — PUP ──────────────────────────────────────────────
     q := f_q(q, sigPUP, "U1", "PUP", "PUP", "bull", "")
+    q := f_q(q, sigPPD, "U2", "PPD", "PUP", "bear", "")
     // ── Engine F — FAUNA (newly surfaced; was computed but never emitted) ──
     q := f_q(q, fn_MB_bull,  "F1",  "FAUNA_MB_BULL",  "FAUNA", "bull", "")
     q := f_q(q, fn_RE_bull,  "F2",  "FAUNA_RE_BULL",  "FAUNA", "bull", "")
