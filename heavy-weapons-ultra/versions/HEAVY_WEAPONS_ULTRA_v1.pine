@@ -44,19 +44,19 @@ show_WTC        = input.bool(true, "WTC", group=grp_global, inline="rv2")
 show_Hiroshima  = input.bool(true, "Hiroshima", group=grp_global, inline="rv2")
 show_Nagasaki   = input.bool(true, "Nagasaki", group=grp_global, inline="rv3")
 
-show_Long1      = input.bool(true, "LONG 1", group=grp_global, inline="hy1")
-show_Short1     = input.bool(true, "SHORT 1", group=grp_global, inline="hy1")
-show_Long2      = input.bool(true, "LONG 2", group=grp_global, inline="hy2")
-show_Short2     = input.bool(true, "SHORT 2", group=grp_global, inline="hy2")
-show_Long3      = input.bool(true, "LONG 3", group=grp_global, inline="hy3")
-show_Long4      = input.bool(true, "LONG 4", group=grp_global, inline="hy3")
-show_Long5      = input.bool(true, "LONG 5", group=grp_global, inline="hy3")
+show_Long1      = input.bool(true, "LONG 1", group=grp_global, tooltip="Long 1 momentum. Requires: rolling relative volume (regular AND cumulative) above the Momentum-1 floor + green candle + body ratio ≥ floor. Bullish. Offset 0.")
+show_Short1     = input.bool(true, "SHORT 1", group=grp_global, tooltip="Short 1 momentum (ingredient of PBJ+Short+HV). Requires: rolling relative volume above the Momentum-1 floor + red candle + body ratio ≥ floor. Bearish.")
+show_Long2      = input.bool(true, "LONG 2", group=grp_global, tooltip="Long 2 momentum. Same as Long 1 but the Momentum-2 floors. Bullish. Offset 0.")
+show_Short2     = input.bool(true, "SHORT 2", group=grp_global, tooltip="Short 2 momentum (ingredient of PBJ+Short+HV). Momentum-2 floors + red candle. Bearish.")
+show_Long3      = input.bool(true, "LONG 3", group=grp_global, tooltip="Long 3 momentum AND the current bar is itself a 500- or 1000-bar rolling volume high. Bullish. Offset 0.")
+show_Long4      = input.bool(true, "LONG 4", group=grp_global, tooltip="Long 4 momentum AND current bar a 500/1000-bar rolling volume high. Bullish. Offset 0.")
+show_Long5      = input.bool(true, "LONG 5", group=grp_global, tooltip="Long 5 momentum AND current bar a 500/1000-bar rolling volume high. Bullish. Offset 0.")
 
-show_HV75       = input.bool(true, "HV 75", group=grp_global, inline="hv1")
-show_HV150      = input.bool(true, "HV 150", group=grp_global, inline="hv1")
-show_HV250      = input.bool(true, "HV 250", group=grp_global, inline="hv1")
-show_HV500      = input.bool(true, "HV 500", group=grp_global, inline="hv2")
-show_HV1000     = input.bool(true, "HV 1000", group=grp_global, inline="hv2")
+show_HV75       = input.bool(true, "HV 75", group=grp_global, tooltip="Highest volume in a rolling 75-bar window. No inherent direction — inherits bull/bear from the anchors on the bar it marks. Offset −1.")
+show_HV150      = input.bool(true, "HV 150", group=grp_global, tooltip="Highest volume in a rolling 150-bar window. Direction inherited from same-candle anchors. Offset −1.")
+show_HV250      = input.bool(true, "HV 250", group=grp_global, tooltip="Highest volume in a rolling 250-bar window. Direction inherited from same-candle anchors. Offset −1.")
+show_HV500      = input.bool(true, "HV 500", group=grp_global, tooltip="Highest volume in a rolling 500-bar window. Direction inherited from same-candle anchors. Offset −1.")
+show_HV1000     = input.bool(true, "HV 1000", group=grp_global, tooltip="Highest volume in a rolling 1000-bar window. Direction inherited from same-candle anchors. Offset −1.")
 
 grp_global2 = "★ SIGNAL INCLUSION — DISP / SEQ / B2B ★"
 
@@ -82,10 +82,10 @@ show_B2B_MidBull      = input.bool(true, "B2B Mid Bull", group=grp_global2, inli
 show_B2B_MidBear      = input.bool(true, "B2B Mid Bear", group=grp_global2, inline="b2b3")
 
 grp_global_new = "★ SIGNAL INCLUSION — PORTED SIGNALS ★"
-show_PUP        = input.bool(true, "PUP (Pocket Pivot Up)", group=grp_global_new, inline="pt1")
-show_CS1Bull    = input.bool(true, "CS1 Bull (FVG+StdRVOL)", group=grp_global_new, inline="pt1")
-show_CS2Bull    = input.bool(true, "CS2 Bull (FVG+Reg@Time)", group=grp_global_new, inline="pt2")
-show_CS12Bull   = input.bool(true, "CS1+CS2 Bull", group=grp_global_new, inline="pt2")
+show_PUP        = input.bool(true, "PUP (Pocket Pivot Up)", group=grp_global_new, tooltip="PUP = Pocket Pivot Up. Requires: a >3% UP bar + current volume above the highest DOWN-volume bar in a rolling 10-day window + EMA uptrend stack (50>150≥200, above the 200 from ~1 month ago) + price in the UPPER 52-week band. Bullish. Offset 0.")
+show_CS1Bull    = input.bool(true, "CS1 Bull (FVG + Std RVOL)", group=grp_global_new, tooltip="CS1 Bull. Requires: a strong-bodied bar (body ≥85%) with a bullish fair-value-gap that is high-volume or overlaps a recent bullish FVG, AND on the prior bar one of SAAB / Bull RVOL 1x / Grand Slam. Bullish. Offset −1.")
+show_CS2Bull    = input.bool(true, "CS2 Bull (FVG + Reg@Time)", group=grp_global_new, tooltip="CS2 Bull. Requires: the same strong-body + bullish-FVG condition, AND on the prior bar one of Pentagon / WTC / Hiroshima / Nagasaki. Bullish. Offset −1.")
+show_CS12Bull   = input.bool(true, "CS1 + CS2 Bull", group=grp_global_new, tooltip="CS1 + CS2 Bull. Requires: both CS1 Bull and CS2 Bull on the same bar. Bullish. Offset −1.")
 
 // =============================================================================
 // GLOBAL TOGGLES — COMPOSITES
