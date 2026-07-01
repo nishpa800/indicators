@@ -1,0 +1,1572 @@
+//@version=5
+// =============================================================================
+// Heavy Weapons ULTRA — Composite Architecture
+// =============================================================================
+indicator("Heavy Weapons ULTRA", shorttitle="HW ULTRA", overlay=true, max_labels_count=500, max_bars_back=5000)
+
+import TradingView/ta/7 as tv_ta
+
+// =============================================================================
+// TIMEFRAME DETECTION + SUB-MINUTE CONFIG
+// =============================================================================
+int chartSec = timeframe.in_seconds(timeframe.period)
+
+grp_tf = "★ TIMEFRAME GATES ★"
+subMinThreshold   = input.int(60,   "Sub-Minute Threshold (seconds)", minval=1, group=grp_tf, tooltip="Timeframes below this get HV lookback multiplier applied")
+hvMultiplier      = input.float(2.5, "HV Lookback Multiplier (sub-minute)", minval=1.0, step=0.1, group=grp_tf)
+sub2MinThreshold  = input.int(120,  "Sub-2-Min Threshold (seconds)", minval=1, group=grp_tf, tooltip="Below this, PBJ in composites requires HVD+PBJ with floors")
+sub2Min_hvFloor   = input.int(150,  "Sub-2-Min HV Rank Floor", minval=50, group=grp_tf)
+sub2Min_dispFloor = input.float(5.0,"Sub-2-Min Disp Mult Floor", minval=0.1, step=0.1, group=grp_tf)
+
+bool isSubMinute = chartSec < subMinThreshold
+bool isSub2Min   = chartSec < sub2MinThreshold
+
+int MBB = 5000
+int hvMaxCap = math.floor(MBB * 0.9)
+
+f_hvLen(int base) =>
+    isSubMinute ? math.min(math.round(base * hvMultiplier), hvMaxCap) : base
+
+// =============================================================================
+// GLOBAL PLOT/ALERT TOGGLES (INCLUSION FILTERS)
+// Checking = eligible for composite "plus any" logic
+// Does NOT allow standalone firing
+// =============================================================================
+grp_global = "★ SIGNAL INCLUSION FILTERS ★"
+
+show_SAAB       = input.bool(true, "SAAB", group=grp_global, inline="rv1")
+show_Kratos     = input.bool(true, "Kratos", group=grp_global, inline="rv1")
+show_BullRVOL1x = input.bool(true, "Bull RVOL 1x", group=grp_global, inline="rv1")
+show_BearRVOL1x = input.bool(true, "Bear RVOL 1x", group=grp_global, inline="rv1")
+show_GrandSlam  = input.bool(true, "Grand Slam", group=grp_global, inline="rv2")
+show_MOAB       = input.bool(false, "MOAB", group=grp_global, inline="rv2")
+show_WTC        = input.bool(true, "WTC", group=grp_global, inline="rv2")
+show_Hiroshima  = input.bool(true, "Hiroshima", group=grp_global, inline="rv2")
+show_Nagasaki   = input.bool(true, "Nagasaki", group=grp_global, inline="rv3")
+
+show_Long1      = input.bool(true, "LONG 1", group=grp_global, tooltip="Long 1 momentum. Requires: rolling relative volume (regular AND cumulative) above the Momentum-1 floor + green candle + body ratio ≥ floor. Bullish. Offset 0.")
+show_Short1     = input.bool(true, "SHORT 1", group=grp_global, tooltip="Short 1 momentum (ingredient of PBJ+Short+HV). Requires: rolling relative volume above the Momentum-1 floor + red candle + body ratio ≥ floor. Bearish.")
+show_Long2      = input.bool(true, "LONG 2", group=grp_global, tooltip="Long 2 momentum. Same as Long 1 but the Momentum-2 floors. Bullish. Offset 0.")
+show_Short2     = input.bool(true, "SHORT 2", group=grp_global, tooltip="Short 2 momentum (ingredient of PBJ+Short+HV). Momentum-2 floors + red candle. Bearish.")
+show_Long3      = input.bool(true, "LONG 3", group=grp_global, tooltip="Long 3 momentum AND the current bar is itself a 500- or 1000-bar rolling volume high. Bullish. Offset 0.")
+show_Long4      = input.bool(true, "LONG 4", group=grp_global, tooltip="Long 4 momentum AND current bar a 500/1000-bar rolling volume high. Bullish. Offset 0.")
+show_Long5      = input.bool(true, "LONG 5", group=grp_global, tooltip="Long 5 momentum AND current bar a 500/1000-bar rolling volume high. Bullish. Offset 0.")
+
+show_HV75       = input.bool(true, "HV 75", group=grp_global, tooltip="Highest volume in a rolling 75-bar window. No inherent direction — inherits bull/bear from the anchors on the bar it marks. Offset −1.")
+show_HV150      = input.bool(true, "HV 150", group=grp_global, tooltip="Highest volume in a rolling 150-bar window. Direction inherited from same-candle anchors. Offset −1.")
+show_HV250      = input.bool(true, "HV 250", group=grp_global, tooltip="Highest volume in a rolling 250-bar window. Direction inherited from same-candle anchors. Offset −1.")
+show_HV500      = input.bool(true, "HV 500", group=grp_global, tooltip="Highest volume in a rolling 500-bar window. Direction inherited from same-candle anchors. Offset −1.")
+show_HV1000     = input.bool(true, "HV 1000", group=grp_global, tooltip="Highest volume in a rolling 1000-bar window. Direction inherited from same-candle anchors. Offset −1.")
+
+grp_global2 = "★ SIGNAL INCLUSION — DISP / SEQ / B2B ★"
+
+show_DispBull        = input.bool(true, "Disp Bull", group=grp_global2, inline="di1")
+show_DispBear        = input.bool(true, "Disp Bear", group=grp_global2, inline="di1")
+show_CDispBull2      = input.bool(true, "Consec Disp Bull 2+", group=grp_global2, inline="di2")
+show_CDispBear2      = input.bool(true, "Consec Disp Bear 2+", group=grp_global2, inline="di2")
+show_CDispBull3      = input.bool(true, "Consec Disp Bull 3+", group=grp_global2, inline="di3")
+show_CDispBear3      = input.bool(true, "Consec Disp Bear 3+", group=grp_global2, inline="di3")
+
+show_UU   = input.bool(true, "UU", group=grp_global2, inline="sq1")
+show_UUU  = input.bool(true, "UUU", group=grp_global2, inline="sq1")
+show_UUUU = input.bool(true, "UUUU", group=grp_global2, inline="sq1")
+show_DD   = input.bool(true, "DD", group=grp_global2, inline="sq2")
+show_DDD  = input.bool(true, "DDD", group=grp_global2, inline="sq2")
+show_DDDD = input.bool(true, "DDDD", group=grp_global2, inline="sq2")
+
+show_B2B_2xSAAB       = input.bool(true, "2x SAAB", group=grp_global2, inline="b2b1")
+show_B2B_2xKratos     = input.bool(true, "2x Kratos", group=grp_global2, inline="b2b1")
+show_B2B_2xBull1x     = input.bool(true, "2x Bull 1x", group=grp_global2, inline="b2b2")
+show_B2B_2xBear1x     = input.bool(true, "2x Bear 1x", group=grp_global2, inline="b2b2")
+show_B2B_MidBull      = input.bool(true, "B2B Mid Bull", group=grp_global2, inline="b2b3")
+show_B2B_MidBear      = input.bool(true, "B2B Mid Bear", group=grp_global2, inline="b2b3")
+
+grp_global_new = "★ SIGNAL INCLUSION — PORTED SIGNALS ★"
+show_PUP        = input.bool(true, "PUP (Pocket Pivot Up)", group=grp_global_new, tooltip="PUP = Pocket Pivot Up. Requires: a >3% UP bar + current volume above the highest DOWN-volume bar in a rolling 10-day window + EMA uptrend stack (50>150≥200, above the 200 from ~1 month ago) + price in the UPPER 52-week band. Bullish. Offset 0.")
+show_CS1Bull    = input.bool(true, "CS1 Bull (FVG + Std RVOL)", group=grp_global_new, tooltip="CS1 Bull. Requires: a strong-bodied bar (body ≥85%) with a bullish fair-value-gap that is high-volume or overlaps a recent bullish FVG, AND on the prior bar one of SAAB / Bull RVOL 1x / Grand Slam. Bullish. Offset −1.")
+show_CS2Bull    = input.bool(true, "CS2 Bull (FVG + Reg@Time)", group=grp_global_new, tooltip="CS2 Bull. Requires: the same strong-body + bullish-FVG condition, AND on the prior bar one of Pentagon / WTC / Hiroshima / Nagasaki. Bullish. Offset −1.")
+show_CS12Bull   = input.bool(true, "CS1 + CS2 Bull", group=grp_global_new, tooltip="CS1 + CS2 Bull. Requires: both CS1 Bull and CS2 Bull on the same bar. Bullish. Offset −1.")
+
+// =============================================================================
+// GLOBAL TOGGLES — COMPOSITES
+// =============================================================================
+grp_comp = "★ GLOBAL TOGGLES — COMPOSITES ★"
+show_PBJplusAny      = input.bool(true, "PBJ + Any (Bull / Bear)", group=grp_comp, tooltip="Requires: a PBJ pocket-pivot cross within a rolling window of ANY enabled signal. Split Bull/Bear by the directional anchors on the same candle. Offset 0.")
+show_B2B_PBJplusAny  = input.bool(true, "B2B PBJ + Any (Bull / Bear)", group=grp_comp, tooltip="Requires: PBJ + Any firing on TWO consecutive confirmed bars. Split Bull/Bear by same-candle anchors. Offset 0.")
+show_PBJplusLong     = input.bool(true, "PBJ + Long", group=grp_comp, tooltip="Requires: a BULLISH PBJ pocket-pivot cross AND at least one Long (1–5) momentum on the same bar. Bullish. Offset 0.")
+show_PBJplusShortHV  = input.bool(true, "PBJ + Short + HV", group=grp_comp, tooltip="Requires: a BEARISH PBJ cross AND a Short (1 or 2) AND the prior bar is a 500- or 1000-bar rolling volume high. Bearish. Offset 0.")
+show_LongPlusHV      = input.bool(true, "Long + HV", group=grp_comp, tooltip="Requires: the prior bar is a 500- or 1000-bar rolling volume high AND a Long (1–5) fired on that prior bar. Bullish. Offset −1.")
+show_HVDplusPBJany   = input.bool(true, "HVD + PBJ + Any (Bull / Bear)", group=grp_comp, tooltip="Requires: HVD+PBJ (Bull or Bear) AND any co-signal on the prior bar. Offset −1.")
+show_HVplusDany      = input.bool(true, "HV+D + Any (Bull / Bear)", group=grp_comp, tooltip="Requires: HV+D (Bull or Bear) AND any co-signal on the prior bar. Offset −1.")
+show_NagStrong       = input.bool(true, "Nagasaki + Strong (Bull / Bear)", group=grp_comp, tooltip="Requires: all-time-high volume AND a strong signal (Long 1–5 / Grand Slam / WTC / Hiroshima / MOAB / HV1000). Split Bull/Bear by same-candle anchors. Offset 0.")
+
+// ★ MASTER TOGGLES — standalone detection plots (with human-readable gate info buttons) ★
+grp_mt = "★ DETECTION PLOTS — STANDALONE MASTER TOGGLES ★"
+show_HVDstd     = input.bool(true, "HV+D (Bull / Bear)", group=grp_mt, tooltip="HV+D standalone. Requires: a high-volume bar (rolling 50–1000-bar window OR all-time volume record) that is DISPLACED (unusually large range) AND followed by a bullish gap-up (Bull) or bearish gap-down (Bear). Offset −1 (marks the prior/HV bar).")
+show_HVDPBJstd  = input.bool(true, "HVD+PBJ (Bull / Bear)", group=grp_mt, tooltip="HVD+PBJ standalone. Requires: HV+D (Bull or Bear) AND a PBJ pocket-pivot cross of the same direction on the prior bar. Offset −1.")
+show_NagStd     = input.bool(true, "Nagasaki (Bull / Bear)", group=grp_mt, tooltip="Nagasaki standalone. Requires: all-time-high volume on the bar. It has no direction of its own, so direction is INHERITED from the directional anchors on the same candle (PBJ / displacement / FAUNA / PUP / PPD / directional RVOL), tiebreak by candle close vs open. Offset 0.")
+show_PPD        = input.bool(true, "PPD (Pocket Pivot Down)", group=grp_mt, tooltip="PPD = Pocket Pivot Down, the bearish mirror of PUP. Requires: a >3% DOWN bar + current volume above the highest UP-volume bar in a rolling 10-day window + EMA downtrend stack (50<150≤200, below the 200 from ~1 month ago) + price in the LOWER 52-week band. Offset 0.")
+
+
+// =============================================================================
+// RVOL 0.56 SETTINGS
+// =============================================================================
+groupBullBear = "RVOL - Bull/Bear Calculation"
+bb_avgLength  = input.int(30, "Lookback Length", minval=1, group=groupBullBear)
+bb_smaLength  = input.int(20, "SMA Length", minval=1, group=groupBullBear)
+
+groupReg = "RVOL - Reg @ Time Calculation"
+reg_anchorTimeframe  = input.timeframe("", "Anchor Timeframe (blank = chart)", group=groupReg)
+reg_length           = input.int(30, "Length", minval=1, group=groupReg)
+reg_calculationMode  = input.string("Cumulative", "Calculation Mode", options=["Cumulative", "Regular"], group=groupReg)
+reg_adjustRealtime   = input.bool(true, "Adjust Unconfirmed", group=groupReg)
+
+groupHybrid = "RVOL - Hybrid Regime Settings"
+
+// Long/Short 1-5 floors are AUTO-DERIVED from the Hiroshima threshold (matches HW Single v3).
+// These % inputs scale ALL 5 auto-derived floors uniformly. 100 = use auto-derived as-is.
+reg_pct  = input.int(100, "Reg Floor %",  minval=0, group=groupHybrid, tooltip="Percentage multiplier applied uniformly to ALL 5 auto-derived Reg floors (M1-M5), each = th_hiroshima ladder. 100 = use auto-derived as-is. 90 = 90% of auto-derived. No max cap.")
+cum_pct  = input.int(100, "Cum Floor %",  minval=0, group=groupHybrid, tooltip="Percentage multiplier applied uniformly to ALL 5 auto-derived Cum floors. 100 = default.")
+body_pct = input.int(100, "Body Ratio %", minval=0, group=groupHybrid, tooltip="Percentage multiplier applied uniformly to ALL 5 auto-derived Body ratios. 100 = default.")
+
+groupNaga = "RVOL - Nagasaki"
+enableNagasaki = input.bool(true, "Enable Nagasaki", group=groupNaga)
+
+// =============================================================================
+// RVOL SEQUENCE SETTINGS
+// =============================================================================
+grp_bar_UU   = "UU / DD — Single Bar Lower Threshold"
+grp_bar_UUU  = "UUU / DDD — Single Bar Lower Threshold"
+grp_bar_UUUU = "UUUU / DDDD — Single Bar Lower Threshold"
+
+th_low_UU_DD     = input.float(1.0, step=0.1, title="Lower Threshold (UU / DD)",     group=grp_bar_UU)
+th_low_UUU_DDD   = input.float(1.0, step=0.1, title="Lower Threshold (UUU / DDD)",   group=grp_bar_UUU)
+th_low_UUUU_DDDD = input.float(1.0, step=0.1, title="Lower Threshold (UUUU / DDDD)", group=grp_bar_UUUU)
+
+grp_seq_UU   = "UU / DD — Sequence Sum Threshold"
+grp_seq_UUU  = "UUU / DDD — Sequence Sum Threshold"
+grp_seq_UUUU = "UUUU / DDDD — Sequence Sum Threshold"
+
+seqTh_UU_DD     = input.float(0.1, step=0.1, title="Sequence Sum Threshold (UU / DD)",     group=grp_seq_UU)
+seqTh_UUU_DDD   = input.float(0.1, step=0.1, title="Sequence Sum Threshold (UUU / DDD)",   group=grp_seq_UUU)
+seqTh_UUUU_DDDD = input.float(0.1, step=0.1, title="Sequence Sum Threshold (UUUU / DDDD)", group=grp_seq_UUUU)
+
+seq_th_high = input.float(50.0, "Max RVOL Price (High Threshold)", minval=0.5, step=0.5, group=grp_bar_UU)
+
+// =============================================================================
+// DISPLACEMENT SETTINGS (EXISTING SINGLE ENGINE)
+// =============================================================================
+grp_disp = "Displacement Settings"
+i_disp_type = input.string("Open to Close", "Displacement Range Type", options=['Open to Close', 'High to Low'], group=grp_disp)
+i_std_len   = input.int(100, minval=1, title="Std Dev Length", group=grp_disp)
+i_std_min   = input.float(3.0, minval=0, step=0.5, title="Std Dev Multiplier (Min)", group=grp_disp)
+i_std_max   = input.float(7.0, minval=0, step=0.5, title="Std Dev Multiplier (Max)", group=grp_disp)
+
+// =============================================================================
+// PBJ ENGINE SETTINGS
+// =============================================================================
+grp_pbj_eng = "PBJ — Zoo Engine"
+zoo_ma_type   = input.string("VWMA", "Base MA Type", options=["VWMA","EMA","SMA","WMA","HMA"], group=grp_pbj_eng)
+zoo_ma_len    = input.int(5, "Base MA Length", minval=1, group=grp_pbj_eng)
+zoo_price_src = input.source(close, "Price Source", group=grp_pbj_eng)
+
+grp_pbj_filter = "PBJ — PB&J Filter"
+zoo_pbj_ma_period   = input.int(20,   "MA Period",          minval=1,          group=grp_pbj_filter)
+zoo_pbj_atr_period  = input.int(14,   "ATR Period",         minval=1,          group=grp_pbj_filter)
+zoo_pbj_hh_ll       = input.int(25,   "HH/LL Lookback",    minval=1,          group=grp_pbj_filter)
+zoo_pbj_atr_mult    = input.float(3.0,"ATR Multiplier",     step=0.1,         group=grp_pbj_filter)
+zoo_pbj_vol_period  = input.int(20,   "Volume MA Period",   minval=1,          group=grp_pbj_filter)
+zoo_pbj_vol_mult    = input.float(0.1,"Volume Multiplier",  step=0.1,         group=grp_pbj_filter)
+
+grp_pbj_st = "PBJ — Supertrend"
+zoo_use_st    = input.bool(true,  "Apply ATR Supertrend", group=grp_pbj_st)
+zoo_st_period = input.int(10,     "ATR Period",           group=grp_pbj_st)
+zoo_st_mult   = input.float(2.0,  "Multiplier",           group=grp_pbj_st)
+
+// =============================================================================
+// HV+D ENGINE — 3 DISPLACEMENT TIERS
+// =============================================================================
+grp_hvd1 = "── HV+D DISPLACEMENT: BASE ──"
+d1_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd1)
+d1_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd1)
+d1_mult = input.float(5.0, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd1)
+
+grp_hvd2 = "── HV+D DISPLACEMENT: HTF1 ──"
+d2_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd2)
+d2_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd2)
+d2_mult = input.float(2.5, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd2)
+
+grp_hvd3 = "── HV+D DISPLACEMENT: HTF2 ──"
+d3_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd3)
+d3_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd3)
+d3_mult = input.float(1.5, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd3)
+
+// =============================================================================
+// HV+D ENGINE — HV TIER INPUTS
+// =============================================================================
+tfSec_hvd(string t) =>
+    switch t
+        "1 Min"   => 60
+        "2 Min"   => 120
+        "3 Min"   => 180
+        "4 Min"   => 240
+        "5 Min"   => 300
+        "10 Min"  => 600
+        "15 Min"  => 900
+        "30 Min"  => 1800
+        "1 Hour"  => 3600
+        "2 Hour"  => 7200
+        "3 Hour"  => 10800
+        "4 Hour"  => 14400
+        "1 Day"   => 86400
+        "2 Day"   => 172800
+        "3 Day"   => 259200
+        "1 Week"  => 604800
+        "1 Month" => 2592000
+        "3 Month" => 7776000
+        => 0
+
+string grpHVBase = "── HV+D BASE TIERS (50–1000) ──"
+bool ub50   = input.bool(true,  "50-Bar",   group=grpHVBase, inline="hb1")
+bool ub75   = input.bool(true,  "75-Bar",   group=grpHVBase, inline="hb1")
+bool ub100  = input.bool(true,  "100-Bar",  group=grpHVBase, inline="hb1")
+bool ub150  = input.bool(true,  "150-Bar",  group=grpHVBase, inline="hb2")
+bool ub200  = input.bool(true,  "200-Bar",  group=grpHVBase, inline="hb2")
+bool ub250  = input.bool(true,  "250-Bar",  group=grpHVBase, inline="hb2")
+bool ub300  = input.bool(true,  "300-Bar",  group=grpHVBase, inline="hb3")
+bool ub350  = input.bool(true,  "350-Bar",  group=grpHVBase, inline="hb3")
+bool ub400  = input.bool(true,  "400-Bar",  group=grpHVBase, inline="hb3")
+bool ub450  = input.bool(true,  "450-Bar",  group=grpHVBase, inline="hb4")
+bool ub500  = input.bool(true,  "500-Bar",  group=grpHVBase, inline="hb4")
+bool ub550  = input.bool(true,  "550-Bar",  group=grpHVBase, inline="hb4")
+bool ub600  = input.bool(true,  "600-Bar",  group=grpHVBase, inline="hb5")
+bool ub650  = input.bool(true,  "650-Bar",  group=grpHVBase, inline="hb5")
+bool ub700  = input.bool(true,  "700-Bar",  group=grpHVBase, inline="hb5")
+bool ub750  = input.bool(true,  "750-Bar",  group=grpHVBase, inline="hb6")
+bool ub1000_hvd = input.bool(true,  "1000-Bar", group=grpHVBase, inline="hb6")
+bool useHEV = input.bool(true,  "All-Time High Volume (HEV)", group=grpHVBase)
+
+string grpHTF1 = "── HV+D HTF PROFILE 1 ──"
+bool   h1On   = input.bool(false, "Enable HTF Profile 1", group=grpHTF1)
+string h1From = input.string("15 Min", "From Timeframe", group=grpHTF1, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
+string h1To   = input.string("2 Hour", "To Timeframe",   group=grpHTF1, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
+bool uh1_5  = input.bool(true, "5-Bar",  group=grpHTF1, inline="h1a")
+bool uh1_10 = input.bool(true, "10-Bar", group=grpHTF1, inline="h1a")
+bool uh1_20 = input.bool(true, "20-Bar", group=grpHTF1, inline="h1a")
+bool uh1_25 = input.bool(true, "25-Bar", group=grpHTF1, inline="h1b")
+bool uh1_30 = input.bool(true, "30-Bar", group=grpHTF1, inline="h1b")
+bool uh1_40 = input.bool(true, "40-Bar", group=grpHTF1, inline="h1b")
+bool uh1_50 = input.bool(true, "50-Bar", group=grpHTF1, inline="h1c")
+bool uh1_60 = input.bool(true, "60-Bar", group=grpHTF1, inline="h1c")
+bool uh1_70 = input.bool(true, "70-Bar", group=grpHTF1, inline="h1c")
+bool uh1_75 = input.bool(true, "75-Bar", group=grpHTF1, inline="h1d")
+bool uh1_80 = input.bool(true, "80-Bar", group=grpHTF1, inline="h1d")
+bool uh1_90 = input.bool(true, "90-Bar", group=grpHTF1, inline="h1d")
+
+string grpHTF2 = "── HV+D HTF PROFILE 2 ──"
+bool   h2On   = input.bool(false, "Enable HTF Profile 2", group=grpHTF2)
+string h2From = input.string("3 Hour", "From Timeframe", group=grpHTF2, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
+string h2To   = input.string("3 Month","To Timeframe",   group=grpHTF2, options=["1 Min","2 Min","3 Min","4 Min","5 Min","10 Min","15 Min","30 Min","1 Hour","2 Hour","3 Hour","4 Hour","1 Day","2 Day","3 Day","1 Week","1 Month","3 Month"])
+bool uh2_5  = input.bool(true, "5-Bar",  group=grpHTF2, inline="h2a")
+bool uh2_10 = input.bool(true, "10-Bar", group=grpHTF2, inline="h2a")
+bool uh2_20 = input.bool(true, "20-Bar", group=grpHTF2, inline="h2a")
+bool uh2_25 = input.bool(true, "25-Bar", group=grpHTF2, inline="h2b")
+bool uh2_30 = input.bool(true, "30-Bar", group=grpHTF2, inline="h2b")
+bool uh2_40 = input.bool(true, "40-Bar", group=grpHTF2, inline="h2b")
+bool uh2_50 = input.bool(true, "50-Bar", group=grpHTF2, inline="h2c")
+bool uh2_60 = input.bool(true, "60-Bar", group=grpHTF2, inline="h2c")
+bool uh2_70 = input.bool(true, "70-Bar", group=grpHTF2, inline="h2c")
+bool uh2_75 = input.bool(true, "75-Bar", group=grpHTF2, inline="h2d")
+bool uh2_80 = input.bool(true, "80-Bar", group=grpHTF2, inline="h2d")
+bool uh2_90 = input.bool(true, "90-Bar", group=grpHTF2, inline="h2d")
+
+bool htf1Active = h1On and (not isSubMinute) and chartSec >= tfSec_hvd(h1From) and chartSec <= tfSec_hvd(h1To)
+bool htf2Active = h2On and (not isSubMinute) and chartSec >= tfSec_hvd(h2From) and chartSec <= tfSec_hvd(h2To)
+
+// =============================================================================
+// GZI / HV FVG SETTINGS (FOR CS1/CS2)
+// =============================================================================
+type fvg
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+
+grp_gzi = "GZI & HV FVG Settings"
+gzi_threshPct = input.float(2, "Threshold %", minval=0, maxval=100, step=0.1, group=grp_gzi)
+gzi_auto      = input.bool(true, "Auto", group=grp_gzi)
+gzi_mitLvl    = input.bool(false, "Mitigation Levels", group=grp_gzi)
+gzi_dist      = input.int(7, "Max Bar Distance", minval=1, maxval=200, group=grp_gzi)
+gzi_bodyPct   = input.float(0.85, "Min Body % for FVG Combos", minval=0.0, maxval=1.0, step=0.05, group=grp_gzi)
+gzi_incPent   = input.bool(true, "Include Pentagon in CS2", group=grp_gzi)
+
+// =============================================================================
+// PUP SETTINGS (FROM ANISH 50%)
+// =============================================================================
+grp_pup = "PUP — Pocket Pivot Up"
+pup_barSize    = input.float(3.0, "% Change (Barsize)", minval=0.1, step=0.1, group=grp_pup)
+pup_ppLookback = input.int(10, "Lookback Days", minval=1, group=grp_pup)
+
+
+// =============================================================================
+// CORE RVOL CALCULATIONS
+// =============================================================================
+conf = barstate.isconfirmed
+
+f_rvol_1x_threshold(_tfSec) =>
+    float s = _tfSec
+    s <= 10 ? 38.0 : s <= 15 ? 33.0 : s <= 30 ? 28.0 : s <= 45 ? 23.0 : s <= 60 ? 20.0 : s <= 120 ? 19.0 : s <= 180 ? 17.0 : s <= 240 ? 16.0 : s <= 300 ? 15.0 : s <= 360 ? 14.0 : s <= 420 ? 12.0 : s <= 480 ? 11.0 : s <= 540 ? 10.0 : s <= 600 ? 10.0 : s <= 900 ? 8.4 : s <= 1800 ? 6.9 : s <= 3600 ? 5.9 : s <= 7200 ? 3.0 : 1.8
+
+f_saab_kratos_threshold(_tfSec) => f_rvol_1x_threshold(_tfSec) * 0.56
+
+f_gs_moab_threshold(_tfSec) =>
+    float s = _tfSec
+    s <= 10 ? 114.0 : s <= 15 ? 99.0 : s <= 30 ? 84.0 : s <= 45 ? 69.0 : s <= 60 ? 35.0 : s <= 300 ? 35.0 : s <= 600 ? 25.0 : s <= 900 ? 20.0 : s <= 3600 ? 10.0 : 8.0
+
+f_wtc_threshold(_tfSec) => f_rvol_1x_threshold(_tfSec) * 2.0
+
+th_saab_kratos = f_saab_kratos_threshold(chartSec)
+th_1x          = f_rvol_1x_threshold(chartSec)
+th_gs_moab     = f_gs_moab_threshold(chartSec)
+th_wtc         = f_wtc_threshold(chartSec)
+th_hiroshima   = th_gs_moab
+
+// ── HYBRID MOMENTUM AUTO-DERIVE LADDER (from Hiroshima) — matches HW Single v3 ──
+// Long/Short 1-5 Reg/Cum/Body floors are derived from th_hiroshima, NOT hard-coded.
+// M1 = strongest (highest Reg floor), M5 = weakest. reg_pct/cum_pct/body_pct scale them.
+hybAutoReg1 = th_hiroshima * 2.85
+hybAutoReg5 = th_hiroshima * 1.1875
+hybAutoStep = (hybAutoReg1 - hybAutoReg5) / 4.0
+hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep
+hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep
+hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep
+
+float hybCumPhi = 1.398 * 1.33
+hybAutoCum1 = hybCumPhi * math.sqrt(math.log(hybAutoReg1))
+hybAutoCum2 = hybCumPhi * math.sqrt(math.log(hybAutoReg2))
+hybAutoCum3 = hybCumPhi * math.sqrt(math.log(hybAutoReg3))
+hybAutoCum4 = hybCumPhi * math.sqrt(math.log(hybAutoReg4))
+hybAutoCum5 = hybCumPhi * math.sqrt(math.log(hybAutoReg5))
+
+float hybAutoBody1 = 0.69
+float hybAutoBody2 = 0.72
+float hybAutoBody3 = 0.75
+float hybAutoBody4 = 0.78
+float hybAutoBody5 = 0.81
+
+float regMult  = reg_pct  / 100.0
+float cumMult  = cum_pct  / 100.0
+float bodyMult = body_pct / 100.0
+
+hybReg1Eff  = hybAutoReg1  * regMult
+hybReg2Eff  = hybAutoReg2  * regMult
+hybReg3Eff  = hybAutoReg3  * regMult
+hybReg4Eff  = hybAutoReg4  * regMult
+hybReg5Eff  = hybAutoReg5  * regMult
+
+hybCum1Eff  = hybAutoCum1  * cumMult
+hybCum2Eff  = hybAutoCum2  * cumMult
+hybCum3Eff  = hybAutoCum3  * cumMult
+hybCum4Eff  = hybAutoCum4  * cumMult
+hybCum5Eff  = hybAutoCum5  * cumMult
+
+hybBody1Eff = hybAutoBody1 * bodyMult
+hybBody2Eff = hybAutoBody2 * bodyMult
+hybBody3Eff = hybAutoBody3 * bodyMult
+hybBody4Eff = hybAutoBody4 * bodyMult
+hybBody5Eff = hybAutoBody5 * bodyMult
+
+bb_spike = math.abs(close - open)
+bb_avgSpikeDenom = ta.sma(bb_spike, bb_avgLength)[1]
+bb_normalizedPrice = bb_spike / nz(bb_avgSpikeDenom, 1.0)
+bb_avgVolDenom = ta.sma(volume, bb_avgLength)[1]
+bb_normalizedVolume = volume / nz(bb_avgVolDenom, 1.0)
+bb_diff = bb_normalizedPrice - bb_normalizedVolume
+bb_positiveDiff = bb_diff > 0 ? bb_diff : na
+bb_smaDiff = ta.sma(bb_positiveDiff, bb_smaLength)
+
+bb_baseBullish = (close > open) and (bb_positiveDiff > bb_smaDiff)
+bb_baseBearish = (close < open) and (bb_positiveDiff > bb_smaDiff)
+bb_inRange(v, lowTh, highTh) => v >= lowTh and v < highTh
+
+sigSAAB       = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigKratos     = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_saab_kratos, th_1x)
+sigBullRVOL1x = conf and bb_baseBullish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigBearRVOL1x = conf and bb_baseBearish and bb_inRange(bb_normalizedPrice, th_1x, th_gs_moab)
+sigGrandSlam  = conf and bb_baseBullish and (bb_normalizedPrice >= th_gs_moab)
+sigMOAB       = conf and bb_baseBearish and (bb_normalizedPrice >= th_gs_moab)
+
+// =============================================================================
+// REG @ TIME — WTC / HIROSHIMA / PENTAGON
+// =============================================================================
+[currentVolume_reg, pastVolume_reg, _rv] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, reg_calculationMode == "Cumulative", reg_adjustRealtime)
+relVolRatio = currentVolume_reg / pastVolume_reg
+
+sigPentagon  = conf and (relVolRatio >= th_1x) and (relVolRatio <= th_wtc)
+sigWTC       = conf and (relVolRatio > th_wtc) and (relVolRatio <= th_hiroshima)
+sigHiroshima = conf and (relVolRatio > th_hiroshima)
+
+// =============================================================================
+// HYBRID RVOL — MOMENTUM REGIMES
+// =============================================================================
+[hybRegCur, hybRegPast, _hr] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, false, reg_adjustRealtime)
+[hybCumCur, hybCumPast, _hc] = tv_ta.relativeVolume(reg_length, reg_anchorTimeframe, true, reg_adjustRealtime)
+
+hybRegRatio = hybRegCur / hybRegPast
+hybCumRatio = hybCumCur / hybCumPast
+
+hybBodySz  = math.abs(close - open)
+hybRange   = high - low
+hybBodyRat = hybRange == 0 ? 0.0 : hybBodySz / hybRange
+
+hybMom1      = conf and (hybRegRatio > hybReg1Eff) and (hybCumRatio > hybCum1Eff)
+sigAddLong1  = hybMom1 and (close > open) and (hybBodyRat >= hybBody1Eff)
+sigAddShort1 = hybMom1 and (close < open) and (hybBodyRat >= hybBody1Eff)
+
+hybMom2      = conf and (hybRegRatio > hybReg2Eff) and (hybCumRatio > hybCum2Eff)
+sigAddLong2  = hybMom2 and (close > open) and (hybBodyRat >= hybBody2Eff)
+sigAddShort2 = hybMom2 and (close < open) and (hybBodyRat >= hybBody2Eff)
+
+hybMom3      = conf and (hybRegRatio > hybReg3Eff) and (hybCumRatio > hybCum3Eff)
+sigAddLong3  = hybMom3 and (close > open) and (hybBodyRat >= hybBody3Eff)
+
+hybMom4      = conf and (hybRegRatio > hybReg4Eff) and (hybCumRatio > hybCum4Eff)
+sigAddLong4  = hybMom4 and (close > open) and (hybBodyRat >= hybBody4Eff)
+
+hybMom5      = conf and (hybRegRatio > hybReg5Eff) and (hybCumRatio > hybCum5Eff)
+sigAddLong5  = hybMom5 and (close > open) and (hybBodyRat >= hybBody5Eff)
+
+// =============================================================================
+// NAGASAKI
+// =============================================================================
+vol = volume
+var float maxVol = 0.0
+bool isNagasaki = false
+if conf
+    if bar_index == 0
+        maxVol := vol
+    else if vol > maxVol
+        isNagasaki := true
+        maxVol := vol
+sigNagasaki = enableNagasaki and isNagasaki
+
+// =============================================================================
+// RVOL SEQUENCE TRACKING
+// =============================================================================
+seq_inRange_pair(v, th_low) => v > th_low and v < seq_th_high
+
+is_u_bar_UU   = bb_baseBullish and seq_inRange_pair(bb_normalizedPrice, th_low_UU_DD)
+is_d_bar_DD   = bb_baseBearish and seq_inRange_pair(bb_normalizedPrice, th_low_UU_DD)
+is_u_bar_UUU  = bb_baseBullish and seq_inRange_pair(bb_normalizedPrice, th_low_UUU_DDD)
+is_d_bar_DDD  = bb_baseBearish and seq_inRange_pair(bb_normalizedPrice, th_low_UUU_DDD)
+is_u_bar_UUUU = bb_baseBullish and seq_inRange_pair(bb_normalizedPrice, th_low_UUUU_DDDD)
+is_d_bar_DDDD = bb_baseBearish and seq_inRange_pair(bb_normalizedPrice, th_low_UUUU_DDDD)
+
+var float bss_UU = 0.0, var int bsl_UU = 0, var float bss_DD = 0.0, var int bsl_DD = 0
+var float bss_UUU = 0.0, var int bsl_UUU = 0, var float bss_DDD = 0.0, var int bsl_DDD = 0
+var float bss_UUUU = 0.0, var int bsl_UUUU = 0, var float bss_DDDD = 0.0, var int bsl_DDDD = 0
+
+if conf
+    bsl_UU   := is_u_bar_UU   ? bsl_UU + 1   : 0
+    bss_UU   := is_u_bar_UU   ? bss_UU + bb_normalizedPrice : 0.0
+    bsl_DD   := is_d_bar_DD   ? bsl_DD + 1   : 0
+    bss_DD   := is_d_bar_DD   ? bss_DD + bb_normalizedPrice : 0.0
+    bsl_UUU  := is_u_bar_UUU  ? bsl_UUU + 1  : 0
+    bss_UUU  := is_u_bar_UUU  ? bss_UUU + bb_normalizedPrice : 0.0
+    bsl_DDD  := is_d_bar_DDD  ? bsl_DDD + 1  : 0
+    bss_DDD  := is_d_bar_DDD  ? bss_DDD + bb_normalizedPrice : 0.0
+    bsl_UUUU := is_u_bar_UUUU ? bsl_UUUU + 1 : 0
+    bss_UUUU := is_u_bar_UUUU ? bss_UUUU + bb_normalizedPrice : 0.0
+    bsl_DDDD := is_d_bar_DDDD ? bsl_DDDD + 1 : 0
+    bss_DDDD := is_d_bar_DDDD ? bss_DDDD + bb_normalizedPrice : 0.0
+
+sig_bull_UU   = conf and bsl_UU == 2   and bss_UU >= seqTh_UU_DD
+sig_bull_UUU  = conf and bsl_UUU == 3  and bss_UUU >= seqTh_UUU_DDD
+sig_bull_UUUU = conf and bsl_UUUU == 4 and bss_UUUU >= seqTh_UUUU_DDDD
+sig_bear_DD   = conf and bsl_DD == 2   and bss_DD >= seqTh_UU_DD
+sig_bear_DDD  = conf and bsl_DDD == 3  and bss_DDD >= seqTh_UUU_DDD
+sig_bear_DDDD = conf and bsl_DDDD == 4 and bss_DDDD >= seqTh_UUUU_DDDD
+
+// =============================================================================
+// BACK-TO-BACK SIGNALS
+// =============================================================================
+sig_B2B_2xSAAB   = conf and sigSAAB[1]       and sigSAAB
+sig_B2B_2xKratos = conf and sigKratos[1]      and sigKratos
+sig_B2B_2xBull1x = conf and sigBullRVOL1x[1]  and sigBullRVOL1x
+sig_B2B_2xBear1x = conf and sigBearRVOL1x[1]  and sigBearRVOL1x
+sig_B2B_MidBull  = conf and not sig_B2B_2xSAAB and not sig_B2B_2xBull1x and ((sigSAAB[1] and sigBullRVOL1x) or (sigBullRVOL1x[1] and sigSAAB))
+sig_B2B_MidBear  = conf and not sig_B2B_2xKratos and not sig_B2B_2xBear1x and ((sigKratos[1] and sigBearRVOL1x) or (sigBearRVOL1x[1] and sigKratos))
+
+
+// =============================================================================
+// FAUNA CALCULATIONS — INTERNAL ONLY (no plot/alert/checkbox)
+// =============================================================================
+float fn_ATR    = ta.atr(14)
+float fn_AvgVol = ta.sma(volume, 20)
+float fn_AvgBody  = ta.sma(math.abs(close - open), 20)
+float fn_AvgDelta = ta.sma(math.abs(close - close[1]), 10)
+float fn_TrendMA  = ta.sma(close, 50)
+
+float fn_body      = close - open
+float fn_range     = high - low
+bool  fn_body_up   = fn_body > 0
+bool  fn_body_dn   = fn_body < 0
+float fn_body_size = math.abs(fn_body)
+float fn_body_ratio = fn_range == 0 ? 0.0 : fn_body_size / fn_range
+
+fn_MB_bull = fn_body_up and fn_body_size > 1.6 * fn_ATR and fn_body_ratio > 0.70 and volume > 1.8 * fn_AvgVol
+fn_MB_bear = fn_body_dn and fn_body_size > 1.6 * fn_ATR and fn_body_ratio > 0.70 and volume > 1.8 * fn_AvgVol
+fn_RE_bull = fn_body_up and fn_range > 2.2 * fn_ATR and (high - close) < 0.15 * fn_range and volume > 1.8 * fn_AvgVol
+fn_RE_bear = fn_body_dn and fn_range > 2.2 * fn_ATR and (close - low) < 0.15 * fn_range and volume > 1.8 * fn_AvgVol
+fn_TA_bull = fn_TrendMA > fn_TrendMA[1] and fn_body_up and (close - close[1]) > 1.6 * fn_AvgDelta and volume > 1.8 * fn_AvgVol
+fn_TA_bear = fn_TrendMA < fn_TrendMA[1] and fn_body_dn and (close[1] - close) > 1.6 * fn_AvgDelta and volume > 1.8 * fn_AvgVol
+fn_GG_bull = (open - close[1]) > 0.9 * fn_ATR and fn_body_up and low > close[1] and volume > 1.8 * fn_AvgVol
+fn_GG_bear = (close[1] - open) > 0.9 * fn_ATR and fn_body_dn and high < close[1] and volume > 1.8 * fn_AvgVol
+
+float fn_prev_body = close[1] - open[1]
+float fn_prev_rng  = high[1] - low[1]
+fn_StrongBear_pre = close[1] < open[1] and math.abs(fn_prev_body) > 1.5 * fn_AvgBody[1] and volume[1] > 1.5 * fn_AvgVol[1]
+fn_WeakBear_pre   = close[1] < open[1] and (fn_prev_rng == 0 ? 0.0 : math.abs(fn_prev_body) / fn_prev_rng) <= 0.2
+fn_StrongBull_pre = close[1] > open[1] and math.abs(fn_prev_body) > 1.5 * fn_AvgBody[1] and volume[1] > 1.5 * fn_AvgVol[1]
+fn_WeakBull_pre   = close[1] > open[1] and (fn_prev_rng == 0 ? 0.0 : math.abs(fn_prev_body) / fn_prev_rng) <= 0.2
+
+fn_TR_bull  = fn_WeakBear_pre   and (fn_MB_bull or fn_RE_bull or fn_TA_bull)
+fn_ES_bull  = fn_StrongBear_pre and (fn_MB_bull or fn_RE_bull or fn_TA_bull)
+fn_GDR_bull = close[1] < open[1] and fn_GG_bull
+fn_TR_bear  = fn_WeakBull_pre   and (fn_MB_bear or fn_RE_bear or fn_TA_bear)
+fn_ES_bear  = fn_StrongBull_pre and (fn_MB_bear or fn_RE_bear or fn_TA_bear)
+fn_GDR_bear = close[1] > open[1] and fn_GG_bear
+
+fn_bullActive = conf and (fn_MB_bull or fn_RE_bull or fn_TA_bull or fn_GG_bull or fn_TR_bull or fn_ES_bull or fn_GDR_bull)
+fn_bearActive = conf and (fn_MB_bear or fn_RE_bear or fn_TA_bear or fn_GG_bear or fn_TR_bear or fn_ES_bear or fn_GDR_bear)
+
+// =============================================================================
+// DISPLACEMENT CALCULATIONS (EXISTING ENGINE)
+// =============================================================================
+disp_isBullishFVG = low > high[2] and open[1] < close[1]
+disp_isBearishFVG = high < low[2] and open[1] > close[1]
+
+disp_candle_range = i_disp_type == "Open to Close" ? math.abs(open - close) : high - low
+disp_std_dev = ta.stdev(disp_candle_range, i_std_len)
+disp_threshold_min = disp_std_dev * i_std_min
+disp_threshold_max = disp_std_dev * i_std_max
+disp_isPrevBarDisplaced = disp_candle_range[1] > disp_threshold_min[1] and disp_candle_range[1] <= disp_threshold_max[1]
+
+sigDispBull = disp_isPrevBarDisplaced and disp_isBullishFVG
+sigDispBear = disp_isPrevBarDisplaced and disp_isBearishFVG
+
+var int disp_bullStreak = 0
+var int disp_bearStreak = 0
+if sigDispBull
+    disp_bullStreak += 1
+else
+    disp_bullStreak := 0
+if sigDispBear
+    disp_bearStreak += 1
+else
+    disp_bearStreak := 0
+
+sigCDispBull2 = sigDispBull and disp_bullStreak >= 2
+sigCDispBear2 = sigDispBear and disp_bearStreak >= 2
+sigCDispBull3 = sigDispBull and disp_bullStreak >= 3
+sigCDispBear3 = sigDispBear and disp_bearStreak >= 3
+
+// =============================================================================
+// HV CALCULATIONS — EXISTING 5 TIERS (for conditional plotting)
+// =============================================================================
+bool is75Bar   = volume[1] == ta.highest(volume, f_hvLen(75))[1]
+bool is150Bar  = volume[1] == ta.highest(volume, f_hvLen(150))[1]
+bool is250Bar  = volume[1] == ta.highest(volume, f_hvLen(250))[1]
+bool is500Bar  = volume[1] == ta.highest(volume, f_hvLen(500))[1]
+bool is1000Bar = volume[1] == ta.highest(volume, f_hvLen(1000))[1]
+
+// Hotspot — calculated only (no plot/alert/checkbox)
+opExWindow = dayofmonth[1] >= 10 and dayofmonth[1] <= 17 and dayofweek[1] >= dayofweek.monday and dayofweek[1] <= dayofweek.wednesday
+qtrEndWindow = (month[1] == 3 or month[1] == 6 or month[1] == 9 or month[1] == 12) and dayofmonth[1] >= 23 and dayofmonth[1] <= 27
+russellWindow = month[1] == 6 and dayofmonth[1] >= 19 and dayofmonth[1] <= 24
+taxLossWindow = month[1] == 12 and dayofmonth[1] >= 21 and dayofmonth[1] <= 26
+janEffectWindow = month[1] == 12 and dayofmonth[1] >= 27 and dayofmonth[1] <= 30
+hfRedemptionWindow = (month[1] == 5 or month[1] == 11) and dayofmonth[1] >= 10 and dayofmonth[1] <= 13
+bool isHotSpot = opExWindow or qtrEndWindow or russellWindow or taxLossWindow or janEffectWindow or hfRedemptionWindow
+
+// Priority-based HV plotting (exclusive tiers for existing 5)
+bool plot_HV1000 = show_HV1000 and is1000Bar
+bool plot_HV500  = show_HV500  and is500Bar  and not is1000Bar
+bool plot_HV250  = show_HV250  and is250Bar  and not is500Bar  and not is1000Bar
+bool plot_HV150  = show_HV150  and is150Bar  and not is250Bar  and not is500Bar  and not is1000Bar
+bool plot_HV75   = show_HV75   and is75Bar   and not is150Bar  and not is250Bar  and not is500Bar  and not is1000Bar
+
+
+// =============================================================================
+// PBJ ENGINE — Zoo MA + Supertrend + PB&J Filter
+// =============================================================================
+f_ma(src, len, t) =>
+    switch t
+        "EMA"  => ta.ema(src, len)
+        "SMA"  => ta.sma(src, len)
+        "WMA"  => ta.wma(src, len)
+        "HMA"  => ta.hma(src, len)
+        "VWMA" => ta.vwma(src, len)
+        => ta.sma(src, len)
+
+float base_ma = f_ma(zoo_price_src, zoo_ma_len, zoo_ma_type)
+
+float st_atr     = zoo_st_mult * ta.atr(zoo_st_period)
+float dyn_long   = base_ma - st_atr
+float dyn_short  = base_ma + st_atr
+
+var int st_dir   = 1
+float sig_line   = 0.0
+float curr_long  = 0.0
+curr_long  := base_ma > nz(curr_long[1], dyn_long)   ? math.max(dyn_long, nz(curr_long[1]))   : dyn_long
+float curr_short = 0.0
+curr_short := base_ma < nz(curr_short[1], dyn_short) ? math.min(dyn_short, nz(curr_short[1])) : dyn_short
+
+if zoo_use_st
+    if nz(st_dir[1]) == -1 and zoo_price_src > nz(curr_short[1])
+        st_dir := 1
+    else if nz(st_dir[1]) == 1 and zoo_price_src < nz(curr_long[1])
+        st_dir := -1
+    sig_line := st_dir == 1 ? curr_long : curr_short
+else
+    sig_line := base_ma
+
+bool buy_cross    = ta.crossover(zoo_price_src, sig_line)
+bool sell_cross   = ta.crossunder(zoo_price_src, sig_line)
+
+float pbj_ma  = ta.ema(close, zoo_pbj_ma_period)
+float pbj_atr = ta.atr(zoo_pbj_atr_period)
+float avg_vol_pbj = ta.sma(volume, zoo_pbj_vol_period)
+float thresh_pbj  = close == 0 ? 0 : (pbj_atr / close * zoo_pbj_atr_mult)
+
+bool pbj_buy  = low  < pbj_ma * (1 - thresh_pbj) and low  == ta.lowest(low, zoo_pbj_hh_ll)   and volume > avg_vol_pbj * zoo_pbj_vol_mult
+bool pbj_sell = high > pbj_ma * (1 + thresh_pbj) and high == ta.highest(high, zoo_pbj_hh_ll) and volume > avg_vol_pbj * zoo_pbj_vol_mult
+
+// Level Management
+type lvl
+    float upper
+    float lower
+    float vol
+    bool  approached
+
+float atr_pb = ta.atr(14) * 2.0
+var bull_lvls = array.new<lvl>()
+var bear_lvls = array.new<lvl>()
+
+f_add_lvl(arr, up, lo, v) =>
+    if math.abs(up - lo) >= syminfo.mintick
+        array.push(arr, lvl.new(up, lo, v, false))
+
+bool is_rising    = sig_line > nz(sig_line[1])
+bool is_falling   = sig_line < nz(sig_line[1])
+bool bull_reaccel = st_dir == 1  and is_rising  and nz(sig_line[1]) == nz(sig_line[2])
+bool bear_reaccel = st_dir == -1 and is_falling and nz(sig_line[1]) == nz(sig_line[2])
+
+f_add_lander(is_bull, cross, arr) =>
+    if cross
+        float up = 0.0, float lo = 0.0
+        if is_bull
+            up := math.max(open[1], close[1])
+            lo := low[1]
+            if up - lo < atr_pb * 0.5
+                up := lo + atr_pb * 0.5
+        else
+            up := high[1]
+            lo := math.min(open[1], close[1])
+            if up - lo < atr_pb * 0.5
+                lo := up - atr_pb * 0.5
+        f_add_lvl(arr, up, lo, volume[1])
+
+f_add_reaccel(is_bull, sig, arr) =>
+    if sig and not na(sig_line)
+        float p1 = sig_line
+        float p2 = is_bull ? math.min(open, close) : math.max(open, close)
+        f_add_lvl(arr, math.max(p1, p2), math.min(p1, p2), volume)
+
+f_check_approach(arr, is_bull) =>
+    bool approached = false
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0
+            if i >= array.size(arr)
+                continue
+            l = array.get(arr, i)
+            if is_bull and close < l.lower
+                array.remove(arr, i)
+                continue
+            if not is_bull and close > l.upper
+                array.remove(arr, i)
+                continue
+            float ap = is_bull ? l.upper * 1.005 : l.lower * 0.995
+            if is_bull
+                if not l.approached and low <= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and low > l.upper
+                    l.approached := false
+            else
+                if not l.approached and high >= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and high < l.lower
+                    l.approached := false
+    approached
+
+f_add_lander(true,  buy_cross,  bull_lvls)
+f_add_lander(false, sell_cross, bear_lvls)
+f_add_reaccel(true,  bull_reaccel, bull_lvls)
+f_add_reaccel(false, bear_reaccel, bear_lvls)
+
+var bool wait_pbj_buy  = false
+var bool wait_pbj_sell = false
+
+if barstate.isconfirmed
+    f_check_approach(bull_lvls, true)
+    f_check_approach(bear_lvls, false)
+
+if pbj_buy
+    wait_pbj_buy := true
+if pbj_sell
+    wait_pbj_sell := true
+
+while array.size(bull_lvls) > 30
+    array.shift(bull_lvls)
+while array.size(bear_lvls) > 30
+    array.shift(bear_lvls)
+
+bool sig_pbj_buy_raw  = buy_cross and wait_pbj_buy
+bool sig_pbj_sell_raw = sell_cross and wait_pbj_sell
+
+if sig_pbj_buy_raw
+    wait_pbj_buy := false
+if sig_pbj_sell_raw
+    wait_pbj_sell := false
+
+bool sigBullPBJ = conf and sig_pbj_buy_raw
+bool sigBearPBJ = conf and sig_pbj_sell_raw
+
+
+// =============================================================================
+// HV+D ENGINE — DISPLACEMENT CALCULATIONS (3 TIERS)
+// =============================================================================
+float d1_rng = d1_type == "Open to Close" ? math.abs(open - close) : high - low
+float d1_std = ta.stdev(d1_rng, d1_len)
+float d1_thresh = d1_std * d1_mult
+bool  d1_prevDisp = d1_rng[1] > d1_thresh[1]
+bool  d1_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d1_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d1_bull = conf and d1_prevDisp and d1_bullFVG
+bool  d1_bear = conf and d1_prevDisp and d1_bearFVG
+
+float d2_rng = d2_type == "Open to Close" ? math.abs(open - close) : high - low
+float d2_std = ta.stdev(d2_rng, d2_len)
+float d2_thresh = d2_std * d2_mult
+bool  d2_prevDisp = d2_rng[1] > d2_thresh[1]
+bool  d2_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d2_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d2_bull = conf and d2_prevDisp and d2_bullFVG
+bool  d2_bear = conf and d2_prevDisp and d2_bearFVG
+
+float d3_rng = d3_type == "Open to Close" ? math.abs(open - close) : high - low
+float d3_std = ta.stdev(d3_rng, d3_len)
+float d3_thresh = d3_std * d3_mult
+bool  d3_prevDisp = d3_rng[1] > d3_thresh[1]
+bool  d3_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d3_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d3_bull = conf and d3_prevDisp and d3_bullFVG
+bool  d3_bear = conf and d3_prevDisp and d3_bearFVG
+
+// =============================================================================
+// HV+D ENGINE — GRANULAR HV CALCULATIONS (with sub-minute multiplier)
+// =============================================================================
+// Base tiers 50–1000 (dynamic lookback)
+bool hvd_is50   = volume[1] == ta.highest(volume, f_hvLen(50))[1]
+bool hvd_is75   = volume[1] == ta.highest(volume, f_hvLen(75))[1]
+bool hvd_is100  = volume[1] == ta.highest(volume, f_hvLen(100))[1]
+bool hvd_is150  = volume[1] == ta.highest(volume, f_hvLen(150))[1]
+bool hvd_is200  = volume[1] == ta.highest(volume, f_hvLen(200))[1]
+bool hvd_is250  = volume[1] == ta.highest(volume, f_hvLen(250))[1]
+bool hvd_is300  = volume[1] == ta.highest(volume, f_hvLen(300))[1]
+bool hvd_is350  = volume[1] == ta.highest(volume, f_hvLen(350))[1]
+bool hvd_is400  = volume[1] == ta.highest(volume, f_hvLen(400))[1]
+bool hvd_is450  = volume[1] == ta.highest(volume, f_hvLen(450))[1]
+bool hvd_is500  = volume[1] == ta.highest(volume, f_hvLen(500))[1]
+bool hvd_is550  = volume[1] == ta.highest(volume, f_hvLen(550))[1]
+bool hvd_is600  = volume[1] == ta.highest(volume, f_hvLen(600))[1]
+bool hvd_is650  = volume[1] == ta.highest(volume, f_hvLen(650))[1]
+bool hvd_is700  = volume[1] == ta.highest(volume, f_hvLen(700))[1]
+bool hvd_is750  = volume[1] == ta.highest(volume, f_hvLen(750))[1]
+bool hvd_is1000 = volume[1] == ta.highest(volume, f_hvLen(1000))[1]
+
+// HEV
+var float hvd_maxVolEver = 0.0
+bool hvd_isHEV = false
+if volume[1] > hvd_maxVolEver
+    hvd_maxVolEver := volume[1]
+    hvd_isHEV := true
+
+// HTF tiers 5–90 (not multiplied, only active when not sub-minute)
+bool isH5  = volume[1] == ta.highest(volume, 5)[1]
+bool isH10 = volume[1] == ta.highest(volume, 10)[1]
+bool isH20 = volume[1] == ta.highest(volume, 20)[1]
+bool isH25 = volume[1] == ta.highest(volume, 25)[1]
+bool isH30 = volume[1] == ta.highest(volume, 30)[1]
+bool isH40 = volume[1] == ta.highest(volume, 40)[1]
+bool isH50 = volume[1] == ta.highest(volume, 50)[1]
+bool isH60 = volume[1] == ta.highest(volume, 60)[1]
+bool isH70 = volume[1] == ta.highest(volume, 70)[1]
+bool isH75 = volume[1] == ta.highest(volume, 75)[1]
+bool isH80 = volume[1] == ta.highest(volume, 80)[1]
+bool isH90 = volume[1] == ta.highest(volume, 90)[1]
+
+// Priority ranking
+int baseRank = hvd_is1000 ? 1000 : hvd_is750 ? 750 : hvd_is700 ? 700 : hvd_is650 ? 650 : hvd_is600 ? 600 : hvd_is550 ? 550 : hvd_is500 ? 500 : hvd_is450 ? 450 : hvd_is400 ? 400 : hvd_is350 ? 350 : hvd_is300 ? 300 : hvd_is250 ? 250 : hvd_is200 ? 200 : hvd_is150 ? 150 : hvd_is100 ? 100 : hvd_is75 ? 75 : hvd_is50 ? 50 : 0
+
+int h1Rank = not htf1Active ? 0 : uh1_90 and isH90 ? 90 : uh1_80 and isH80 ? 80 : uh1_75 and isH75 ? 75 : uh1_70 and isH70 ? 70 : uh1_60 and isH60 ? 60 : uh1_50 and isH50 ? 50 : uh1_40 and isH40 ? 40 : uh1_30 and isH30 ? 30 : uh1_25 and isH25 ? 25 : uh1_20 and isH20 ? 20 : uh1_10 and isH10 ? 10 : uh1_5 and isH5 ? 5 : 0
+
+int h2Rank = not htf2Active ? 0 : uh2_90 and isH90 ? 90 : uh2_80 and isH80 ? 80 : uh2_75 and isH75 ? 75 : uh2_70 and isH70 ? 70 : uh2_60 and isH60 ? 60 : uh2_50 and isH50 ? 50 : uh2_40 and isH40 ? 40 : uh2_30 and isH30 ? 30 : uh2_25 and isH25 ? 25 : uh2_20 and isH20 ? 20 : uh2_10 and isH10 ? 10 : uh2_5 and isH5 ? 5 : 0
+
+// Combo conditions
+bool base_enabled = (ub50 and baseRank==50) or (ub75 and baseRank==75) or (ub100 and baseRank==100) or (ub150 and baseRank==150) or (ub200 and baseRank==200) or (ub250 and baseRank==250) or (ub300 and baseRank==300) or (ub350 and baseRank==350) or (ub400 and baseRank==400) or (ub450 and baseRank==450) or (ub500 and baseRank==500) or (ub550 and baseRank==550) or (ub600 and baseRank==600) or (ub650 and baseRank==650) or (ub700 and baseRank==700) or (ub750 and baseRank==750) or (ub1000_hvd and baseRank==1000)
+bool hev_hit = useHEV and hvd_isHEV
+bool base_hv_hit = hev_hit or (base_enabled and not hvd_isHEV)
+
+bool base_combo_bull = base_hv_hit and d1_bull
+bool base_combo_bear = base_hv_hit and d1_bear
+bool htf1_combo_bull = h1Rank > 0 and d2_bull
+bool htf1_combo_bear = h1Rank > 0 and d2_bear
+bool htf2_combo_bull = h2Rank > 0 and d3_bull
+bool htf2_combo_bear = h2Rank > 0 and d3_bear
+
+// Unified HV+D fire (any tier)
+bool hvd_bull = base_combo_bull or htf1_combo_bull or htf2_combo_bull
+bool hvd_bear = base_combo_bear or htf1_combo_bear or htf2_combo_bear
+
+// =============================================================================
+// HVD+PBJ COMBO — offset-aligned: hvd fires bar N (describes N-1),
+// PBJ fires bar N-1 (describes N-1), so use sigBullPBJ[1]
+// =============================================================================
+bool hvdpbj_bull = hvd_bull and sigBullPBJ[1]
+bool hvdpbj_bear = hvd_bear and sigBearPBJ[1]
+
+// Sub-2-min floored version: base tier only, rank >= floor, disp mult >= floor
+bool hvdpbj_floored_bull = base_hv_hit and (baseRank >= sub2Min_hvFloor or hev_hit) and (d1_mult >= sub2Min_dispFloor) and d1_bull and sigBullPBJ[1]
+bool hvdpbj_floored_bear = base_hv_hit and (baseRank >= sub2Min_hvFloor or hev_hit) and (d1_mult >= sub2Min_dispFloor) and d1_bear and sigBearPBJ[1]
+
+// Effective PBJ signal: at sub-2-min use floored HVD+PBJ, otherwise regular PBJ
+bool effBullPBJ = isSub2Min ? hvdpbj_floored_bull : sigBullPBJ
+bool effBearPBJ = isSub2Min ? hvdpbj_floored_bear : sigBearPBJ
+
+// For offset-aligned composites (HV+D uses offset=-1):
+// effPBJ needs [1] alignment when paired with offset=-1 signals
+// but effBullPBJ at sub-2-min is already [1]-aligned via hvdpbj_floored
+// So for composites: use effBullPBJ for same-bar signals,
+// and for offset=-1 signals check effBullPBJ (already aligned) or sigBullPBJ[1]
+bool effBullPBJ_onBar = isSub2Min ? hvdpbj_floored_bull : sigBullPBJ
+bool effBearPBJ_onBar = isSub2Min ? hvdpbj_floored_bear : sigBearPBJ
+
+
+// =============================================================================
+// GZI / HV FVG — CS1 & CS2 (ported from NRAFR x2, bulls only)
+// =============================================================================
+float gzi_v1 = volume[1]
+bool gzi_isHV = gzi_v1 == ta.highest(volume, MBB)[1] or gzi_v1 == ta.highest(volume, 252)[1] or gzi_v1 == ta.highest(volume, 63)[1]
+
+float gzi_thresh = gzi_auto ? ta.cum((high - low) / low) / bar_index : gzi_threshPct / 100
+bool gzi_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > gzi_thresh
+bool gzi_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > gzi_thresh
+
+var gzi_fvgs = array.new<fvg>(0)
+var int gzi_lastT = 0
+bool gzi_bullGZI = false
+bool gzi_bullHV  = false
+
+if conf
+    if gzi_bFVG and time != gzi_lastT
+        float mx = low, float mn = high[2]
+        if gzi_isHV
+            gzi_bullHV := true
+        if gzi_fvgs.size() > 0
+            for i = 0 to gzi_fvgs.size() - 1
+                fvg e = gzi_fvgs.get(i)
+                if e.bull and bar_index - e.idx <= gzi_dist
+                    float ob = math.max(e.mn, mn), float ot = math.min(e.mx, mx)
+                    if ob < ot or (ob <= ot and e.hv and gzi_isHV)
+                        gzi_bullGZI := true
+                        break
+        gzi_fvgs.unshift(fvg.new(mx, mn, true, time, bar_index, gzi_isHV))
+        gzi_lastT := time
+
+    if gzi_sFVG and time != gzi_lastT
+        float mx = low[2], float mn = high
+        gzi_fvgs.unshift(fvg.new(mx, mn, false, time, bar_index, gzi_isHV))
+        gzi_lastT := time
+
+    if gzi_fvgs.size() > 0
+        for i = gzi_fvgs.size() - 1 to 0
+            fvg g = gzi_fvgs.get(i)
+            if g.bull and close < g.mn
+                if gzi_mitLvl
+                    line.new(g.t, g.mn, time, g.mn, xloc.bar_time, color=color.new(#089981, 70), style=line.style_dashed)
+                gzi_fvgs.remove(i)
+            else if not g.bull and close > g.mx
+                if gzi_mitLvl
+                    line.new(g.t, g.mx, time, g.mx, xloc.bar_time, color=color.new(#f23645, 70), style=line.style_dashed)
+                gzi_fvgs.remove(i)
+
+// CS body evaluation on bar[1]
+float cs_bodySize1 = math.abs(close[1] - open[1])
+float cs_candleRange1 = high[1] - low[1]
+float cs_bodyPct1 = cs_candleRange1 == 0 ? 0.0 : cs_bodySize1 / cs_candleRange1
+bool  cs_validBody = cs_bodyPct1 >= gzi_bodyPct
+
+// CS1 Bull: GZI/HV FVG + Std RVOL (offset=-1)
+bool sigCS1Bull = conf and cs_validBody and (gzi_bullHV or gzi_bullGZI) and (sigSAAB[1] or sigBullRVOL1x[1] or sigGrandSlam[1])
+
+// CS2 Bull: GZI/HV FVG + Reg@Time (offset=-1)
+bool cs2_regActive = (gzi_incPent and sigPentagon[1]) or sigWTC[1] or sigHiroshima[1] or nz(sigNagasaki[1])
+bool sigCS2Bull = conf and cs_validBody and (gzi_bullHV or gzi_bullGZI) and cs2_regActive
+
+// CS1+CS2 Bull: both on same candle
+bool sigCS12Bull = sigCS1Bull and sigCS2Bull
+
+// =============================================================================
+// PUP — POCKET PIVOT UP (ported from Anish 50%)
+// =============================================================================
+float pup_ema50  = ta.ema(close, 50)
+float pup_ema150 = ta.ema(close, 150)
+float pup_ema200 = ta.ema(close, 200)
+float pup_ema200_1m = pup_ema200[21]
+float pup_w52Hi  = ta.highest(high, 252)
+float pup_w52Lo  = ta.lowest(low, 252)
+
+bool pup_bullPass = close > pup_ema50 and close >= pup_ema150 and close >= pup_ema200 and pup_ema50 > pup_ema150 and pup_ema50 > pup_ema200 and pup_ema150 >= pup_ema200 and pup_ema200 > pup_ema200_1m and close > (pup_w52Lo * 1.30) and close >= (pup_w52Hi * 0.75)
+
+float pup_redVol = close < open ? volume : 0.0
+float pup_hiRedVol = ta.highest(pup_redVol[1], pup_ppLookback)
+bool pup_priceUp = ((close - open) / open) * 100 > pup_barSize
+bool pup_volBull = volume > pup_hiRedVol
+
+bool sigPUP = conf and pup_priceUp and pup_volBull and pup_bullPass
+
+// =============================================================================
+// PPD — POCKET PIVOT DOWN (bearish counterpart of PUP; clean structural mirror)
+// =============================================================================
+float pup_greenVol   = close > open ? volume : 0.0
+float ppd_hiGreenVol = ta.highest(pup_greenVol[1], pup_ppLookback)
+bool  ppd_priceDn    = ((open - close) / open) * 100 > pup_barSize
+bool  ppd_volBear    = volume > ppd_hiGreenVol
+bool  ppd_bearPass   = close < pup_ema50 and close <= pup_ema150 and close <= pup_ema200 and pup_ema50 < pup_ema150 and pup_ema50 < pup_ema200 and pup_ema150 <= pup_ema200 and pup_ema200 < pup_ema200_1m and close < (pup_w52Hi * 0.75) and close <= (pup_w52Lo * 1.30)
+bool  sigPPD = conf and ppd_priceDn and ppd_volBear and ppd_bearPass
+
+// =============================================================================
+// DIRECTIONAL ANCHORS — resolve any directionless signal to bull/bear (NO neutral)
+// A directionless event (HV tier, WTC, Hiroshima, Pentagon, Nagasaki) never plots as
+// "neutral"; it inherits the direction of the DIRECTIONAL anchors on the same candle.
+// =============================================================================
+bool fn_anyBull = fn_MB_bull or fn_RE_bull or fn_TA_bull or fn_GG_bull or fn_TR_bull or fn_ES_bull or fn_GDR_bull
+bool fn_anyBear = fn_MB_bear or fn_RE_bear or fn_TA_bear or fn_GG_bear or fn_TR_bear or fn_ES_bear or fn_GDR_bear
+bool anchorBull = sigSAAB or sigBullRVOL1x or sigGrandSlam or sigAddLong1 or sigAddLong2 or sigAddLong3 or sigAddLong4 or sigAddLong5 or sigBullPBJ or sigDispBull or fn_anyBull or sigPUP or sigCS1Bull or sigCS2Bull or sigCS12Bull
+bool anchorBear = sigKratos or sigBearRVOL1x or sigMOAB or sigAddShort1 or sigAddShort2 or sigBearPBJ or sigDispBear or fn_anyBear or sigPPD
+// One resolved direction per bar; tiebreak on candle close vs open when both/neither anchor present.
+bool barDirBull = anchorBull and not anchorBear ? true : anchorBear and not anchorBull ? false : close >= open
+
+
+// =============================================================================
+// COMPOSITE SIGNAL BUILDING
+// =============================================================================
+f_add(existing, addition) =>
+    existing == "" ? addition : existing + " | " + addition
+
+// --- PBJ lookback helpers for multi-bar signals ---
+bool pbjOnBar = effBullPBJ_onBar or effBearPBJ_onBar
+bool pbjOn2   = pbjOnBar or nz(effBullPBJ_onBar[1]) or nz(effBearPBJ_onBar[1])
+bool pbjOn3   = pbjOn2   or nz(effBullPBJ_onBar[2]) or nz(effBearPBJ_onBar[2])
+bool pbjOn4   = pbjOn3   or nz(effBullPBJ_onBar[3]) or nz(effBearPBJ_onBar[3])
+
+// --- COMPOSITE 1: PBJ + Any Signal ---
+var string pbjAnyMsg = ""
+pbjAnyMsg := ""
+bool pbjAnyFired = false
+
+if conf
+    string co = ""
+    // Single-bar signals: PBJ on same candle
+    if show_SAAB       and sigSAAB       and pbjOnBar
+        co := f_add(co, "SAAB")
+    if show_Kratos     and sigKratos     and pbjOnBar
+        co := f_add(co, "KRATOS")
+    if show_BullRVOL1x and sigBullRVOL1x and pbjOnBar
+        co := f_add(co, "BULL RVOL 1x")
+    if show_BearRVOL1x and sigBearRVOL1x and pbjOnBar
+        co := f_add(co, "BEAR RVOL 1x")
+    if show_GrandSlam  and sigGrandSlam  and pbjOnBar
+        co := f_add(co, "GRAND SLAM")
+    if show_MOAB       and sigMOAB       and pbjOnBar
+        co := f_add(co, "MOAB")
+    if show_WTC        and sigWTC        and pbjOnBar
+        co := f_add(co, "WTC")
+    if show_Hiroshima  and sigHiroshima  and pbjOnBar
+        co := f_add(co, "HIROSHIMA")
+    if show_Nagasaki   and sigNagasaki   and pbjOnBar
+        co := f_add(co, "NAGASAKI")
+    // Momentum
+    if show_Long1  and sigAddLong1  and pbjOnBar
+        co := f_add(co, "LONG 1")
+    if show_Short1 and sigAddShort1 and pbjOnBar
+        co := f_add(co, "SHORT 1")
+    if show_Long2  and sigAddLong2  and pbjOnBar
+        co := f_add(co, "LONG 2")
+    if show_Short2 and sigAddShort2 and pbjOnBar
+        co := f_add(co, "SHORT 2")
+    if show_Long3  and sigAddLong3  and pbjOnBar
+        co := f_add(co, "LONG 3")
+    if show_Long4  and sigAddLong4  and pbjOnBar
+        co := f_add(co, "LONG 4")
+    if show_Long5  and sigAddLong5  and pbjOnBar
+        co := f_add(co, "LONG 5")
+    // B2B (2-bar)
+    if show_B2B_2xSAAB   and sig_B2B_2xSAAB   and pbjOn2
+        co := f_add(co, "2x SAAB")
+    if show_B2B_2xKratos and sig_B2B_2xKratos and pbjOn2
+        co := f_add(co, "2x KRATOS")
+    if show_B2B_2xBull1x and sig_B2B_2xBull1x and pbjOn2
+        co := f_add(co, "2x BULL 1x")
+    if show_B2B_2xBear1x and sig_B2B_2xBear1x and pbjOn2
+        co := f_add(co, "2x BEAR 1x")
+    if show_B2B_MidBull  and sig_B2B_MidBull   and pbjOn2
+        co := f_add(co, "B2B MID BULL")
+    if show_B2B_MidBear  and sig_B2B_MidBear   and pbjOn2
+        co := f_add(co, "B2B MID BEAR")
+    // Sequences
+    if show_UU   and sig_bull_UU   and pbjOn2
+        co := f_add(co, "UU")
+    if show_DD   and sig_bear_DD   and pbjOn2
+        co := f_add(co, "DD")
+    if show_UUU  and sig_bull_UUU  and pbjOn3
+        co := f_add(co, "UUU")
+    if show_DDD  and sig_bear_DDD  and pbjOn3
+        co := f_add(co, "DDD")
+    if show_UUUU and sig_bull_UUUU and pbjOn4
+        co := f_add(co, "UUUU")
+    if show_DDDD and sig_bear_DDDD and pbjOn4
+        co := f_add(co, "DDDD")
+    // Displacement (offset=-1, check 2-bar window)
+    if show_DispBull   and sigDispBull   and pbjOn2
+        co := f_add(co, "DISP BULL")
+    if show_DispBear   and sigDispBear   and pbjOn2
+        co := f_add(co, "DISP BEAR")
+    if show_CDispBull2 and sigCDispBull2 and pbjOn3
+        co := f_add(co, "DISP BULL 2+")
+    if show_CDispBear2 and sigCDispBear2 and pbjOn3
+        co := f_add(co, "DISP BEAR 2+")
+    if show_CDispBull3 and sigCDispBull3 and pbjOn4
+        co := f_add(co, "DISP BULL 3+")
+    if show_CDispBear3 and sigCDispBear3 and pbjOn4
+        co := f_add(co, "DISP BEAR 3+")
+    // HV (offset=-1, 2-bar window)
+    if show_HV1000 and plot_HV1000 and pbjOn2
+        co := f_add(co, "HV 1000")
+    if show_HV500  and plot_HV500  and pbjOn2
+        co := f_add(co, "HV 500")
+    if show_HV250  and plot_HV250  and pbjOn2
+        co := f_add(co, "HV 250")
+    if show_HV150  and plot_HV150  and pbjOn2
+        co := f_add(co, "HV 150")
+    if show_HV75   and plot_HV75   and pbjOn2
+        co := f_add(co, "HV 75")
+    // Ported signals
+    if show_PUP     and sigPUP     and pbjOnBar
+        co := f_add(co, "PUP")
+    if show_CS1Bull and sigCS1Bull and pbjOn2
+        co := f_add(co, "CS1")
+    if show_CS2Bull and sigCS2Bull and pbjOn2
+        co := f_add(co, "CS2")
+    if show_CS12Bull and sigCS12Bull and pbjOn2
+        co := f_add(co, "CS1+CS2")
+    if co != ""
+        pbjAnyMsg := "PBJ+" + co
+        pbjAnyFired := true
+
+// --- COMPOSITE 1b: B2B PBJ + Any (PBJ+Any printing on two consecutive bars) ---
+// ★ B2B PBJ+ANY — the back-to-back form of PBJ+Any, mirroring how 2x SAAB /
+//   B2B Mid Bull are the consecutive-bar forms of their singles. Fires only
+//   when PBJ+Any fired on bar[1] AND fires again on the current bar.
+var string b2bPbjAnyMsg = ""
+b2bPbjAnyMsg := ""
+bool b2bPbjAnyFired = false
+if conf and pbjAnyFired and nz(pbjAnyFired[1])
+    b2bPbjAnyFired := true
+    b2bPbjAnyMsg := "B2B PBJ+ANY | now: " + pbjAnyMsg + " | prev: " + pbjAnyMsg[1]
+
+// --- COMPOSITE 2: PBJ + Long (1-5) ---
+var string pbjLongMsg = ""
+pbjLongMsg := ""
+bool pbjLongFired = false
+if conf and effBullPBJ_onBar
+    string co = ""
+    if show_Long1 and sigAddLong1
+        co := f_add(co, "LONG 1")
+    if show_Long2 and sigAddLong2
+        co := f_add(co, "LONG 2")
+    if show_Long3 and sigAddLong3
+        co := f_add(co, "LONG 3")
+    if show_Long4 and sigAddLong4
+        co := f_add(co, "LONG 4")
+    if show_Long5 and sigAddLong5
+        co := f_add(co, "LONG 5")
+    if co != ""
+        pbjLongMsg := "PBJ+LONG: " + co
+        pbjLongFired := true
+
+// --- COMPOSITE 3: PBJ + Short (1-2) + HV (500/1000 required) ---
+var string pbjShortHVMsg = ""
+pbjShortHVMsg := ""
+bool pbjShortHVFired = false
+bool hasHV500or1K = is500Bar or is1000Bar  // offset=-1 signals
+if conf and effBearPBJ_onBar and hasHV500or1K
+    string co = ""
+    if show_Short1 and sigAddShort1
+        co := f_add(co, "SHORT 1")
+    if show_Short2 and sigAddShort2
+        co := f_add(co, "SHORT 2")
+    if co != ""
+        string hvTag = is1000Bar ? "HV1K" : "HV500"
+        pbjShortHVMsg := "PBJ+SHORT+" + hvTag + ": " + co
+        pbjShortHVFired := true
+
+// --- COMPOSITE 4: Long + 500/1K ---
+var string longHVMsg = ""
+longHVMsg := ""
+bool longHVFired = false
+if conf and hasHV500or1K
+    string co = ""
+    // Long signals are same-bar; HV is offset=-1 describing prev bar
+    // Check if any Long fired on the HV bar (prev bar)
+    if show_Long1 and nz(sigAddLong1[1])
+        co := f_add(co, "LONG 1")
+    if show_Long2 and nz(sigAddLong2[1])
+        co := f_add(co, "LONG 2")
+    if show_Long3 and nz(sigAddLong3[1])
+        co := f_add(co, "LONG 3")
+    if show_Long4 and nz(sigAddLong4[1])
+        co := f_add(co, "LONG 4")
+    if show_Long5 and nz(sigAddLong5[1])
+        co := f_add(co, "LONG 5")
+    if co != ""
+        string hvTag = is1000Bar ? "1K" : "500"
+        longHVMsg := "LONG+HV" + hvTag + ": " + co
+        longHVFired := true
+
+// --- COMPOSITE 5: HVD+PBJ + Any Signal ---
+var string hvdpbjAnyMsg = ""
+hvdpbjAnyMsg := ""
+bool hvdpbjAnyFired = false
+if conf and (hvdpbj_bull or hvdpbj_bear)
+    string co = ""
+    string dir = hvdpbj_bull ? "Bull" : "Bear"
+    // Check signals on the described candle (bar N-1, so use [1] for same-bar sigs)
+    if show_SAAB       and nz(sigSAAB[1])
+        co := f_add(co, "SAAB")
+    if show_Kratos     and nz(sigKratos[1])
+        co := f_add(co, "KRATOS")
+    if show_BullRVOL1x and nz(sigBullRVOL1x[1])
+        co := f_add(co, "BULL RVOL 1x")
+    if show_BearRVOL1x and nz(sigBearRVOL1x[1])
+        co := f_add(co, "BEAR RVOL 1x")
+    if show_GrandSlam  and nz(sigGrandSlam[1])
+        co := f_add(co, "GRAND SLAM")
+    if show_MOAB       and nz(sigMOAB[1])
+        co := f_add(co, "MOAB")
+    if show_WTC        and nz(sigWTC[1])
+        co := f_add(co, "WTC")
+    if show_Hiroshima  and nz(sigHiroshima[1])
+        co := f_add(co, "HIROSHIMA")
+    if show_Nagasaki   and nz(sigNagasaki[1])
+        co := f_add(co, "NAGASAKI")
+    if show_Long1      and nz(sigAddLong1[1])
+        co := f_add(co, "LONG 1")
+    if show_Long2      and nz(sigAddLong2[1])
+        co := f_add(co, "LONG 2")
+    if show_Long3      and nz(sigAddLong3[1])
+        co := f_add(co, "LONG 3")
+    if show_Long4      and nz(sigAddLong4[1])
+        co := f_add(co, "LONG 4")
+    if show_Long5      and nz(sigAddLong5[1])
+        co := f_add(co, "LONG 5")
+    if show_Short1     and nz(sigAddShort1[1])
+        co := f_add(co, "SHORT 1")
+    if show_Short2     and nz(sigAddShort2[1])
+        co := f_add(co, "SHORT 2")
+    if show_PUP        and nz(sigPUP[1])
+        co := f_add(co, "PUP")
+    string hvTag = hev_hit ? "HEV" : ("HV" + str.tostring(baseRank))
+    string base = hvTag + "+D"
+    if co != ""
+        hvdpbjAnyMsg := base + "+PBJ+" + co + " " + dir
+    else
+        hvdpbjAnyMsg := base + "+PBJ " + dir
+    hvdpbjAnyFired := true
+
+// --- COMPOSITE 6: HV+D + Any Signal ---
+var string hvdAnyMsg = ""
+hvdAnyMsg := ""
+bool hvdAnyFired = false
+if conf and (hvd_bull or hvd_bear)
+    string co = ""
+    string dir = hvd_bull ? "Bull" : "Bear"
+    if show_SAAB       and nz(sigSAAB[1])
+        co := f_add(co, "SAAB")
+    if show_Kratos     and nz(sigKratos[1])
+        co := f_add(co, "KRATOS")
+    if show_BullRVOL1x and nz(sigBullRVOL1x[1])
+        co := f_add(co, "BULL RVOL 1x")
+    if show_BearRVOL1x and nz(sigBearRVOL1x[1])
+        co := f_add(co, "BEAR RVOL 1x")
+    if show_GrandSlam  and nz(sigGrandSlam[1])
+        co := f_add(co, "GRAND SLAM")
+    if show_MOAB       and nz(sigMOAB[1])
+        co := f_add(co, "MOAB")
+    if show_WTC        and nz(sigWTC[1])
+        co := f_add(co, "WTC")
+    if show_Hiroshima  and nz(sigHiroshima[1])
+        co := f_add(co, "HIROSHIMA")
+    if show_Nagasaki   and nz(sigNagasaki[1])
+        co := f_add(co, "NAGASAKI")
+    if show_Long1      and nz(sigAddLong1[1])
+        co := f_add(co, "LONG 1")
+    if show_Long2      and nz(sigAddLong2[1])
+        co := f_add(co, "LONG 2")
+    if show_Long3      and nz(sigAddLong3[1])
+        co := f_add(co, "LONG 3")
+    if show_Long4      and nz(sigAddLong4[1])
+        co := f_add(co, "LONG 4")
+    if show_Long5      and nz(sigAddLong5[1])
+        co := f_add(co, "LONG 5")
+    if show_Short1     and nz(sigAddShort1[1])
+        co := f_add(co, "SHORT 1")
+    if show_Short2     and nz(sigAddShort2[1])
+        co := f_add(co, "SHORT 2")
+    if show_PUP        and nz(sigPUP[1])
+        co := f_add(co, "PUP")
+    if show_CS1Bull    and nz(sigCS1Bull)
+        co := f_add(co, "CS1")
+    if show_CS2Bull    and nz(sigCS2Bull)
+        co := f_add(co, "CS2")
+    if show_CS12Bull   and nz(sigCS12Bull)
+        co := f_add(co, "CS1+CS2")
+    string hvTag = hev_hit ? "HEV" : ("HV" + str.tostring(baseRank))
+    if co != ""
+        hvdAnyMsg := hvTag + "+D+" + co + " " + dir
+        hvdAnyFired := true
+
+
+// =============================================================================
+// COMPOSITE 7: NAGASAKI + STRONG SIGNAL (unconditional Nagasaki)
+// Strong = Long 1-5, Grand Slam, WTC, Hiroshima, MOAB, HV1000, HV+D, HVD+PBJ
+// =============================================================================
+var string nagStandMsg = ""
+nagStandMsg := ""
+bool nagStandFired = false
+
+var string nagStrongMsg = ""
+nagStrongMsg := ""
+bool nagStrongFired = false
+
+if conf and sigNagasaki
+    // Standalone: always fires, lists ALL co-firing signals regardless of checkbox
+    string allCo = ""
+    if sigSAAB
+        allCo := f_add(allCo, "SAAB")
+    if sigKratos
+        allCo := f_add(allCo, "KRATOS")
+    if sigBullRVOL1x
+        allCo := f_add(allCo, "BULL RVOL 1x")
+    if sigBearRVOL1x
+        allCo := f_add(allCo, "BEAR RVOL 1x")
+    if sigGrandSlam
+        allCo := f_add(allCo, "GRAND SLAM")
+    if sigMOAB
+        allCo := f_add(allCo, "MOAB")
+    if sigWTC
+        allCo := f_add(allCo, "WTC")
+    if sigHiroshima
+        allCo := f_add(allCo, "HIROSHIMA")
+    if sigAddLong1
+        allCo := f_add(allCo, "LONG 1")
+    if sigAddLong2
+        allCo := f_add(allCo, "LONG 2")
+    if sigAddLong3
+        allCo := f_add(allCo, "LONG 3")
+    if sigAddLong4
+        allCo := f_add(allCo, "LONG 4")
+    if sigAddLong5
+        allCo := f_add(allCo, "LONG 5")
+    if sigAddShort1
+        allCo := f_add(allCo, "SHORT 1")
+    if sigAddShort2
+        allCo := f_add(allCo, "SHORT 2")
+    if sigPUP
+        allCo := f_add(allCo, "PUP")
+    if sigBullPBJ
+        allCo := f_add(allCo, "PBJ BULL")
+    if sigBearPBJ
+        allCo := f_add(allCo, "PBJ BEAR")
+    nagStandMsg := "NAGASAKI" + (allCo != "" ? " | " + allCo : "")
+    nagStandFired := true
+
+    // Strong signal check
+    string strong = ""
+    if sigAddLong1 or sigAddLong2 or sigAddLong3 or sigAddLong4 or sigAddLong5
+        string longs = ""
+        if sigAddLong1
+            longs := f_add(longs, "L1")
+        if sigAddLong2
+            longs := f_add(longs, "L2")
+        if sigAddLong3
+            longs := f_add(longs, "L3")
+        if sigAddLong4
+            longs := f_add(longs, "L4")
+        if sigAddLong5
+            longs := f_add(longs, "L5")
+        strong := f_add(strong, "LONG(" + longs + ")")
+    if sigGrandSlam
+        strong := f_add(strong, "GRAND SLAM")
+    if sigWTC
+        strong := f_add(strong, "WTC")
+    if sigHiroshima
+        strong := f_add(strong, "HIROSHIMA")
+    if sigMOAB
+        strong := f_add(strong, "MOAB")
+    if is1000Bar
+        strong := f_add(strong, "HV1000")
+    if strong != ""
+        nagStrongMsg := "★★★ NAGASAKI+STRONG: " + strong + " ★★★"
+        nagStrongFired := true
+
+// Nagasaki + HV+D (offset alignment: check sigNagasaki[1] when hvd fires)
+bool nagHVD = conf and hvd_bull and nz(sigNagasaki[1])
+bool nagHVDPBJ = conf and hvdpbj_bull and nz(sigNagasaki[1])
+
+var string nagHVDMsg = ""
+nagHVDMsg := ""
+if nagHVD
+    string hvTag = hev_hit ? "HEV" : ("HV" + str.tostring(baseRank))
+    nagHVDMsg := "★★★ NAGASAKI+STRONG: " + hvTag + "+D" + (nagHVDPBJ ? "+PBJ" : "") + " ★★★"
+
+// =============================================================================
+// DIRECTION-SPLIT FLAGS — every composite marker is bull XOR bear (no mixed / no neutral)
+// Intrinsic-direction composites (HV+D, HVD+PBJ) use their own bull/bear booleans; the
+// direction-agnostic ones (PBJ+Any, B2B PBJ+Any, Nag+Strong, Nagasaki) inherit barDirBull.
+// =============================================================================
+bool pbjAnyBullFired    = pbjAnyFired    and barDirBull
+bool pbjAnyBearFired    = pbjAnyFired    and not barDirBull
+bool b2bPbjAnyBullFired = b2bPbjAnyFired and barDirBull
+bool b2bPbjAnyBearFired = b2bPbjAnyFired and not barDirBull
+bool hvdAnyBullFired    = hvdAnyFired    and hvd_bull
+bool hvdAnyBearFired    = hvdAnyFired    and hvd_bear
+bool hvdpbjAnyBullFired = hvdpbjAnyFired and hvdpbj_bull
+bool hvdpbjAnyBearFired = hvdpbjAnyFired and hvdpbj_bear
+bool nagStrongBullFired = nagStrongFired and barDirBull
+bool nagStrongBearFired = nagStrongFired and not barDirBull
+bool nagStandBull       = nagStandFired  and barDirBull
+bool nagStandBear       = nagStandFired  and not barDirBull
+
+// =============================================================================
+// CONDITIONAL PLOTTING LOGIC
+// =============================================================================
+// HV75/150/250: only plot when PBJ on same candle (2-bar window for offset)
+bool cond_HV75  = plot_HV75  and pbjOn2
+bool cond_HV150 = plot_HV150 and pbjOn2
+bool cond_HV250 = plot_HV250 and pbjOn2
+
+// HV500/1000: only plot when Long on same candle
+bool anyLongOnPrev = nz(sigAddLong1[1]) or nz(sigAddLong2[1]) or nz(sigAddLong3[1]) or nz(sigAddLong4[1]) or nz(sigAddLong5[1])
+bool cond_HV500  = plot_HV500  and anyLongOnPrev
+bool cond_HV1000 = plot_HV1000 and anyLongOnPrev
+
+// Long 3/4/5: only plot when HV500 or HV1000 on same candle
+bool hasHV500or1K_onBar = is500Bar or is1000Bar
+bool cond_Long3 = show_Long3 and sigAddLong3 and nz(hasHV500or1K_onBar[1] == false ? false : true)
+bool cond_Long4 = show_Long4 and sigAddLong4 and nz(hasHV500or1K_onBar[1] == false ? false : true)
+bool cond_Long5 = show_Long5 and sigAddLong5 and nz(hasHV500or1K_onBar[1] == false ? false : true)
+// Correction: Long fires on bar N, HV fires on bar N+1 describing bar N
+// So Long on bar N needs HV to detect it on bar N+1.
+// For plotting Long3/4/5 when HV500/1K is present:
+// HV500/1K uses volume[1], so is500Bar on bar N+1 means bar N had the volume.
+// Long3 fires on bar N. We plot Long3 on bar N.
+// We can check: did bar N have volume that IS the highest in 500?
+// Simplest: check is500Bar or is1000Bar ON THE NEXT BAR — but we can't look forward.
+// Alternative: check if current bar's volume equals highest in 500/1000 lookback
+bool curBarIsHV500  = volume == ta.highest(volume, f_hvLen(500))
+bool curBarIsHV1000 = volume == ta.highest(volume, f_hvLen(1000))
+bool curBarHasHV500or1K = curBarIsHV500 or curBarIsHV1000
+
+cond_Long3 := show_Long3 and sigAddLong3 and curBarHasHV500or1K
+cond_Long4 := show_Long4 and sigAddLong4 and curBarHasHV500or1K
+cond_Long5 := show_Long5 and sigAddLong5 and curBarHasHV500or1K
+
+// Long 1/2: always plot (remain visually available)
+bool cond_Long1 = show_Long1 and sigAddLong1
+bool cond_Long2 = show_Long2 and sigAddLong2
+
+// =============================================================================
+// PLOTS — COMPOSITE SIGNALS
+// =============================================================================
+// PBJ + Any — SPLIT bull/bear (green diamond below = bull, red diamond above = bear)
+plotshape(show_PBJplusAny and pbjAnyBullFired, title="PBJ+Any Bull", style=shape.diamond, location=location.belowbar, size=size.normal, color=color.new(color.green, 0), text="PBJ+", textcolor=color.white)
+plotshape(show_PBJplusAny and pbjAnyBearFired, title="PBJ+Any Bear", style=shape.diamond, location=location.abovebar, size=size.normal, color=color.new(color.red, 0), text="PBJ+", textcolor=color.white)
+
+// ★ B2B PBJ+Any — SPLIT bull/bear
+plotshape(show_B2B_PBJplusAny and b2bPbjAnyBullFired, title="B2B PBJ+Any Bull", style=shape.diamond, location=location.belowbar, size=size.normal, color=color.new(#00C853, 0), text="B2B\nPBJ+", textcolor=color.white)
+plotshape(show_B2B_PBJplusAny and b2bPbjAnyBearFired, title="B2B PBJ+Any Bear", style=shape.diamond, location=location.abovebar, size=size.normal, color=color.new(#D50000, 0), text="B2B\nPBJ+", textcolor=color.white)
+
+// PBJ + Long (bull)
+plotshape(show_PBJplusLong and pbjLongFired, title="PBJ+Long", style=shape.labelup, location=location.belowbar, size=size.normal, color=color.new(#FFD700, 0), text="PBJ+L", textcolor=color.black)
+
+// PBJ + Short + HV (bear)
+plotshape(show_PBJplusShortHV and pbjShortHVFired, title="PBJ+Short+HV", style=shape.labeldown, location=location.abovebar, size=size.normal, color=color.new(#FF4500, 0), text="PBJ+S+HV", textcolor=color.white)
+
+// Long + 500/1K (bull, offset=-1 to land on the HV candle)
+plotshape(show_LongPlusHV and longHVFired, title="Long+HV", style=shape.labelup, location=location.belowbar, size=size.normal, color=color.new(color.blue, 0), text="L+HV", textcolor=color.yellow, offset=-1)
+
+// HVD+PBJ + Any — SPLIT bull/bear (offset=-1)
+plotshape(show_HVDplusPBJany and hvdpbjAnyBullFired, title="HVD+PBJ+Any Bull", style=shape.diamond, location=location.belowbar, size=size.normal, color=color.new(#00C853, 0), text="HVD\nPBJ+", textcolor=color.white, offset=-1)
+plotshape(show_HVDplusPBJany and hvdpbjAnyBearFired, title="HVD+PBJ+Any Bear", style=shape.diamond, location=location.abovebar, size=size.normal, color=color.new(#D50000, 0), text="HVD\nPBJ+", textcolor=color.white, offset=-1)
+
+// HV+D + Any — SPLIT bull/bear (fixes green-on-bear; offset=-1)
+plotshape(show_HVplusDany and hvdAnyBullFired, title="HV+D+Any Bull", style=shape.triangleup, location=location.belowbar, size=size.small, color=color.new(#00E676, 0), text="HV+D+", textcolor=color.white, offset=-1)
+plotshape(show_HVplusDany and hvdAnyBearFired, title="HV+D+Any Bear", style=shape.triangledown, location=location.abovebar, size=size.small, color=color.new(#FF1744, 0), text="HV+D+", textcolor=color.white, offset=-1)
+
+// Nagasaki standalone — SPLIT bull/bear (no neutral; direction from anchors on the candle)
+plotshape(show_NagStd and nagStandBull, title="Nagasaki Bull", style=shape.flag, location=location.top, size=size.normal, color=color.new(color.green, 0), text="N", textcolor=color.white)
+plotshape(show_NagStd and nagStandBear, title="Nagasaki Bear", style=shape.flag, location=location.top, size=size.normal, color=color.new(color.red, 0), text="N", textcolor=color.white)
+
+// Nagasaki + Strong — SPLIT bull/bear
+plotshape(show_NagStrong and nagStrongBullFired, title="Nag+Strong Bull", style=shape.labelup, location=location.belowbar, size=size.large, color=color.new(#00C853, 0), text="N★★★", textcolor=color.white)
+plotshape(show_NagStrong and nagStrongBearFired, title="Nag+Strong Bear", style=shape.labeldown, location=location.abovebar, size=size.large, color=color.new(#D50000, 0), text="N★★★", textcolor=color.white)
+
+// Nagasaki + HV+D (offset=-1 since HV+D describes prev bar)
+plotshape(show_NagStrong and nagHVD, title="Nag+HV+D", style=shape.labelup, location=location.belowbar, size=size.large, color=color.new(#FF00FF, 0), text="N★HVD", textcolor=color.white, offset=-1)
+
+// HV+D standalone (offset=-1)
+plotshape(show_HVDstd and hvd_bull, title="HV+D Bull", style=shape.triangleup, location=location.belowbar, color=color.new(#00E676, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
+plotshape(show_HVDstd and hvd_bear, title="HV+D Bear", style=shape.triangledown, location=location.abovebar, color=color.new(#FF1744, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
+
+// HVD+PBJ standalone (offset=-1)
+plotshape(show_HVDPBJstd and hvdpbj_bull, title="HVD+PBJ Bull", style=shape.diamond, location=location.belowbar, color=color.new(#AA00FF, 0), text="HVD\nPBJ", textcolor=color.white, size=size.normal, offset=-1)
+plotshape(show_HVDPBJstd and hvdpbj_bear, title="HVD+PBJ Bear", style=shape.diamond, location=location.abovebar, color=color.new(#AA00FF, 0), text="HVD\nPBJ", textcolor=color.white, size=size.normal, offset=-1)
+
+// =============================================================================
+// PLOTS — CONDITIONAL SIGNALS
+// =============================================================================
+// Long 1/2 (always plot)
+plotshape(cond_Long1, title="LONG 1", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.blue, 10), text="LONG 1", textcolor=color.yellow)
+plotshape(cond_Long2, title="LONG 2", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.teal, 10), text="LONG 2", textcolor=color.yellow)
+
+// Long 3/4/5 (only when HV500/1K on same candle)
+plotshape(cond_Long3, title="LONG 3", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.purple, 10), text="LONG 3", textcolor=color.yellow)
+plotshape(cond_Long4, title="LONG 4", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.orange, 10), text="LONG 4", textcolor=color.white)
+plotshape(cond_Long5, title="LONG 5", style=shape.labelup, location=location.belowbar, size=size.tiny, color=color.new(color.fuchsia, 10), text="LONG 5", textcolor=color.white)
+
+// HV tiers (conditional) — SPLIT bull/bear (offset -1 describes the prior bar → barDirBull[1])
+bool cond_HV1000_bull = cond_HV1000 and barDirBull[1]
+bool cond_HV1000_bear = cond_HV1000 and not barDirBull[1]
+bool cond_HV500_bull  = cond_HV500  and barDirBull[1]
+bool cond_HV500_bear  = cond_HV500  and not barDirBull[1]
+bool cond_HV250_bull  = cond_HV250  and barDirBull[1]
+bool cond_HV250_bear  = cond_HV250  and not barDirBull[1]
+bool cond_HV150_bull  = cond_HV150  and barDirBull[1]
+bool cond_HV150_bear  = cond_HV150  and not barDirBull[1]
+bool cond_HV75_bull   = cond_HV75   and barDirBull[1]
+bool cond_HV75_bear   = cond_HV75   and not barDirBull[1]
+plotshape(cond_HV1000_bull, title="HV 1000 Bull", style=shape.circle, location=location.bottom, color=color.new(color.green, 0), size=size.normal, text="1K", textcolor=color.white, offset=-1)
+plotshape(cond_HV1000_bear, title="HV 1000 Bear", style=shape.circle, location=location.top,    color=color.new(color.red, 0),   size=size.normal, text="1K", textcolor=color.white, offset=-1)
+plotshape(cond_HV500_bull,  title="HV 500 Bull",  style=shape.circle, location=location.bottom, color=color.new(color.green, 0), size=size.normal, text="500", textcolor=color.white, offset=-1)
+plotshape(cond_HV500_bear,  title="HV 500 Bear",  style=shape.circle, location=location.top,    color=color.new(color.red, 0),   size=size.normal, text="500", textcolor=color.white, offset=-1)
+plotshape(cond_HV250_bull,  title="HV 250 Bull",  style=shape.circle, location=location.bottom, color=color.new(color.green, 0), size=size.small, text="250", textcolor=color.white, offset=-1)
+plotshape(cond_HV250_bear,  title="HV 250 Bear",  style=shape.circle, location=location.top,    color=color.new(color.red, 0),   size=size.small, text="250", textcolor=color.white, offset=-1)
+plotshape(cond_HV150_bull,  title="HV 150 Bull",  style=shape.triangleup,   location=location.bottom, color=color.new(color.green, 0), size=size.tiny, text="150", textcolor=color.white, offset=-1)
+plotshape(cond_HV150_bear,  title="HV 150 Bear",  style=shape.triangledown, location=location.top,    color=color.new(color.red, 0),   size=size.tiny, text="150", textcolor=color.white, offset=-1)
+plotshape(cond_HV75_bull,   title="HV 75 Bull",   style=shape.triangleup,   location=location.bottom, color=color.new(color.green, 0), size=size.tiny, text="75", textcolor=color.white, offset=-1)
+plotshape(cond_HV75_bear,   title="HV 75 Bear",   style=shape.triangledown, location=location.top,    color=color.new(color.red, 0),   size=size.tiny, text="75", textcolor=color.white, offset=-1)
+
+// CS1/CS2 (offset=-1)
+plotshape(show_CS1Bull and sigCS1Bull, title="CS1 Bull", style=shape.labelup, location=location.belowbar, color=color.green, text="CS1", textcolor=color.white, offset=-1)
+plotshape(show_CS2Bull and sigCS2Bull, title="CS2 Bull", style=shape.labelup, location=location.belowbar, color=color.aqua, text="CS2", textcolor=color.black, offset=-1)
+plotshape(show_CS12Bull and sigCS12Bull, title="CS1+CS2 Bull", style=shape.labelup, location=location.belowbar, color=color.blue, text="CS12", textcolor=color.white, size=size.normal, offset=-1)
+
+// PUP (bull)
+plotshape(show_PUP and sigPUP, title="PUP", style=shape.labelup, location=location.belowbar, color=color.lime, size=size.normal, text="PUP", textcolor=color.black)
+
+// PPD — Pocket Pivot Down (bear; mirror of PUP)
+plotshape(show_PPD and sigPPD, title="PPD", style=shape.labeldown, location=location.abovebar, color=color.maroon, size=size.normal, text="PPD", textcolor=color.white)
+
+
+// =============================================================================
+// AGGREGATED ALERT — DEDUPLICATION
+// One alert per bar, composites first, then conditional standalone signals.
+// =============================================================================
+// QUERYABLE ALERT — 1:1 PARITY WITH THE VISUAL PLOTS.
+// EXACTLY one record per fired detection plot. The record `det=` name is the SAME canonical
+// string used as the plot title (see DETECTION PLOT NAMING table in the docs). No atom-only
+// records, no name drift: visual plot name == alert name == database name.
+// Non-repainting: whole block runs under `if conf` (bar close). Windows are rolling (ta.highest).
+// Schema (per detection):  det=<Canonical Name>|dir=<bull|bear>|off=<0|-1>
+f_p(string _p, bool _fired, string _name, string _dir, string _off) =>
+    _fired ? _p + "\ndet=" + _name + "|dir=" + _dir + "|off=" + _off : _p
+
+if conf
+    string p = ""
+    // ── Composite detection plots (name == plot title) ─────────────
+    p := f_p(p, show_PBJplusAny and pbjAnyBullFired,        "PBJ+Any Bull",       "bull", "0")
+    p := f_p(p, show_PBJplusAny and pbjAnyBearFired,        "PBJ+Any Bear",       "bear", "0")
+    p := f_p(p, show_B2B_PBJplusAny and b2bPbjAnyBullFired, "B2B PBJ+Any Bull",   "bull", "0")
+    p := f_p(p, show_B2B_PBJplusAny and b2bPbjAnyBearFired, "B2B PBJ+Any Bear",   "bear", "0")
+    p := f_p(p, show_PBJplusLong and pbjLongFired,          "PBJ+Long",           "bull", "0")
+    p := f_p(p, show_PBJplusShortHV and pbjShortHVFired,    "PBJ+Short+HV",       "bear", "0")
+    p := f_p(p, show_LongPlusHV and longHVFired,            "Long+HV",            "bull", "-1")
+    p := f_p(p, show_HVDplusPBJany and hvdpbjAnyBullFired,  "HVD+PBJ+Any Bull",   "bull", "-1")
+    p := f_p(p, show_HVDplusPBJany and hvdpbjAnyBearFired,  "HVD+PBJ+Any Bear",   "bear", "-1")
+    p := f_p(p, show_HVplusDany and hvdAnyBullFired,        "HV+D+Any Bull",      "bull", "-1")
+    p := f_p(p, show_HVplusDany and hvdAnyBearFired,        "HV+D+Any Bear",      "bear", "-1")
+    p := f_p(p, show_NagStd and nagStandBull,              "Nagasaki Bull",      "bull", "0")
+    p := f_p(p, show_NagStd and nagStandBear,              "Nagasaki Bear",      "bear", "0")
+    p := f_p(p, show_NagStrong and nagStrongBullFired,      "Nag+Strong Bull",    "bull", "0")
+    p := f_p(p, show_NagStrong and nagStrongBearFired,      "Nag+Strong Bear",    "bear", "0")
+    p := f_p(p, show_NagStrong and nagHVD,                  "Nag+HV+D",           "bull", "-1")
+    p := f_p(p, show_HVDstd and hvd_bull,                   "HV+D Bull",          "bull", "-1")
+    p := f_p(p, show_HVDstd and hvd_bear,                   "HV+D Bear",          "bear", "-1")
+    p := f_p(p, show_HVDPBJstd and hvdpbj_bull,             "HVD+PBJ Bull",       "bull", "-1")
+    p := f_p(p, show_HVDPBJstd and hvdpbj_bear,             "HVD+PBJ Bear",       "bear", "-1")
+    // ── Conditional detection plots (name == plot title) ───────────
+    p := f_p(p, cond_Long1, "LONG 1", "bull", "0")
+    p := f_p(p, cond_Long2, "LONG 2", "bull", "0")
+    p := f_p(p, cond_Long3, "LONG 3", "bull", "0")
+    p := f_p(p, cond_Long4, "LONG 4", "bull", "0")
+    p := f_p(p, cond_Long5, "LONG 5", "bull", "0")
+    p := f_p(p, cond_HV1000_bull, "HV 1000 Bull", "bull", "-1")
+    p := f_p(p, cond_HV1000_bear, "HV 1000 Bear", "bear", "-1")
+    p := f_p(p, cond_HV500_bull,  "HV 500 Bull",  "bull", "-1")
+    p := f_p(p, cond_HV500_bear,  "HV 500 Bear",  "bear", "-1")
+    p := f_p(p, cond_HV250_bull,  "HV 250 Bull",  "bull", "-1")
+    p := f_p(p, cond_HV250_bear,  "HV 250 Bear",  "bear", "-1")
+    p := f_p(p, cond_HV150_bull,  "HV 150 Bull",  "bull", "-1")
+    p := f_p(p, cond_HV150_bear,  "HV 150 Bear",  "bear", "-1")
+    p := f_p(p, cond_HV75_bull,   "HV 75 Bull",   "bull", "-1")
+    p := f_p(p, cond_HV75_bear,   "HV 75 Bear",   "bear", "-1")
+    p := f_p(p, show_CS1Bull and sigCS1Bull,   "CS1 Bull",     "bull", "-1")
+    p := f_p(p, show_CS2Bull and sigCS2Bull,   "CS2 Bull",     "bull", "-1")
+    p := f_p(p, show_CS12Bull and sigCS12Bull, "CS1+CS2 Bull", "bull", "-1")
+    p := f_p(p, show_PUP and sigPUP, "PUP", "bull", "0")
+    p := f_p(p, show_PPD and sigPPD, "PPD", "bear", "0")
+
+    // ── FIRE — one alert/bar; every line is a visual plot with the identical name ──
+    if p != ""
+        string hdr = "HWULTRA|v=2|tkr=" + syminfo.tickerid + "|tf=" + timeframe.period + "|t=" + str.tostring(time)
+        alert(hdr + p, alert.freq_once_per_bar_close)
+
+// =============================================================================
+// END
+// =============================================================================
