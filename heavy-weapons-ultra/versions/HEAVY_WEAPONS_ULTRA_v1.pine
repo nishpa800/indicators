@@ -91,14 +91,21 @@ show_CS12Bull   = input.bool(true, "CS1+CS2 Bull", group=grp_global_new, inline=
 // GLOBAL TOGGLES — COMPOSITES
 // =============================================================================
 grp_comp = "★ GLOBAL TOGGLES — COMPOSITES ★"
-show_PBJplusAny      = input.bool(true, "PBJ + Any Signal", group=grp_comp, inline="c1")
-show_B2B_PBJplusAny  = input.bool(true, "B2B PBJ + Any (2 bars)", group=grp_comp, inline="c1")   // ★ B2B PBJ+ANY toggle
-show_PBJplusLong     = input.bool(true, "PBJ + Long (1-5)", group=grp_comp, inline="c1")
-show_PBJplusShortHV  = input.bool(true, "PBJ + Short (1-2) + HV", group=grp_comp, inline="c2")
-show_LongPlusHV      = input.bool(true, "Long + 500/1K", group=grp_comp, inline="c2")
-show_HVDplusPBJany   = input.bool(true, "HVD+PBJ + Any Signal", group=grp_comp, inline="c3")
-show_HVplusDany      = input.bool(true, "HV+D + Any Signal", group=grp_comp, inline="c3")
-show_NagStrong       = input.bool(true, "Nagasaki + Strong Signal", group=grp_comp, inline="c4")
+show_PBJplusAny      = input.bool(true, "PBJ + Any (Bull / Bear)", group=grp_comp, tooltip="Requires: a PBJ pocket-pivot cross within a rolling window of ANY enabled signal. Split Bull/Bear by the directional anchors on the same candle. Offset 0.")
+show_B2B_PBJplusAny  = input.bool(true, "B2B PBJ + Any (Bull / Bear)", group=grp_comp, tooltip="Requires: PBJ + Any firing on TWO consecutive confirmed bars. Split Bull/Bear by same-candle anchors. Offset 0.")
+show_PBJplusLong     = input.bool(true, "PBJ + Long", group=grp_comp, tooltip="Requires: a BULLISH PBJ pocket-pivot cross AND at least one Long (1–5) momentum on the same bar. Bullish. Offset 0.")
+show_PBJplusShortHV  = input.bool(true, "PBJ + Short + HV", group=grp_comp, tooltip="Requires: a BEARISH PBJ cross AND a Short (1 or 2) AND the prior bar is a 500- or 1000-bar rolling volume high. Bearish. Offset 0.")
+show_LongPlusHV      = input.bool(true, "Long + HV", group=grp_comp, tooltip="Requires: the prior bar is a 500- or 1000-bar rolling volume high AND a Long (1–5) fired on that prior bar. Bullish. Offset −1.")
+show_HVDplusPBJany   = input.bool(true, "HVD + PBJ + Any (Bull / Bear)", group=grp_comp, tooltip="Requires: HVD+PBJ (Bull or Bear) AND any co-signal on the prior bar. Offset −1.")
+show_HVplusDany      = input.bool(true, "HV+D + Any (Bull / Bear)", group=grp_comp, tooltip="Requires: HV+D (Bull or Bear) AND any co-signal on the prior bar. Offset −1.")
+show_NagStrong       = input.bool(true, "Nagasaki + Strong (Bull / Bear)", group=grp_comp, tooltip="Requires: all-time-high volume AND a strong signal (Long 1–5 / Grand Slam / WTC / Hiroshima / MOAB / HV1000). Split Bull/Bear by same-candle anchors. Offset 0.")
+
+// ★ MASTER TOGGLES — standalone detection plots (with human-readable gate info buttons) ★
+grp_mt = "★ DETECTION PLOTS — STANDALONE MASTER TOGGLES ★"
+show_HVDstd     = input.bool(true, "HV+D (Bull / Bear)", group=grp_mt, tooltip="HV+D standalone. Requires: a high-volume bar (rolling 50–1000-bar window OR all-time volume record) that is DISPLACED (unusually large range) AND followed by a bullish gap-up (Bull) or bearish gap-down (Bear). Offset −1 (marks the prior/HV bar).")
+show_HVDPBJstd  = input.bool(true, "HVD+PBJ (Bull / Bear)", group=grp_mt, tooltip="HVD+PBJ standalone. Requires: HV+D (Bull or Bear) AND a PBJ pocket-pivot cross of the same direction on the prior bar. Offset −1.")
+show_NagStd     = input.bool(true, "Nagasaki (Bull / Bear)", group=grp_mt, tooltip="Nagasaki standalone. Requires: all-time-high volume on the bar. It has no direction of its own, so direction is INHERITED from the directional anchors on the same candle (PBJ / displacement / FAUNA / PUP / PPD / directional RVOL), tiebreak by candle close vs open. Offset 0.")
+show_PPD        = input.bool(true, "PPD (Pocket Pivot Down)", group=grp_mt, tooltip="PPD = Pocket Pivot Down, the bearish mirror of PUP. Requires: a >3% DOWN bar + current volume above the highest UP-volume bar in a rolling 10-day window + EMA downtrend stack (50<150≤200, below the 200 from ~1 month ago) + price in the LOWER 52-week band. Offset 0.")
 
 
 // =============================================================================
@@ -950,7 +957,7 @@ float pup_greenVol   = close > open ? volume : 0.0
 float ppd_hiGreenVol = ta.highest(pup_greenVol[1], pup_ppLookback)
 bool  ppd_priceDn    = ((open - close) / open) * 100 > pup_barSize
 bool  ppd_volBear    = volume > ppd_hiGreenVol
-bool  ppd_bearPass   = close < pup_ema50 and close <= pup_ema150 and close <= pup_ema200 and pup_ema50 < pup_ema150 and pup_ema50 < pup_ema200 and pup_ema150 <= pup_ema200 and pup_ema200 < pup_ema200_1m and close < (pup_w52Hi * 0.75) and close <= (pup_w52Lo * 1.25)
+bool  ppd_bearPass   = close < pup_ema50 and close <= pup_ema150 and close <= pup_ema200 and pup_ema50 < pup_ema150 and pup_ema50 < pup_ema200 and pup_ema150 <= pup_ema200 and pup_ema200 < pup_ema200_1m and close < (pup_w52Hi * 0.75) and close <= (pup_w52Lo * 1.30)
 bool  sigPPD = conf and ppd_priceDn and ppd_volBear and ppd_bearPass
 
 // =============================================================================
@@ -1433,8 +1440,8 @@ plotshape(show_HVplusDany and hvdAnyBullFired, title="HV+D+Any Bull", style=shap
 plotshape(show_HVplusDany and hvdAnyBearFired, title="HV+D+Any Bear", style=shape.triangledown, location=location.abovebar, size=size.small, color=color.new(#FF1744, 0), text="HV+D+", textcolor=color.white, offset=-1)
 
 // Nagasaki standalone — SPLIT bull/bear (no neutral; direction from anchors on the candle)
-plotshape(nagStandBull, title="Nagasaki Bull", style=shape.flag, location=location.top, size=size.normal, color=color.new(color.green, 0), text="N", textcolor=color.white)
-plotshape(nagStandBear, title="Nagasaki Bear", style=shape.flag, location=location.top, size=size.normal, color=color.new(color.red, 0), text="N", textcolor=color.white)
+plotshape(show_NagStd and nagStandBull, title="Nagasaki Bull", style=shape.flag, location=location.top, size=size.normal, color=color.new(color.green, 0), text="N", textcolor=color.white)
+plotshape(show_NagStd and nagStandBear, title="Nagasaki Bear", style=shape.flag, location=location.top, size=size.normal, color=color.new(color.red, 0), text="N", textcolor=color.white)
 
 // Nagasaki + Strong — SPLIT bull/bear
 plotshape(show_NagStrong and nagStrongBullFired, title="Nag+Strong Bull", style=shape.labelup, location=location.belowbar, size=size.large, color=color.new(#00C853, 0), text="N★★★", textcolor=color.white)
@@ -1444,12 +1451,12 @@ plotshape(show_NagStrong and nagStrongBearFired, title="Nag+Strong Bear", style=
 plotshape(show_NagStrong and nagHVD, title="Nag+HV+D", style=shape.labelup, location=location.belowbar, size=size.large, color=color.new(#FF00FF, 0), text="N★HVD", textcolor=color.white, offset=-1)
 
 // HV+D standalone (offset=-1)
-plotshape(hvd_bull, title="HV+D Bull", style=shape.triangleup, location=location.belowbar, color=color.new(#00E676, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
-plotshape(hvd_bear, title="HV+D Bear", style=shape.triangledown, location=location.abovebar, color=color.new(#FF1744, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
+plotshape(show_HVDstd and hvd_bull, title="HV+D Bull", style=shape.triangleup, location=location.belowbar, color=color.new(#00E676, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
+plotshape(show_HVDstd and hvd_bear, title="HV+D Bear", style=shape.triangledown, location=location.abovebar, color=color.new(#FF1744, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
 
 // HVD+PBJ standalone (offset=-1)
-plotshape(hvdpbj_bull, title="HVD+PBJ Bull", style=shape.diamond, location=location.belowbar, color=color.new(#AA00FF, 0), text="HVD\nPBJ", textcolor=color.white, size=size.normal, offset=-1)
-plotshape(hvdpbj_bear, title="HVD+PBJ Bear", style=shape.diamond, location=location.abovebar, color=color.new(#AA00FF, 0), text="HVD\nPBJ", textcolor=color.white, size=size.normal, offset=-1)
+plotshape(show_HVDPBJstd and hvdpbj_bull, title="HVD+PBJ Bull", style=shape.diamond, location=location.belowbar, color=color.new(#AA00FF, 0), text="HVD\nPBJ", textcolor=color.white, size=size.normal, offset=-1)
+plotshape(show_HVDPBJstd and hvdpbj_bear, title="HVD+PBJ Bear", style=shape.diamond, location=location.abovebar, color=color.new(#AA00FF, 0), text="HVD\nPBJ", textcolor=color.white, size=size.normal, offset=-1)
 
 // =============================================================================
 // PLOTS — CONDITIONAL SIGNALS
@@ -1494,7 +1501,7 @@ plotshape(show_CS12Bull and sigCS12Bull, title="CS1+CS2 Bull", style=shape.label
 plotshape(show_PUP and sigPUP, title="PUP", style=shape.labelup, location=location.belowbar, color=color.lime, size=size.normal, text="PUP", textcolor=color.black)
 
 // PPD — Pocket Pivot Down (bear; mirror of PUP)
-plotshape(sigPPD, title="PPD", style=shape.labeldown, location=location.abovebar, color=color.maroon, size=size.normal, text="PPD", textcolor=color.white)
+plotshape(show_PPD and sigPPD, title="PPD", style=shape.labeldown, location=location.abovebar, color=color.maroon, size=size.normal, text="PPD", textcolor=color.white)
 
 
 // =============================================================================
@@ -1524,15 +1531,15 @@ if conf
     p := f_p(p, show_HVDplusPBJany and hvdpbjAnyBearFired,  "HVD+PBJ+Any Bear",   "bear", "-1")
     p := f_p(p, show_HVplusDany and hvdAnyBullFired,        "HV+D+Any Bull",      "bull", "-1")
     p := f_p(p, show_HVplusDany and hvdAnyBearFired,        "HV+D+Any Bear",      "bear", "-1")
-    p := f_p(p, nagStandBull,                               "Nagasaki Bull",      "bull", "0")
-    p := f_p(p, nagStandBear,                               "Nagasaki Bear",      "bear", "0")
+    p := f_p(p, show_NagStd and nagStandBull,              "Nagasaki Bull",      "bull", "0")
+    p := f_p(p, show_NagStd and nagStandBear,              "Nagasaki Bear",      "bear", "0")
     p := f_p(p, show_NagStrong and nagStrongBullFired,      "Nag+Strong Bull",    "bull", "0")
     p := f_p(p, show_NagStrong and nagStrongBearFired,      "Nag+Strong Bear",    "bear", "0")
     p := f_p(p, show_NagStrong and nagHVD,                  "Nag+HV+D",           "bull", "-1")
-    p := f_p(p, hvd_bull,                                   "HV+D Bull",          "bull", "-1")
-    p := f_p(p, hvd_bear,                                   "HV+D Bear",          "bear", "-1")
-    p := f_p(p, hvdpbj_bull,                                "HVD+PBJ Bull",       "bull", "-1")
-    p := f_p(p, hvdpbj_bear,                                "HVD+PBJ Bear",       "bear", "-1")
+    p := f_p(p, show_HVDstd and hvd_bull,                   "HV+D Bull",          "bull", "-1")
+    p := f_p(p, show_HVDstd and hvd_bear,                   "HV+D Bear",          "bear", "-1")
+    p := f_p(p, show_HVDPBJstd and hvdpbj_bull,             "HVD+PBJ Bull",       "bull", "-1")
+    p := f_p(p, show_HVDPBJstd and hvdpbj_bear,             "HVD+PBJ Bear",       "bear", "-1")
     // ── Conditional detection plots (name == plot title) ───────────
     p := f_p(p, cond_Long1, "LONG 1", "bull", "0")
     p := f_p(p, cond_Long2, "LONG 2", "bull", "0")
@@ -1553,7 +1560,7 @@ if conf
     p := f_p(p, show_CS2Bull and sigCS2Bull,   "CS2 Bull",     "bull", "-1")
     p := f_p(p, show_CS12Bull and sigCS12Bull, "CS1+CS2 Bull", "bull", "-1")
     p := f_p(p, show_PUP and sigPUP, "PUP", "bull", "0")
-    p := f_p(p, sigPPD, "PPD", "bear", "0")
+    p := f_p(p, show_PPD and sigPPD, "PPD", "bear", "0")
 
     // ── FIRE — one alert/bar; every line is a visual plot with the identical name ──
     if p != ""
