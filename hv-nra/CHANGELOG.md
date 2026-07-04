@@ -41,3 +41,12 @@ Generated indicator. Source of truth is `build_hv_ladder.py`; the `.pine` under
   historical-buffer cap. `ta.highest` auto-sizes the buffer from its constant
   length — same mechanism the 1000-tier already relied on — so no `max_bars_back`
   is needed. 27 plot outputs total, under the 64-plot limit.
+
+## remove Hot Spot — 2026-07-04
+- Removed the Hot Spot (HS) calendar feature entirely: `useHS` input, the
+  calendar-window calcs + `isHotSpot`, `plot_HS`, its plotshape and
+  alertcondition, and its `signalStates` slot. Title is now
+  `HV(50-1000 step50 +1.5k-4k / HEV)`.
+- Ladder is now 25 tiers + HEV (no HS). Exports: `activeVolSignals` unchanged
+  at 0..26 (25 tiers + HEV); `signalStates` is now a 26-slot array
+  ([0..24]=tiers, [25]=HEV). 26 plot outputs / 26 alerts.
