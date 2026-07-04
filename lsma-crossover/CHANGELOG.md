@@ -36,6 +36,14 @@ failure modes are reachable. Nothing to guard.
    (`1000 < 1500`) so it never trips *"references too many bars back"*. Does not force bars to exist —
    `ta.linreg(src,1000)` returns `na` until 1000 bars are present, identical on tick and time charts.
 
+4. **Distinct naming in BOTH title and shorttitle (mandatory).** The tick build is renamed so it can
+   never be confused with the original in the TradingView indicator list — loading the tick build on a
+   time chart (or the original on a tick chart) silently corrupts downstream use:
+   - title: `Least Squares Moving Average Crossover` → `Least Squares Moving Average Crossover [Tick-Friendly]`
+   - shorttitle: `LSMA Crossover` → `LSMA Crossover TF`
+   The verbatim v4 original in `originals/` keeps the PLAIN, unmarked names as the "not tick-friendly"
+   reference. House convention: `[Tick-Friendly]` in the title, `TF` suffix in the shorttitle.
+
 **Unchanged (faithful to the original):** all inputs and defaults (Length 21, Offset 0, Trigger Length
 4, Source `close`); the hardcoded 200/1000 Long/Extra-Long regression lengths; all four plots
 (LSMA blue, Trigger yellow, Long white, Extra Long blue), `linewidth=3`, `overlay=true`.
@@ -46,4 +54,7 @@ failure modes are reachable. Nothing to guard.
 - **Plain English recall:** "What made LSMA Crossover tick-friendly?" → dropped the `resolution=""`
   dropdown so it's always chart-native; everything else is a straight v4→v5 port. It was NO-RISK to
   begin with (no relativeVolume / no timeframe math).
+- **Which one is tick-friendly?** The one whose title ends `[Tick-Friendly]` and whose shorttitle
+  ends `TF`. The plain `Least Squares Moving Average Crossover` / `LSMA Crossover` (in `originals/`)
+  is the untouched v4 original.
 - **Source of truth:** the verbatim v4 lives in `originals/`; the deliverable lives in `tick_friendly/`.

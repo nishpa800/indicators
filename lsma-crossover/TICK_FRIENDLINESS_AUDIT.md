@@ -11,9 +11,12 @@ on a tick chart):
 
 ## Source
 
-- Indicator: `Least Squares Moving Average Crossover` — shorttitle `LSMA Crossover`
-- Original: `originals/LSMA_Crossover_v4_original.txt` (`//@version=4` `study(..., resolution="")`)
-- Tick-friendly build: `tick_friendly/LSMA_Crossover_v5_tick_friendly.pine` (`//@version=5`)
+- Original (NOT tick-friendly): `originals/LSMA_Crossover_v4_original.txt` (`//@version=4`
+  `study(..., resolution="")`) — title `Least Squares Moving Average Crossover`, shorttitle
+  `LSMA Crossover` (**plain, unmarked**).
+- Tick-friendly build: `tick_friendly/LSMA_Crossover_v5_tick_friendly.pine` (`//@version=5`) —
+  title `Least Squares Moving Average Crossover [Tick-Friendly]`, shorttitle `LSMA Crossover TF`
+  (**marked in BOTH places** so it can never be confused with the original on the TradingView list).
 - Calculation: `d = ta.sma(ta.linreg(src,21,0), 4)` crossing three regressions —
   `ta.linreg(src,21,0)` (LSMA) · `ta.linreg(src,200,0)` (Long) · `ta.linreg(src,1000,0)` (Extra Long).
 
@@ -45,6 +48,11 @@ on a tick chart):
   bars are present, identical on tick and time charts.
 - **No look-ahead.** All four plots are continuous MA lines evaluated on the current bar; no `[1]`
   offset or `barstate.isconfirmed` gate is required (there are no discrete detection signals here).
+- **Distinct naming (title AND shorttitle).** The tick build is marked `[Tick-Friendly]` in the
+  title and `TF` in the shorttitle; the v4 original keeps the plain unmarked names. This is
+  mandatory — an unmarked tick build is indistinguishable from the original in the TradingView
+  list, and loading the wrong one (tick build on a time chart, or vice-versa) silently corrupts
+  downstream use. The distinction must live in BOTH the title and the shorttitle.
 
 ## Behavior in a custom tick/time candle engine
 

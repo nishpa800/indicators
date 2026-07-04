@@ -32,6 +32,15 @@
 //   a tick feed and 1000 time-bars on a time feed — a BAR-COUNT lookback, never a duration. Feed
 //   either bar stream and the linreg/sma math is identical; behavior is fully deterministic.
 //
+// NAMING — the tick build MUST be distinguishable from the original in BOTH places (title AND
+// shorttitle), so it can never be confused with the plain original in the TradingView indicator
+// list. Loading the tick build on a time chart (or the original on a tick chart) is a known
+// footgun that silently corrupts downstream use, so the names differ in both spots:
+//   title:      "Least Squares Moving Average Crossover"      -> "... [Tick-Friendly]"
+//   shorttitle: "LSMA Crossover"                              -> "LSMA Crossover TF"
+// The verbatim v4 original in originals/ keeps the PLAIN, unmarked names (it is the "not
+// tick-friendly" reference); only this build carries the [Tick-Friendly] / TF markers.
+//
 // v4 -> v5 syntax mapping (calculation numerically identical; time-chart parity preserved):
 //   study()                              -> indicator()
 //   resolution=""                        -> (omitted -> always chart-native; see note above)
@@ -43,7 +52,7 @@
 //                                           regression never trips "references too many bars back".
 // ═══════════════════════════════════════════════════════════════════════════════
 
-indicator(title="Least Squares Moving Average Crossover", shorttitle="LSMA Crossover", overlay=true, max_bars_back=1500)
+indicator(title="Least Squares Moving Average Crossover [Tick-Friendly]", shorttitle="LSMA Crossover TF", overlay=true, max_bars_back=1500)
 
 length  = input.int(21, title="Length")
 offset  = input.int(0,  title="Offset")
