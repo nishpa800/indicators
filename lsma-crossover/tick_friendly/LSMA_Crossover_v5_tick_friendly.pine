@@ -1,0 +1,61 @@
+//@version=5
+// Pine is a Pine Editor tick-friendly
+// LSMA Crossover — tick-friendly Pine v5 conversion
+// Source: originals/LSMA_Crossover_v4_original.txt (//@version=4 study, resolution="")
+//
+// ═══════════════════════════════════════════════════════════════════════════════
+// TICK-SAFETY VERDICT: NO-RISK  (tick-safe by construction — nothing to guard)
+// ═══════════════════════════════════════════════════════════════════════════════
+//   • No tv_ta / relativeVolume()  -> no RE10023 (timeframe.change on a tick anchor) risk.
+//   • No timeframe.in_seconds()    -> no na/0 tfSec threshold collapse on tick charts.
+//   • No request.security()        -> no higher-timeframe request layered over tick bars.
+//   • No timeframe.change / session anchor -> no clock/session assumption anywhere.
+//   • No fixed/anchored windows    -> ta.linreg / ta.sma are inherently ROLLING (sliding
+//                                     trailing-N by BAR COUNT, not by wall-clock time).
+//   • No look-ahead                -> every plot is a continuous MA line read on the current
+//                                     bar; no [1] offset or barstate gate is needed or used.
+//   Passes check_no_fixed_windows.sh and the RE10023 call-site gate trivially (0 hits each).
+//
+// WHY THIS BUILD EXISTS — "is the 'chart' really accounting for the tick interval?"
+//   The v4 original set resolution="" — that adds a "Resolution" dropdown that DEFAULTS to the
+//   chart TF but can be overridden. A non-blank override forces an internal higher-timeframe
+//   request; on a TICK chart that HTF machinery is exactly the class of call that misbehaves.
+//   This build OMITS the timeframe parameter entirely (the house convention — all tick-friendly
+//   files in this repo do the same), so the study ALWAYS calculates directly on the chart's own
+//   bars. On a TICK chart those bars ARE the N-tick bars; on a TIME chart they are the time bars.
+//   ta.linreg / ta.sma walk the bar series and are AGNOSTIC to how each bar was built, so the
+//   study accounts for the tick interval natively — there is no separate resolution layer to
+//   second-guess, and no way to accidentally inject an HTF request on a tick chart.
+//
+//   Consequence for a custom candle engine (tick bars AND time bars): the ONLY thing that changes
+//   between a tick feed and a time feed is what one "bar" means. length=1000 is 1000 tick-bars on
+//   a tick feed and 1000 time-bars on a time feed — a BAR-COUNT lookback, never a duration. Feed
+//   either bar stream and the linreg/sma math is identical; behavior is fully deterministic.
+//
+// v4 -> v5 syntax mapping (calculation numerically identical; time-chart parity preserved):
+//   study()                              -> indicator()
+//   resolution=""                        -> (omitted -> always chart-native; see note above)
+//   input(title=..,type=input.integer..) -> input.int(..)
+//   input(close,title=..)                -> input.source(..)
+//   linreg(..)                           -> ta.linreg(..)
+//   sma(..)                              -> ta.sma(..)
+//   max_bars_back=1500                   -> explicit buffer so the length-1000 "Extra Long"
+//                                           regression never trips "references too many bars back".
+// ═══════════════════════════════════════════════════════════════════════════════
+
+indicator(title="Least Squares Moving Average Crossover", shorttitle="LSMA Crossover", overlay=true, max_bars_back=1500)
+
+length  = input.int(21, title="Length")
+offset  = input.int(0,  title="Offset")
+length2 = input.int(4,  title="Trigger Length")
+src     = input.source(close, title="Source")
+
+lsma      = ta.linreg(src, length, offset)
+d         = ta.sma(lsma, length2)
+lsmalong  = ta.linreg(src, 200, 0)
+lsmaxlong = ta.linreg(src, 1000, 0)
+
+plot(lsma,      linewidth=3, color=color.blue,   title="LSMA")
+plot(d,         linewidth=3, color=color.yellow, title="Trigger")
+plot(lsmalong,  linewidth=3, color=color.white,  title="Long")
+plot(lsmaxlong, linewidth=3, color=color.blue,   title="Extra Long")
