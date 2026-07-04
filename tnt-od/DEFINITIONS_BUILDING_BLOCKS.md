@@ -268,14 +268,20 @@ HCT = −1 because its chain has a DISP+FVG.)*
 
 ### T1 STACK = `≥ 2 distinct of the 11 on bar[1]`, same direction
 - **Offset −1** → paints on bar[1].
-- **Why it reads vague, precisely:** "distinct" counts **distinct booleans**, not **independent
-  events**. Several candidates share the same underlying atom, so one strong bar double/triple-counts:
-  - `B2B`, `RC NPM+TNT`, `PBJ+NPM`, `CATALYST`, `IGNITE N+C` **all contain NPM** — a single Napalm bar
-    that also has a TNT and a PBJ can light up RC NPM+TNT **and** PBJ+NPM **and** (if the prior bar was
-    Napalm) B2B simultaneously → STACK reports **"3 distinct"** off essentially **one** displacement.
-  - `IGNITE N+C` ⊂ `NPM + CONT`; `IGNITE T+C` ⊂ `TNT + CONT` — the IGNITE variants overlap the CONT-based
-    candidates.
-  - So **STACK's count is an upper bound on genuine confluence, not a measure of it.**
+- **Why it can over-count (narrow — corrected 2026-07-04):** "distinct" counts **distinct booleans**.
+  That is *usually a fair proxy*: most NPM-combos require a genuinely different partner — RC NPM+TNT needs
+  a real TNT, PBJ+NPM needs a real PBJ, CATALYST needs a real CS1 — so several of them firing together
+  really does mean several different building blocks are present. The count over-states confluence only
+  in a few overlap cases:
+  - **`HCT` + `UC`** are **both broad volume / heavy-combo detectors built from the same
+    RVOL/WMD/FAUNA/CS1 inputs.** They frequently co-fire, so `{HCT, UC}` reports **"2 distinct"** off
+    **one** kind of evidence (volume). This is the clearest inflation.
+  - **`B2B`** is NPM-only, and **`IGNITE T+C` / `IGNITE N+C`** both carry CONT (and CONT is itself partly
+    built from TNT), so these can add a boolean without adding a genuinely new family.
+  - So STACK's count is a **loose upper bound** on genuine confluence — mostly fair, inflatable mainly via
+    HCT+UC.
+  - *(An earlier draft claimed "one Napalm bar → 3 distinct off one displacement." That was wrong: the
+    co-firing NPM-combos each need a different partner signal, so they are not that redundant.)*
 
 ### If you want these tightened (behaviour change — not done here)
 These are documentation notes; the code is unchanged. If desired, say the word and I can:
