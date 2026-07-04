@@ -52,7 +52,7 @@
 //          most recently completed (offset=-1).
 // ══════════════════════════════════════════════════════════════════════════════
 //@version=5
-indicator("B2B PUP Combined 5.4.439am", shorttitle="B2B PUP 5.4*", overlay=true, max_bars_back=3000, max_labels_count=500)
+indicator("B2B PUP Combined 5.4.439am [Tick-Friendly]", shorttitle="B2B PUP 5.4* TF", overlay=true, max_bars_back=3000, max_labels_count=500)
 import TradingView/ta/7 as tv_ta
 
 // ── MASTER ──
