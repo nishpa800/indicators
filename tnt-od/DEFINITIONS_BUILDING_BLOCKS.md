@@ -80,7 +80,7 @@ Every plot below is assembled from these. Definitions are conceptual on purpose 
 | Atom | What it is (one line) | Has its own plot in TNT OD? |
 |---|---|---|
 | **HCT** | Inline Heavy-Combo-Toggles, using **HCT's own thresholds**: a heavy RVOL/WMD combo base **AND** HCT displacement → `hct_bull / hct_bear / hct_neutral`. | **No** — used only inside the gate and RELAY/STACK. |
-| **UC** | **Unified Combo (placeholder)** — ≥ 2 distinct streams from {FAUNA, RVOL tier, WMD, PUP/PPD, CS1}. Explicitly marked replaceable in code. | **No** — gate + RELAY/STACK only. |
+| **UC** | **Unified Combo (placeholder)** — ≥ 2 distinct streams from {FAUNA, RVOL tier, WMD, PUP/PPD, **CS1**}. Explicitly marked replaceable in code. **CS1 is the FVG Combo — a displacement+FVG signal → UC inherits an FVG chain → offset −1** (see §5, correction note). | **No** — gate + RELAY/STACK only. |
 | **WBUSH** | HEAVY PENTAGON's 5 heavy-volume combos (Yin-Yang, Nagasaki, Nagasaki-Vol, Trident, Neutral-Heavy-×2), direction-classified by USE-V5 displacement. | **Yes** — 3 plots. |
 
 ---
@@ -237,10 +237,24 @@ offset-0 candidates use `[1]`). That per-candidate mapping is **internally consi
 | 8 | PBJ+TNT | 0 | `p_ptBull[1]` |
 | 9 | IGNITE T+C | 0 | `p_ignBull[1] and ign_tc_bull[1]` |
 | 10 | HCT | −1 (declared) | `hct_bull` (current) |
-| 11 | UC | 0 (declared) | `uc_bull[1]` |
+| 11 | UC | **−1** (via CS1) | code uses `uc_bull[1]` — **off by one; should be `uc_bull`** |
 
-*(HCT and UC have no standalone plot in TNT OD, so their "offset" is a declared alignment assumption:
-HCT = −1 because its chain has a DISP+FVG; UC = 0 because it's current-bar atoms only.)*
+*(HCT and UC have no standalone plot in TNT OD, so their "offset" is a declared alignment assumption.
+HCT = −1 because its chain has a DISP+FVG.)*
+
+> **⚠ Correction — UC is offset −1, not 0.** An earlier draft called UC "current-bar atoms only." Wrong.
+> UC's stream set includes **CS1 — the FVG Combo — which the study itself classifies as a
+> displacement+FVG signal with offset −1** (it is the exact reason **CATALYST = NPM + CS1 is offset −1**).
+> So UC carries an FVG chain and is **offset −1**. In the **real Squarify v2 UC**, which always requires
+> the FVG combo, this is unconditional. In the **placeholder as-coded**, CS1 is one of 5 optional streams,
+> so the placeholder is *mixed* — −1 whenever CS1 contributes, 0 otherwise — the same split that forced
+> IGNITE into two separate plots.
+>
+> **Code consequence (latent `.pine` bug):** RELAY/STACK compute `t1_v1_b_uc = uc_bull[1]`, i.e. they
+> treat UC as offset 0. Whenever UC fired via CS1 that is **off by one** — the CS1 visual is a further bar
+> back. This is *literally the same mistake* the CATALYST v3.3 audit note flags:
+> `// Previous code had u5_CS1_Bull[1] which shifted CS1 visual to bar[0]-2 (WRONG).` For a UC that always
+> carries CS1, the alignment should be `uc_bull` (current), not `uc_bull[1]`.
 
 ### T1 RELAY = `(any of the 11 on bar[2]) AND (any of the 11 on bar[1])`, same direction
 - **Offset −1** → paints on bar[1] (the second of the two bars).
@@ -280,7 +294,7 @@ None are bugs; they are breadth choices. Listed so the breadth is explicit, not 
 |---|---|---|
 | **gate** (§3) | any 1 of 6 | one weak co-signal (e.g. a single RVOL 1x) satisfies the gate for the whole NPM-family + Tier 2 |
 | **enrich** (§3) | any 1 of 7–11 | Tier-2 "hard-gate" is wide; almost any volume/anatomy blip enriches |
-| **UC** | ≥ 2 of 5 | placeholder — not the real Squarify v2 UC; currently a 2-of-5 net |
+| **UC** | ≥ 2 of 5 | placeholder — not the real Squarify v2 UC; 2-of-5 net. Also **offset −1** via its CS1 stream (§5), currently aligned as 0 in RELAY/STACK |
 | **Nagasaki + Any** | Nagasaki AND (any tier) | the "Any" is itself an OR of 6 |
 | **denVis / TNT-ANY** | any TNTOD event | density and UU treat *all* detections as interchangeable |
 | **WBUSH × ANY** | any TNTOD plot | direction/volume state × the same "any TNTOD" net |
