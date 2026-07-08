@@ -1267,8 +1267,10 @@ def _compute_all(bars: Sequence[Bar], P: dict, tf_seconds: float):
     nag_dir_bear = [sigBearRVOL1x[i] or sigMOAB[i] or sigFAUNABear[i] or sigDISPBear[i] or anyBearPBJ[i] or sigPPD[i] or sigWhaleBear[i] or gz_bearHV[i] or gz_bearGZI[i] or sigPAFBear[i] for i in range(n)]
     sigNagasakiBull = [conf[i] and sigNagasaki[i] and nag_dir_bull[i] for i in range(n)]
     sigNagasakiBear = [conf[i] and sigNagasaki[i] and nag_dir_bear[i] for i in range(n)]
-    nag_special_bull = [sigTyphoonBull[i] or sigWhaleBull[i] or sigAnySuperBull[i] or sigGolfBull[i] or sigTomcatBull[i] or sigFullStackBull[i] or sigFVGStackBull[i] for i in range(n)]
-    nag_special_bear = [sigTyphoonBear[i] or sigWhaleBear[i] or sigAnySuperBear[i] or sigGolfBear[i] or sigTomcatBear[i] or sigFullStackBear[i] or sigFVGStackBear[i] for i in range(n)]
+    # Each term gated by its show_ toggle so a DISABLED signal cannot leak an alert through
+    # Nagasaki's pass — Nagasaki stays the only signal allowed to fire when its box is off.
+    nag_special_bull = [(P["show_TyphoonBull"] and sigTyphoonBull[i]) or (P["show_WhaleBull"] and sigWhaleBull[i]) or (P["show_SuperBull"] and sigAnySuperBull[i]) or (P["show_Golf"] and sigGolfBull[i]) or (P["show_TomcatBull"] and sigTomcatBull[i]) or (P["show_FullStack"] and sigFullStackBull[i]) or (P["show_FVGStack"] and sigFVGStackBull[i]) for i in range(n)]
+    nag_special_bear = [(P["show_TyphoonBear"] and sigTyphoonBear[i]) or (P["show_WhaleBear"] and sigWhaleBear[i]) or (P["show_SuperBear"] and sigAnySuperBear[i]) or (P["show_Golf"] and sigGolfBear[i]) or (P["show_TomcatBear"] and sigTomcatBear[i]) or (P["show_FullStack"] and sigFullStackBear[i]) or (P["show_FVGStack"] and sigFVGStackBear[i]) for i in range(n)]
     nag_gate_bull = [P["show_Nagasaki"] or nag_special_bull[i] for i in range(n)]
     nag_gate_bear = [P["show_Nagasaki"] or nag_special_bear[i] for i in range(n)]
 

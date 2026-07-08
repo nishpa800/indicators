@@ -1094,9 +1094,11 @@ bool sigNagasakiBull = conf and sigNagasaki and nag_dir_bull
 bool sigNagasakiBear = conf and sigNagasaki and nag_dir_bear
 
 // Nagasaki "always alert" exception: fires even without show_Nagasaki if co-occurring
-// with Typhoon, Whale+PUP/PPD, Super, Golf, Tomcat, Full Stack, or FVG Stack
-bool nag_special_bull = sigTyphoonBull or sigWhaleBull or sigAnySuperBull or sigGolfBull or sigTomcatBull or sigFullStackBull or sigFVGStackBull
-bool nag_special_bear = sigTyphoonBear or sigWhaleBear or sigAnySuperBear or sigGolfBear or sigTomcatBear or sigFullStackBear or sigFVGStackBear
+// with an ENABLED Typhoon, Whale+PUP/PPD, Super, Golf, Tomcat, Full Stack, or FVG Stack.
+// Each term is gated by its own show_ toggle so a DISABLED signal cannot leak an alert
+// through this pass — Nagasaki stays the only signal allowed to fire when its box is off.
+bool nag_special_bull = (show_TyphoonBull and sigTyphoonBull) or (show_WhaleBull and sigWhaleBull) or (show_SuperBull and sigAnySuperBull) or (show_Golf and sigGolfBull) or (show_TomcatBull and sigTomcatBull) or (show_FullStack and sigFullStackBull) or (show_FVGStack and sigFVGStackBull)
+bool nag_special_bear = (show_TyphoonBear and sigTyphoonBear) or (show_WhaleBear and sigWhaleBear) or (show_SuperBear and sigAnySuperBear) or (show_Golf and sigGolfBear) or (show_TomcatBear and sigTomcatBear) or (show_FullStack and sigFullStackBear) or (show_FVGStack and sigFVGStackBear)
 bool nag_gate_bull = show_Nagasaki or nag_special_bull
 bool nag_gate_bear = show_Nagasaki or nag_special_bear
 
