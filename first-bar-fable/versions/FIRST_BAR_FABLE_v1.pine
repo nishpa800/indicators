@@ -79,7 +79,12 @@ en_S17 = input.bool(true, "S17: B2B Napalm Bear",                group=grpSIG, t
 // SHARED GLOBALS + SESSION BOUNDARY
 // ══════════════════════════════════════════════════════════════════════════════
 conf = barstate.isconfirmed
-int tfSec = timeframe.in_seconds(timeframe.period)
+// tfSec guard (suite tick doctrine): timeframe.in_seconds() is na/0 on tick charts →
+// threshold ladders silently die without a fallback. Fallback 10s per SQUARIFY tick_friendly.
+// Time charts: tfSec = raw value, zero parity change.
+int _tfSecRaw = timeframe.in_seconds(timeframe.period)
+bool _isTickChart = str.endswith(timeframe.period, "T") or na(_tfSecRaw) or _tfSecRaw <= 0
+int tfSec = _isTickChart ? 10 : _tfSecRaw
 
 // Session boundary (1st PUP FAUNA / SQUARIFY anchor)
 bool is_new_day = ta.change(time("D")) != 0
