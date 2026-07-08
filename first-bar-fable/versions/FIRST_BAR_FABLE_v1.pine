@@ -1,0 +1,1503 @@
+//@version=5
+// ══════════════════════════════════════════════════════════════════════════════
+// FIRST BAR FABLE v1 — in homage of Fable
+// ──────────────────────────────────────────────────────────────────────────────
+// Composite detection study. Every engine below is a VERBATIM port from its
+// canonical suite source (no re-derivation):
+//   • RVOL 0.56 engine (SAAB/Kratos/1X/GS/MOAB, Pre-Mythos curve) — B2B PUP v5.4
+//     Engine E L266-289 (identical curve in SQUARIFY v3 L497-517)
+//   • WTC / Hiroshima (RVOL Reg@Time)                — B2B PUP v5.4 L290-294
+//   • Displacement 9 (disp_rng > disp_std*9.0)       — SQUARIFY v3 L2237-2238
+//     (bear side = natural mirror; SQUARIFY defines bull only)
+//   • PBJ engine (zoo/supertrend latch)              — 1st PUP FAUNA L556-720
+//   • PUP / PPD pocket pivot                         — 1st PUP FAUNA L491-503
+//     (== B2B PUP v5.4 Engine A L74-80, same math/defaults)
+//   • Whale (pivot + HV milestone + PUP + PBJ)       — 1st PUP FAUNA L519-552, L722-726
+//   • FAUNA (fauna variant, for Typhoon)             — 1st PUP FAUNA L340-388
+//   • GZ1 / HV FVG engine (for Musashi)              — 1st PUP FAUNA L200-268
+//   • Yin Yang swing engine (for Typhoon)            — 1st PUP FAUNA L415-443
+//   • TYPHOON / MUSASHI / alignment layer            — 1st PUP FAUNA L751-798, L836-863
+//   • B2B SAAB / B2B KRATOS (S5 composites)          — B2B PUP v5.4 L970-984
+//   • u5 FAUNA (TNT variant, for DYNAMITE)           — TNT OD v3 L755-782
+//   • DYNAMITE (dedicated 100-bar σ engine)          — TNT OD v3 L960-975
+//   • TNT OD core (VOB/ANISH/FLUX/zones/charge/cont) — TNT OD v3 L377-696 (tod_ prefix)
+//   • IGNITE (TNT+CONT / NPM+CONT)                   — TNT OD v3 L1201-1205
+//   • B2B NAPALM Engine G                            — B2B PUP v5.4 L334-690 (tnt_ prefix)
+//   • Hybrid Momentum LONG 1-5                       — Heavy Weapons Singles v2 L83-351
+//   • Nagasaki (all-time-high volume)                — SQUARIFY v3 L525-532
+// Visual-only members (line/label/box) stripped from ported zone types; all
+// booleans and state mutation order preserved exactly.
+//
+// FIRST BAR MASTER (default ON): every detection requires its REFERENCE bar
+// (the bar the shape anchors to, honoring plot offset) to be the first bar of
+// the session (ta.change(time("D")) != 0 — fauna/squarify anchor). Two-bar B2B
+// patterns pass when the pair TOUCHES the first bar (B2B PUP g01 semantics).
+// Unchecked = detections fire on any bar.
+// Each S<N> checkbox gates BOTH the plot AND the alert for that detection.
+//
+// INTERPRETATIONS (flagged for review):
+//   • S9/S10 "one of the first two bars must be displacement 9" = Disp9 on
+//     bar[0] or bar[1] (the two bars of the B2B pattern).
+//   • S15 "on the first bar" is baked into the signal itself (first-bar
+//     required even when the master toggle is OFF), like fauna's Typhoon.
+//   • "long (1-5)" = Hybrid Momentum LONG 1-5 tiers (Heavy Weapons Singles v2).
+// ══════════════════════════════════════════════════════════════════════════════
+indicator("First Bar Fable", shorttitle="1st BAR FABLE", overlay=true, max_labels_count=500, max_lines_count=500, max_bars_back=2500)
+
+import TradingView/ta/7 as tv_ta
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MASTER
+// ══════════════════════════════════════════════════════════════════════════════
+grpM = "★ MASTER ★"
+firstBarOnly = input.bool(true, "★ FIRST BAR MASTER ★", group=grpM, tooltip="ON (default): every detection only fires when its reference bar is the FIRST BAR of the session (day change). Two-bar B2B patterns pass when the pair touches the first bar. OFF: detections fire on any bar.")
+en_aggAlerts = input.bool(true, "Aggregate Alerts", group=grpM, tooltip="ON: one combined alert per direction per bar. OFF: individual alert per detection. Checked detection boxes below gate both plots AND alerts.")
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SIGNAL TOGGLES — checkbox = plot + alert
+// ══════════════════════════════════════════════════════════════════════════════
+grpSIG = "★ SIGNAL TOGGLES ★"
+en_S1  = input.bool(true, "S1: Bull RVOL 1X/GS + Disp9 + PBJ",   group=grpSIG, tooltip="Bullish RVOL 1X OR Grand Slam, + Displacement 9, + PBJ Bull. Offset 0.")
+en_S2  = input.bool(true, "S2: Bear RVOL 1X/MOAB + Disp9 + PBJ", group=grpSIG, tooltip="Bearish RVOL 1X OR MOAB, + Displacement 9, + PBJ Bear. Offset 0.")
+en_S3  = input.bool(true, "S3: Typhoon Bull",                    group=grpSIG, tooltip="1st PUP FAUNA parity: swing low + first bar + FAUNA + (PUP or Whale+PBJ) on the pivot bar. Offset -Right Bars.")
+en_S4  = input.bool(true, "S4: Typhoon Bear",                    group=grpSIG, tooltip="1st PUP FAUNA parity: swing high + first bar + FAUNA + (PPD or Whale+PBJ) on the pivot bar. Offset -Right Bars.")
+en_S5  = input.bool(true, "S5: Musashi Bull",                    group=grpSIG, tooltip="1st PUP FAUNA parity: (GZI or HV FVG) + aligned PUP + Whale + PBJ. Offset -moff.")
+en_S6  = input.bool(true, "S6: Musashi Bear",                    group=grpSIG, tooltip="1st PUP FAUNA parity: (GZI or HV FVG) + aligned PPD + Whale + PBJ. Offset -moff.")
+en_S7  = input.bool(true, "S7: Whale+PUP Bull",                  group=grpSIG, tooltip="1st PUP FAUNA parity: whale pivot + HV milestone + PUP + PBJ. Offset 0.")
+en_S8  = input.bool(true, "S8: Whale+PPD Bear",                  group=grpSIG, tooltip="1st PUP FAUNA parity: whale pivot + HV milestone + PPD + PBJ. Offset 0.")
+en_S9  = input.bool(true, "S9: B2B KRATOS + Disp9",              group=grpSIG, tooltip="B2B PUP v5.4 S5 bear parity (B2B PPD + Kratos-family RVOL on both bars) + Displacement 9 on one of the two pattern bars. Offset 0.")
+en_S10 = input.bool(true, "S10: B2B SAAB + Disp9",               group=grpSIG, tooltip="B2B PUP v5.4 S5 bull parity (B2B PUP + SAAB-family RVOL on both bars) + Displacement 9 on one of the two pattern bars. Offset 0.")
+en_S11 = input.bool(true, "S11: Dynamite Bull",                  group=grpSIG, tooltip="TNT OD v3 parity: B2B displacement bar[1]+bar[2] same bull color + FAUNA both + bar[0] bullish FVG. Offset -1.")
+en_S12 = input.bool(true, "S12: Dynamite Bear",                  group=grpSIG, tooltip="TNT OD v3 parity: bearish mirror of S11. Offset -1.")
+en_S13 = input.bool(true, "S13: Ignite Bull",                    group=grpSIG, tooltip="TNT OD v3 parity: (TNT + CONT, offset 0) OR (NPM + CONT, offset -1) same visual bar.")
+en_S14 = input.bool(true, "S14: Ignite Bear",                    group=grpSIG, tooltip="TNT OD v3 parity: bearish mirror of S13.")
+en_S15 = input.bool(true, "S15: Nagasaki 1stBar+",               group=grpSIG, tooltip="Nagasaki (all-time-high volume) + any of LONG 1-5 / PBJ Bull / Disp9 / Bullish RVOL 1X / Grand Slam — all on the FIRST BAR (first-bar requirement is baked in). Offset 0.")
+en_S16 = input.bool(true, "S16: B2B Napalm Bull",                group=grpSIG, tooltip="B2B PUP v5.4 parity: (Napalm or Charge) on bar[0] AND bar[1]. Offset 0.")
+en_S17 = input.bool(true, "S17: B2B Napalm Bear",                group=grpSIG, tooltip="B2B PUP v5.4 parity: bearish mirror of S16. Offset 0.")
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SHARED GLOBALS + SESSION BOUNDARY
+// ══════════════════════════════════════════════════════════════════════════════
+conf = barstate.isconfirmed
+int tfSec = timeframe.in_seconds(timeframe.period)
+
+// Session boundary (1st PUP FAUNA / SQUARIFY anchor)
+bool is_new_day = ta.change(time("D")) != 0
+bool is_new_sess = is_new_day
+
+// Gap qualifier for alert strings (SQUARIFY v3 pattern)
+float _gapSize = math.abs(open - close[1])
+float _barRange = high - low
+string _FIRST = not is_new_sess ? "NOT !!!" : (_gapSize <= _barRange ? "FIRST !!!" : "FIRST XXX")
+
+f_add(string base, string part) => base == "" ? part : base + " + " + part
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: RVOL 0.56 (Pre-Mythos) — B2B PUP v5.4 Engine E parity
+// SAAB / KRATOS / RVOL 1X / GRAND SLAM / MOAB threshold on NORMALIZED PRICE SPIKE
+// ══════════════════════════════════════════════════════════════════════════════
+grpRV = "── RVOL ──"
+int rv_avgLen = input.int(30, "RVOL Avg Length", group=grpRV)
+int rv_smaLen = input.int(20, "RVOL SMA Length", group=grpRV)
+float rv_spike = math.abs(close - open)
+float rv_avgSpike = ta.sma(rv_spike, rv_avgLen)[1]
+float rv_normPrice = rv_spike / nz(rv_avgSpike, 1.0)
+float rv_avgVol = ta.sma(volume, rv_avgLen)[1]
+float rv_normVol = volume / nz(rv_avgVol, 1.0)
+float rv_diff = rv_normPrice - rv_normVol
+float rv_posDiff = rv_diff > 0 ? rv_diff : na
+float rv_smaDiff = ta.sma(rv_posDiff, rv_smaLen)
+bool rv_baseBull = (close > open) and (rv_posDiff > rv_smaDiff) and conf
+bool rv_baseBear = (close < open) and (rv_posDiff > rv_smaDiff) and conf
+// Pre-Mythos thresholds (B2B PUP v5.4 / SQUARIFY v3 shared curve)
+f_th_1x(int _s) => _s <= 10 ? 38.0 : _s <= 15 ? 33.0 : _s <= 30 ? 28.0 : _s <= 45 ? 23.0 : _s <= 60 ? 20.0 : _s <= 120 ? 18.0 : _s <= 300 ? 13.0 : _s <= 360 ? 13.0 : _s <= 540 ? 11.0 : _s <= 600 ? 10.0 : _s <= 660 ? 9.0 : _s <= 900 ? 7.5 : _s <= 1560 ? 6.5 : _s <= 2340 ? 6.0 : _s <= 3600 ? 4.5 : _s <= 9000 ? 4.0 : _s <= 11700 ? 3.5 : _s < 259200 ? 1.8 : 1.0
+f_th_gs(int _s) => _s < 60 ? f_th_1x(_s) * 3.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 1500 ? 20.0 : _s <= 3000 ? 20.0 : _s <= 7260 ? 10.0 : _s <= 11700 ? 8.0 : _s <= 86400 ? 7.5 : _s <= 259200 ? 3.5 : 3.0
+f_th_saab(int _s) => f_th_1x(_s) * 0.56
+f_th_wtc(int _s) => f_th_1x(_s) * 2.0
+f_th_hiro(int _s) => _s < 60 ? f_th_1x(_s) * 3.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 1500 ? 25.0 : _s <= 3060 ? 20.0 : _s <= 7260 ? 10.0 : _s <= 11700 ? 8.0 : _s <= 86400 ? 7.5 : _s <= 259200 ? 5 : 3.5
+float th_saab = f_th_saab(tfSec)
+float th_1x = f_th_1x(tfSec)
+float th_gs = f_th_gs(tfSec)
+float th_wtc = f_th_wtc(tfSec)
+float th_hiro = f_th_hiro(tfSec)
+bool det_SAAB = rv_baseBull and rv_normPrice >= th_saab and rv_normPrice < th_1x
+bool det_Kratos = rv_baseBear and rv_normPrice >= th_saab and rv_normPrice < th_1x
+bool det_RVOL1xB = rv_baseBull and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_RVOL1xR = rv_baseBear and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_GrandSlam = rv_baseBull and rv_normPrice >= th_gs
+bool det_MOAB = rv_baseBear and rv_normPrice >= th_gs
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: RVOL REG @ TIME — WTC / Hiroshima (B2B PUP v5.4 parity) + tick-safe anchor
+// ══════════════════════════════════════════════════════════════════════════════
+groupReg = "RVOL - Reg @ Time"
+reg_anchorTimeframe = input.timeframe("", "Anchor Timeframe (blank = chart)", group=groupReg)
+reg_length = input.int(30, "Length", minval=1, group=groupReg)
+reg_adjustRealtime = input.bool(true, "Adjust Unconfirmed", group=groupReg)
+// TICK-FRIENDLY FIX (RE10023): force "D" anchor only on tick charts; time charts keep "" (no parity change off tick).
+string reg_anchorSafe = ((reg_anchorTimeframe == "" and (str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
+[rv_curVol_reg, rv_pastVol_reg, _rv_u] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, true, reg_adjustRealtime)
+float rv_relVolRatio = rv_curVol_reg / rv_pastVol_reg
+bool det_WTC = conf and (rv_relVolRatio > th_wtc) and (rv_relVolRatio <= th_hiro)
+bool det_Hiroshima = conf and (rv_relVolRatio > th_hiro)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: HYBRID MOMENTUM LONG 1-5 — Heavy Weapons Singles v2 parity
+// ══════════════════════════════════════════════════════════════════════════════
+groupHybrid = "Hybrid Momentum (LONG 1-5)"
+hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Momentum thresholds from Hiroshima ladder", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and auto-computed from the current TF's Hiroshima threshold (HW Singles v2 ladder). When OFF, the manual values below are used.")
+hyb_addReg1 = input.float(5.0, "Momentum 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_addCum1 = input.float(3.0, "Momentum 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_bodyRat1 = input.float(0.65, "Momentum 1 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+hyb_addReg2 = input.float(5.0, "Momentum 2 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_addCum2 = input.float(3.0, "Momentum 2 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_bodyRat2 = input.float(0.65, "Momentum 2 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+hyb_addReg3 = input.float(5.0, "Momentum 3 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_addCum3 = input.float(3.0, "Momentum 3 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_bodyRat3 = input.float(0.65, "Momentum 3 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+hyb_addReg4 = input.float(5.0, "Momentum 4 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_addCum4 = input.float(3.0, "Momentum 4 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_bodyRat4 = input.float(0.65, "Momentum 4 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+hyb_addReg5 = input.float(5.0, "Momentum 5 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_addCum5 = input.float(3.0, "Momentum 5 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_bodyRat5 = input.float(0.65, "Momentum 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+
+// HW Singles v2 Hiroshima curve (its own ladder — distinct from the Pre-Mythos f_th_hiro above)
+f_hw_hiro(int _s) =>
+    float s = _s
+    float th = s <= 10 ? 114.0 : s <= 15 ? 99.0 : s <= 30 ? 84.0 : s <= 45 ? 69.0 : s <= 60 ? 35.0 : s <= 300 ? 35.0 : s <= 600 ? 25.0 : s <= 900 ? 20.0 : s <= 3600 ? 10.0 : 8.0
+    th
+float hw_th_hiro = f_hw_hiro(tfSec)
+
+// Auto-derive ladder (HW Singles v2 verbatim)
+hybAutoReg1 = hw_th_hiro * 2.85
+hybAutoReg5 = hw_th_hiro * 1.1875
+hybAutoStep = (hybAutoReg1 - hybAutoReg5) / 4.0
+hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep
+hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep
+hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep
+float hybCumPhi = 1.398 * 1.33
+hybAutoCum1 = hybCumPhi * math.sqrt(math.log(hybAutoReg1))
+hybAutoCum2 = hybCumPhi * math.sqrt(math.log(hybAutoReg2))
+hybAutoCum3 = hybCumPhi * math.sqrt(math.log(hybAutoReg3))
+hybAutoCum4 = hybCumPhi * math.sqrt(math.log(hybAutoReg4))
+hybAutoCum5 = hybCumPhi * math.sqrt(math.log(hybAutoReg5))
+float hybAutoBody1 = 0.69
+float hybAutoBody2 = 0.72
+float hybAutoBody3 = 0.75
+float hybAutoBody4 = 0.78
+float hybAutoBody5 = 0.81
+hybReg1Eff = hyb_autoDerive ? hybAutoReg1 : hyb_addReg1
+hybReg2Eff = hyb_autoDerive ? hybAutoReg2 : hyb_addReg2
+hybReg3Eff = hyb_autoDerive ? hybAutoReg3 : hyb_addReg3
+hybReg4Eff = hyb_autoDerive ? hybAutoReg4 : hyb_addReg4
+hybReg5Eff = hyb_autoDerive ? hybAutoReg5 : hyb_addReg5
+hybCum1Eff = hyb_autoDerive ? hybAutoCum1 : hyb_addCum1
+hybCum2Eff = hyb_autoDerive ? hybAutoCum2 : hyb_addCum2
+hybCum3Eff = hyb_autoDerive ? hybAutoCum3 : hyb_addCum3
+hybCum4Eff = hyb_autoDerive ? hybAutoCum4 : hyb_addCum4
+hybCum5Eff = hyb_autoDerive ? hybAutoCum5 : hyb_addCum5
+hybBody1Eff = hyb_autoDerive ? hybAutoBody1 : hyb_bodyRat1
+hybBody2Eff = hyb_autoDerive ? hybAutoBody2 : hyb_bodyRat2
+hybBody3Eff = hyb_autoDerive ? hybAutoBody3 : hyb_bodyRat3
+hybBody4Eff = hyb_autoDerive ? hybAutoBody4 : hyb_bodyRat4
+hybBody5Eff = hyb_autoDerive ? hybAutoBody5 : hyb_bodyRat5
+
+[hybRegCur, hybRegPast, _hr] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, false, reg_adjustRealtime)
+[hybCumCur, hybCumPast, _hc] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, true, reg_adjustRealtime)
+hybRegRatio = hybRegCur / hybRegPast
+hybCumRatio = hybCumCur / hybCumPast
+hybBodySz = math.abs(close - open)
+hybRange = high - low
+hybBodyRat = hybRange == 0 ? 0.0 : hybBodySz / hybRange
+hybConvict1 = hybBodyRat >= hybBody1Eff
+hybBull1 = (close > open) and hybConvict1
+hybMom1 = conf and (hybRegRatio > hybReg1Eff) and (hybCumRatio > hybCum1Eff)
+sigAddLong1 = hybMom1 and hybBull1
+hybConvict2 = hybBodyRat >= hybBody2Eff
+hybBull2 = (close > open) and hybConvict2
+hybMom2 = conf and (hybRegRatio > hybReg2Eff) and (hybCumRatio > hybCum2Eff)
+sigAddLong2 = hybMom2 and hybBull2
+hybConvict3 = hybBodyRat >= hybBody3Eff
+hybBull3 = (close > open) and hybConvict3
+hybMom3 = conf and (hybRegRatio > hybReg3Eff) and (hybCumRatio > hybCum3Eff)
+sigAddLong3 = hybMom3 and hybBull3
+hybConvict4 = hybBodyRat >= hybBody4Eff
+hybBull4 = (close > open) and hybConvict4
+hybMom4 = conf and (hybRegRatio > hybReg4Eff) and (hybCumRatio > hybCum4Eff)
+sigAddLong4 = hybMom4 and hybBull4
+hybConvict5 = hybBodyRat >= hybBody5Eff
+hybBull5 = (close > open) and hybConvict5
+hybMom5 = conf and (hybRegRatio > hybReg5Eff) and (hybCumRatio > hybCum5Eff)
+sigAddLong5 = hybMom5 and hybBull5
+anyLong = sigAddLong1 or sigAddLong2 or sigAddLong3 or sigAddLong4 or sigAddLong5
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: DISPLACEMENT 9 — SQUARIFY v3 d9 parity (multiplier exposed, default 9.0)
+// ══════════════════════════════════════════════════════════════════════════════
+grp_d9 = "Displacement 9"
+i_d9_type = input.string("Open to Close", "Range Type", options=["Open to Close", "High to Low"], group=grp_d9)
+i_d9_len = input.int(100, "Std Dev Length", minval=1, group=grp_d9)
+i_d9_mult = input.float(9.0, "Std Dev Multiplier (9 strength)", minval=0.1, step=0.5, group=grp_d9)
+float d9_rng = i_d9_type == "Open to Close" ? math.abs(open - close) : high - low
+float d9_std = ta.stdev(d9_rng, i_d9_len)
+float d9_thresh = d9_std * i_d9_mult
+bool d9_bull = conf and d9_rng > d9_thresh and close > open
+bool d9_bear = conf and d9_rng > d9_thresh and close < open
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: PBJ (zoo / supertrend latch) — 1st PUP FAUNA parity
+// (PB level-approach path omitted: independent state, no PBJ output impact)
+// ══════════════════════════════════════════════════════════════════════════════
+grp_zoo = "PBJ Engine"
+zoo_ma_type = input.string("VWMA", "Signal MA Type", options=["EMA", "SMA", "WMA", "HMA", "VWMA"], group=grp_zoo)
+zoo_ma_len = input.int(5, "Signal MA Length", minval=1, group=grp_zoo)
+zoo_price_src = input.source(close, "Price Source", group=grp_zoo)
+zoo_use_st = input.bool(true, "Use Supertrend Line", group=grp_zoo)
+zoo_st_period = input.int(10, "Supertrend ATR Period", minval=1, group=grp_zoo)
+zoo_st_mult = input.float(2.0, "Supertrend ATR Mult", minval=0.1, step=0.1, group=grp_zoo)
+zoo_pbj_ma_period = input.int(20, "PBJ EMA Period", minval=1, group=grp_zoo)
+zoo_pbj_atr_period = input.int(14, "PBJ ATR Period", minval=1, group=grp_zoo)
+zoo_pbj_hh_ll = input.int(25, "PBJ HH/LL Lookback", minval=1, group=grp_zoo)
+zoo_pbj_atr_mult = input.float(3.0, "PBJ ATR Mult", minval=0.1, step=0.1, group=grp_zoo)
+zoo_pbj_vol_period = input.int(20, "PBJ Vol SMA Period", minval=1, group=grp_zoo)
+zoo_pbj_vol_mult = input.float(0.1, "PBJ Vol Mult", minval=0.0, step=0.05, group=grp_zoo)
+
+f_ma(src, len, t) =>
+    switch t
+        "EMA" => ta.ema(src, len)
+        "SMA" => ta.sma(src, len)
+        "WMA" => ta.wma(src, len)
+        "HMA" => ta.hma(src, len)
+        "VWMA" => ta.vwma(src, len)
+        => ta.sma(src, len)
+
+float base_ma = f_ma(zoo_price_src, zoo_ma_len, zoo_ma_type)
+float st_atr = zoo_st_mult * ta.atr(zoo_st_period)
+float dyn_long = base_ma - st_atr
+float dyn_short = base_ma + st_atr
+
+var int st_dir = 1
+float sig_line = 0.0
+float curr_long = 0.0
+curr_long := base_ma > nz(curr_long[1], dyn_long) ? math.max(dyn_long, nz(curr_long[1])) : dyn_long
+float curr_short = 0.0
+curr_short := base_ma < nz(curr_short[1], dyn_short) ? math.min(dyn_short, nz(curr_short[1])) : dyn_short
+
+if zoo_use_st
+    if nz(st_dir[1]) == -1 and zoo_price_src > nz(curr_short[1])
+        st_dir := 1
+    else if nz(st_dir[1]) == 1 and zoo_price_src < nz(curr_long[1])
+        st_dir := -1
+    sig_line := st_dir == 1 ? curr_long : curr_short
+else
+    sig_line := base_ma
+
+bool buy_cross = ta.crossover(zoo_price_src, sig_line)
+bool sell_cross = ta.crossunder(zoo_price_src, sig_line)
+
+float pbj_ma = ta.ema(close, zoo_pbj_ma_period)
+float pbj_atr = ta.atr(zoo_pbj_atr_period)
+float avg_vol = ta.sma(volume, zoo_pbj_vol_period)
+float thresh = close == 0 ? 0 : (pbj_atr / close * zoo_pbj_atr_mult)
+float _pbjLowest = ta.lowest(low, zoo_pbj_hh_ll)
+float _pbjHighest = ta.highest(high, zoo_pbj_hh_ll)
+bool pbj_buy = low < pbj_ma * (1 - thresh) and low == _pbjLowest and volume > avg_vol * zoo_pbj_vol_mult
+bool pbj_sell = high > pbj_ma * (1 + thresh) and high == _pbjHighest and volume > avg_vol * zoo_pbj_vol_mult
+
+var bool wait_pbj_buy = false
+var bool wait_pbj_sell = false
+if pbj_buy
+    wait_pbj_buy := true
+if pbj_sell
+    wait_pbj_sell := true
+
+bool sig_pbj_buy = buy_cross and wait_pbj_buy
+bool sig_pbj_sell = sell_cross and wait_pbj_sell
+if sig_pbj_buy
+    wait_pbj_buy := false
+if sig_pbj_sell
+    wait_pbj_sell := false
+
+bool sigBullPBJ = barstate.isconfirmed and sig_pbj_buy
+bool sigBearPBJ = barstate.isconfirmed and sig_pbj_sell
+// FUTURE-PROOF PBJ WRAPPERS (fauna parity)
+bool anyBullPBJ = sigBullPBJ
+bool anyBearPBJ = sigBearPBJ
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: POCKET PIVOT (PUP / PPD) — 1st PUP FAUNA / B2B PUP shared math
+// ══════════════════════════════════════════════════════════════════════════════
+grp_pp = "Pocket Pivot Settings"
+pp_barSize = input.float(3.0, "% Change (Barsize)", minval=0.1, step=0.1, group=grp_pp)
+pp_lookback = input.int(10, "Lookback Days", minval=1, group=grp_pp)
+float pp_redVol = close < open ? volume : 0.0
+float pp_greenVol = close > open ? volume : 0.0
+float pp_hiRedVol = ta.highest(pp_redVol[1], pp_lookback)
+float pp_hiGreenVol = ta.highest(pp_greenVol[1], pp_lookback)
+bool pp_priceUp = ((close - open) / open) * 100 > pp_barSize
+bool pp_priceDn = ((open - close) / open) * 100 > pp_barSize
+bool pp_volBull = volume > pp_hiRedVol
+bool pp_volBear = volume > pp_hiGreenVol
+bool sigPUP = conf and pp_priceUp and pp_volBull
+bool sigPPD = conf and pp_priceDn and pp_volBear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: WHALE (Pocket Pivot + HV Milestone + PUP/PPD + PBJ) — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+grp_whale = "Whale Settings"
+wh_lenBull = input.int(20, "Bull SMA Length", minval=1, group=grp_whale, inline="whs")
+wh_lenBear = input.int(20, "Bear SMA Length", minval=1, group=grp_whale, inline="whs")
+wh_useQ = input.bool(true, "Quarterly High (63d)", group=grp_whale, inline="whf")
+wh_useY = input.bool(true, "Annual High (252d)", group=grp_whale, inline="whf")
+wh_useATH = input.bool(true, "All-Time High", group=grp_whale, inline="whf")
+
+float wh_sma_bull = ta.sma(close, wh_lenBull)
+float wh_sma_bear = ta.sma(close, wh_lenBear)
+float wh_volAvg = ta.sma(volume, 50)
+float wh_hvy = ta.highest(volume, 252)
+float wh_hvq = ta.highest(volume, 63)
+var float wh_maxVolEver = 0.0
+if volume > wh_maxVolEver
+    wh_maxVolEver := volume
+
+wh_dnVolArr = array.new_float()
+for i = 1 to wh_lenBull
+    if close[i] < close[i + 1]
+        array.push(wh_dnVolArr, volume[i])
+float wh_maxDnVol = array.size(wh_dnVolArr) > 0 ? array.max(wh_dnVolArr) : 0.0
+
+wh_upVolArr = array.new_float()
+for i = 1 to wh_lenBear
+    if close[i] > close[i + 1]
+        array.push(wh_upVolArr, volume[i])
+float wh_maxUpVol = array.size(wh_upVolArr) > 0 ? array.max(wh_upVolArr) : 0.0
+
+bool wh_isHV = (wh_useQ and volume == wh_hvq) or (wh_useY and volume == wh_hvy) or (wh_useATH and volume == wh_maxVolEver)
+
+bool wh_greenBar = close > close[1]
+bool wh_surgeonBull = wh_greenBar and (low <= wh_sma_bull) and (close > wh_sma_bull) and (volume > wh_maxDnVol) and (volume > wh_volAvg)
+bool wh_origBull = wh_greenBar and (low <= wh_sma_bull) and (volume > wh_maxDnVol)
+bool wh_pivotBull = wh_surgeonBull or wh_origBull
+
+bool wh_redBar = close < close[1]
+bool wh_surgeonBear = wh_redBar and (high >= wh_sma_bear) and (close < wh_sma_bear) and (volume > wh_maxUpVol) and (volume > wh_volAvg)
+bool wh_origBear = wh_redBar and (high >= wh_sma_bear) and (volume > wh_maxUpVol)
+bool wh_pivotBear = wh_surgeonBear or wh_origBear
+
+bool sigWhaleBull = conf and wh_pivotBull and wh_isHV and sigPUP and anyBullPBJ
+bool sigWhaleBear = conf and wh_pivotBear and wh_isHV and sigPPD and anyBearPBJ
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: FAUNA (fauna variant, for TYPHOON) — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+fauna_atr = ta.atr(14)
+fauna_avgVol = ta.sma(volume, 20)
+fauna_avgBody = ta.sma(math.abs(close - open), 20)
+fauna_avgRange = ta.sma(high - low, 20)
+fauna_avgDelta = ta.sma(math.abs(close - close[1]), 10)
+fauna_trendMA = ta.sma(close, 50)
+fauna_body = close - open
+fauna_rng = high - low
+fauna_bodySz = math.abs(fauna_body)
+fauna_bodyRat = fauna_rng == 0 ? 0 : fauna_bodySz / fauna_rng
+fauna_up = fauna_body > 0
+fauna_dn = fauna_body < 0
+
+MB_b = fauna_up and fauna_bodySz > 1.6 * fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8 * fauna_avgVol
+RE_b = fauna_up and fauna_rng > 2.2 * fauna_atr and (high - close) < 0.15 * fauna_rng and volume > 1.8 * fauna_avgVol
+TA_b = fauna_trendMA > fauna_trendMA[1] and (close - close[1]) > 1.6 * fauna_avgDelta and fauna_up and volume > 1.8 * fauna_avgVol
+
+GG_b = (open - close[1]) > 0.9 * fauna_atr and fauna_up and low > close[1] and volume > 1.8 * fauna_avgVol
+fauna_prev_body = close[1] - open[1]
+fauna_prev_range = high[1] - low[1]
+fauna_StrongBear = close[1] < open[1] and math.abs(fauna_prev_body) > 1.5 * fauna_avgBody[1] and volume[1] > 1.5 * fauna_avgVol[1]
+fauna_WeakBear = close[1] < open[1] and (fauna_prev_range == 0 ? 0.0 : math.abs(fauna_prev_body) / fauna_prev_range) <= 0.2
+TR_b = fauna_WeakBear and (MB_b or RE_b or TA_b)
+ES_b = fauna_StrongBear and (MB_b or RE_b or TA_b)
+GDR_b = close[1] < open[1] and GG_b
+excluded_bull = GG_b or TR_b or ES_b or GDR_b
+
+sigFAUNABull = conf and (MB_b or RE_b or TA_b) and not excluded_bull
+
+MB_r = fauna_dn and fauna_bodySz > 1.6 * fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8 * fauna_avgVol
+RE_r = fauna_dn and fauna_rng > 2.2 * fauna_atr and (close - low) < 0.15 * fauna_rng and volume > 1.8 * fauna_avgVol
+TA_r = fauna_trendMA < fauna_trendMA[1] and (close[1] - close) > 1.6 * fauna_avgDelta and fauna_dn and volume > 1.8 * fauna_avgVol
+
+GG_r = (close[1] - open) > 0.9 * fauna_atr and fauna_dn and high < close[1] and volume > 1.8 * fauna_avgVol
+fauna_StrongBull = close[1] > open[1] and math.abs(fauna_prev_body) > 1.5 * fauna_avgBody[1] and volume[1] > 1.5 * fauna_avgVol[1]
+fauna_WeakBull = close[1] > open[1] and (fauna_prev_range == 0 ? 0.0 : math.abs(fauna_prev_body) / fauna_prev_range) <= 0.2
+TR_r = fauna_WeakBull and (MB_r or RE_r or TA_r)
+ES_r = fauna_StrongBull and (MB_r or RE_r or TA_r)
+GDR_r = close[1] > open[1] and GG_r
+excluded_bear = GG_r or TR_r or ES_r or GDR_r
+
+sigFAUNABear = conf and (MB_r or RE_r or TA_r) and not excluded_bear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: GZ1 / HV FVG (for MUSASHI) — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+grp_gz1 = "GZ1 / HV Settings"
+gz1_threshPct = input.float(2, "FVG Threshold %", minval=0, maxval=100, step=0.1, group=grp_gz1)
+gz1_auto = input.bool(true, "Auto Threshold", group=grp_gz1)
+gz1_dist = input.int(7, "GZ1 Max Bar Distance", minval=1, maxval=200, group=grp_gz1)
+gz1_mitLvl = input.bool(false, "Show Mitigation Lines", group=grp_gz1)
+
+type gz_fvg
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+
+// GZ1 HV Detection
+float gz_v1 = volume[1]
+float _hv5000 = ta.highest(volume, 5000)[1]
+float _hv252 = ta.highest(volume, 252)[1]
+bool gz_isHV = gz_v1 == _hv5000 or gz_v1 == _hv252
+
+// GZ1 FVG Detection
+float gz_thresh = gz1_auto ? ta.cum((high - low) / low) / bar_index : gz1_threshPct / 100
+bool gz_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > gz_thresh
+bool gz_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > gz_thresh
+
+var gz_fvgs = array.new<gz_fvg>(0)
+var int gz_lastT = 0
+bool gz_bullGZI = false, bool gz_bearGZI = false, bool gz_bullHV = false, bool gz_bearHV = false
+
+// Process Bull FVG
+if gz_bFVG and time != gz_lastT
+    float mx = low, float mn = high[2]
+    if gz_isHV
+        gz_bullHV := true
+    if gz_fvgs.size() > 0
+        for i = 0 to gz_fvgs.size() - 1
+            gz_fvg e = gz_fvgs.get(i)
+            if e.bull and bar_index - e.idx <= gz1_dist
+                float ob = math.max(e.mn, mn), float ot = math.min(e.mx, mx)
+                if ob < ot or (ob <= ot and e.hv and gz_isHV)
+                    gz_bullGZI := true
+                    break
+    gz_fvgs.unshift(gz_fvg.new(mx, mn, true, time, bar_index, gz_isHV))
+    gz_lastT := time
+
+// Process Bear FVG
+if gz_sFVG and time != gz_lastT
+    float mx = low[2], float mn = high
+    if gz_isHV
+        gz_bearHV := true
+    if gz_fvgs.size() > 0
+        for i = 0 to gz_fvgs.size() - 1
+            gz_fvg e = gz_fvgs.get(i)
+            if not e.bull and bar_index - e.idx <= gz1_dist
+                float ob = math.max(e.mn, mn), float ot = math.min(e.mx, mx)
+                if ob < ot or (ob <= ot and e.hv and gz_isHV)
+                    gz_bearGZI := true
+                    break
+    gz_fvgs.unshift(gz_fvg.new(mx, mn, false, time, bar_index, gz_isHV))
+    gz_lastT := time
+
+// Mitigation Lines (Optional)
+if gz_fvgs.size() > 0 and gz1_mitLvl
+    for i = gz_fvgs.size() - 1 to 0
+        gz_fvg g = gz_fvgs.get(i)
+        if g.bull and close < g.mn
+            line.new(g.t, g.mn, time, g.mn, xloc.bar_time, color=color.new(#089981, 70), style=line.style_dashed)
+            gz_fvgs.remove(i)
+        else if not g.bull and close > g.mx
+            line.new(g.t, g.mx, time, g.mx, xloc.bar_time, color=color.new(#f23645, 70), style=line.style_dashed)
+            gz_fvgs.remove(i)
+if gz_fvgs.size() > 50
+    gz_fvgs.pop()
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: YIN YANG SWING (for TYPHOON) — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+grp_yy_lb = "YY - Lookback Settings"
+yy_leftBars = input.int(75, "Left Bars", minval=1, group=grp_yy_lb, tooltip="Minimum bars to the left to confirm a pivot")
+yy_rightBars = input.int(1, "Right Bars", minval=1, group=grp_yy_lb, tooltip="Minimum bars to the right to confirm a pivot. Also determines plot offset.")
+grp_yy_atr = "YY - ATR Filter Settings"
+yy_atrLength = input.int(50, "ATR Length", minval=1, group=grp_yy_atr)
+yy_atrMult = input.float(3.5, "ATR Multiplier", step=0.1, group=grp_yy_atr, tooltip="The new swing must be at least this many ATRs away from the previous valid swing level.")
+
+type yy_sr
+    float price
+    bool isResistance
+
+var yy_srs = array.new<yy_sr>()
+var float yy_lastValidLevel = na
+
+float yy_atrValue = ta.atr(yy_atrLength)
+float yy_threshold = yy_atrValue * yy_atrMult
+
+float yy_rawHigh = ta.pivothigh(high, yy_leftBars, yy_rightBars)
+float yy_rawLow = ta.pivotlow(low, yy_leftBars, yy_rightBars)
+
+yy_isSufficientDistance(currentPrice, lastPrice, thr) =>
+    na(lastPrice) ? true : math.abs(currentPrice - lastPrice) >= thr
+
+bool yy_validHigh = false
+if not na(yy_rawHigh) and conf
+    if yy_isSufficientDistance(yy_rawHigh, yy_lastValidLevel, yy_threshold)
+        yy_validHigh := true
+        yy_lastValidLevel := yy_rawHigh
+        array.push(yy_srs, yy_sr.new(yy_rawHigh, true))
+
+bool yy_validLow = false
+if not na(yy_rawLow) and conf
+    if yy_isSufficientDistance(yy_rawLow, yy_lastValidLevel, yy_threshold)
+        yy_validLow := true
+        yy_lastValidLevel := yy_rawLow
+        array.push(yy_srs, yy_sr.new(yy_rawLow, false))
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MASTER OFFSET ALIGNMENT — 1st PUP FAUNA parity (moff drives Musashi anchoring)
+// ══════════════════════════════════════════════════════════════════════════════
+grp_align = "Alignment (Fauna parity)"
+i_req_fvg = input.bool(true, "Require FVG for Displacement", group=grp_align, tooltip="Fauna's master-offset switch. ON (fauna default): moff=1 — Musashi's PUP/Whale/PBJ legs and the Musashi first-bar check read bar[1]; plot offset -1. OFF: moff=0, all offset-0.")
+moff = i_req_fvg ? 1 : 0
+
+f_align(sig) => moff == 0 ? sig : sig[1]
+
+al_anyBullPBJ = f_align(anyBullPBJ)
+al_anyBearPBJ = f_align(anyBearPBJ)
+al_PUP = f_align(sigPUP)
+al_PPD = f_align(sigPPD)
+al_WhaleBull = f_align(sigWhaleBull)
+al_WhaleBear = f_align(sigWhaleBear)
+al_isFirstBar = f_align(is_new_sess)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TYPHOON + MUSASHI — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+// MUSASHI — (GZI OR HV FVG) + PUP/PPD + Whale + anyPBJ (FVG legs RAW, rest ALIGNED — fauna asymmetry preserved)
+sigMusashiBull = conf and (gz_bullGZI or gz_bullHV) and al_PUP and al_WhaleBull and al_anyBullPBJ
+sigMusashiBear = conf and (gz_bearGZI or gz_bearHV) and al_PPD and al_WhaleBear and al_anyBearPBJ
+
+// TYPHOON — swing + first bar + FAUNA + (PUP/PPD OR (Whale + anyPBJ)) on the pivot bar
+bool typh_bull_extra = sigPUP[yy_rightBars] or (sigWhaleBull[yy_rightBars] and anyBullPBJ[yy_rightBars])
+bool typh_bear_extra = sigPPD[yy_rightBars] or (sigWhaleBear[yy_rightBars] and anyBearPBJ[yy_rightBars])
+bool sigTyphoonBull = conf and yy_validLow and is_new_sess[yy_rightBars] and sigFAUNABull[yy_rightBars] and typh_bull_extra
+bool sigTyphoonBear = conf and yy_validHigh and is_new_sess[yy_rightBars] and sigFAUNABear[yy_rightBars] and typh_bear_extra
+
+// ══════════════════════════════════════════════════════════════════════════════
+// B2B SAAB / B2B KRATOS — B2B PUP v5.4 S5 parity + Disp9-on-pattern constraint
+// ══════════════════════════════════════════════════════════════════════════════
+bool det_b2bPUP = sigPUP and nz(sigPUP[1])
+bool det_b2bPPD = sigPPD and nz(sigPPD[1])
+
+bool saab_dir_b = det_SAAB or det_RVOL1xB or det_GrandSlam
+bool saab_neut = det_WTC or det_Hiroshima
+bool saab_dir_b1 = nz(det_SAAB[1]) or nz(det_RVOL1xB[1]) or nz(det_GrandSlam[1])
+bool saab_neut1 = nz(det_WTC[1]) or nz(det_Hiroshima[1])
+bool det_S5_bull = det_b2bPUP and ((saab_dir_b and (saab_dir_b1 or saab_neut1)) or ((saab_dir_b or saab_neut) and saab_dir_b1))
+bool krat_dir = det_Kratos or det_RVOL1xR or det_MOAB
+bool krat_dir1 = nz(det_Kratos[1]) or nz(det_RVOL1xR[1]) or nz(det_MOAB[1])
+bool det_S5_bear = det_b2bPPD and ((krat_dir and (krat_dir1 or saab_neut1)) or ((krat_dir or saab_neut) and krat_dir1))
+
+// NEW CONSTRAINT: Disp9 on one of the two pattern bars (bar[0] or bar[1])
+bool det_S9_kratos = det_S5_bear and (d9_bear or nz(d9_bear[1]))
+bool det_S10_saab = det_S5_bull and (d9_bull or nz(d9_bull[1]))
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: u5 FAUNA (TNT OD variant, for DYNAMITE) — TNT OD v3 parity
+// ══════════════════════════════════════════════════════════════════════════════
+float ATR14 = ta.atr(14)
+float u5_f_atr = ATR14, float u5_f_avgVol = ta.sma(volume, 20), float u5_f_avgBody = ta.sma(math.abs(close - open), 20)
+float u5_f_avgDelta = ta.sma(math.abs(close - close[1]), 10), float u5_f_trendMA = ta.sma(close, 50)
+float u5_f_body = close - open, float u5_f_rng = high - low, float u5_f_bodySz = math.abs(u5_f_body)
+float u5_f_bodyRat = u5_f_rng == 0 ? 0.0 : u5_f_bodySz / u5_f_rng
+bool u5_f_up = u5_f_body > 0, bool u5_f_dn = u5_f_body < 0
+float u5_f_prev_body = close[1] - open[1], float u5_f_prev_range = high[1] - low[1]
+bool u5_MB_b = u5_f_up and u5_f_bodySz > 1.6 * u5_f_atr and u5_f_bodyRat > 0.70 and volume > 1.8 * u5_f_avgVol
+bool u5_RE_b = u5_f_up and u5_f_rng > 2.2 * u5_f_atr and (high - close) < 0.15 * u5_f_rng and volume > 1.8 * u5_f_avgVol
+bool u5_TA_b = u5_f_trendMA > u5_f_trendMA[1] and (close - close[1]) > 1.6 * u5_f_avgDelta and u5_f_up and volume > 1.8 * u5_f_avgVol
+bool u5_GG_b = (open - close[1]) > 0.9 * u5_f_atr and u5_f_up and low > close[1] and volume > 1.8 * u5_f_avgVol
+bool u5_StrongBear = close[1] < open[1] and math.abs(u5_f_prev_body) > 1.5 * u5_f_avgBody[1] and volume[1] > 1.5 * u5_f_avgVol[1]
+bool u5_WeakBear = close[1] < open[1] and (u5_f_prev_range == 0 ? 0.0 : math.abs(u5_f_prev_body) / u5_f_prev_range) <= 0.2
+bool u5_TR_b = u5_WeakBear and (u5_MB_b or u5_RE_b or u5_TA_b), bool u5_ES_b = u5_StrongBear and (u5_MB_b or u5_RE_b or u5_TA_b), bool u5_GDR_b = close[1] < open[1] and u5_GG_b
+int u5_b_core = (u5_MB_b ? 1 : 0) + (u5_RE_b ? 1 : 0) + (u5_TA_b ? 1 : 0)
+bool u5_b_gg_exc = u5_GG_b and not ((u5_b_core >= 2) and (u5_f_bodyRat >= 0.80))
+bool u5_FAUNABull = barstate.isconfirmed and (u5_MB_b or u5_RE_b or u5_TA_b) and not (u5_TR_b or u5_ES_b or u5_GDR_b or u5_b_gg_exc)
+
+bool u5_MB_r = u5_f_dn and u5_f_bodySz > 1.6 * u5_f_atr and u5_f_bodyRat > 0.70 and volume > 1.8 * u5_f_avgVol
+bool u5_RE_r = u5_f_dn and u5_f_rng > 2.2 * u5_f_atr and (close - low) < 0.15 * u5_f_rng and volume > 1.8 * u5_f_avgVol
+bool u5_TA_r = u5_f_trendMA < u5_f_trendMA[1] and (close[1] - close) > 1.6 * u5_f_avgDelta and u5_f_dn and volume > 1.8 * u5_f_avgVol
+bool u5_GG_r = (close[1] - open) > 0.9 * u5_f_atr and u5_f_dn and high < close[1] and volume > 1.8 * u5_f_avgVol
+bool u5_StrongBull = close[1] > open[1] and math.abs(u5_f_prev_body) > 1.5 * u5_f_avgBody[1] and volume[1] > 1.5 * u5_f_avgVol[1]
+bool u5_WeakBull = close[1] > open[1] and (u5_f_prev_range == 0 ? 0.0 : math.abs(u5_f_prev_body) / u5_f_prev_range) <= 0.2
+bool u5_TR_r = u5_WeakBull and (u5_MB_r or u5_RE_r or u5_TA_r), bool u5_ES_r = u5_StrongBull and (u5_MB_r or u5_RE_r or u5_TA_r), bool u5_GDR_r = close[1] > open[1] and u5_GG_r
+int u5_s_core = (u5_MB_r ? 1 : 0) + (u5_RE_r ? 1 : 0) + (u5_TA_r ? 1 : 0)
+bool u5_s_gg_exc = u5_GG_r and not ((u5_s_core >= 2) and (u5_f_bodyRat >= 0.80))
+bool u5_FAUNABear = barstate.isconfirmed and (u5_MB_r or u5_RE_r or u5_TA_r) and not (u5_TR_r or u5_ES_r or u5_GDR_r or u5_s_gg_exc)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DYNAMITE — TNT OD v3 parity (dedicated 100-bar σ engine)
+// ══════════════════════════════════════════════════════════════════════════════
+grpDyn = "★ DYNAMITE ★ (Displacement — DEDICATED to DYNAMITE only)"
+float dynStdMult = input.float(5.0, "Displacement Std Dev Multiplier (DYNAMITE-only)", minval=1.0, step=0.5, group=grpDyn, tooltip="σ-multiplier used ONLY by the DYNAMITE detection (B2B σ-range + FVG check). Hard-coded 100-bar stdev lookback.")
+float dyn_disp = math.abs(open - close)
+float dyn_std = ta.stdev(dyn_disp, 100)
+bool dyn_disp_b1 = dyn_disp[1] > nz(dyn_std[1]) * dynStdMult
+bool dyn_disp_b2 = dyn_disp[2] > nz(dyn_std[2]) * dynStdMult
+bool dyn_bullFVG = low > high[2] and close[1] > open[1]
+bool dyn_bearFVG = high < low[2] and close[1] < open[1]
+bool dyn_bull_dir = close[1] > open[1] and close[2] > open[2]
+bool dyn_bear_dir = close[1] < open[1] and close[2] < open[2]
+bool dyn_fauna_bull = nz(u5_FAUNABull[1]) and nz(u5_FAUNABull[2])
+bool dyn_fauna_bear = nz(u5_FAUNABear[1]) and nz(u5_FAUNABear[2])
+bool det_dynamiteBull = barstate.isconfirmed and dyn_disp_b1 and dyn_disp_b2 and dyn_bull_dir and dyn_fauna_bull and dyn_bullFVG
+bool det_dynamiteBear = barstate.isconfirmed and dyn_disp_b1 and dyn_disp_b2 and dyn_bear_dir and dyn_fauna_bear and dyn_bearFVG
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: TNT OD v3 CORE (tod_ prefix; for IGNITE) — VOB + ANISH + FLUX + TNT +
+// zones + charge + return + displacement + napalm + sudden change. Visual line/
+// label/box members stripped from types; all state logic verbatim.
+// ══════════════════════════════════════════════════════════════════════════════
+grpE = "TNT OD Engine (Ignite)"
+int tod_SENS = input.int(100, "Sensitivity", minval=1, group=grpE)
+int tod_SWING_LEN = input.int(10, "Swing Length", minval=3, group=grpE)
+string tod_DISP_TYPE = input.string("Open to Close", "Range Type", options=["Open to Close", "High to Low"], group=grpE)
+int tod_DISP_STD_LEN = input.int(100, "Disp Std Dev Length", minval=1, group=grpE)
+int tod_DISP_STD_X = input.int(5, "Disp Std Dev Mult", minval=0, group=grpE)
+float tod_RET_TNT_PCT = input.float(100.0, "Return to TNT %", minval=-10, step=0.1, group=grpE)
+int tod_SUDDEN_PROX = input.int(3, "Sudden Change Max Bar Distance", minval=1, group=grpE)
+int tod_maxZones = input.int(30, "Max TNT 1.0 Zones", minval=1, group=grpE)
+int tod_maxSuperZones = input.int(30, "Max TNT 2.0 Zones", minval=1, group=grpE)
+
+type tod_Zone
+    int originIdx
+    int confirmIdx
+    float upper
+    float lower
+    float level
+    float vol
+    bool isBull
+    bool isActive = true
+    bool returnFired = false
+
+type tod_SuperZone
+    int formBar
+    float zoneTop
+    float zoneBtm
+    float returnLevel
+    bool isBull
+    bool isActive = true
+    bool returnFired = false
+
+type tod_SwingPoint
+    float val = na
+    int idx = na
+    bool crossed = false
+
+type tod_BullBearEvent
+    int barIdx
+    float level
+    float upper
+    float lower
+    bool isBull
+    bool isTrue
+
+type tod_ChargeLevel
+    float level
+    bool isBull
+    int barIdx
+    bool violated = false
+
+int tod_EMA_FAST = tod_SENS, int tod_EMA_SLOW = tod_SENS + 13
+float tod_ATR_VAL = ta.atr(200)
+float tod_ATR_MULT = 3.5, float tod_ATR_MIN = 0.5
+int tod_MIN_SIG_GAP = tod_EMA_SLOW
+
+// ENGINE 1: VOB
+float ema_fast = ta.ema(close, tod_EMA_FAST), float ema_slow = ta.ema(close, tod_EMA_SLOW)
+bool vob_bull_cross = ta.crossover(ema_fast, ema_slow) and barstate.isconfirmed
+bool vob_bear_cross = ta.crossunder(ema_fast, ema_slow) and barstate.isconfirmed
+var float vob_bull_upper = na, var float vob_bull_lower = na, var int vob_bull_origin = na, var float vob_bull_vol = na, var bool vob_bull_new = false
+var float vob_bear_upper = na, var float vob_bear_lower = na, var int vob_bear_origin = na, var float vob_bear_vol = na, var bool vob_bear_new = false
+float atr_hi = ta.highest(tod_ATR_VAL, 200) * 2.0
+if vob_bull_cross
+    float cumVol = 0.0, int originBar = bar_index, float originLow = low
+    for i = 1 to tod_EMA_SLOW
+        if low[i] <= originLow
+            originLow := low[i], originBar := bar_index - i
+        cumVol += volume[i]
+    float src = math.min(open[bar_index - originBar], close[bar_index - originBar])
+    src := (src - originLow) < atr_hi * 0.5 ? originLow + atr_hi * 0.5 : src
+    vob_bull_upper := src, vob_bull_lower := originLow, vob_bull_origin := originBar, vob_bull_vol := cumVol, vob_bull_new := true
+else
+    vob_bull_new := false
+if vob_bear_cross
+    float cumVol = 0.0, int originBar = bar_index, float originHigh = high
+    for i = 1 to tod_EMA_SLOW
+        if high[i] >= originHigh
+            originHigh := high[i], originBar := bar_index - i
+        cumVol += volume[i]
+    float src = math.max(open[bar_index - originBar], close[bar_index - originBar])
+    src := (originHigh - src) < atr_hi * 0.5 ? originHigh - atr_hi * 0.5 : src
+    vob_bear_upper := originHigh, vob_bear_lower := src, vob_bear_origin := originBar, vob_bear_vol := cumVol, vob_bear_new := true
+else
+    vob_bear_new := false
+
+// SWING + ENGINE 2: ANISH
+var int swingState = 0
+var tod_SwingPoint swHigh = tod_SwingPoint.new(na, na), var tod_SwingPoint swLow = tod_SwingPoint.new(na, na)
+float sw_upper = ta.highest(high, tod_SWING_LEN), float sw_lower = ta.lowest(low, tod_SWING_LEN)
+swingState := high[tod_SWING_LEN] > sw_upper ? 0 : low[tod_SWING_LEN] < sw_lower ? 1 : swingState
+if swingState == 0 and swingState[1] != 0
+    swHigh := tod_SwingPoint.new(high[tod_SWING_LEN], bar_index[tod_SWING_LEN])
+if swingState == 1 and swingState[1] != 1
+    swLow := tod_SwingPoint.new(low[tod_SWING_LEN], bar_index[tod_SWING_LEN])
+
+var float anish_bull_ob_upper = na, var float anish_bull_ob_lower = na, var int anish_bull_ob_idx = na
+var float anish_bull_prev_upper = na, var float anish_bull_prev_lower = na, var int anish_bull_prev_idx = na, var bool anish_bull_new = false
+var float anish_bear_ob_upper = na, var float anish_bear_ob_lower = na, var int anish_bear_ob_idx = na
+var float anish_bear_prev_upper = na, var float anish_bear_prev_lower = na, var int anish_bear_prev_idx = na, var bool anish_bear_new = false
+
+if close > swHigh.val and not swHigh.crossed and barstate.isconfirmed and not na(swHigh.val)
+    swHigh.crossed := true
+    float obLow = low[1], float obHigh = high[1], int obIdx = bar_index - 1
+    int lookback = bar_index - swHigh.idx
+    if lookback > 1
+        for i = 1 to lookback - 1
+            if open[i] > close[i] and low[i] <= obLow
+                obLow := low[i], obHigh := high[i], obIdx := bar_index - i
+    anish_bull_prev_upper := anish_bull_ob_upper, anish_bull_prev_lower := anish_bull_ob_lower, anish_bull_prev_idx := anish_bull_ob_idx
+    anish_bull_ob_upper := obHigh, anish_bull_ob_lower := obLow, anish_bull_ob_idx := obIdx
+    anish_bull_new := not na(anish_bull_prev_upper) and obIdx <= nz(anish_bull_prev_idx, 0) + tod_EMA_SLOW and obHigh > nz(anish_bull_prev_lower, na) and obLow < nz(anish_bull_prev_upper, na)
+else
+    anish_bull_new := false
+
+if close < swLow.val and not swLow.crossed and barstate.isconfirmed and not na(swLow.val)
+    swLow.crossed := true
+    float obLow = low[1], float obHigh = high[1], int obIdx = bar_index - 1
+    int lookback = bar_index - swLow.idx
+    if lookback > 1
+        for i = 1 to lookback - 1
+            if open[i] < close[i] and high[i] >= obHigh
+                obHigh := high[i], obLow := low[i], obIdx := bar_index - i
+    anish_bear_prev_upper := anish_bear_ob_upper, anish_bear_prev_lower := anish_bear_ob_lower, anish_bear_prev_idx := anish_bear_ob_idx
+    anish_bear_ob_upper := obHigh, anish_bear_ob_lower := obLow, anish_bear_ob_idx := obIdx
+    anish_bear_new := not na(anish_bear_prev_lower) and obIdx <= nz(anish_bear_prev_idx, 0) + tod_EMA_SLOW and obLow < nz(anish_bear_prev_upper, na) and obHigh > nz(anish_bear_prev_lower, na)
+else
+    anish_bear_new := false
+
+// ENGINE 3: FLUX
+var float flux_bull_ob_top = na, var float flux_bull_ob_btm = na, var int flux_bull_ob_time = na
+var bool flux_bull_ob_active = false, var bool flux_bull_pb_new = false, var int flux_bull_pb_idx = na
+var float flux_bear_ob_top = na, var float flux_bear_ob_btm = na, var int flux_bear_ob_time = na
+var bool flux_bear_ob_active = false, var bool flux_bear_pb_new = false, var int flux_bear_pb_idx = na
+var tod_SwingPoint flux_swH = tod_SwingPoint.new(na, na), var tod_SwingPoint flux_swL = tod_SwingPoint.new(na, na)
+if swingState == 0 and swingState[1] != 0
+    flux_swH := tod_SwingPoint.new(high[tod_SWING_LEN], bar_index[tod_SWING_LEN])
+if swingState == 1 and swingState[1] != 1
+    flux_swL := tod_SwingPoint.new(low[tod_SWING_LEN], bar_index[tod_SWING_LEN])
+if close > flux_swH.val and not flux_swH.crossed and barstate.isconfirmed and not na(flux_swH.val)
+    flux_swH.crossed := true
+    float boxBtm = math.min(open[1], close[1]), float boxTop = math.max(open[1], close[1]), int boxIdx = bar_index - 1
+    int lookback = bar_index - flux_swH.idx
+    if lookback > 1
+        for i = 1 to lookback - 1
+            if math.min(open[i], close[i]) < boxBtm
+                boxBtm := math.min(open[i], close[i]), boxTop := math.max(open[i], close[i]), boxIdx := bar_index - i
+    float obSize = math.abs(boxTop - boxBtm)
+    if obSize <= tod_ATR_VAL * tod_ATR_MULT and obSize > tod_ATR_VAL * tod_ATR_MIN
+        flux_bull_ob_top := boxTop, flux_bull_ob_btm := boxBtm, flux_bull_ob_time := boxIdx, flux_bull_ob_active := true
+if close < flux_swL.val and not flux_swL.crossed and barstate.isconfirmed and not na(flux_swL.val)
+    flux_swL.crossed := true
+    float boxTop = math.max(open[1], close[1]), float boxBtm = math.min(open[1], close[1]), int boxIdx = bar_index - 1
+    int lookback = bar_index - flux_swL.idx
+    if lookback > 1
+        for i = 1 to lookback - 1
+            if math.max(open[i], close[i]) > boxTop
+                boxTop := math.max(open[i], close[i]), boxBtm := math.min(open[i], close[i]), boxIdx := bar_index - i
+    float obSize = math.abs(boxTop - boxBtm)
+    if obSize <= tod_ATR_VAL * tod_ATR_MULT and obSize > tod_ATR_VAL * tod_ATR_MIN
+        flux_bear_ob_top := boxTop, flux_bear_ob_btm := boxBtm, flux_bear_ob_time := boxIdx, flux_bear_ob_active := true
+flux_bull_pb_new := false
+if flux_bull_ob_active and barstate.isconfirmed
+    if close < flux_bull_ob_btm
+        flux_bull_ob_active := false
+    else if low[1] < flux_bull_ob_top and low[1] > flux_bull_ob_btm and close > open and close > high[1]
+        flux_bull_pb_new := true, flux_bull_pb_idx := flux_bull_ob_time
+flux_bear_pb_new := false
+if flux_bear_ob_active and barstate.isconfirmed
+    if close > flux_bear_ob_top
+        flux_bear_ob_active := false
+    else if high[1] > flux_bear_ob_btm and high[1] < flux_bear_ob_top and close < open and close < low[1]
+        flux_bear_pb_new := true, flux_bear_pb_idx := flux_bear_ob_time
+
+// CONFLUENCE → TNT 1.0
+int tod_CONF_WINDOW = tod_EMA_SLOW * 2
+var int vob_bull_conf_bar = 0, var int anish_bull_conf_bar = 0, var int flux_bull_conf_bar = 0
+var int vob_bear_conf_bar = 0, var int anish_bear_conf_bar = 0, var int flux_bear_conf_bar = 0
+var float vob_bull_u = na, var float vob_bull_l = na, var float vob_bear_u = na, var float vob_bear_l = na
+if vob_bull_new
+    vob_bull_conf_bar := bar_index, vob_bull_u := vob_bull_upper, vob_bull_l := vob_bull_lower
+if vob_bear_new
+    vob_bear_conf_bar := bar_index, vob_bear_u := vob_bear_upper, vob_bear_l := vob_bear_lower
+if anish_bull_new
+    anish_bull_conf_bar := bar_index
+if anish_bear_new
+    anish_bear_conf_bar := bar_index
+if flux_bull_pb_new
+    flux_bull_conf_bar := bar_index
+if flux_bear_pb_new
+    flux_bear_conf_bar := bar_index
+
+f_tod_temporal_ok(int a, int b, int c) =>
+    int mn = math.min(a, math.min(b, c)), int mx = math.max(a, math.max(b, c))
+    mx - mn <= tod_CONF_WINDOW and mn > 0
+f_tod_zones_overlap(float u1, float l1, float u2, float l2) => not na(u1) and not na(u2) and u1 >= l2 and u2 >= l1
+float tod_volMedian = ta.median(volume, tod_EMA_SLOW), float tod_emaSlope = ema_fast - ema_fast[5], float tod_rsiVal = ta.rsi(close, 14)
+f_tod_synergy_bull(float vV, float vU, float vL, float aU, float aL) => vV > tod_volMedian * tod_EMA_SLOW * 0.5 and tod_emaSlope > 0 and tod_rsiVal < 80 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+f_tod_synergy_bear(float vV, float vU, float vL, float aU, float aL) => vV > tod_volMedian * tod_EMA_SLOW * 0.5 and tod_emaSlope < 0 and tod_rsiVal > 20 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+
+var tod_tnt_zones = array.new<tod_Zone>(0)
+var int tod_lastBullSigBar = 0, var int tod_lastBearSigBar = 0
+bool tod_bullConf = f_tod_temporal_ok(vob_bull_conf_bar, anish_bull_conf_bar, flux_bull_conf_bar) and f_tod_zones_overlap(vob_bull_u, vob_bull_l, anish_bull_ob_upper, anish_bull_ob_lower)
+bool tod_bearConf = f_tod_temporal_ok(vob_bear_conf_bar, anish_bear_conf_bar, flux_bear_conf_bar) and f_tod_zones_overlap(vob_bear_u, vob_bear_l, anish_bear_ob_upper, anish_bear_ob_lower)
+bool tod_raw_bullTNT = tod_bullConf and f_tod_synergy_bull(nz(vob_bull_vol), nz(vob_bull_u), nz(vob_bull_l), nz(anish_bull_ob_upper), nz(anish_bull_ob_lower)) and barstate.isconfirmed and (bar_index - tod_lastBullSigBar) > tod_MIN_SIG_GAP
+bool tod_raw_bearTNT = tod_bearConf and f_tod_synergy_bear(nz(vob_bear_vol), nz(vob_bear_u), nz(vob_bear_l), nz(anish_bear_ob_upper), nz(anish_bear_ob_lower)) and barstate.isconfirmed and (bar_index - tod_lastBearSigBar) > tod_MIN_SIG_GAP
+
+f_tod_bull_level() => math.avg(math.min(nz(vob_bull_u, high), nz(anish_bull_ob_upper, high)), math.max(nz(vob_bull_l, low), nz(anish_bull_ob_lower, low)))
+f_tod_bear_level() => math.avg(math.min(nz(vob_bear_u, high), nz(anish_bear_ob_upper, high)), math.max(nz(vob_bear_l, low), nz(anish_bear_ob_lower, low)))
+f_tod_bull_origin() =>
+    int org = math.min(nz(vob_bull_origin, bar_index), math.min(nz(anish_bull_ob_idx, bar_index), nz(flux_bull_pb_idx, bar_index)))
+    org > 0 ? org : bar_index
+f_tod_bear_origin() =>
+    int org = math.min(nz(vob_bear_origin, bar_index), math.min(nz(anish_bear_ob_idx, bar_index), nz(flux_bear_pb_idx, bar_index)))
+    org > 0 ? org : bar_index
+
+var tod_charge_levels = array.new<tod_ChargeLevel>(0)
+if tod_raw_bullTNT
+    tod_lastBullSigBar := bar_index
+    int origin = f_tod_bull_origin()
+    float oU = math.min(nz(vob_bull_u, high), nz(anish_bull_ob_upper, high)), float oL = math.max(nz(vob_bull_l, low), nz(anish_bull_ob_lower, low)), float lvl = math.avg(oU, oL)
+    tod_tnt_zones.push(tod_Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bull_vol), true, true, false))
+    tod_charge_levels.push(tod_ChargeLevel.new(lvl, true, bar_index))
+if tod_raw_bearTNT
+    tod_lastBearSigBar := bar_index
+    int origin = f_tod_bear_origin()
+    float oU = math.min(nz(vob_bear_u, high), nz(anish_bear_ob_upper, high)), float oL = math.max(nz(vob_bear_l, low), nz(anish_bear_ob_lower, low)), float lvl = math.avg(oU, oL)
+    tod_tnt_zones.push(tod_Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bear_vol), false, true, false))
+    tod_charge_levels.push(tod_ChargeLevel.new(lvl, false, bar_index))
+
+// Return + zone lifecycle
+bool tod_raw_retBullTNT = false, bool tod_raw_retBearTNT = false
+if tod_tnt_zones.size() > 0
+    for i = tod_tnt_zones.size() - 1 to 0
+        tod_Zone z = tod_tnt_zones.get(i)
+        if z.isActive
+            if z.isBull and close < z.lower
+                z.isActive := false
+            if not z.isBull and close > z.upper
+                z.isActive := false
+            if z.isActive and not z.returnFired and barstate.isconfirmed and bar_index > z.confirmIdx
+                float zH = z.upper - z.lower
+                if z.isBull
+                    float retLvl = z.lower + zH * (tod_RET_TNT_PCT / 100.0)
+                    if low <= retLvl and close > z.lower
+                        z.returnFired := true, tod_raw_retBullTNT := true
+                if not z.isBull
+                    float retLvl = z.upper - zH * (tod_RET_TNT_PCT / 100.0)
+                    if high >= retLvl and close < z.upper
+                        z.returnFired := true, tod_raw_retBearTNT := true
+    while tod_tnt_zones.size() > tod_maxZones
+        tod_tnt_zones.shift()
+
+// Displacement (Engine #1)
+float tod_disp_range = tod_DISP_TYPE == "Open to Close" ? math.abs(open - close) : high - low
+float tod_disp_std = ta.stdev(tod_disp_range, tod_DISP_STD_LEN), float tod_disp_threshold = tod_disp_std * tod_DISP_STD_X
+bool tod_isBullishFVG = low > high[2] and open[1] < close[1], bool tod_isBearishFVG = high < low[2] and open[1] > close[1]
+bool tod_prevBarDisplaced = tod_disp_range[1] > tod_disp_threshold[1]
+bool tod_dispSignal = tod_prevBarDisplaced and (tod_isBullishFVG or tod_isBearishFVG) and barstate.isconfirmed
+bool tod_dispBull = tod_dispSignal and close[1] > open[1], bool tod_dispBear = tod_dispSignal and close[1] < open[1]
+
+// Napalm + Charge
+bool tod_raw_napalmBull = false, bool tod_raw_napalmBear = false
+float tod_pseudoBullLevel = na, float tod_pseudoBearLevel = na
+if barstate.isconfirmed and tod_tnt_zones.size() > 0
+    if tod_dispBull
+        for i = tod_tnt_zones.size() - 1 to 0
+            tod_Zone z = tod_tnt_zones.get(i)
+            if not z.isBull and z.isActive and low[1] > z.level
+                tod_raw_napalmBull := true, tod_pseudoBullLevel := z.level
+                break
+    if tod_dispBear
+        for i = tod_tnt_zones.size() - 1 to 0
+            tod_Zone z = tod_tnt_zones.get(i)
+            if z.isBull and z.isActive and high[1] < z.level
+                tod_raw_napalmBear := true, tod_pseudoBearLevel := z.level
+                break
+bool tod_raw_bullCharge = false, bool tod_raw_bearCharge = false
+float tod_chargeBullLevel = na, float tod_chargeBearLevel = na
+if barstate.isconfirmed and tod_charge_levels.size() > 0
+    if tod_dispBull
+        for i = tod_charge_levels.size() - 1 to 0
+            tod_ChargeLevel cl = tod_charge_levels.get(i)
+            if not cl.isBull and not cl.violated and close[1] > cl.level
+                cl.violated := true, tod_raw_bullCharge := true, tod_chargeBullLevel := cl.level
+                tod_charge_levels.push(tod_ChargeLevel.new(low[1], true, bar_index))
+                break
+    if tod_dispBear
+        for i = tod_charge_levels.size() - 1 to 0
+            tod_ChargeLevel cl = tod_charge_levels.get(i)
+            if cl.isBull and not cl.violated and close[1] < cl.level
+                cl.violated := true, tod_raw_bearCharge := true, tod_chargeBearLevel := cl.level
+                tod_charge_levels.push(tod_ChargeLevel.new(high[1], false, bar_index))
+                break
+while tod_charge_levels.size() > 100
+    tod_charge_levels.shift()
+
+// Super Charge + Super TNT (internal)
+bool tod_raw_superTNTBull = tod_raw_bullTNT and tod_raw_bearCharge, bool tod_raw_superTNTBear = tod_raw_bearTNT and tod_raw_bullCharge
+
+// Event log + TNT 2.0 (compact)
+var tod_bull_events = array.new<tod_BullBearEvent>(0), var tod_bear_events = array.new<tod_BullBearEvent>(0)
+bool tod_effectiveBullCharge = tod_raw_bullCharge and not tod_raw_bearTNT, bool tod_effectiveBearCharge = tod_raw_bearCharge and not tod_raw_bullTNT
+bool tod_anyBullEvent = tod_raw_bullTNT or tod_raw_napalmBull or tod_effectiveBullCharge, bool tod_anyBearEvent = tod_raw_bearTNT or tod_raw_napalmBear or tod_effectiveBearCharge
+if tod_anyBullEvent
+    int evtBar = tod_raw_bullTNT ? bar_index : bar_index - 1
+    float evtLvl = tod_raw_bullTNT ? f_tod_bull_level() : tod_raw_napalmBull ? tod_pseudoBullLevel : tod_chargeBullLevel
+    tod_bull_events.push(tod_BullBearEvent.new(evtBar, evtLvl, high, low, true, tod_raw_bullTNT))
+    tod_bear_events.clear()
+    while tod_bull_events.size() > 20
+        tod_bull_events.shift()
+if tod_anyBearEvent and not tod_anyBullEvent
+    int evtBar = tod_raw_bearTNT ? bar_index : bar_index - 1
+    float evtLvl = tod_raw_bearTNT ? f_tod_bear_level() : tod_raw_napalmBear ? tod_pseudoBearLevel : tod_chargeBearLevel
+    tod_bear_events.push(tod_BullBearEvent.new(evtBar, evtLvl, high, low, false, tod_raw_bearTNT))
+    tod_bull_events.clear()
+    while tod_bear_events.size() > 20
+        tod_bear_events.shift()
+
+var tod_super_zones = array.new<tod_SuperZone>(0)
+var int tod_lastSuperBullBar = 0, var int tod_lastSuperBearBar = 0
+bool tod_raw_bullTNT2 = false, bool tod_raw_bearTNT2 = false
+if tod_bull_events.size() >= 2 and tod_anyBullEvent and barstate.isconfirmed and (bar_index - tod_lastSuperBullBar) > tod_MIN_SIG_GAP
+    tod_raw_bullTNT2 := true, tod_lastSuperBullBar := bar_index
+if tod_bear_events.size() >= 2 and tod_anyBearEvent and not tod_anyBullEvent and barstate.isconfirmed and (bar_index - tod_lastSuperBearBar) > tod_MIN_SIG_GAP
+    tod_raw_bearTNT2 := true, tod_lastSuperBearBar := bar_index
+
+// Return TNT 2.0 (compact — source parity: no SuperZone constructor exists in TNT OD v3, array stays empty)
+bool tod_raw_retBullTNT2 = false, bool tod_raw_retBearTNT2 = false
+if tod_super_zones.size() > 0 and barstate.isconfirmed
+    for i = tod_super_zones.size() - 1 to 0
+        tod_SuperZone sz = tod_super_zones.get(i)
+        if sz.isActive and not sz.returnFired
+            if sz.isBull and low <= sz.returnLevel and close > sz.zoneBtm
+                sz.returnFired := true, tod_raw_retBullTNT2 := true
+            if not sz.isBull and high >= sz.returnLevel and close < sz.zoneTop
+                sz.returnFired := true, tod_raw_retBearTNT2 := true
+    while tod_super_zones.size() > tod_maxSuperZones
+        tod_super_zones.shift()
+
+// Sudden Change — Continuous only
+var int tod_sc_lastBullChargeBar = na, var int tod_sc_lastBearChargeBar = na
+var int tod_sc_lastRetBullBar = na, var int tod_sc_lastRetBearBar = na
+var int tod_sc_lastBullTNTBar = na, var int tod_sc_lastBearTNTBar = na
+var int tod_sc_lastBullTNT2Bar = na, var int tod_sc_lastBearTNT2Bar = na
+bool tod_raw_contBull = (tod_raw_bullCharge and not na(tod_sc_lastRetBullBar) and (bar_index - 1 - tod_sc_lastRetBullBar) <= tod_SUDDEN_PROX) or ((tod_raw_bullTNT or tod_raw_bullTNT2) and not na(tod_sc_lastBullChargeBar) and (bar_index - tod_sc_lastBullChargeBar) <= tod_SUDDEN_PROX) or (tod_raw_bullCharge and ((not na(tod_sc_lastBullTNTBar) and (bar_index - 1 - tod_sc_lastBullTNTBar) <= tod_SUDDEN_PROX) or (not na(tod_sc_lastBullTNT2Bar) and (bar_index - 1 - tod_sc_lastBullTNT2Bar) <= tod_SUDDEN_PROX)))
+bool tod_raw_contBear = (tod_raw_bearCharge and not na(tod_sc_lastRetBearBar) and (bar_index - 1 - tod_sc_lastRetBearBar) <= tod_SUDDEN_PROX) or ((tod_raw_bearTNT or tod_raw_bearTNT2) and not na(tod_sc_lastBearChargeBar) and (bar_index - tod_sc_lastBearChargeBar) <= tod_SUDDEN_PROX) or (tod_raw_bearCharge and ((not na(tod_sc_lastBearTNTBar) and (bar_index - 1 - tod_sc_lastBearTNTBar) <= tod_SUDDEN_PROX) or (not na(tod_sc_lastBearTNT2Bar) and (bar_index - 1 - tod_sc_lastBearTNT2Bar) <= tod_SUDDEN_PROX)))
+if tod_raw_bullCharge
+    tod_sc_lastBullChargeBar := bar_index - 1
+if tod_raw_bearCharge
+    tod_sc_lastBearChargeBar := bar_index - 1
+if tod_raw_retBullTNT or tod_raw_retBullTNT2
+    tod_sc_lastRetBullBar := bar_index
+if tod_raw_retBearTNT or tod_raw_retBearTNT2
+    tod_sc_lastRetBearBar := bar_index
+if tod_raw_bullTNT
+    tod_sc_lastBullTNTBar := bar_index
+if tod_raw_bearTNT
+    tod_sc_lastBearTNTBar := bar_index
+if tod_raw_bullTNT2
+    tod_sc_lastBullTNT2Bar := bar_index
+if tod_raw_bearTNT2
+    tod_sc_lastBearTNT2Bar := bar_index
+
+// Consolidated detection (TNT OD v3 parity)
+bool tod_det_bullTNT = tod_raw_bullTNT or tod_raw_bullTNT2 or tod_raw_superTNTBull
+bool tod_det_bearTNT = tod_raw_bearTNT or tod_raw_bearTNT2 or tod_raw_superTNTBear
+bool tod_det_bullNapalm = tod_raw_napalmBull or tod_raw_bullCharge
+bool tod_det_bearNapalm = tod_raw_napalmBear or tod_raw_bearCharge
+bool tod_det_contBull = tod_raw_contBull, bool tod_det_contBear = tod_raw_contBear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// IGNITE — TNT OD v3 parity: (TNT or NPM) + Continuous same visual bar
+// ══════════════════════════════════════════════════════════════════════════════
+bool ign_tc_bull = tod_det_bullTNT and tod_det_contBull, bool ign_tc_bear = tod_det_bearTNT and tod_det_contBear
+bool ign_nc_bull = tod_det_bullNapalm and (tod_det_contBull[1] == true), bool ign_nc_bear = tod_det_bearNapalm and (tod_det_contBear[1] == true)
+bool det_igniteBull = ign_tc_bull or ign_nc_bull, bool det_igniteBear = ign_tc_bear or ign_nc_bear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: B2B PUP v5.4 ENGINE G (tnt_ prefix; for B2B NAPALM) — verbatim port
+// ══════════════════════════════════════════════════════════════════════════════
+grpTNT = "── TNT Engine (B2B Napalm) ──"
+int tnt_SENS = input.int(100, "Sensitivity", minval=1, group=grpTNT)
+int tnt_SWING_LEN = input.int(10, "Swing Length", minval=3, group=grpTNT)
+int tnt_DISP_STD_X = input.int(5, "Disp Std Dev Mult", minval=0, group=grpTNT)
+int tnt_SUDDEN_PROX = input.int(3, "Sudden Change Max Bars", minval=1, group=grpTNT)
+int tnt_MAX_ZONES = input.int(30, "Max TNT Zones", minval=1, maxval=200, group=grpTNT, tooltip="How many active TNT zones to keep tracking for Napalm/Charge/Return scans.")
+float tnt_RET_PCT = input.float(100.0, "Return to TNT %", minval=-10, step=0.1, group=grpTNT)
+
+int tnt_EMA_FAST = tnt_SENS, int tnt_EMA_SLOW = tnt_SENS + 13
+float tnt_ATR_VAL = ta.atr(200), float tnt_ATR_MULT = 3.5, float tnt_ATR_MIN = 0.5
+int tnt_MIN_SIG_GAP = tnt_EMA_SLOW, int tnt_CW = tnt_EMA_SLOW * 2
+float tnt_ef = ta.ema(close, tnt_EMA_FAST), float tnt_es = ta.ema(close, tnt_EMA_SLOW)
+
+bool tnt_vbc = ta.crossover(tnt_ef, tnt_es) and conf, bool tnt_vsc = ta.crossunder(tnt_ef, tnt_es) and conf
+var float tnt_vbu = na, var float tnt_vbl = na, var float tnt_vbv = na, var bool tnt_vbn = false
+var float tnt_vsu = na, var float tnt_vsl = na, var float tnt_vsv = na, var bool tnt_vsn = false
+float tnt_ahi = ta.highest(tnt_ATR_VAL, 200) * 2.0
+if tnt_vbc
+    float cv = 0.0, float ol = low
+    for i = 1 to tnt_EMA_SLOW
+        if low[i] <= ol
+            ol := low[i]
+        cv += volume[i]
+    float s = math.min(open, close)
+    s := (s - ol) < tnt_ahi * 0.5 ? ol + tnt_ahi * 0.5 : s
+    tnt_vbu := s, tnt_vbl := ol, tnt_vbv := cv, tnt_vbn := true
+else
+    tnt_vbn := false
+if tnt_vsc
+    float cv = 0.0, float oh = high
+    for i = 1 to tnt_EMA_SLOW
+        if high[i] >= oh
+            oh := high[i]
+        cv += volume[i]
+    float s = math.max(open, close)
+    s := (oh - s) < tnt_ahi * 0.5 ? oh - tnt_ahi * 0.5 : s
+    tnt_vsu := oh, tnt_vsl := s, tnt_vsv := cv, tnt_vsn := true
+else
+    tnt_vsn := false
+
+type tnt_SP
+    float val = na
+    int idx = na
+    bool crossed = false
+var int tnt_swSt = 0
+var tnt_SP tnt_swH = tnt_SP.new(na, na), var tnt_SP tnt_swL = tnt_SP.new(na, na)
+float tnt_swU = ta.highest(high, tnt_SWING_LEN), float tnt_swLL = ta.lowest(low, tnt_SWING_LEN)
+tnt_swSt := high[tnt_SWING_LEN] > tnt_swU ? 0 : low[tnt_SWING_LEN] < tnt_swLL ? 1 : tnt_swSt
+if tnt_swSt == 0 and tnt_swSt[1] != 0
+    tnt_swH := tnt_SP.new(high[tnt_SWING_LEN], bar_index[tnt_SWING_LEN])
+if tnt_swSt == 1 and tnt_swSt[1] != 1
+    tnt_swL := tnt_SP.new(low[tnt_SWING_LEN], bar_index[tnt_SWING_LEN])
+var float tnt_abu = na, var float tnt_abl = na, var int tnt_abi = na, var float tnt_apu = na, var float tnt_apl = na, var int tnt_api = na, var bool tnt_abn = false
+var float tnt_asu = na, var float tnt_asl = na, var int tnt_asi = na, var float tnt_aspu = na, var float tnt_aspl = na, var int tnt_aspi = na, var bool tnt_asn = false
+if close > tnt_swH.val and not tnt_swH.crossed and conf and not na(tnt_swH.val)
+    tnt_swH.crossed := true
+    float oL = low[1], float oH = high[1], int oI = bar_index - 1
+    int lb = bar_index - tnt_swH.idx
+    if lb > 1
+        for i = 1 to lb - 1
+            if open[i] > close[i] and low[i] <= oL
+                oL := low[i], oH := high[i], oI := bar_index - i
+    tnt_apu := tnt_abu, tnt_apl := tnt_abl, tnt_api := tnt_abi
+    tnt_abu := oH, tnt_abl := oL, tnt_abi := oI
+    tnt_abn := not na(tnt_apu) and oI <= nz(tnt_api, 0) + tnt_EMA_SLOW and oH > nz(tnt_apl, na) and oL < nz(tnt_apu, na)
+else
+    tnt_abn := false
+if close < tnt_swL.val and not tnt_swL.crossed and conf and not na(tnt_swL.val)
+    tnt_swL.crossed := true
+    float oL = low[1], float oH = high[1], int oI = bar_index - 1
+    int lb = bar_index - tnt_swL.idx
+    if lb > 1
+        for i = 1 to lb - 1
+            if open[i] < close[i] and high[i] >= oH
+                oH := high[i], oL := low[i], oI := bar_index - i
+    tnt_aspu := tnt_asu, tnt_aspl := tnt_asl, tnt_aspi := tnt_asi
+    tnt_asu := oH, tnt_asl := oL, tnt_asi := oI
+    tnt_asn := not na(tnt_aspl) and oI <= nz(tnt_aspi, 0) + tnt_EMA_SLOW and oL < nz(tnt_aspu, na) and oH > nz(tnt_aspl, na)
+else
+    tnt_asn := false
+
+var float tnt_fbu = na, var float tnt_fbl = na, var bool tnt_fba = false, var bool tnt_fbpn = false
+var float tnt_fsu = na, var float tnt_fsl = na, var bool tnt_fsa = false, var bool tnt_fspn = false
+var tnt_SP tnt_fswH = tnt_SP.new(na, na), var tnt_SP tnt_fswL = tnt_SP.new(na, na)
+if tnt_swSt == 0 and tnt_swSt[1] != 0
+    tnt_fswH := tnt_SP.new(high[tnt_SWING_LEN], bar_index[tnt_SWING_LEN])
+if tnt_swSt == 1 and tnt_swSt[1] != 1
+    tnt_fswL := tnt_SP.new(low[tnt_SWING_LEN], bar_index[tnt_SWING_LEN])
+if close > tnt_fswH.val and not tnt_fswH.crossed and conf and not na(tnt_fswH.val)
+    tnt_fswH.crossed := true
+    float bB = math.min(open[1], close[1]), float bT = math.max(open[1], close[1])
+    int lb = bar_index - tnt_fswH.idx
+    if lb > 1
+        for i = 1 to lb - 1
+            if math.min(open[i], close[i]) < bB
+                bB := math.min(open[i], close[i]), bT := math.max(open[i], close[i])
+    float os = math.abs(bT - bB)
+    if os <= tnt_ATR_VAL * tnt_ATR_MULT and os > tnt_ATR_VAL * tnt_ATR_MIN
+        tnt_fbu := bT, tnt_fbl := bB, tnt_fba := true
+if close < tnt_fswL.val and not tnt_fswL.crossed and conf and not na(tnt_fswL.val)
+    tnt_fswL.crossed := true
+    float bT = math.max(open[1], close[1]), float bB = math.min(open[1], close[1])
+    int lb = bar_index - tnt_fswL.idx
+    if lb > 1
+        for i = 1 to lb - 1
+            if math.max(open[i], close[i]) > bT
+                bT := math.max(open[i], close[i]), bB := math.min(open[i], close[i])
+    float os = math.abs(bT - bB)
+    if os <= tnt_ATR_VAL * tnt_ATR_MULT and os > tnt_ATR_VAL * tnt_ATR_MIN
+        tnt_fsu := bT, tnt_fsl := bB, tnt_fsa := true
+tnt_fbpn := false
+if tnt_fba and conf
+    if close < tnt_fbl
+        tnt_fba := false
+    else if low[1] < tnt_fbu and low[1] > tnt_fbl and close > open and close > high[1]
+        tnt_fbpn := true
+tnt_fspn := false
+if tnt_fsa and conf
+    if close > tnt_fsu
+        tnt_fsa := false
+    else if high[1] > tnt_fsl and high[1] < tnt_fsu and close < open and close < low[1]
+        tnt_fspn := true
+
+var int tnt_vcb = 0, var int tnt_acb = 0, var int tnt_fcb = 0, var int tnt_vcs = 0, var int tnt_acs = 0, var int tnt_fcs = 0
+var float tnt_vcu = na, var float tnt_vcl = na, var float tnt_vdu = na, var float tnt_vdl = na
+if tnt_vbn
+    tnt_vcb := bar_index, tnt_vcu := tnt_vbu, tnt_vcl := tnt_vbl
+if tnt_vsn
+    tnt_vcs := bar_index, tnt_vdu := tnt_vsu, tnt_vdl := tnt_vsl
+if tnt_abn
+    tnt_acb := bar_index
+if tnt_asn
+    tnt_acs := bar_index
+if tnt_fbpn
+    tnt_fcb := bar_index
+if tnt_fspn
+    tnt_fcs := bar_index
+f_tnt_tok(int a, int b, int c) =>
+    int mn = math.min(a, math.min(b, c)), int mx = math.max(a, math.max(b, c))
+    mx - mn <= tnt_CW and mn > 0
+f_tnt_zov(float u1, float l1, float u2, float l2) => not na(u1) and not na(u2) and u1 >= l2 and u2 >= l1
+float tnt_vMed = ta.median(volume, tnt_EMA_SLOW), float tnt_eSl = tnt_ef - tnt_ef[5], float tnt_rsi = ta.rsi(close, 14)
+f_tnt_sb(float vV, float vU, float vL, float aU, float aL) => vV > tnt_vMed * tnt_EMA_SLOW * 0.5 and tnt_eSl > 0 and tnt_rsi < 80 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+f_tnt_ss(float vV, float vU, float vL, float aU, float aL) => vV > tnt_vMed * tnt_EMA_SLOW * 0.5 and tnt_eSl < 0 and tnt_rsi > 20 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+
+var int tnt_lBSB = 0, var int tnt_lSSB = 0
+bool tnt_bConf = f_tnt_tok(tnt_vcb, tnt_acb, tnt_fcb) and f_tnt_zov(tnt_vcu, tnt_vcl, tnt_abu, tnt_abl)
+bool tnt_sConf = f_tnt_tok(tnt_vcs, tnt_acs, tnt_fcs) and f_tnt_zov(tnt_vdu, tnt_vdl, tnt_asu, tnt_asl)
+bool det_bullTNT_raw = tnt_bConf and f_tnt_sb(nz(tnt_vbv), nz(tnt_vcu), nz(tnt_vcl), nz(tnt_abu), nz(tnt_abl)) and conf and (bar_index - tnt_lBSB) > tnt_MIN_SIG_GAP
+bool det_bearTNT_raw = tnt_sConf and f_tnt_ss(nz(tnt_vsv), nz(tnt_vdu), nz(tnt_vdl), nz(tnt_asu), nz(tnt_asl)) and conf and (bar_index - tnt_lSSB) > tnt_MIN_SIG_GAP
+if det_bullTNT_raw
+    tnt_lBSB := bar_index
+if det_bearTNT_raw
+    tnt_lSSB := bar_index
+
+// ── ZONE TRACKING (for Napalm + Charge + Return) ──
+type TntZone
+    int confirmIdx
+    float upper
+    float lower
+    float level
+    bool isBull
+    bool isActive = true
+    bool returnFired = false
+
+var bull_tnt_zones = array.new<TntZone>(0)
+var bear_tnt_zones = array.new<TntZone>(0)
+
+if det_bullTNT_raw
+    float oU = math.min(nz(tnt_vcu, high), nz(tnt_abu, high))
+    float oL = math.max(nz(tnt_vcl, low), nz(tnt_abl, low))
+    float lvl = math.avg(oU, oL)
+    bull_tnt_zones.push(TntZone.new(bar_index, oU, oL, lvl, true, true, false))
+if det_bearTNT_raw
+    float oU = math.min(nz(tnt_vdu, high), nz(tnt_asu, high))
+    float oL = math.max(nz(tnt_vdl, low), nz(tnt_asl, low))
+    float lvl = math.avg(oU, oL)
+    bear_tnt_zones.push(TntZone.new(bar_index, oU, oL, lvl, false, true, false))
+
+// Invalidate zones whose levels close has fully broken
+if bull_tnt_zones.size() > 0
+    for i = bull_tnt_zones.size() - 1 to 0
+        if i < bull_tnt_zones.size()
+            TntZone z = bull_tnt_zones.get(i)
+            if z.isActive and close < z.lower
+                z.isActive := false
+if bear_tnt_zones.size() > 0
+    for i = bear_tnt_zones.size() - 1 to 0
+        if i < bear_tnt_zones.size()
+            TntZone z = bear_tnt_zones.get(i)
+            if z.isActive and close > z.upper
+                z.isActive := false
+
+while bull_tnt_zones.size() > tnt_MAX_ZONES
+    bull_tnt_zones.shift()
+while bear_tnt_zones.size() > tnt_MAX_ZONES
+    bear_tnt_zones.shift()
+
+// Return-to-TNT
+bool det_retBullTNT = false
+bool det_retBearTNT = false
+if conf
+    if bull_tnt_zones.size() > 0
+        for i = bull_tnt_zones.size() - 1 to 0
+            if i < bull_tnt_zones.size()
+                TntZone z = bull_tnt_zones.get(i)
+                if z.isActive and not z.returnFired and bar_index > z.confirmIdx
+                    float zH = z.upper - z.lower
+                    float retLvl = z.lower + zH * (tnt_RET_PCT / 100.0)
+                    if low <= retLvl and close > z.lower
+                        z.returnFired := true
+                        det_retBullTNT := true
+    if bear_tnt_zones.size() > 0
+        for i = bear_tnt_zones.size() - 1 to 0
+            if i < bear_tnt_zones.size()
+                TntZone z = bear_tnt_zones.get(i)
+                if z.isActive and not z.returnFired and bar_index > z.confirmIdx
+                    float zH = z.upper - z.lower
+                    float retLvl = z.upper - zH * (tnt_RET_PCT / 100.0)
+                    if high >= retLvl and close < z.upper
+                        z.returnFired := true
+                        det_retBearTNT := true
+
+// TNT internal displacement
+float tnt_dr = math.abs(open - close), float tnt_ds = ta.stdev(tnt_dr, 100), float tnt_dt = tnt_ds * tnt_DISP_STD_X
+bool tnt_dBull = conf and tnt_dr[1] > tnt_dt[1] and low > high[2] and close[1] > open[1]
+bool tnt_dBear = conf and tnt_dr[1] > tnt_dt[1] and high < low[2] and close[1] < open[1]
+
+// ── NAPALM (scans ALL active opposing zones) ──
+bool det_bullNapalm = false
+bool det_bearNapalm = false
+if conf and tnt_dBull and bear_tnt_zones.size() > 0
+    for i = bear_tnt_zones.size() - 1 to 0
+        if i < bear_tnt_zones.size()
+            TntZone z = bear_tnt_zones.get(i)
+            if z.isActive and low[1] > z.level
+                det_bullNapalm := true
+                break
+if conf and tnt_dBear and bull_tnt_zones.size() > 0
+    for i = bull_tnt_zones.size() - 1 to 0
+        if i < bull_tnt_zones.size()
+            TntZone z = bull_tnt_zones.get(i)
+            if z.isActive and high[1] < z.level
+                det_bearNapalm := true
+                break
+
+// ── CHARGE (multi-level array) ──
+type ChargeLvl
+    float level
+    bool isBull
+    int barIdx
+    bool violated = false
+
+var charge_lvls = array.new<ChargeLvl>(0)
+if det_bullTNT_raw
+    float lvl = math.avg(math.min(nz(tnt_vcu, high), nz(tnt_abu, high)), math.max(nz(tnt_vcl, low), nz(tnt_abl, low)))
+    charge_lvls.push(ChargeLvl.new(lvl, true, bar_index, false))
+if det_bearTNT_raw
+    float lvl = math.avg(math.min(nz(tnt_vdu, high), nz(tnt_asu, high)), math.max(nz(tnt_vdl, low), nz(tnt_asl, low)))
+    charge_lvls.push(ChargeLvl.new(lvl, false, bar_index, false))
+
+bool det_bullCharge = false
+bool det_bearCharge = false
+if conf and tnt_dBull and charge_lvls.size() > 0
+    for i = charge_lvls.size() - 1 to 0
+        if i < charge_lvls.size()
+            ChargeLvl cl = charge_lvls.get(i)
+            if not cl.isBull and not cl.violated and close[1] > cl.level
+                cl.violated := true
+                det_bullCharge := true
+                break
+if conf and tnt_dBear and charge_lvls.size() > 0
+    for i = charge_lvls.size() - 1 to 0
+        if i < charge_lvls.size()
+            ChargeLvl cl = charge_lvls.get(i)
+            if cl.isBull and not cl.violated and close[1] < cl.level
+                cl.violated := true
+                det_bearCharge := true
+                break
+
+while charge_lvls.size() > 100
+    charge_lvls.shift()
+
+// Backwards-compat aggregates → B2B NAPALM
+bool det_bullNapCons = det_bullNapalm or det_bullCharge
+bool det_bearNapCons = det_bearNapalm or det_bearCharge
+bool det_b2bBullNapalm = det_bullNapCons and nz(det_bullNapCons[1])
+bool det_b2bBearNapalm = det_bearNapCons and nz(det_bearNapCons[1])
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NAGASAKI — SQUARIFY v3 parity (all-time-high volume on bar[0])
+// ══════════════════════════════════════════════════════════════════════════════
+var float maxVol = 0.0
+bool isNagasaki = false
+if bar_index == 0
+    maxVol := volume
+else if volume > maxVol
+    isNagasaki := true
+    maxVol := volume
+sigNagasaki = isNagasaki
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DETECTIONS
+// ══════════════════════════════════════════════════════════════════════════════
+// S1/S2 — RVOL tier + Disp9 + PBJ
+bool det_S1 = conf and (det_RVOL1xB or det_GrandSlam) and d9_bull and anyBullPBJ
+bool det_S2 = conf and (det_RVOL1xR or det_MOAB) and d9_bear and anyBearPBJ
+
+// S15 — Nagasaki + any bullish qualifier, ON THE FIRST BAR (baked in)
+bool det_S15 = conf and is_new_sess and sigNagasaki and (anyLong or anyBullPBJ or d9_bull or det_RVOL1xB or det_GrandSlam)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIRST BAR MASTER GATES (per reference bar / offset)
+// ══════════════════════════════════════════════════════════════════════════════
+bool fb0 = not firstBarOnly or is_new_sess
+bool fb1 = not firstBarOnly or nz(is_new_sess[1])
+bool fb01 = not firstBarOnly or is_new_sess or nz(is_new_sess[1])
+bool fbs = not firstBarOnly or nz(is_new_sess[yy_rightBars])
+bool fbm = not firstBarOnly or al_isFirstBar
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIRE BOOLEANS — checkbox + detection + first-bar gate (drive plots AND alerts)
+// ══════════════════════════════════════════════════════════════════════════════
+bool fire_S1 = en_S1 and det_S1 and fb0
+bool fire_S2 = en_S2 and det_S2 and fb0
+bool fire_S3 = en_S3 and sigTyphoonBull and fbs
+bool fire_S4 = en_S4 and sigTyphoonBear and fbs
+bool fire_S5 = en_S5 and sigMusashiBull and fbm
+bool fire_S6 = en_S6 and sigMusashiBear and fbm
+bool fire_S7 = en_S7 and sigWhaleBull and fb0
+bool fire_S8 = en_S8 and sigWhaleBear and fb0
+bool fire_S9 = en_S9 and det_S9_kratos and fb01
+bool fire_S10 = en_S10 and det_S10_saab and fb01
+bool fire_S11 = en_S11 and det_dynamiteBull and fb1
+bool fire_S12 = en_S12 and det_dynamiteBear and fb1
+bool fire_S13_tc = en_S13 and ign_tc_bull and fb0
+bool fire_S13_nc = en_S13 and ign_nc_bull and fb1
+bool fire_S13 = fire_S13_tc or fire_S13_nc
+bool fire_S14_tc = en_S14 and ign_tc_bear and fb0
+bool fire_S14_nc = en_S14 and ign_nc_bear and fb1
+bool fire_S14 = fire_S14_tc or fire_S14_nc
+bool fire_S15 = en_S15 and det_S15 and fb0
+bool fire_S16 = en_S16 and det_b2bBullNapalm and fb01
+bool fire_S17 = en_S17 and det_b2bBearNapalm and fb01
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PLOTS
+// ══════════════════════════════════════════════════════════════════════════════
+plotshape(fire_S1, "S1: Bull RVOL 1X/GS + Disp9 + PBJ", shape.triangleup, location.belowbar, color.new(color.aqua, 0), 0, "1X/GS\nD9 PBJ", color.white, size=size.small)
+plotshape(fire_S2, "S2: Bear RVOL 1X/MOAB + Disp9 + PBJ", shape.triangledown, location.abovebar, color.new(color.fuchsia, 0), 0, "1X/MOAB\nD9 PBJ", color.white, size=size.small)
+plotshape(fire_S3, "S3: Typhoon Bull", shape.labelup, location.belowbar, color.new(color.aqua, 75), -yy_rightBars, "TYPHOON+", color.white, size=size.small)
+plotshape(fire_S4, "S4: Typhoon Bear", shape.labeldown, location.abovebar, color.new(color.orange, 75), -yy_rightBars, "TYPHOON-", color.white, size=size.small)
+plotshape(fire_S5, "S5: Musashi Bull", shape.labelup, location.belowbar, color.new(#FFD700, 75), -moff, "+ Musashi", color.white, size=size.small)
+plotshape(fire_S6, "S6: Musashi Bear", shape.labeldown, location.abovebar, color.new(#FF4500, 75), -moff, "- Musashi", color.white, size=size.small)
+plotshape(fire_S7, "S7: Whale+PUP Bull", shape.cross, location.belowbar, color.new(#FFD700, 75), 0, "WH+PUP", color.white, size=size.tiny)
+plotshape(fire_S8, "S8: Whale+PPD Bear", shape.cross, location.abovebar, color.new(#DC143C, 75), 0, "WH+PPD", color.white, size=size.tiny)
+plotshape(fire_S9, "S9: B2B KRATOS + Disp9", shape.diamond, location.abovebar, color.new(#FF6F00, 0), 0, "B2B\nKRAT D9", color.white, size=size.normal)
+plotshape(fire_S10, "S10: B2B SAAB + Disp9", shape.diamond, location.belowbar, color.new(#FFD700, 0), 0, "B2B\nSAAB D9", color.black, size=size.normal)
+plotshape(fire_S11, "S11: Dynamite Bull", shape.labelup, location.belowbar, #FF0000, -1, "★ DYNAMITE", color.white, size=size.large)
+plotshape(fire_S12, "S12: Dynamite Bear", shape.labeldown, location.abovebar, #FF0000, -1, "★ DYNAMITE", color.white, size=size.large)
+plotshape(fire_S13_tc, "S13: Ignite Bull (T+C)", shape.labelup, location.belowbar, #76ff03, 0, "IGNITE T+C", color.white, size=size.normal)
+plotshape(fire_S13_nc, "S13: Ignite Bull (N+C)", shape.labelup, location.belowbar, #76ff03, -1, "IGNITE N+C", color.white, size=size.normal)
+plotshape(fire_S14_tc, "S14: Ignite Bear (T+C)", shape.labeldown, location.abovebar, #d500f9, 0, "IGNITE T+C", color.white, size=size.normal)
+plotshape(fire_S14_nc, "S14: Ignite Bear (N+C)", shape.labeldown, location.abovebar, #d500f9, -1, "IGNITE N+C", color.white, size=size.normal)
+plotshape(fire_S15, "S15: Nagasaki 1stBar+", shape.labelup, location.abovebar, #FF00FF, 0, "NAG+", color.white, size=size.large)
+plotshape(fire_S16, "S16: B2B Napalm Bull", shape.labelup, location.belowbar, color.new(#1DE9B6, 0), 0, "NPM\nB2B", color.black, size=size.large)
+plotshape(fire_S17, "S17: B2B Napalm Bear", shape.labeldown, location.abovebar, color.new(#FF1744, 0), 0, "NPM\nB2B", color.white, size=size.large)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ALERTS — static alertcondition per plot + dynamic alert() aggregator
+// ══════════════════════════════════════════════════════════════════════════════
+alertcondition(fire_S1, "S1: Bull RVOL 1X/GS + Disp9 + PBJ", "S1: Bull RVOL 1X/GS + Disp9 + PBJ fired")
+alertcondition(fire_S2, "S2: Bear RVOL 1X/MOAB + Disp9 + PBJ", "S2: Bear RVOL 1X/MOAB + Disp9 + PBJ fired")
+alertcondition(fire_S3, "S3: Typhoon Bull", "S3: Typhoon Bull fired")
+alertcondition(fire_S4, "S4: Typhoon Bear", "S4: Typhoon Bear fired")
+alertcondition(fire_S5, "S5: Musashi Bull", "S5: Musashi Bull fired")
+alertcondition(fire_S6, "S6: Musashi Bear", "S6: Musashi Bear fired")
+alertcondition(fire_S7, "S7: Whale+PUP Bull", "S7: Whale+PUP Bull fired")
+alertcondition(fire_S8, "S8: Whale+PPD Bear", "S8: Whale+PPD Bear fired")
+alertcondition(fire_S9, "S9: B2B KRATOS + Disp9", "S9: B2B KRATOS + Disp9 fired")
+alertcondition(fire_S10, "S10: B2B SAAB + Disp9", "S10: B2B SAAB + Disp9 fired")
+alertcondition(fire_S11, "S11: Dynamite Bull", "S11: Dynamite Bull fired")
+alertcondition(fire_S12, "S12: Dynamite Bear", "S12: Dynamite Bear fired")
+alertcondition(fire_S13, "S13: Ignite Bull", "S13: Ignite Bull fired")
+alertcondition(fire_S14, "S14: Ignite Bear", "S14: Ignite Bear fired")
+alertcondition(fire_S15, "S15: Nagasaki 1stBar+", "S15: Nagasaki 1stBar+ fired")
+alertcondition(fire_S16, "S16: B2B Napalm Bull", "S16: B2B Napalm Bull fired")
+alertcondition(fire_S17, "S17: B2B Napalm Bear", "S17: B2B Napalm Bear fired")
+
+if conf
+    string bs = ""
+    string rs = ""
+    if fire_S1
+        bs := f_add(bs, "S1 RVOL1X/GS+D9+PBJ")
+    if fire_S2
+        rs := f_add(rs, "S2 RVOL1X/MOAB+D9+PBJ")
+    if fire_S3
+        bs := f_add(bs, "S3 TYPHOON")
+    if fire_S4
+        rs := f_add(rs, "S4 TYPHOON")
+    if fire_S5
+        bs := f_add(bs, "S5 MUSASHI")
+    if fire_S6
+        rs := f_add(rs, "S6 MUSASHI")
+    if fire_S7
+        bs := f_add(bs, "S7 WHALE+PUP")
+    if fire_S8
+        rs := f_add(rs, "S8 WHALE+PPD")
+    if fire_S9
+        rs := f_add(rs, "S9 B2B-KRAT+D9")
+    if fire_S10
+        bs := f_add(bs, "S10 B2B-SAAB+D9")
+    if fire_S11
+        bs := f_add(bs, "S11 DYNAMITE")
+    if fire_S12
+        rs := f_add(rs, "S12 DYNAMITE")
+    if fire_S13
+        bs := f_add(bs, "S13 IGNITE")
+    if fire_S14
+        rs := f_add(rs, "S14 IGNITE")
+    if fire_S15
+        bs := f_add(bs, "S15 NAG-1stBAR+")
+    if fire_S16
+        bs := f_add(bs, "S16 B2BNPM")
+    if fire_S17
+        rs := f_add(rs, "S17 B2BNPM")
+    if en_aggAlerts
+        if str.length(bs) > 0
+            alert("BULL | " + _FIRST + " | " + bs, alert.freq_once_per_bar_close)
+        if str.length(rs) > 0
+            alert("BEAR | " + _FIRST + " | " + rs, alert.freq_once_per_bar_close)
+    else
+        if fire_S1
+            alert("BULL | " + _FIRST + " | S1 RVOL1X/GS+D9+PBJ", alert.freq_once_per_bar_close)
+        if fire_S2
+            alert("BEAR | " + _FIRST + " | S2 RVOL1X/MOAB+D9+PBJ", alert.freq_once_per_bar_close)
+        if fire_S3
+            alert("BULL | " + _FIRST + " | S3 TYPHOON", alert.freq_once_per_bar_close)
+        if fire_S4
+            alert("BEAR | " + _FIRST + " | S4 TYPHOON", alert.freq_once_per_bar_close)
+        if fire_S5
+            alert("BULL | " + _FIRST + " | S5 MUSASHI", alert.freq_once_per_bar_close)
+        if fire_S6
+            alert("BEAR | " + _FIRST + " | S6 MUSASHI", alert.freq_once_per_bar_close)
+        if fire_S7
+            alert("BULL | " + _FIRST + " | S7 WHALE+PUP", alert.freq_once_per_bar_close)
+        if fire_S8
+            alert("BEAR | " + _FIRST + " | S8 WHALE+PPD", alert.freq_once_per_bar_close)
+        if fire_S9
+            alert("BEAR | " + _FIRST + " | S9 B2B-KRAT+D9", alert.freq_once_per_bar_close)
+        if fire_S10
+            alert("BULL | " + _FIRST + " | S10 B2B-SAAB+D9", alert.freq_once_per_bar_close)
+        if fire_S11
+            alert("BULL | " + _FIRST + " | S11 DYNAMITE", alert.freq_once_per_bar_close)
+        if fire_S12
+            alert("BEAR | " + _FIRST + " | S12 DYNAMITE", alert.freq_once_per_bar_close)
+        if fire_S13
+            alert("BULL | " + _FIRST + " | S13 IGNITE", alert.freq_once_per_bar_close)
+        if fire_S14
+            alert("BEAR | " + _FIRST + " | S14 IGNITE", alert.freq_once_per_bar_close)
+        if fire_S15
+            alert("BULL | " + _FIRST + " | S15 NAG-1stBAR+", alert.freq_once_per_bar_close)
+        if fire_S16
+            alert("BULL | " + _FIRST + " | S16 B2BNPM", alert.freq_once_per_bar_close)
+        if fire_S17
+            alert("BEAR | " + _FIRST + " | S17 B2BNPM", alert.freq_once_per_bar_close)
