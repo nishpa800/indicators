@@ -4,7 +4,11 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
-## v2 additions — 2026-07-09 (same file `versions/FIRST_BAR_FABLE_v1.pine`)
+## v2 — 2026-07-09
+**File:** `versions/FIRST_BAR_FABLE_v2.pine` — chart title **"First Bar Fable v2"**,
+shorttitle **"1st BAR FABLE v2"** (v1 kept as `versions/FIRST_BAR_FABLE_v1.pine`,
+title "First Bar Fable v1", so there's no version confusion on the chart).
+
 Added detections requested by Anish. Every new displacement engine is adjustable
 and grouped; the file header carries a DISPLACEMENT MAP stating which engine
 drives which plots.
