@@ -4,6 +4,55 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v2 additions — 2026-07-09 (same file `versions/FIRST_BAR_FABLE_v1.pine`)
+Added detections requested by Anish. Every new displacement engine is adjustable
+and grouped; the file header carries a DISPLACEMENT MAP stating which engine
+drives which plots.
+
+**New detection plots:**
+| Plot | Logic | Source |
+|---|---|---|
+| S18 / S19 | B2B PUP / B2B PPD **+ Disp9** on one of the two pattern bars | B2B PUP v5.4 + Disp9 |
+| S20 / S21 | **B2B FC Cluster** Bull/Bear (FC cluster on two consecutive bars) — **ALWAYS fires on any bar; OVERRIDES the First Bar Master** even when first-bar mode is ON (loud tooltip + no first-bar gate) | Ultra v57 FC cluster |
+| S22 / S23 | **D9 Bull/Bear Study**: disp ≥ 9σ AND (RVOL 1x OR GS/MOAB) AND (HV500 OR HV1000 OR Nagasaki), all same confirmed bar; HV500/HV1000 are raw current-bar rolling highest-volume checks | HW v3 spec |
+| S24 / S25 | **Unified Combo** Bull/Bear **+ Disp9** (csNew3 AND displacement-9) | HVD PBJ PPD |
+| HVD Pipeline D | CO HV+D+PBJ / HV+D+PB co-occurrence (bull+bear) | HVD PBJ PPD |
+| HVD Back-to-Back | B2B HV+D / +PBJ / +PB (bull+bear) | HVD PBJ PPD |
+| HVD Momentum | HV+D+PUP/PPD, +RVOL, +CMB, +PBJ variants, 2of3, 3of3 (bull+bear) | HVD PBJ PPD |
+
+53 plotshapes total (under Pine's 64-output cap). Each checkbox gates both plot
+and alert (static alertcondition for S1–S25 + grouped HVD alertconditions +
+dynamic alert() aggregator for every fired detection).
+
+**No-fixed-windows compliance (Anish's hard rule):**
+- HVD **Group 1 (CO)**: the source's `use_any_*` gate pulled in FIXED-session-window
+  signals (Opening Drive `sessionBarCount`, Alpha Strike `firstOfDay`, U-streak
+  day flags). Those are **dropped**; `use_any_*` is rebuilt from First Bar Fable's
+  own ROLLING detections. Deliberate rolling-only deviation.
+- **B2B FC Cluster**: uses `sBullFC and sBullFC[1]` (two consecutive bars), NOT the
+  source's `f_hadSignalYesterday` (`barsPerDay*2` fixed-window scan).
+- Every other new lookback is rolling (`ta.highest/lowest/sma/stdev/atr`) or
+  expanding running-state (HEV/Nagasaki all-time max, cumulative FVG threshold),
+  never a fixed intraday bar-count window.
+
+**Ports & parity notes:**
+- HV+D displacement engine (σ=5, len=100 adjustable) drives every HVD plot.
+- PBJ engine extended with the **PB level-approach path** (omitted in v1) — needed
+  for the HVD `+PB` plots; PBJ latch output unchanged.
+- Unified Combo (`csNew3`) ports the full FVG/matrix/Pentagon/Long-Short chain;
+  its GZ FVG uses HVD params (adds 63-day HV tier, dist=12) under an `hgz_` prefix
+  so it doesn't share array state with Musashi's GZ engine.
+- Matrix Neo/Trinity reuse the u5 FAUNA variant (softened GG exclusion), matching
+  HVD's FAUNA; Long/Short ratios reuse the hybrid-momentum relativeVolume ratios.
+- FC cluster ported verbatim (`fc_` prefix), preserving its two bull/bear
+  asymmetries (`fc_b4_neg` extra bodyDn guard; bear seq threshold 0.5 vs bull 0.1);
+  its intrinsic day-reset (ind2) and RTH `inSession` mask (ind3) are kept as part
+  of the canonical FC definition, not fixed bar-count windows.
+- All HVD plots + Unified Combo render at offset −1 (gated by fb1); B2B PUP/PPD at
+  offset 0 (fb01); D9 studies at offset 0 (fb0); B2B FC at offset 0 (no gate).
+
+---
+
 ## v1 — 2026-07-08
 **File:** `versions/FIRST_BAR_FABLE_v1.pine` — new composite study, named in homage of Fable.
 
