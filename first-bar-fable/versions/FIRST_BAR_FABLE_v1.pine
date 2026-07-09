@@ -285,7 +285,7 @@ zoo_pbj_atr_mult = input.float(3.0, "PBJ ATR Mult", minval=0.1, step=0.1, group=
 zoo_pbj_vol_period = input.int(20, "PBJ Vol SMA Period", minval=1, group=grp_zoo)
 zoo_pbj_vol_mult = input.float(0.1, "PBJ Vol Mult", minval=0.0, step=0.05, group=grp_zoo)
 
-type lvl
+type pbjLvl
     float upper
     float lower
     float vol
@@ -338,11 +338,11 @@ bool pbj_sell = high > pbj_ma * (1 + thresh) and high == _pbjHighest and volume 
 // PB level-approach path (1st PUP FAUNA / HVD parity — required for the HVD "+PB" plots)
 bool enable_PB = true
 float atr_pb = ta.atr(14) * 2.0
-var bull_lvls = array.new<lvl>()
-var bear_lvls = array.new<lvl>()
+var bull_lvls = array.new<pbjLvl>()
+var bear_lvls = array.new<pbjLvl>()
 f_add_lvl(arr, up, lo, v) =>
     if math.abs(up - lo) >= syminfo.mintick
-        array.push(arr, lvl.new(up, lo, v, false))
+        array.push(arr, pbjLvl.new(up, lo, v, false))
 f_add_lander(is_bull, cross_sig, arr) =>
     if cross_sig
         float up = 0.0, float lo = 0.0

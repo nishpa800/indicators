@@ -28,7 +28,10 @@ dynamic alert() aggregator for every fired detection).
 - HVD **Group 1 (CO)**: the source's `use_any_*` gate pulled in FIXED-session-window
   signals (Opening Drive `sessionBarCount`, Alpha Strike `firstOfDay`, U-streak
   day flags). Those are **dropped**; `use_any_*` is rebuilt from First Bar Fable's
-  own ROLLING detections. Deliberate rolling-only deviation.
+  own ROLLING detections. Deliberate rolling-only deviation. (A few disjuncts —
+  e.g. Typhoon — internally reference a session *anchor* `is_new_sess`, not a
+  fixed bar-count window; on non-first bars they are simply always-false, and the
+  CO plots are fb1-gated regardless, so the rolling-only intent holds.)
 - **B2B FC Cluster**: uses `sBullFC and sBullFC[1]` (two consecutive bars), NOT the
   source's `f_hadSignalYesterday` (`barsPerDay*2` fixed-window scan).
 - Every other new lookback is rolling (`ta.highest/lowest/sma/stdev/atr`) or
