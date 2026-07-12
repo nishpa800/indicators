@@ -1449,6 +1449,183 @@ sigNagasaki = isNagasaki
 bool det_Pentagon = conf and (rv_relVolRatio >= th_1x) and (rv_relVolRatio <= th_wtc)
 
 // ══════════════════════════════════════════════════════════════════════════════
+// TNT OD v3 — TIER 2 ENRICHED (TNT ENR / NPM ENR) + v3 CONDITIONAL GATE
+// Verbatim port. u5 atoms that are token-identical to engines already in this
+// file are REUSED: u5_RVOL1x/GS/MOAB/SAAB/Kratos ≡ det_* (same Pre-Mythos curve),
+// u5_Pentagon/WTC/Hiroshima ≡ det_* (same curves + same relativeVolume ratio),
+// u5_PUP/PPD ≡ sigPUP/sigPPD (3%/10 defaults), u5_PBJ ≡ sigBullPBJ/sigBearPBJ
+// (identical zoo defaults), u5_Nagasaki ≡ sigNagasaki, u5_FAUNA/DYNAMITE ≡ ported.
+// ══════════════════════════════════════════════════════════════════════════════
+// WMD + HV1000 (TNT OD v3 L750, L752-753)
+bool u5_WMD = det_Pentagon or det_WTC or det_Hiroshima or sigNagasaki
+bool u5_HV1000 = conf and volume >= ta.highest(volume, 1000)[1]
+
+// CS1 (FVG Combo) + its own GZI sub-engine (TNT OD v3 L897-945; dist=7, 63d tier, body 0.85)
+type u5_fvg_s
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+float u5_gz_v1 = volume[1], float u5_hv5k = ta.highest(volume, 5000)[1], float u5_hv252 = ta.highest(volume, 252)[1], float u5_hv63 = ta.highest(volume, 63)[1]
+bool u5_gz_isHV = (u5_gz_v1 == u5_hv5k) or (u5_gz_v1 == u5_hv252) or (u5_gz_v1 == u5_hv63)
+float u5_gz_thresh = ta.cum((high - low) / low) / bar_index
+bool u5_gz_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > u5_gz_thresh
+bool u5_gz_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > u5_gz_thresh
+var u5_gz_fvgs = array.new<u5_fvg_s>(0)
+var int u5_gz_lastT = 0
+bool u5_gz_bullGZI = false, bool u5_gz_bearGZI = false, bool u5_gz_bullHV = false, bool u5_gz_bearHV = false
+if conf and u5_gz_bFVG and time != u5_gz_lastT
+    float mx = low, float mn = high[2]
+    if u5_gz_isHV
+        u5_gz_bullHV := true
+    if u5_gz_fvgs.size() > 0
+        for i = 0 to u5_gz_fvgs.size() - 1
+            u5_fvg_s e = u5_gz_fvgs.get(i)
+            if e.bull and bar_index - e.idx <= 7 and (math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and u5_gz_isHV))
+                u5_gz_bullGZI := true
+                break
+    u5_gz_fvgs.unshift(u5_fvg_s.new(mx, mn, true, time, bar_index, u5_gz_isHV))
+    u5_gz_lastT := time
+if conf and u5_gz_sFVG and time != u5_gz_lastT
+    float mx = low[2], float mn = high
+    if u5_gz_isHV
+        u5_gz_bearHV := true
+    if u5_gz_fvgs.size() > 0
+        for i = 0 to u5_gz_fvgs.size() - 1
+            u5_fvg_s e = u5_gz_fvgs.get(i)
+            if not e.bull and bar_index - e.idx <= 7 and (math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and u5_gz_isHV))
+                u5_gz_bearGZI := true
+                break
+    u5_gz_fvgs.unshift(u5_fvg_s.new(mx, mn, false, time, bar_index, u5_gz_isHV))
+    u5_gz_lastT := time
+if u5_gz_fvgs.size() > 0
+    for i = u5_gz_fvgs.size() - 1 to 0
+        u5_fvg_s g = u5_gz_fvgs.get(i)
+        if (g.bull and close < g.mn) or (not g.bull and close > g.mx)
+            u5_gz_fvgs.remove(i)
+if u5_gz_fvgs.size() > 50
+    u5_gz_fvgs.pop()
+
+float u5_cs_bp1 = high[1] - low[1] == 0 ? 0.0 : math.abs(close[1] - open[1]) / (high[1] - low[1])
+bool u5_cs_vb = u5_cs_bp1 >= 0.85
+bool u5_CS1_Bull = conf and u5_cs_vb and (u5_gz_bullHV or u5_gz_bullGZI) and (nz(det_SAAB[1]) or nz(det_RVOL1xB[1]) or nz(det_GrandSlam[1]) or nz(det_Pentagon[1]) or nz(det_WTC[1]) or nz(det_Hiroshima[1]) or nz(sigNagasaki[1]))
+bool u5_CS1_Bear = conf and u5_cs_vb and (u5_gz_bearHV or u5_gz_bearGZI) and (nz(det_Kratos[1]) or nz(det_RVOL1xR[1]) or nz(det_MOAB[1]) or nz(det_Pentagon[1]) or nz(det_WTC[1]) or nz(det_Hiroshima[1]) or nz(sigNagasaki[1]))
+
+// ── HCT ENGINE (Displacement #4, TNT OD v3 L1041-1118; its OWN curves — do NOT unify) ──
+grpHCT = "★ HCT (Displacement #4 — v3 gate) ★"
+float hct_disp_strength = input.float(6.0, "HCT Disp σ-mult", minval=1.0, step=0.5, group=grpHCT, tooltip="HCT's own displacement engine — INDEPENDENT of every other displacement. Feeds the v3 gate (→ TNT ENR / NPM ENR / S26/S27).")
+int hct_disp_lookback = input.int(100, "HCT Disp Lookback", minval=10, group=grpHCT)
+float hct_threshPct = input.float(2.0, "HCT FVG Threshold % (when Auto OFF)", minval=0, maxval=100, step=0.1, group=grpHCT)
+bool hct_auto = input.bool(true, "HCT Auto FVG Threshold", group=grpHCT)
+f_hct_1x(int _s) => _s <= 10 ? 38.0 : _s <= 15 ? 33.0 : _s <= 30 ? 28.0 : _s <= 45 ? 23.0 : _s <= 60 ? 20.0 : _s <= 120 ? 19.0 : _s <= 180 ? 17.0 : _s <= 240 ? 16.0 : _s <= 300 ? 15.0 : _s <= 360 ? 14.0 : _s <= 420 ? 12.0 : _s <= 480 ? 11.0 : _s <= 540 ? 10.0 : _s <= 600 ? 10.0 : _s <= 900 ? 8.4 : _s <= 1800 ? 6.9 : _s <= 3600 ? 5.9 : _s <= 7200 ? 3.0 : 1.8
+f_hct_gs(int _s) => _s <= 10 ? 114.0 : _s <= 15 ? 99.0 : _s <= 30 ? 84.0 : _s <= 45 ? 69.0 : _s <= 60 ? 35.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 900 ? 20.0 : _s <= 3600 ? 10.0 : 8.0
+f_hct_wtc(int _s) => f_hct_1x(_s) * 2.0
+f_hct_hiro(int _s) => f_hct_gs(_s)
+float hct_th_1x = f_hct_1x(tfSec)
+float hct_th_gs = f_hct_gs(tfSec)
+float hct_th_wtc = f_hct_wtc(tfSec)
+float hct_th_hiro = f_hct_hiro(tfSec)
+bool hct_BullRVOL1x = rv_baseBull and rv_normPrice >= hct_th_1x and rv_normPrice < hct_th_gs
+bool hct_BearRVOL1x = rv_baseBear and rv_normPrice >= hct_th_1x and rv_normPrice < hct_th_gs
+bool hct_GrandSlam = rv_baseBull and rv_normPrice >= hct_th_gs
+bool hct_MOAB = rv_baseBear and rv_normPrice >= hct_th_gs
+bool hct_Pentagon = conf and rv_relVolRatio >= hct_th_1x and rv_relVolRatio <= hct_th_wtc
+bool hct_WTC = conf and rv_relVolRatio > hct_th_wtc and rv_relVolRatio <= hct_th_hiro
+bool hct_Hiroshima = conf and rv_relVolRatio > hct_th_hiro
+float hct_thresh = hct_auto ? ta.cum((high - low) / low) / bar_index : hct_threshPct / 100.0
+bool hct_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > hct_thresh
+bool hct_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > hct_thresh
+float hct_barRange = high[1] - low[1]
+float hct_rangeStdev = ta.stdev(high - low, hct_disp_lookback)
+bool hct_dispCandleMet = hct_barRange > hct_disp_strength * nz(hct_rangeStdev[1])
+bool hct_dispBull = conf and hct_dispCandleMet and (close[1] > open[1]) and hct_bFVG
+bool hct_dispBear = conf and hct_dispCandleMet and (close[1] < open[1]) and hct_sFVG
+bool hct_noDisp = (not hct_dispBull) and (not hct_dispBear)
+bool hct_groupA_Bull = hct_BullRVOL1x or hct_GrandSlam
+bool hct_groupA_Bear = hct_BearRVOL1x or hct_MOAB
+bool hct_groupB = hct_Pentagon or hct_WTC or hct_Hiroshima
+bool hct_baseYY = (hct_groupA_Bull or hct_groupA_Bear) and hct_groupB
+bool hct_baseN = sigNagasaki and (hct_groupA_Bull or hct_groupA_Bear)
+bool hct_baseNV = sigNagasaki and hct_groupB
+bool hct_baseT = sigNagasaki and (hct_groupA_Bull or hct_groupA_Bear) and hct_groupB
+bool hct_baseNH = (hct_Pentagon and hct_WTC) or (hct_Pentagon and hct_Hiroshima) or (hct_WTC and hct_Hiroshima)
+bool hct_baseAny = hct_baseYY or hct_baseN or hct_baseNV or hct_baseT or hct_baseNH
+bool hct_bull = hct_baseAny and hct_dispBull
+bool hct_bear = hct_baseAny and hct_dispBear
+
+// ── UC placeholder (TNT OD v3 L1132-1135, ported as-is for v3 parity) ──
+int uc_bull_count = (u5_FAUNABull ? 1 : 0) + ((det_RVOL1xB or det_GrandSlam or det_SAAB) ? 1 : 0) + (u5_WMD ? 1 : 0) + (sigPUP ? 1 : 0) + (u5_CS1_Bull ? 1 : 0)
+int uc_bear_count = (u5_FAUNABear ? 1 : 0) + ((det_RVOL1xR or det_MOAB or det_Kratos) ? 1 : 0) + (u5_WMD ? 1 : 0) + (sigPPD ? 1 : 0) + (u5_CS1_Bear ? 1 : 0)
+bool uc_bull = conf and uc_bull_count >= 2
+bool uc_bear = conf and uc_bear_count >= 2
+
+// ── NagAny (TNT OD v3 L1142-1143) ──
+bool nagAny_bull = conf and sigNagasaki and (det_Pentagon or det_WTC or det_Hiroshima or det_RVOL1xB or det_GrandSlam or det_SAAB)
+bool nagAny_bear = conf and sigNagasaki and (det_Pentagon or det_WTC or det_Hiroshima or det_RVOL1xR or det_MOAB or det_Kratos)
+
+// ── Gate displacement (Engine #5) + master v3 gate (TNT OD v3 L1153-1168) ──
+grpGate = "★ v3 GATE (→ TNT ENR / NPM ENR / S26/S27) ★"
+en_newGate = input.bool(true, "✓ Apply v3 conditional gate", group=grpGate, tooltip="TNT OD v3 parity: TNT ENR / NPM ENR (and therefore S26/S27) additionally require ANY of: RVOL 1x / Grand Slam (MOAB) / UC / Nagasaki+Any / HCT / Displacement ≥ gate σ-mult. OFF = legacy v2 behavior.")
+float gateStdMult = input.float(6.5, "Gate Displacement Std Dev Mult (Engine #5)", minval=1.0, step=0.1, group=grpGate, tooltip="σ-multiplier DEDICATED to the v3 gate. Reuses the TNT OD Engine #1 stdev length (100). Affects ONLY the gate (→ TNT ENR / NPM ENR / S26/S27).")
+float gate_disp_std = ta.stdev(tod_disp_range, tod_DISP_STD_LEN)
+float gate_disp_threshold = gate_disp_std * gateStdMult
+bool gate_disp_bull = conf and (tod_disp_range[1] > nz(gate_disp_threshold[1])) and tod_isBullishFVG and (close[1] > open[1])
+bool gate_disp_bear = conf and (tod_disp_range[1] > nz(gate_disp_threshold[1])) and tod_isBearishFVG and (close[1] < open[1])
+bool gate_bull_raw = det_RVOL1xB or det_GrandSlam or uc_bull or nagAny_bull or hct_bull or gate_disp_bull
+bool gate_bear_raw = det_RVOL1xR or det_MOAB or uc_bear or nagAny_bear or hct_bear or gate_disp_bear
+bool gate_bull = (not en_newGate) or gate_bull_raw
+bool gate_bear = (not en_newGate) or gate_bear_raw
+
+// ── Suppression combos (TNT OD v3 L1175-1184, L1216-1219) ──
+grpT2 = "Tier 2 Signals (enrichment required)"
+en_rcNTBull = input.bool(true, "✓ RC NPM+TNT Bull", group=grpT2, tooltip="Rare Combo: Napalm AND TNT on the same visual bar (suppresses TNT/NPM ENR when it fires). Offset = -1.")
+en_rcNTBear = input.bool(true, "✓ RC NPM+TNT Bear", group=grpT2, tooltip="Bearish mirror.")
+en_t2tntBull = input.bool(true, "✓ TNT Enriched Bull", group=grpT2, tooltip="Raw TNT detection PLUS at least one enrichment co-signal on same bar (RVOL1x / GrandSlam / PUP / CS1 / FAUNA / WMD / HV1000 / DYNAMITE). Hard-gated — never fires without enrichment. Offset = 0.")
+en_t2tntBear = input.bool(true, "✓ TNT Enriched Bear", group=grpT2, tooltip="Bearish raw TNT + bearish enrichment co-signal. Hard-gated. Offset = 0.")
+en_t2npmBull = input.bool(true, "✓ NPM Enriched Bull", group=grpT2, tooltip="Raw Napalm PLUS enrichment co-signal on visual bar 1 (bar[1] of detection time). Hard-gated. Offset = -1.")
+en_t2npmBear = input.bool(true, "✓ NPM Enriched Bear", group=grpT2, tooltip="Bearish raw Napalm + bearish enrichment on visual bar 1. Hard-gated. Offset = -1.")
+bool tod_det_bullRetTNT = tod_raw_retBullTNT or tod_raw_retBullTNT2
+bool tod_det_bearRetTNT = tod_raw_retBearTNT or tod_raw_retBearTNT2
+bool sig_rcNTBull = tod_det_bullNapalm and (tod_det_bullTNT[1] == true) and en_rcNTBull and nz(gate_bull[1])
+bool sig_rcNTBear = tod_det_bearNapalm and (tod_det_bearTNT[1] == true) and en_rcNTBear and nz(gate_bear[1])
+bool det_rcTRBull = tod_det_bullTNT and tod_det_bullRetTNT, bool det_rcTRBear = tod_det_bearTNT and tod_det_bearRetTNT
+bool det_rcRNBull = tod_det_bullNapalm and (tod_det_bullRetTNT[1] == true), bool det_rcRNBear = tod_det_bearNapalm and (tod_det_bearRetTNT[1] == true)
+bool det_pnBull = tod_det_bullNapalm and (sigBullPBJ[1] == true), bool det_pnBear = tod_det_bearNapalm and (sigBearPBJ[1] == true)
+bool det_ptBull = tod_det_bullTNT and sigBullPBJ, bool det_ptBear = tod_det_bearTNT and sigBearPBJ
+bool supp_bullNPM = sig_rcNTBull or det_rcRNBull or det_pnBull
+bool supp_bearNPM = sig_rcNTBear or det_rcRNBear or det_pnBear
+bool supp_bullTNT = sig_rcNTBull or det_rcTRBull or det_ptBull
+bool supp_bearTNT = sig_rcNTBear or det_rcTRBear or det_ptBear
+
+// ── Enrichment gates (TNT OD v3 L1228-1231; N vs N1 asymmetry preserved) ──
+bool enrichBull_N = det_RVOL1xB or det_GrandSlam or sigPUP or u5_CS1_Bull or u5_FAUNABull or u5_WMD or u5_HV1000
+bool enrichBear_N = det_RVOL1xR or det_MOAB or sigPPD or u5_CS1_Bear or u5_FAUNABear or u5_WMD or u5_HV1000
+bool enrichBull_N1 = nz(det_RVOL1xB[1]) or nz(det_GrandSlam[1]) or nz(sigPUP[1]) or nz(u5_CS1_Bull[1]) or nz(u5_FAUNABull[1]) or nz(det_Pentagon[1]) or nz(det_WTC[1]) or nz(det_Hiroshima[1]) or nz(sigNagasaki[1]) or nz(u5_HV1000[1]) or det_dynamiteBull or nz(det_dynamiteBull[1])
+bool enrichBear_N1 = nz(det_RVOL1xR[1]) or nz(det_MOAB[1]) or nz(sigPPD[1]) or nz(u5_CS1_Bear[1]) or nz(u5_FAUNABear[1]) or nz(det_Pentagon[1]) or nz(det_WTC[1]) or nz(det_Hiroshima[1]) or nz(sigNagasaki[1]) or nz(u5_HV1000[1]) or det_dynamiteBear or nz(det_dynamiteBear[1])
+
+// ── THE TWO VISUAL PLOTS (TNT OD v3 L1260-1263) ──
+// TNT ENR: boolean fires bar N → VISUAL bar N (offset 0)
+// NPM ENR: boolean fires bar N → VISUAL bar N-1 (offset -1)
+bool p_t2tntBull = tod_det_bullTNT and not supp_bullTNT and enrichBull_N and en_t2tntBull and gate_bull
+bool p_t2tntBear = tod_det_bearTNT and not supp_bearTNT and enrichBear_N and en_t2tntBear and gate_bear
+bool p_t2npmBull = tod_det_bullNapalm and not supp_bullNPM and enrichBull_N1 and en_t2npmBull and nz(gate_bull[1])
+bool p_t2npmBear = tod_det_bearNapalm and not supp_bearNPM and enrichBear_N1 and en_t2npmBear and nz(gate_bear[1])
+
+// ── S26/S27: B2B TNT ENR ↔ NPM ENR (VISUAL back-to-back, either order) ──
+// Case B (NPM visual first, TNT visual second): both booleans fire the SAME bar
+//   → visuals land on bar[1] (NPM) and bar[0] (TNT). Render offset 0.
+// Case A (TNT visual first, NPM visual second): TNT fires, NPM fires 2 bars later
+//   → visuals land on bar[2] (TNT) and bar[1] (NPM). Render offset -1.
+bool enrB2B_bull_sameBar = p_t2tntBull and p_t2npmBull
+bool enrB2B_bull_tntFirst = p_t2npmBull and nz(p_t2tntBull[2])
+bool enrB2B_bear_sameBar = p_t2tntBear and p_t2npmBear
+bool enrB2B_bear_tntFirst = p_t2npmBear and nz(p_t2tntBear[2])
+bool det_S26 = enrB2B_bull_sameBar or enrB2B_bull_tntFirst
+bool det_S27 = enrB2B_bear_sameBar or enrB2B_bear_tntFirst
+
+// ══════════════════════════════════════════════════════════════════════════════
 // ENGINE: HV+D DISPLACEMENT — HVD PBJ PPD parity (DRIVES ALL HVD PBJ PPD PLOTS)
 // Adjustable displacement engine. Range type / stdev length / σ-multiplier below.
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1866,6 +2043,8 @@ en_S22 = input.bool(true, "S22: D9 Bull Study", group=grpSIG2, tooltip="HW v3 pa
 en_S23 = input.bool(true, "S23: D9 Bear Study", group=grpSIG2, tooltip="Bear mirror of S22 (MOAB instead of GS). Offset 0.")
 en_S24 = input.bool(true, "S24: Unified Combo Bull + Disp9", group=grpSIG2, tooltip="HVD Unified Combo (csNew3) AND Displacement 9. Offset -1.")
 en_S25 = input.bool(true, "S25: Unified Combo Bear + Disp9", group=grpSIG2, tooltip="Bear mirror of S24. Offset -1.")
+en_S26 = input.bool(true, "S26: B2B TNT ENR ↔ NPM ENR Bull", group=grpSIG2, tooltip="TNT Enriched and NPM Enriched VISUAL plots on two consecutive bars, either order (TNT OD v3 Tier 2 parity, incl. v3 gate + suppression). Renders on the pair's SECOND visual bar (offset 0 or -1 by case). First-bar mode passes when either visual bar of the pair is the session's first bar.")
+en_S27 = input.bool(true, "S27: B2B TNT ENR ↔ NPM ENR Bear", group=grpSIG2, tooltip="Bear mirror of S26.")
 
 grp_co = "★ HVD — Pipeline D Triple Co-occurrence ★"
 co_en_bullPBJ = input.bool(true, "Bull PBJ co-occurrence", group=grp_co, inline="co1")
@@ -1911,6 +2090,7 @@ bool fb1 = not firstBarOnly or nz(is_new_sess[1])
 bool fb01 = not firstBarOnly or is_new_sess or nz(is_new_sess[1])
 bool fbs = not firstBarOnly or nz(is_new_sess[yy_rightBars])
 bool fbm = not firstBarOnly or al_isFirstBar
+bool fb12 = not firstBarOnly or nz(is_new_sess[1]) or nz(is_new_sess[2])
 
 // ══════════════════════════════════════════════════════════════════════════════
 // FIRE BOOLEANS — checkbox + detection + first-bar gate (drive plots AND alerts)
@@ -1946,6 +2126,14 @@ bool fire_S22 = en_S22 and det_D9bull and fb0
 bool fire_S23 = en_S23 and det_D9bear and fb0
 bool fire_S24 = en_S24 and det_UC_bull and fb1
 bool fire_S25 = en_S25 and det_UC_bear and fb1
+// S26/S27 — first-bar gate per VISUAL pair: same-bar case visuals = bars[1,0] → fb01;
+// tnt-first case visuals = bars[2,1] → fb12. Pair passes when either visual bar is the first bar.
+bool fire_S26_same = en_S26 and enrB2B_bull_sameBar and fb01
+bool fire_S26_tnt1 = en_S26 and enrB2B_bull_tntFirst and fb12
+bool fire_S26 = fire_S26_same or fire_S26_tnt1
+bool fire_S27_same = en_S27 and enrB2B_bear_sameBar and fb01
+bool fire_S27_tnt1 = en_S27 and enrB2B_bear_tntFirst and fb12
+bool fire_S27 = fire_S27_same or fire_S27_tnt1
 // HVD Group 1 — CO co-occurrence (offset -1 → fb1)
 bool fire_co_bull_pbj = co_en_bullPBJ and co_bull_pbj and fb1
 bool fire_co_bull_pb = co_en_bullPB and co_bull_pb and fb1
@@ -2014,6 +2202,11 @@ plotshape(fire_S22, "S22: D9 Bull Study", shape.triangleup, location.belowbar, #
 plotshape(fire_S23, "S23: D9 Bear Study", shape.triangledown, location.abovebar, #B71C1C, 0, "D9\nSTUDY", color.white, size=size.normal)
 plotshape(fire_S24, "S24: Unified Combo Bull + Disp9", shape.labelup, location.belowbar, #43A047, -1, "UC\nD9", color.white, size=size.small)
 plotshape(fire_S25, "S25: Unified Combo Bear + Disp9", shape.labeldown, location.abovebar, #9C27B0, -1, "UC\nD9", color.white, size=size.small)
+// S26/S27 render on the pair's SECOND visual bar: same-bar case → offset 0; tnt-first case → offset -1
+plotshape(fire_S26_same, "S26: B2B TNT/NPM ENR Bull", shape.labelup, location.belowbar, #089981, 0, "ENR\nB2B", color.white, size=size.large)
+plotshape(fire_S26_tnt1, "S26: B2B TNT/NPM ENR Bull (T1st)", shape.labelup, location.belowbar, #089981, -1, "ENR\nB2B", color.white, size=size.large)
+plotshape(fire_S27_same, "S27: B2B TNT/NPM ENR Bear", shape.labeldown, location.abovebar, #f23645, 0, "ENR\nB2B", color.white, size=size.large)
+plotshape(fire_S27_tnt1, "S27: B2B TNT/NPM ENR Bear (T1st)", shape.labeldown, location.abovebar, #f23645, -1, "ENR\nB2B", color.white, size=size.large)
 // HVD Group 1 — Pipeline D CO co-occurrence (offset -1)
 plotshape(fire_co_bull_pbj, "CO: HV+D+PBJ+USE Bull", shape.diamond, location.top, #FFD700, -1, "CO\nPBJ", color.white, size=size.huge)
 plotshape(fire_co_bull_pb, "CO: HV+D+PB+USE Bull", shape.triangleup, location.top, #00E5FF, -1, "CO\nPB", color.white, size=size.large)
@@ -2072,6 +2265,8 @@ alertcondition(fire_S22, "S22: D9 Bull Study", "S22: D9 Bull Study fired")
 alertcondition(fire_S23, "S23: D9 Bear Study", "S23: D9 Bear Study fired")
 alertcondition(fire_S24, "S24: Unified Combo Bull + Disp9", "S24: Unified Combo Bull + Disp9 fired")
 alertcondition(fire_S25, "S25: Unified Combo Bear + Disp9", "S25: Unified Combo Bear + Disp9 fired")
+alertcondition(fire_S26, "S26: B2B TNT ENR ↔ NPM ENR Bull", "S26: B2B TNT ENR ↔ NPM ENR Bull fired")
+alertcondition(fire_S27, "S27: B2B TNT ENR ↔ NPM ENR Bear", "S27: B2B TNT ENR ↔ NPM ENR Bear fired")
 alertcondition(fire_co_bull_pbj or fire_co_bull_pb, "HVD CO Bull", "HVD Pipeline D CO Bull fired")
 alertcondition(fire_co_bear_pbj or fire_co_bear_pb, "HVD CO Bear", "HVD Pipeline D CO Bear fired")
 alertcondition(fire_b2b_bull_nopb or fire_b2b_bull_pbj or fire_b2b_bull_pb, "HVD B2B HV+D Bull", "HVD B2B HV+D Bull fired")
@@ -2132,6 +2327,10 @@ if conf
         bs := f_add(bs, "S24 UC+D9")
     if fire_S25
         rs := f_add(rs, "S25 UC+D9")
+    if fire_S26
+        bs := f_add(bs, "S26 B2B-ENR")
+    if fire_S27
+        rs := f_add(rs, "S27 B2B-ENR")
     if fire_co_bull_pbj
         bs := f_add(bs, "CO HVD+PBJ")
     if fire_co_bull_pb
@@ -2240,6 +2439,10 @@ if conf
             alert("BULL | " + _FIRST + " | S24 UC+D9", alert.freq_once_per_bar_close)
         if fire_S25
             alert("BEAR | " + _FIRST + " | S25 UC+D9", alert.freq_once_per_bar_close)
+        if fire_S26
+            alert("BULL | " + _FIRST + " | S26 B2B-ENR", alert.freq_once_per_bar_close)
+        if fire_S27
+            alert("BEAR | " + _FIRST + " | S27 B2B-ENR", alert.freq_once_per_bar_close)
         if fire_co_bull_pbj or fire_co_bull_pb
             alert("BULL | " + _FIRST + " | CO HVD", alert.freq_once_per_bar_close)
         if fire_co_bear_pbj or fire_co_bear_pb
