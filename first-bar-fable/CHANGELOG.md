@@ -4,6 +4,27 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v2.1 — 2026-07-09 (same file `versions/FIRST_BAR_FABLE_v2.pine`)
+**S26/S27: B2B TNT ENR ↔ NPM ENR** — TNT OD v3's "TNT Enriched" (offset 0) and
+"NPM Enriched" (offset −1) VISUAL plots on two consecutive bars, either order.
+- Full TNT OD v3 Tier-2 parity port: enrichment gates (N/N1 asymmetry preserved),
+  suppression combos (RC NPM+TNT / RC combos / PBJ+NPM / PBJ+TNT), the v3
+  conditional gate (HCT Engine #4 with its OWN divergent curves, UC placeholder,
+  NagAny, gate displacement Engine #5 σ=6.5 adjustable), CS1 + its GZI sub-engine,
+  WMD, HV1000. u5 atoms token-identical to existing engines are reused
+  (RVOL tiers, Pentagon/WTC/Hiroshima, PUP/PPD, PBJ, Nagasaki, FAUNA, Dynamite).
+- The 4 structured input fields from TNT OD v3 carried over verbatim
+  (✓ TNT Enriched Bull/Bear, ✓ NPM Enriched Bull/Bear) + RC NPM+TNT enables +
+  v3 gate + HCT input groups.
+- VISUAL back-to-back math (offset-aware): NPM-first = both booleans same bar
+  (visuals bar[1]+bar[0], renders offset 0); TNT-first = NPM boolean 2 bars after
+  TNT (visuals bar[2]+bar[1], renders offset −1). Detection = npm and (tnt or tnt[2]).
+- First-bar mode passes when EITHER visual bar of the pair is the session first
+  bar (fb01 / fb12 per case) — confirmation on the second bar still qualifies.
+- 57/64 plots. No fixed windows (chain audited: rolling/all-history state only).
+
+---
+
 ## v2 — 2026-07-09
 **File:** `versions/FIRST_BAR_FABLE_v2.pine` — chart title **"First Bar Fable v2"**,
 shorttitle **"1st BAR FABLE v2"** (v1 kept as `versions/FIRST_BAR_FABLE_v1.pine`,
@@ -112,23 +133,3 @@ dynamic alert() aggregator for every fired detection).
 - TNT OD v3's `super_zones` array has no constructor in the source (dead code);
   kept verbatim for parity.
 
----
-
-## v2.1 — 2026-07-09 (same file `versions/FIRST_BAR_FABLE_v2.pine`)
-**S26/S27: B2B TNT ENR ↔ NPM ENR** — TNT OD v3's "TNT Enriched" (offset 0) and
-"NPM Enriched" (offset −1) VISUAL plots on two consecutive bars, either order.
-- Full TNT OD v3 Tier-2 parity port: enrichment gates (N/N1 asymmetry preserved),
-  suppression combos (RC NPM+TNT / RC combos / PBJ+NPM / PBJ+TNT), the v3
-  conditional gate (HCT Engine #4 with its OWN divergent curves, UC placeholder,
-  NagAny, gate displacement Engine #5 σ=6.5 adjustable), CS1 + its GZI sub-engine,
-  WMD, HV1000. u5 atoms token-identical to existing engines are reused
-  (RVOL tiers, Pentagon/WTC/Hiroshima, PUP/PPD, PBJ, Nagasaki, FAUNA, Dynamite).
-- The 4 structured input fields from TNT OD v3 carried over verbatim
-  (✓ TNT Enriched Bull/Bear, ✓ NPM Enriched Bull/Bear) + RC NPM+TNT enables +
-  v3 gate + HCT input groups.
-- VISUAL back-to-back math (offset-aware): NPM-first = both booleans same bar
-  (visuals bar[1]+bar[0], renders offset 0); TNT-first = NPM boolean 2 bars after
-  TNT (visuals bar[2]+bar[1], renders offset −1). Detection = npm and (tnt or tnt[2]).
-- First-bar mode passes when EITHER visual bar of the pair is the session first
-  bar (fb01 / fb12 per case) — confirmation on the second bar still qualifies.
-- 57/64 plots. No fixed windows (chain audited: rolling/all-history state only).
