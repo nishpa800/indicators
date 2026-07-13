@@ -326,11 +326,6 @@ bool sigAny = sigBullPB or sigBullPBJ or sigBearPB or sigBearPBJ
 // NINE NINES NUMERIC FIRE MATRIX (display.data_window) — 0/1 per detection
 // Machine-readable fire matrix. No graphic objects.
 // ============================================================================
-plot(sigBullPB  ? 1 : 0, "f_sigBullPB",  display=display.data_window)
-plot(sigBullPBJ ? 1 : 0, "f_sigBullPBJ", display=display.data_window)
-plot(sigBearPB  ? 1 : 0, "f_sigBearPB",  display=display.data_window)
-plot(sigBearPBJ ? 1 : 0, "f_sigBearPBJ", display=display.data_window)
-plot(sigAny     ? 1 : 0, "f_sigAny",     display=display.data_window)
 
 // ============================================================================
 // PLOTS — SOVEREIGN SHAPES  (offset = 0 on all four)
