@@ -1,22 +1,22 @@
 // ============================================================================
-// BASE HV+D ↔ PBJ ↔ PPD v1 — BULLISH SPLIT
+// BASE HV+D ↔ PBJ ↔ PPD v1 — BEARISH SPLIT
 // ----------------------------------------------------------------------------
-// Bull half of the bull/bear split. Rationale: the combined script needs 74
+// Bear half of the bull/bear split. Rationale: the combined script needs 74
 // detection outputs but Pine caps a script at 64 plots, which forced 16 of them
 // into label.new (rule-#1 violation: labels purge at max_labels_count and are
 // not series-readable → no non-repaint guarantee, no 1:1 alert parity).
 // Splitting bull/bear puts each side at 38/36 detections (≤ 64), so EVERY
-// detection is a real plotshape. This file: 38 bull plotshapes, 0 labels.
+// detection is a real plotshape. This file: 36 bear plotshapes, 0 labels.
 //
-// Engine math + all internal booleans are byte-identical to the combined
-// source (kept so bull exclusion logic is unchanged). Every BEAR output
-// (plotshape / label / alert) is removed. The 8 former bull labels in the
+// Engine math + all internal booleans are byte-identical to the bullish split
+// (kept so bear exclusion logic is unchanged). Every BULL output
+// (plotshape / label / alert) is removed. The 8 former bear labels in the
 // HV+D MOMENTUM CO-OCC block are now plotshapes (offset=-1, static text;
 // the dynamic 2of3/3of3 component list remains in the alert payload).
 // ============================================================================
 
 //@version=5
-indicator("BASE HV+D ↔ PBJ v1 — BULLISH (38) [Tick-Friendly]", shorttitle="HVD PBJ BULL TF", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
+indicator("BASE HV+D ↔ PBJ v1 — BEARISH (36) [Tick-Friendly]", shorttitle="HVD PBJ BEAR TF DR", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
 
 import TradingView/ta/7 as tv_ta
 
@@ -141,40 +141,37 @@ fauna_gg_master = true, fauna_gg_body = 0.80
 
 // === DETECTION TOGGLES ===
 grp_t1 = "★ TIER 1 ★"
-show_BullUUUU=input.bool(true,"Bull UUUU",group=grp_t1,inline="a")
-show_BullUUU=input.bool(true,"Bull UUU",group=grp_t1,inline="b")
-show_BullUU=input.bool(false,"Bull UU",group=grp_t1,inline="c")
-show_OmegaLongA=input.bool(false,"Omega-A",group=grp_t1,inline="d")
-show_AlphaStrikeB=input.bool(false,"Alpha Strike Bull",group=grp_t1,inline="e")
-show_FoxtrotB=input.bool(true,"Foxtrot Bull",group=grp_t1,inline="f")
-show_OmegaLong=input.bool(false,"Omega Long",group=grp_t1)
-show_ODBull=input.bool(true,"OD Bull",group=grp_t1,inline="g")
-show_DispConsBull2=input.bool(true,"Disp Bull 2+",group=grp_t1,inline="h")
-show_DispConsBull3=input.bool(true,"Disp Bull 3+",group=grp_t1,inline="i")
-show_GolfBull=input.bool(true,"Golf Bull",group=grp_t1,inline="j")
-show_PAFBull=input.bool(true,"PAF PUP B2B",group=grp_t1,inline="k")
-show_NagPlusBull=input.bool(true,"NAG+ Bull",group=grp_t1,inline="n1")
+show_BearUUUU=input.bool(true,"Bear DDDD",group=grp_t1,inline="a")
+show_BearUUU=input.bool(true,"Bear DDD",group=grp_t1,inline="b")
+show_BearUU=input.bool(false,"Bear DD",group=grp_t1,inline="c")
+show_AlphaStrikeR=input.bool(false,"Alpha Strike Bear",group=grp_t1,inline="e")
+show_FoxtrotR=input.bool(true,"Foxtrot Bear",group=grp_t1,inline="f")
+show_ODBear=input.bool(true,"OD Bear",group=grp_t1,inline="g")
+show_DispConsBear2=input.bool(true,"Disp Bear 2+",group=grp_t1,inline="h")
+show_DispConsBear3=input.bool(true,"Disp Bear 3+",group=grp_t1,inline="i")
+show_GolfBear=input.bool(true,"Golf Bear",group=grp_t1,inline="j")
+show_PAFBear=input.bool(true,"PAF PPD B2B",group=grp_t1,inline="k")
 show_Nagasaki=input.bool(true,"Nagasaki Alert",group=grp_t1,inline="n2")
 
 grp_t1b = "★ TIER 1B: Combo Sets ★"
-show_CS1B=input.bool(false,"CS1 FVG Bull",group=grp_t1b,inline="1")
-show_CS2B=input.bool(false,"CS2 MAT Bull",group=grp_t1b,inline="2")
-show_CS3B=input.bool(true,"Unified Combo Bull",group=grp_t1b,inline="3")
+show_CS1R=input.bool(false,"CS1 FVG Bear",group=grp_t1b,inline="1")
+show_CS2R=input.bool(false,"CS2 MAT Bear",group=grp_t1b,inline="2")
+show_CS3R=input.bool(true,"Unified Combo Bear",group=grp_t1b,inline="3")
 
 grp_t1c = "★ TIER 1C: Chains ★"
-show_CCBull=input.bool(true,"CC Bull",group=grp_t1c,inline="1")
-show_LSCBull=input.bool(false,"LSC Bull",group=grp_t1c,inline="2")
+show_CCBear=input.bool(true,"CC Bear",group=grp_t1c,inline="1")
+show_LSCBear=input.bool(false,"LSC Bear",group=grp_t1c,inline="2")
 
 grp_t2 = "★ TIER 2: Structure ★"
-show_BullFloor=input.bool(false,"Floor",group=grp_t2,inline="1")
-show_Bull2ndFloor=input.bool(false,"2nd Floor",group=grp_t2,inline="1")
+show_BearRooftop=input.bool(false,"Rooftop",group=grp_t2,inline="1")
+show_BearPenthouse=input.bool(false,"Penthouse",group=grp_t2,inline="1")
 
 grp_t3 = "★ TIER 3: HW ★"
-show_HWBull=input.bool(true,"HW Bull",group=grp_t3)
+show_HWBear=input.bool(true,"HW Bear",group=grp_t3)
 
 grp_t0 = "★ PRIORITY ★"
-show_SuperBull=input.bool(false,"SUPER Bull",group=grp_t0,inline="1")
-show_SDuperBull=input.bool(true,"SD Bull",group=grp_t0,inline="2")
+show_SuperBear=input.bool(false,"SUPER Bear",group=grp_t0,inline="1")
+show_SDuperBear=input.bool(true,"SD Bear",group=grp_t0,inline="2")
 
 // === INPUTS — USE DISPLACEMENT ===
 grp_disp = "Displacement"
@@ -785,11 +782,7 @@ bool sigHV500=conf and volume>=ta.highest(volume,500)[1], bool sigHV1000=conf an
 int cc_win_bull=0
 bool cc_pbj_bull=false
 for i=0 to cc_window-1
-    // BINARY FIX (Anish 2026-06-04): one physical bar = 1 or 0. Matrix combo
-    // (CS2 = comboSet3/4, offset 0) and FVG combo (CS1 = comboSet1/2) on the
-    // SAME physical bar OR-collapse to a single hit — never 2. A 2-hit chain
-    // therefore requires TWO different bars. WAS: a CS1 cross-bar prior-offset
-    // shift, which let one bar carrying both Matrix and FVG self-count to 2.
+    // BINARY FIX (Anish 2026-06-04): one physical bar = 1 or 0; Matrix(CS2)+FVG(CS1) same-bar OR-collapse.
     bool hv2=nz(comboSet3_Bull[i]) or nz(comboSet4_Bull[i]) or nz(comboSet1_Bull[i]) or nz(comboSet2_Bull[i])
     if hv2
         cc_win_bull+=1
@@ -798,7 +791,11 @@ for i=0 to cc_window-1
 int cc_win_bear=0
 bool cc_pbj_bear=false
 for i=0 to cc_window-1
-    // BINARY FIX (Anish 2026-06-04): one physical bar = 1 or 0; Matrix(CS2)+FVG(CS1) same-bar OR-collapse.
+    // BINARY FIX (Anish 2026-06-04): one physical bar = 1 or 0. Matrix combo
+    // (CS2 = comboSet3/4, offset 0) and FVG combo (CS1 = comboSet1/2) on the
+    // SAME physical bar OR-collapse to a single hit — never 2. A 2-hit chain
+    // therefore requires TWO different bars. WAS: comboSet1_Bear[i-1] cross-bar
+    // shift, which let one bar carrying both Matrix and FVG self-count to 2.
     bool hv2=nz(comboSet3_Bear[i]) or nz(comboSet4_Bear[i]) or nz(comboSet1_Bear[i]) or nz(comboSet2_Bear[i])
     if hv2
         cc_win_bear+=1
@@ -1089,236 +1086,228 @@ if conf and (sigP21BullUUUU or sigP21BearUUUU or sigP21BullUUU or sigP21BearUUU 
     dayDetFired:=true
 
 // ============================================================================
-// PIPELINE C TERMINAL OUTPUTS — BULL fire_* booleans
+// PIPELINE C TERMINAL OUTPUTS — BEAR fire_* booleans
 // ============================================================================
-bool fire_BullUUUU=show_BullUUUU and sigP21BullUUUU and masterGate, bool fire_BullUUU=show_BullUUU and sigP21BullUUU and masterGate
-bool fire_BullUU=show_BullUU and uu_gated_bull and masterGate
-bool fire_AlphaStrikeB=show_AlphaStrikeB and sigAlphaStrikeBull and masterGate, bool fire_FoxtrotB=show_FoxtrotB and sigFoxtrotBull and masterGate
-bool fire_OmegaLong=show_OmegaLong and sigOmegaLong and masterGate, bool fire_OmegaLongA=show_OmegaLongA and sigOmegaLongA and masterGate
-bool fire_ODBull=show_ODBull and sigODBull and masterGate
-bool fire_DispConsBull2=show_DispConsBull2 and sigDispConsBull2 and masterGate, bool fire_DispConsBull3=show_DispConsBull3 and sigDispConsBull3 and masterGate
-bool fire_GolfBull=show_GolfBull and sigGolfBull and masterGate, bool fire_PAFBull=show_PAFBull and sigPAFBull and masterGate
-bool fire_CS1B=show_CS1B and csNew1_Bull and masterGate, bool fire_CS2B=show_CS2B and csNew2_Bull and masterGate, bool fire_CS3B=show_CS3B and csNew3_Bull and masterGate
-bool fire_CCBull=show_CCBull and sigCCBull and masterGate, bool fire_LSCBull=show_LSCBull and sigLSCBull and masterGate
-bool fire_BullFloor=show_BullFloor and floor_gated and masterGate, bool fire_Bull2ndFloor=show_Bull2ndFloor and floor2_gated and masterGate
-bool fire_HWBull=show_HWBull and hwBull and masterGate, bool fire_SuperBull=show_SuperBull and superBull and masterGate, bool fire_SDuperBull=show_SDuperBull and sduperBull and masterGate
-bool fire_NagPlusBull=show_NagPlusBull and sigNagPlusBull and masterGate
+bool fire_BearUUUU=show_BearUUUU and sigP21BearUUUU and masterGate, bool fire_BearUUU=show_BearUUU and sigP21BearUUU and masterGate
+bool fire_BearUU=show_BearUU and sigUUBear and masterGate
+bool fire_AlphaStrikeR=show_AlphaStrikeR and sigAlphaStrikeBear and masterGate, bool fire_FoxtrotR=show_FoxtrotR and sigFoxtrotBear and masterGate
+bool fire_ODBear=show_ODBear and sigODBear and masterGate
+bool fire_DispConsBear2=show_DispConsBear2 and sigDispConsBear2 and masterGate, bool fire_DispConsBear3=show_DispConsBear3 and sigDispConsBear3 and masterGate
+bool fire_GolfBear=show_GolfBear and sigGolfBear and masterGate, bool fire_PAFBear=show_PAFBear and sigPAFBear and masterGate
+bool fire_CS1R=show_CS1R and csNew1_Bear and masterGate, bool fire_CS2R=show_CS2R and csNew2_Bear and masterGate, bool fire_CS3R=show_CS3R and csNew3_Bear and masterGate
+bool fire_CCBear=show_CCBear and sigCCBear and masterGate, bool fire_LSCBear=show_LSCBear and sigLSCBear and masterGate
+bool fire_BearRooftop=show_BearRooftop and anyBearRoof and masterGate, bool fire_BearPent=show_BearPenthouse and anyBearPent and masterGate
+bool fire_HWBear=show_HWBear and hwBear and masterGate, bool fire_SuperBear=show_SuperBear and superBear and masterGate, bool fire_SDuperBear=show_SDuperBear and sduperBear and masterGate
 
 // ============================================================================
-// HV+D & HV+D+PBJ DETECTION TOGGLES (bull)
+// HV+D & HV+D+PBJ DETECTION TOGGLES (bear)
 // ============================================================================
 grp_hvd_sig = "★★★ HV+D DETECTION TOGGLES ★★★"
-bool en_hvd_bull    = input.bool(false, "HV+D Bull",      group=grp_hvd_sig, inline="h1")
-bool en_hvd_pb_bull = input.bool(false, "HV+D+PB Bull",   group=grp_hvd_sig, inline="h2")
-bool en_hvd_pbj_bull= input.bool(false, "HV+D+PBJ Bull",  group=grp_hvd_sig, inline="h3")
+bool en_hvd_bear    = input.bool(false, "HV+D Bear",      group=grp_hvd_sig, inline="h1")
+bool en_hvd_pb_bear = input.bool(false, "HV+D+PB Bear",   group=grp_hvd_sig, inline="h2")
+bool en_hvd_pbj_bear= input.bool(false, "HV+D+PBJ Bear",  group=grp_hvd_sig, inline="h3")
 
-bool hvd_pb_bull  = hvd_fire_bull and nz(sigBullPB[1])
-bool hvd_pbj_bull = hvd_fire_bull and nz(sigBullPBJ[1])
-
-// ============================================================================
-// PLOTSHAPES — 38 BULL DETECTIONS (zero labels, all permanent series)
-// ============================================================================
-// 1-2: HV+D standalone (+ PB/PBJ co-occurrence)
-plotshape(en_hvd_bull and hvd_fire_bull and masterGate, "HV+D Bull", shape.triangleup, location.top, color.new(#00E676, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
-plotshape(en_hvd_pb_bull  and hvd_pb_bull and masterGate,  "PB Bull",  shape.labelup,  location.bottom, color.new(color.aqua, 75),   size=size.small,  text="HV+D\nPB",  textcolor=color.white, offset=-1)
-plotshape(en_hvd_pbj_bull and hvd_pbj_bull and masterGate, "PBJ Bull", shape.diamond,  location.top, color.new(color.yellow, 25), size=size.normal, text="HV+D\nPBJ", textcolor=color.white, offset=-1)
-
-// USE bull plotshapes (21)
-plotshape(fire_BullUUUU,"Bull UUUU",shape.labelup,location.top,color.new(#00FF00,0),text="UUUU",textcolor=color.white,size=size.large,offset=-1)
-plotshape(fire_BullUUU,"Bull UUU",shape.labelup,location.abovebar,color.new(#76FF03,0),text="UUU",textcolor=color.white,size=size.normal,offset=-1)
-plotshape(fire_BullUU,"Bull UU",shape.labelup,location.belowbar,color.new(#A5D6A7,0),text="UU",textcolor=color.white,size=size.small,offset=-1)
-plotshape(fire_AlphaStrikeB,"A★ Bull",shape.flag,location.bottom,color.new(#00E676,0),text="A★",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(fire_FoxtrotB,"FOX Bull",shape.triangleup,location.top,color.new(#1B5E20,0),text="FOX",textcolor=color.white,size=size.large)
-plotshape(fire_OmegaLongA,"Omega-A",shape.circle,location.abovebar,color.new(#FFD700,0),text="ΩA",textcolor=color.white,size=size.huge)
-plotshape(fire_ODBull,"OD Bull",shape.flag,location.top,color.new(#00FFFF,0),text="OD",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(fire_DispConsBull2,"D2+ Bull",shape.triangleup,location.abovebar,color.new(#69F0AE,0),text="D2",textcolor=color.white,size=size.tiny,offset=-1)
-plotshape(fire_DispConsBull3,"D3+ Bull",shape.triangledown,location.belowbar,color.new(#00C853,0),text="D3",textcolor=color.white,size=size.small,offset=-1)
-plotshape(fire_GolfBull,"Golf Bull",shape.labelup,location.top,color.new(#00FF00,25),text="G",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(fire_PAFBull,"PAF+",shape.flag,location.belowbar,color.new(#E040FB,25),text="PAF+",textcolor=color.white,size=size.huge)
-plotshape(fire_CS1B,"CS1 FVG",shape.labelup,location.top,color.new(#00BCD4,0),text="FVG",textcolor=color.white,size=size.tiny,offset=-1)
-plotshape(fire_CS2B,"CS2 MAT",shape.labelup,location.bottom,color.new(#00897B,0),text="MAT",textcolor=color.white,size=size.tiny)
-plotshape(fire_CS3B,"Combo Bull",shape.labelup,location.belowbar,color.new(#43A047,0),text="COMBO",textcolor=color.white,size=size.small,offset=-1)
-plotshape(fire_CCBull,"CC Bull",shape.square,location.bottom,color.new(#00BFA5,0),text="CC",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(fire_LSCBull,"LSC Bull",shape.square,location.top,color.new(#651FFF,0),text="LSC",textcolor=color.white,size=size.small)
-plotshape(fire_BullFloor,"Floor",shape.circle,location.top,color.new(#00E5FF,0),text="FLOOR",textcolor=color.white,size=size.large)
-plotshape(fire_Bull2ndFloor,"2F",shape.cross,location.abovebar,color.new(#80DEEA,0),text="2F",textcolor=color.white,size=size.normal)
-plotshape(fire_HWBull,"HW Bull",shape.xcross,location.abovebar,color.new(#FF6D00,0),text="HW",textcolor=color.white,size=size.large)
-plotshape(fire_SuperBull,"S! Bull",shape.flag,location.top,color.new(#00FF00,0),text="S!",textcolor=color.white,size=size.huge,offset=-1)
-plotshape(fire_SDuperBull,"SD! Bull",shape.flag,location.bottom,color.new(#FFD700,0),text="SD!",textcolor=color.white,size=size.huge,offset=-1)
-
-// NAG+ Bull
-plotshape(fire_NagPlusBull,"NAG+ Bull",shape.labelup,location.abovebar,color.new(#FF00FF,0),text="NAG+",textcolor=color.white,size=size.huge)
+bool hvd_pb_bear  = hvd_fire_bear and nz(sigBearPB[1])
+bool hvd_pbj_bear = hvd_fire_bear and nz(sigBearPBJ[1])
 
 // ============================================================================
-// PIPELINE D: TRIPLE CO-OCCURRENCE (bull)
+// PLOTSHAPES — 36 BEAR DETECTIONS (zero labels, all permanent series)
+// ============================================================================
+// HV+D standalone (+ PB/PBJ co-occurrence)
+plotshape(en_hvd_bear and hvd_fire_bear and masterGate, "HV+D Bear", shape.triangledown, location.bottom, color.new(#FF1744, 0), text="HV+D", textcolor=color.white, size=size.small, offset=-1)
+plotshape(en_hvd_pb_bear  and hvd_pb_bear and masterGate,  "PB Bear",  shape.labeldown, location.top, color.new(color.orange, 75), size=size.small,  text="HV+D\nPB",  textcolor=color.white, offset=-1)
+plotshape(en_hvd_pbj_bear and hvd_pbj_bear and masterGate, "PBJ Bear", shape.diamond,  location.top,    color.new(color.red, 25),    size=size.normal, text="HV+D\nPBJ", textcolor=color.white, offset=-1)
+
+// USE bear plotshapes (20)
+plotshape(fire_BearUUUU,"Bear UUUU",shape.labeldown,location.belowbar,color.new(#FF00FF,0),text="DDDD",textcolor=color.white,size=size.large,offset=-1)
+plotshape(fire_BearUUU,"Bear UUU",shape.labeldown,location.abovebar,color.new(#FF4081,0),text="DDD",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(fire_BearUU,"Bear UU",shape.labeldown,location.abovebar,color.new(#EF9A9A,0),text="DD",textcolor=color.white,size=size.small,offset=-1)
+plotshape(fire_AlphaStrikeR,"A★ Bear",shape.flag,location.abovebar,color.new(#FF4081,0),text="A★",textcolor=color.white,size=size.small,offset=-1)
+plotshape(fire_FoxtrotR,"FOX Bear",shape.triangledown,location.bottom,color.new(#B71C1C,0),text="FOX",textcolor=color.white,size=size.large)
+plotshape(fire_ODBear,"OD Bear",shape.flag,location.top,color.new(#FF6E40,0),text="OD",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(fire_DispConsBear2,"D2+ Bear",shape.triangledown,location.abovebar,color.new(#FF1744,0),text="D2",textcolor=color.white,size=size.tiny,offset=-1)
+plotshape(fire_DispConsBear3,"D3+ Bear",shape.triangledown,location.belowbar,color.new(#D50000,0),text="D3",textcolor=color.white,size=size.small,offset=-1)
+plotshape(fire_GolfBear,"Golf Bear",shape.labeldown,location.bottom,color.new(#FF0000,25),text="G",textcolor=color.white,size=size.huge,offset=-1)
+plotshape(fire_PAFBear,"PAF-",shape.flag,location.top,color.new(#E040FB,25),text="PAF-",textcolor=color.white,size=size.large)
+plotshape(fire_CS1R,"CS1 FVG Bear",shape.labeldown,location.top,color.new(#FF1744,0),text="FVG",textcolor=color.white,size=size.tiny,offset=-1)
+plotshape(fire_CS2R,"CS2 MAT Bear",shape.labeldown,location.belowbar,color.new(#D50000,0),text="MAT",textcolor=color.white,size=size.tiny)
+plotshape(fire_CS3R,"Combo Bear",shape.labeldown,location.belowbar,color.new(#9C27B0,0),text="COMBO",textcolor=color.white,size=size.small,offset=-1)
+plotshape(fire_CCBear,"CC Bear",shape.square,location.top,color.new(#E91E63,0),text="CC",textcolor=color.white,size=size.large,offset=-1)
+plotshape(fire_LSCBear,"LSC Bear",shape.square,location.belowbar,color.new(#9C27B0,0),text="LSC",textcolor=color.white,size=size.small)
+plotshape(fire_BearRooftop,"Rooftop",shape.circle,location.abovebar,color.new(#FF1744,0),text="ROOF",textcolor=color.white,size=size.large)
+plotshape(fire_BearPent,"Penthouse",shape.cross,location.belowbar,color.new(#D50000,0),text="PH",textcolor=color.white,size=size.normal)
+plotshape(fire_HWBear,"HW Bear",shape.xcross,location.belowbar,color.new(#FF6D00,0),text="HW",textcolor=color.white,size=size.normal)
+plotshape(fire_SuperBear,"S! Bear",shape.flag,location.top,color.new(#FF0000,0),text="S!",textcolor=color.white,size=size.normal,offset=-1)
+plotshape(fire_SDuperBear,"SD! Bear",shape.flag,location.bottom,color.new(#FFD700,0),text="SD!",textcolor=color.white,size=size.large,offset=-1)
+
+// ============================================================================
+// PIPELINE D: TRIPLE CO-OCCURRENCE (bear)
 // ============================================================================
 grp_co = "★★★ PIPELINE D: TRIPLE CO-OCCURRENCE ★★★"
-bool co_en_bullPBJ = input.bool(false, "Bull PBJ co-occurrence", group=grp_co, inline="co1")
-bool co_en_bullPB  = input.bool(false, "Bull PB co-occurrence",  group=grp_co, inline="co1")
+bool co_en_bearPBJ = input.bool(false, "Bear PBJ co-occurrence", group=grp_co, inline="co2")
+bool co_en_bearPB  = input.bool(false, "Bear PB co-occurrence",  group=grp_co, inline="co2")
 
-bool use_any_bull = sigP21BullUUUU_indep or sigP21BullUUU_indep or sigUUBull_indep or sigAlphaStrikeBull or sigFoxtrotBull or sigOmegaLong or sigOmegaLongA or sigODBull or sigDispConsBull2 or sigDispConsBull3 or sigGolfBull or sigPAFBull or csNew1_Bull or csNew2_Bull or csNew3_Bull or sigCCBull or sigLSCBull or anyBullFloor or anyBull2nd or hwBull or superBull or sduperBull
+bool use_any_bear = sigP21BearUUUU_indep or sigP21BearUUU_indep or sigUUBear_indep or sigAlphaStrikeBear or sigFoxtrotBear or sigODBear or sigDispConsBear2 or sigDispConsBear3 or sigGolfBear or sigPAFBear or csNew1_Bear or csNew2_Bear or csNew3_Bear or sigCCBear or sigLSCBear or anyBearRoof or anyBearPent or hwBear or superBear or sduperBear
 
-bool co_bull_pbj = hvd_fire_bull and co_en_bullPBJ and nz(sigBullPBJ[1]) and nz(use_any_bull[1])
-bool co_bull_pb  = hvd_fire_bull and co_en_bullPB  and nz(sigBullPB[1])  and nz(use_any_bull[1])
-bool co_any = co_bull_pbj or co_bull_pb
+bool co_bear_pbj = hvd_fire_bear and co_en_bearPBJ and nz(sigBearPBJ[1]) and nz(use_any_bear[1])
+bool co_bear_pb  = hvd_fire_bear and co_en_bearPB  and nz(sigBearPB[1])  and nz(use_any_bear[1])
+bool co_any = co_bear_pbj or co_bear_pb
 
-plotshape(co_bull_pbj and masterGate, "CO: HV+D+PBJ+USE Bull", shape.diamond,    location.top, color.new(#FFD700, 0), text="CO\nPBJ", textcolor=color.white, size=size.huge, offset=-1)
-plotshape(co_bull_pb and masterGate,  "CO: HV+D+PB+USE Bull",  shape.triangleup, location.top, color.new(#00E5FF, 0), text="CO\nPB",  textcolor=color.white, size=size.large, offset=-1)
+plotshape(co_bear_pbj and masterGate, "CO: HV+D+PBJ+USE Bear", shape.diamond,      location.belowbar, color.new(#FF1744, 0), text="CO\nPBJ", textcolor=color.white, size=size.huge, offset=-1)
+plotshape(co_bear_pb and masterGate,  "CO: HV+D+PB+USE Bear",  shape.triangledown, location.belowbar, color.new(#FF6D00, 0), text="CO\nPB",  textcolor=color.white, size=size.large, offset=-1)
 
 // ============================================================================
-// BACK-TO-BACK HV+D (bull)
+// BACK-TO-BACK HV+D (bear)
 // ============================================================================
 grp_b2b = "★★★ BACK-TO-BACK HV+D ★★★"
-bool b2b_en_bull      = input.bool(true,  "B2B HV+D Bull",          group=grp_b2b, inline="b1")
-bool b2b_en_bull_pbj  = input.bool(true,  "B2B HV+D+PBJ Bull",     group=grp_b2b, inline="b2")
-bool b2b_en_bull_pb   = input.bool(true,  "B2B HV+D+PB Bull",      group=grp_b2b, inline="b3")
+bool b2b_en_bear      = input.bool(true,  "B2B HV+D Bear",          group=grp_b2b, inline="b1")
+bool b2b_en_bear_pbj  = input.bool(true,  "B2B HV+D+PBJ Bear",     group=grp_b2b, inline="b2")
+bool b2b_en_bear_pb   = input.bool(true,  "B2B HV+D+PB Bear",      group=grp_b2b, inline="b3")
 
-bool b2b_bull_raw = hvd_fire_bull and nz(hvd_fire_bull[1])
-bool b2b_bull_pbj = b2b_bull_raw and (nz(sigBullPBJ[1]) or nz(sigBullPBJ[2]))
-bool b2b_bull_pb  = b2b_bull_raw and (nz(sigBullPB[1]) or nz(sigBullPB[2])) and not b2b_bull_pbj
-bool b2b_bull_nopb = b2b_bull_raw and not b2b_bull_pbj and not b2b_bull_pb
+bool b2b_bear_raw = hvd_fire_bear and nz(hvd_fire_bear[1])
+bool b2b_bear_pbj = b2b_bear_raw and (nz(sigBearPBJ[1]) or nz(sigBearPBJ[2]))
+bool b2b_bear_pb  = b2b_bear_raw and (nz(sigBearPB[1]) or nz(sigBearPB[2])) and not b2b_bear_pbj
+bool b2b_bear_nopb = b2b_bear_raw and not b2b_bear_pbj and not b2b_bear_pb
 
-plotshape(b2b_en_bull     and b2b_bull_nopb and masterGate, "B2B HV+D Bull",      shape.flag, location.belowbar, color.new(#00E676, 0), text="B2B",      textcolor=color.white, size=size.large, offset=-1)
-plotshape(b2b_en_bull_pbj and b2b_bull_pbj and masterGate,  "B2B HV+D+PBJ Bull",  shape.flag, location.bottom,   color.new(#FFD700, 0), text="B2B\nPBJ", textcolor=color.white, size=size.huge,  offset=-1)
-plotshape(b2b_en_bull_pb  and b2b_bull_pb and masterGate,   "B2B HV+D+PB Bull",   shape.flag, location.bottom,   color.new(#00E5FF, 0), text="B2B\nPB",  textcolor=color.white, size=size.large, offset=-1)
+plotshape(b2b_en_bear     and b2b_bear_nopb and masterGate, "B2B HV+D Bear",      shape.flag, location.bottom,   color.new(#FF1744, 0), text="B2B",      textcolor=color.white, size=size.large, offset=-1)
+plotshape(b2b_en_bear_pbj and b2b_bear_pbj and masterGate,  "B2B HV+D+PBJ Bear",  shape.flag, location.abovebar, color.new(#FF1744, 0), text="B2B\nPBJ", textcolor=color.white, size=size.huge,  offset=-1)
+plotshape(b2b_en_bear_pb  and b2b_bear_pb and masterGate,   "B2B HV+D+PB Bear",   shape.flag, location.bottom,   color.new(#FF6D00, 0), text="B2B\nPB",  textcolor=color.white, size=size.large, offset=-1)
 
 // ============================================================================
-// HV+D MOMENTUM CO-OCC — 8 BULL (WAS labels → NOW plotshapes, offset=-1)
+// HV+D MOMENTUM CO-OCC — 8 BEAR (WAS labels → NOW plotshapes, offset=-1)
 // Dynamic 2of3/3of3 component list stays in the alert payload (static plot text).
 // ============================================================================
 grp_hvdm = "★★★ HV+D MOMENTUM CO-OCC ★★★"
-bool en_hvdm_pup_bull  = input.bool(true,  "HV+D+PUP Bull",  group=grp_hvdm, inline="m1")
-bool en_hvdm_rvol_bull = input.bool(true,  "HV+D+RVOL Bull", group=grp_hvdm, inline="m2")
-bool en_hvdm_cmb_bull  = input.bool(true,  "HV+D+CMB Bull",  group=grp_hvdm, inline="m3")
-bool en_hvdm_2of3_bull = input.bool(true,  "2of3 Bull",       group=grp_hvdm, inline="m4")
-bool en_hvdm_3of3_bull = input.bool(true,  "3of3 Bull",       group=grp_hvdm, inline="m5")
+bool en_hvdm_ppd_bear  = input.bool(true,  "HV+D+PPD Bear",  group=grp_hvdm, inline="m1")
+bool en_hvdm_rvol_bear = input.bool(true,  "HV+D+RVOL Bear", group=grp_hvdm, inline="m2")
+bool en_hvdm_cmb_bear  = input.bool(true,  "HV+D+CMB Bear",  group=grp_hvdm, inline="m3")
+bool en_hvdm_2of3_bear = input.bool(true,  "2of3 Bear",       group=grp_hvdm, inline="m4")
+bool en_hvdm_3of3_bear = input.bool(true,  "3of3 Bear",       group=grp_hvdm, inline="m5")
 
-bool _m_pup1 = nz(sigPUP[1])
-bool _m_rv1b = nz(sigBullRVOL1x[1]) or nz(sigGrandSlam[1])
-bool _m_cb1b = csNew3_Bull
-bool _m_pj1b = nz(sigBullPBJ[1])
+bool _m_ppd1 = nz(sigPPD[1])
+bool _m_rv1r = nz(sigBearRVOL1x[1]) or nz(sigMOAB[1])
+bool _m_cb1r = csNew3_Bear
+bool _m_pj1r = nz(sigBearPBJ[1])
 
-bool hvdm_pup_nopbj_b  = hvd_fire_bull and _m_pup1 and not _m_pj1b
-bool hvdm_pbjpup_b     = hvd_fire_bull and _m_pj1b and _m_pup1
-bool hvdm_rvol_nopbj_b = hvd_fire_bull and _m_rv1b and not _m_pj1b
-bool hvdm_pbjrvol_b    = hvd_fire_bull and _m_pj1b and _m_rv1b
-bool hvdm_cmb_nopbj_b  = hvd_fire_bull and _m_cb1b and not _m_pj1b
-bool hvdm_pbjcmb_b     = hvd_fire_bull and _m_pj1b and _m_cb1b
+bool hvdm_ppd_nopbj_r  = hvd_fire_bear and _m_ppd1 and not _m_pj1r
+bool hvdm_pbjppd_r     = hvd_fire_bear and _m_pj1r and _m_ppd1
+bool hvdm_rvol_nopbj_r = hvd_fire_bear and _m_rv1r and not _m_pj1r
+bool hvdm_pbjrvol_r    = hvd_fire_bear and _m_pj1r and _m_rv1r
+bool hvdm_cmb_nopbj_r  = hvd_fire_bear and _m_cb1r and not _m_pj1r
+bool hvdm_pbjcmb_r     = hvd_fire_bear and _m_pj1r and _m_cb1r
 
-int  hvdm_b_cnt      = (_m_pup1 ? 1 : 0) + (_m_rv1b ? 1 : 0) + (_m_cb1b ? 1 : 0)
-bool hvdm_2of3_b_raw = hvd_fire_bull and _m_pj1b and hvdm_b_cnt >= 2
-bool hvdm_3of3_b     = hvd_fire_bull and _m_pj1b and _m_pup1 and _m_rv1b and _m_cb1b
+int  hvdm_r_cnt      = (_m_ppd1 ? 1 : 0) + (_m_rv1r ? 1 : 0) + (_m_cb1r ? 1 : 0)
+bool hvdm_2of3_r_raw = hvd_fire_bear and _m_pj1r and hvdm_r_cnt >= 2
+bool hvdm_3of3_r     = hvd_fire_bear and _m_pj1r and _m_ppd1 and _m_rv1r and _m_cb1r
 
-bool hvdm_2of3_b        = hvdm_2of3_b_raw and not hvdm_3of3_b
-bool hvdm_vis_pbjpup_b  = hvdm_pbjpup_b  and not hvdm_2of3_b_raw
-bool hvdm_vis_pbjrvol_b = hvdm_pbjrvol_b and not hvdm_2of3_b_raw
-bool hvdm_vis_pbjcmb_b  = hvdm_pbjcmb_b  and not hvdm_2of3_b_raw
+bool hvdm_2of3_r        = hvdm_2of3_r_raw and not hvdm_3of3_r
+bool hvdm_vis_pbjppd_r  = hvdm_pbjppd_r  and not hvdm_2of3_r_raw
+bool hvdm_vis_pbjrvol_r = hvdm_pbjrvol_r and not hvdm_2of3_r_raw
+bool hvdm_vis_pbjcmb_r  = hvdm_pbjcmb_r  and not hvdm_2of3_r_raw
 
-plotshape(en_hvdm_pup_bull  and hvdm_pup_nopbj_b  and masterGate, "HV+D+PUP Bull",      shape.triangleup, location.top, color.new(#00E676, 0), text="HVD\nPUP",       textcolor=color.white, size=size.normal, offset=-1)
-plotshape(en_hvdm_rvol_bull and hvdm_rvol_nopbj_b and masterGate, "HV+D+RVOL Bull",     shape.triangleup, location.top, color.new(#00BCD4, 0), text="HVD\nRVOL",      textcolor=color.white, size=size.normal, offset=-1)
-plotshape(en_hvdm_cmb_bull  and hvdm_cmb_nopbj_b  and masterGate, "HV+D+CMB Bull",      shape.triangleup, location.top, color.new(#43A047, 0), text="HVD\nCMB",       textcolor=color.white, size=size.normal, offset=-1)
-plotshape(en_hvdm_pup_bull  and hvdm_vis_pbjpup_b  and masterGate, "HV+D+PBJ+PUP Bull",  shape.diamond,   location.top, color.new(#FFD700, 0), text="HVD+PBJ\nPUP",   textcolor=color.white, size=size.large, offset=-1)
-plotshape(en_hvdm_rvol_bull and hvdm_vis_pbjrvol_b and masterGate, "HV+D+PBJ+RVOL Bull", shape.diamond,   location.top, color.new(#E040FB, 0), text="HVD+PBJ\nRVOL",  textcolor=color.white, size=size.large, offset=-1)
-plotshape(en_hvdm_cmb_bull  and hvdm_vis_pbjcmb_b  and masterGate, "HV+D+PBJ+CMB Bull",  shape.diamond,   location.top, color.new(#7C4DFF, 0), text="HVD+PBJ\nCMB",   textcolor=color.white, size=size.large, offset=-1)
-plotshape(en_hvdm_2of3_bull and hvdm_2of3_b and masterGate,        "HV+D+PBJ 2of3 Bull", shape.labelup,   location.top, color.new(#FF6D00, 0), text="HVD+PBJ\n2of3",  textcolor=color.white, size=size.large, offset=-1)
-plotshape(en_hvdm_3of3_bull and hvdm_3of3_b and masterGate,        "HV+D+PBJ 3of3 Bull", shape.labelup,   location.top, color.new(#FFD700, 0), text="HVD+PBJ\n3of3",  textcolor=color.black, size=size.huge, offset=-1)
+plotshape(en_hvdm_ppd_bear  and hvdm_ppd_nopbj_r  and masterGate, "HV+D+PPD Bear",      shape.triangledown, location.bottom, color.new(#FF1744, 0), text="HVD\nPPD",       textcolor=color.white, size=size.normal, offset=-1)
+plotshape(en_hvdm_rvol_bear and hvdm_rvol_nopbj_r and masterGate, "HV+D+RVOL Bear",     shape.triangledown, location.bottom, color.new(#FF6D00, 0), text="HVD\nRVOL",      textcolor=color.white, size=size.normal, offset=-1)
+plotshape(en_hvdm_cmb_bear  and hvdm_cmb_nopbj_r  and masterGate, "HV+D+CMB Bear",      shape.triangledown, location.bottom, color.new(#9C27B0, 0), text="HVD\nCMB",       textcolor=color.white, size=size.normal, offset=-1)
+plotshape(en_hvdm_ppd_bear  and hvdm_vis_pbjppd_r  and masterGate, "HV+D+PBJ+PPD Bear",  shape.diamond,    location.belowbar, color.new(#FF1744, 0), text="HVD+PBJ\nPPD",   textcolor=color.white, size=size.large, offset=-1)
+plotshape(en_hvdm_rvol_bear and hvdm_vis_pbjrvol_r and masterGate, "HV+D+PBJ+RVOL Bear", shape.diamond,    location.belowbar, color.new(#E040FB, 0), text="HVD+PBJ\nRVOL",  textcolor=color.white, size=size.large, offset=-1)
+plotshape(en_hvdm_cmb_bear  and hvdm_vis_pbjcmb_r  and masterGate, "HV+D+PBJ+CMB Bear",  shape.diamond,    location.belowbar, color.new(#7C4DFF, 0), text="HVD+PBJ\nCMB",   textcolor=color.white, size=size.large, offset=-1)
+plotshape(en_hvdm_2of3_bear and hvdm_2of3_r and masterGate,        "HV+D+PBJ 2of3 Bear", shape.labeldown,  location.belowbar, color.new(#FF6D00, 0), text="HVD+PBJ\n2of3",  textcolor=color.white, size=size.large, offset=-1)
+plotshape(en_hvdm_3of3_bear and hvdm_3of3_r and masterGate,        "HV+D+PBJ 3of3 Bear", shape.labeldown,  location.belowbar, color.new(#FFD700, 0), text="HVD+PBJ\n3of3",  textcolor=color.black, size=size.huge, offset=-1)
 
 // ============================================================================
-// ALERTS — BULL (1:1 with the 38 plotshapes)
+// ALERTS — BEAR (1:1 with the 36 plotshapes)
 // ============================================================================
-if en_hvd_bull and hvd_fire_bull and masterGate and not hvd_pbj_bull and not hvd_pb_bull
-    alert("BULL | " + _FIRST + " | HV+D", alert.freq_once_per_bar_close)
-if en_hvd_pbj_bull and hvd_pbj_bull and masterGate
-    alert("BULL | " + _FIRST + " | HV+D+PBJ", alert.freq_once_per_bar_close)
-if en_hvd_pb_bull and hvd_pb_bull and masterGate
-    alert("BULL | " + _FIRST + " | HV+D+PB", alert.freq_once_per_bar_close)
+if en_hvd_bear and hvd_fire_bear and masterGate and not hvd_pbj_bear and not hvd_pb_bear
+    alert("BEAR | " + _FIRST + " | HV+D", alert.freq_once_per_bar_close)
+if en_hvd_pbj_bear and hvd_pbj_bear and masterGate
+    alert("BEAR | " + _FIRST + " | HV+D+PBJ", alert.freq_once_per_bar_close)
+if en_hvd_pb_bear and hvd_pb_bear and masterGate
+    alert("BEAR | " + _FIRST + " | HV+D+PB", alert.freq_once_per_bar_close)
 
-if b2b_en_bull and b2b_bull_nopb and masterGate
-    alert("BULL | " + _FIRST + " | B2B-HVD", alert.freq_once_per_bar_close)
-if b2b_en_bull_pbj and b2b_bull_pbj and masterGate
-    alert("BULL | " + _FIRST + " | B2B-HVD+PBJ", alert.freq_once_per_bar_close)
-if b2b_en_bull_pb and b2b_bull_pb and masterGate
-    alert("BULL | " + _FIRST + " | B2B-HVD+PB", alert.freq_once_per_bar_close)
+if b2b_en_bear and b2b_bear_nopb and masterGate
+    alert("BEAR | " + _FIRST + " | B2B-HVD", alert.freq_once_per_bar_close)
+if b2b_en_bear_pbj and b2b_bear_pbj and masterGate
+    alert("BEAR | " + _FIRST + " | B2B-HVD+PBJ", alert.freq_once_per_bar_close)
+if b2b_en_bear_pb and b2b_bear_pb and masterGate
+    alert("BEAR | " + _FIRST + " | B2B-HVD+PB", alert.freq_once_per_bar_close)
 
-if en_hvdm_pup_bull and hvdm_pup_nopbj_b and masterGate
-    alert("BULL | " + _FIRST + " | HVD+PUP", alert.freq_once_per_bar_close)
-if en_hvdm_pup_bull and hvdm_vis_pbjpup_b and masterGate
-    alert("BULL | " + _FIRST + " | HVD+PBJ+PUP", alert.freq_once_per_bar_close)
-if en_hvdm_rvol_bull and hvdm_rvol_nopbj_b and masterGate
-    alert("BULL | " + _FIRST + " | HVD+RVOL", alert.freq_once_per_bar_close)
-if en_hvdm_rvol_bull and hvdm_vis_pbjrvol_b and masterGate
-    alert("BULL | " + _FIRST + " | HVD+PBJ+RVOL", alert.freq_once_per_bar_close)
-if en_hvdm_cmb_bull and hvdm_cmb_nopbj_b and masterGate
-    alert("BULL | " + _FIRST + " | HVD+COMBO", alert.freq_once_per_bar_close)
-if en_hvdm_cmb_bull and hvdm_vis_pbjcmb_b and masterGate
-    alert("BULL | " + _FIRST + " | HVD+PBJ+COMBO", alert.freq_once_per_bar_close)
-if en_hvdm_2of3_bull and hvdm_2of3_b and masterGate
-    string _2ba = ""
-    if _m_pup1
-        _2ba := f_add(_2ba, "PUP")
-    if _m_rv1b
-        _2ba := f_add(_2ba, "RVOL")
-    if _m_cb1b
-        _2ba := f_add(_2ba, "CMB")
-    alert("BULL | " + _FIRST + " | HVD+PBJ 2of3[" + _2ba + "]", alert.freq_once_per_bar_close)
-if en_hvdm_3of3_bull and hvdm_3of3_b and masterGate
-    alert("BULL | " + _FIRST + " | HVD+PBJ 3of3[PUP+RVOL+CMB]", alert.freq_once_per_bar_close)
+if en_hvdm_ppd_bear and hvdm_ppd_nopbj_r and masterGate
+    alert("BEAR | " + _FIRST + " | HVD+PPD", alert.freq_once_per_bar_close)
+if en_hvdm_ppd_bear and hvdm_vis_pbjppd_r and masterGate
+    alert("BEAR | " + _FIRST + " | HVD+PBJ+PPD", alert.freq_once_per_bar_close)
+if en_hvdm_rvol_bear and hvdm_rvol_nopbj_r and masterGate
+    alert("BEAR | " + _FIRST + " | HVD+RVOL", alert.freq_once_per_bar_close)
+if en_hvdm_rvol_bear and hvdm_vis_pbjrvol_r and masterGate
+    alert("BEAR | " + _FIRST + " | HVD+PBJ+RVOL", alert.freq_once_per_bar_close)
+if en_hvdm_cmb_bear and hvdm_cmb_nopbj_r and masterGate
+    alert("BEAR | " + _FIRST + " | HVD+COMBO", alert.freq_once_per_bar_close)
+if en_hvdm_cmb_bear and hvdm_vis_pbjcmb_r and masterGate
+    alert("BEAR | " + _FIRST + " | HVD+PBJ+COMBO", alert.freq_once_per_bar_close)
+if en_hvdm_2of3_bear and hvdm_2of3_r and masterGate
+    string _2ra = ""
+    if _m_ppd1
+        _2ra := f_add(_2ra, "PPD")
+    if _m_rv1r
+        _2ra := f_add(_2ra, "RVOL")
+    if _m_cb1r
+        _2ra := f_add(_2ra, "CMB")
+    alert("BEAR | " + _FIRST + " | HVD+PBJ 2of3[" + _2ra + "]", alert.freq_once_per_bar_close)
+if en_hvdm_3of3_bear and hvdm_3of3_r and masterGate
+    alert("BEAR | " + _FIRST + " | HVD+PBJ 3of3[PPD+RVOL+CMB]", alert.freq_once_per_bar_close)
 
 if co_any
-    string co_pb_type = co_bull_pbj ? "PBJ" : "PB"
-    alert("BULL | " + _FIRST + " | CO " + co_pb_type, alert.freq_once_per_bar_close)
+    string co_pb_type = co_bear_pbj ? "PBJ" : "PB"
+    alert("BEAR | " + _FIRST + " | CO " + co_pb_type, alert.freq_once_per_bar_close)
 
-// === USE AGGREGATOR ALERT (bull) ===
-f_agg_bull() =>
+// === USE AGGREGATOR ALERT (bear) ===
+f_agg_bear() =>
     string _s=""
-    if fire_SDuperBull
+    if fire_SDuperBear
         _s:=f_add(_s,"SUPER DUPER")
-    if fire_SuperBull and not fire_SDuperBull
+    if fire_SuperBear and not fire_SDuperBear
         _s:=f_add(_s,"SUPER")
-    if fire_HWBull
+    if fire_HWBear
         _s:=f_add(_s,"HW")
-    if fire_BullFloor
-        _s:=f_add(_s,"FLOOR")
-    if fire_Bull2ndFloor
-        _s:=f_add(_s,"2F")
-    if fire_BullUUUU
-        _s:=f_add(_s,"UUUU")
-    if fire_BullUUU
-        _s:=f_add(_s,"UUU")
-    if fire_BullUU
-        _s:=f_add(_s,"UU")
-    if fire_AlphaStrikeB
+    if fire_BearRooftop
+        _s:=f_add(_s,"ROOF")
+    if fire_BearPent
+        _s:=f_add(_s,"PH")
+    if fire_BearUUUU
+        _s:=f_add(_s,"DDDD")
+    if fire_BearUUU
+        _s:=f_add(_s,"DDD")
+    if fire_BearUU
+        _s:=f_add(_s,"DD")
+    if fire_AlphaStrikeR
         _s:=f_add(_s,"A-STRIKE")
-    if fire_FoxtrotB
+    if fire_FoxtrotR
         _s:=f_add(_s,"FOX")
-    if fire_OmegaLongA
-        _s:=f_add(_s,"OMEGA")
-    if fire_ODBull
+    if fire_ODBear
         _s:=f_add(_s,"OD")
-    if fire_DispConsBull2
+    if fire_DispConsBear2
         _s:=f_add(_s,"D2+")
-    if fire_DispConsBull3
+    if fire_DispConsBear3
         _s:=f_add(_s,"D3+")
-    if fire_GolfBull
+    if fire_GolfBear
         _s:=f_add(_s,"GOLF")
-    if fire_PAFBull
+    if fire_PAFBear
         _s:=f_add(_s,"PAF")
-    if fire_CS1B
+    if fire_CS1R
         _s:=f_add(_s,"FVG")
-    if fire_CS2B
+    if fire_CS2R
         _s:=f_add(_s,"MAT")
-    if fire_CS3B
+    if fire_CS3R
         _s:=f_add(_s,"COMBO")
-    if fire_CCBull
+    if fire_CCBear
         _s:=f_add(_s,"CC")
-    if fire_LSCBull
+    if fire_LSCBear
         _s:=f_add(_s,"LSC")
     _s
 
 if conf
-    string bs=f_agg_bull()
-    if en_aggregate and str.length(bs)>0
-        alert("BULL | " + _FIRST + " | " + bs, alert.freq_once_per_bar_close)
+    string rs=f_agg_bear()
+    if en_aggregate and str.length(rs)>0
+        alert("BEAR | " + _FIRST + " | " + rs, alert.freq_once_per_bar_close)
     if show_Nagasaki and sigNagasaki and masterGate
         string nd=nag_dir_bull and nag_dir_bear?"BOTH":nag_dir_bull?"BULL":nag_dir_bear?"BEAR":"NEUTRAL"
-        alert("BULL | " + _FIRST + " | NAGASAKI " + nd, alert.freq_once_per_bar_close)
+        alert("BEAR | " + _FIRST + " | NAGASAKI " + nd, alert.freq_once_per_bar_close)

@@ -1121,20 +1121,6 @@ f_emit_zone(bool fire, array<level> arr) =>
 [zf_sf, zm_sf] = f_emit_zone(nzs_f, upper_f)
 
 // numeric fire matrix for zone formation (data window only — no graphics)
-plot(zf_ba ? 1 : 0, "ZONEFORM_BULL_A", display=display.data_window)
-plot(zm_ba, "ZONEMID_BULL_A", display=display.data_window)
-plot(zf_sa ? 1 : 0, "ZONEFORM_BEAR_A", display=display.data_window)
-plot(zm_sa, "ZONEMID_BEAR_A", display=display.data_window)
-plot(zf_bb ? 1 : 0, "ZONEFORM_BULL_B", display=display.data_window)
-plot(zf_sb ? 1 : 0, "ZONEFORM_BEAR_B", display=display.data_window)
-plot(zf_bc ? 1 : 0, "ZONEFORM_BULL_C", display=display.data_window)
-plot(zf_sc ? 1 : 0, "ZONEFORM_BEAR_C", display=display.data_window)
-plot(zf_bd ? 1 : 0, "ZONEFORM_BULL_D", display=display.data_window)
-plot(zf_sd ? 1 : 0, "ZONEFORM_BEAR_D", display=display.data_window)
-plot(zf_be ? 1 : 0, "ZONEFORM_BULL_E", display=display.data_window)
-plot(zf_se ? 1 : 0, "ZONEFORM_BEAR_E", display=display.data_window)
-plot(zf_bf ? 1 : 0, "ZONEFORM_BULL_F", display=display.data_window)
-plot(zf_sf ? 1 : 0, "ZONEFORM_BEAR_F", display=display.data_window)
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
