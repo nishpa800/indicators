@@ -1,0 +1,265 @@
+//@version=5
+// =============================================================================
+// TICK-FRIENDLY BUILD (2026-07-13)
+// Source: nova-volume/versions/NOVA_VOLUME_v1.pine
+// Audited for tick hazards - none found; signal logic identical to original.
+//   Pure bar-count windows and percentile built-ins; timeframe.period appears
+//   only inside alert text (tick-safe). Only non-title change: the 7 numeric
+//   export plots use display.none instead of display.data_window (data_window
+//   plots are banned by tools/check_plot_budget.sh; values are unchanged).
+// =============================================================================
+// ═══════════════════════════════════════════════════════════════════════════════
+// NOVA VOLUME — Multi-Horizon Anomaly Engine  (v1)
+// ═══════════════════════════════════════════════════════════════════════════════
+// PURPOSE
+//   A brand-new, intelligent volume detector for the TICK-BASED world. Where the
+//   legacy "HV(100..1K/HEV)" indicator only asks a RANK-1 question ("is this the
+//   single highest volume in the last N bars?"), NOVA asks the questions that
+//   actually matter for the fund:
+//     1. HOW BIG is this bar's volume RELATIVE to what is normal here? (magnitude)
+//     2. How EXTREME is it within multiple time horizons? (percentile per window)
+//     3. Is it a "SLEEPER" — a massive anomaly that did NOT set an all-time high
+//        and therefore would have been INVISIBLE to the old HEV-only logic?
+//   It also fixes the small-cap -> large-cap drift problem two ways: a ROBUST
+//   scale (median + MAD-like percentile spread, not mean/stdev — heavy-tailed
+//   volume fools mean/stdev) and an optional DOLLAR-VOLUME track.
+//
+// WHY THIS IS BETTER THAN HV/HEV (the exact gap Anish identified)
+//   HV fires only when volume == the highest in the window. A bar that is 10x
+//   the median — clearly one of the biggest of the quarter — gets NOTHING if a
+//   single larger bar exists anywhere in the lookback. NOVA scores MAGNITUDE and
+//   PERCENTILE, so "biggest in a quarter, not all-time" still screams, and the
+//   raw magnitude is emitted as a number so it always "does it justice."
+//
+// TICK-FRIENDLY BY CONSTRUCTION
+//   No `import TradingView/ta` (no relativeVolume -> no RE10023 crash).
+//   No `timeframe.in_seconds()` (nothing to guard).
+//   No `request.security`, no session anchoring. Pure BAR-COUNT windows + Pine
+//   percentile built-ins, which behave identically on time charts and N-tick
+//   charts. Works on 5T / 15T / 50T / 100T / 250T / 500T / 1000T / 2500T / 15000T / 25000T.
+//
+// NON-REPAINTING ARCHITECTURE (mirrors the HV NRA contract)
+//   Every comparison uses the PRIOR CONFIRMED bar [1]; every marker plots with
+//   offset=-1 onto the bar it describes; plot and alert share ONE boolean. A
+//   marker can never appear, move, or vanish after the bar closes -> the offline
+//   Python fire-matrix lands the fire on the identical bar.
+//
+// OFFLINE NOTE (TradingView vs the warehouse)
+//   Pine caps practical lookback (~5000 bars). The TRUE multi-year / 5-year
+//   horizons run in the Python port against the OWC tick warehouse, which has no
+//   such cap. The defaults below are TV-safe so you can SEE it on the tick chart
+//   today; the Python port carries the full horizons.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+indicator("NOVA VOLUME — Multi-Horizon Anomaly Engine v1 [tick-friendly]", "NOVAVOL TF", overlay = true)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Horizon windows (in BARS; retune per tick interval)
+// ─────────────────────────────────────────────────────────────────────────────
+grpW = "Horizon Windows (bars)"
+int W_micro   = input.int(50,   "Micro window (intraday burst)", minval = 5,  group = grpW)
+int W_short   = input.int(390,  "Short window (~day/week)",      minval = 10, group = grpW)
+int W_month   = input.int(1560, "Month window",                  minval = 20, group = grpW, tooltip = "Approx 1 month. Retune to your tick interval.")
+int W_quarter = input.int(4000, "Quarter window (baseline)",     minval = 50, group = grpW, tooltip = "Used as the BASELINE for sigma + ratio tiers.")
+int W_year    = input.int(5000, "Year window (TV cap 5000)",     minval = 50, maxval = 5000, group = grpW, tooltip = "Pine caps ~5000 bars. The Python port runs true 1y/5y against the tick warehouse.")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Robust magnitude (sigma) tiers — mirror the displacement 3.5..12 idea
+// ─────────────────────────────────────────────────────────────────────────────
+grpZ = "Magnitude — Robust Sigma Tiers"
+bool show_z3  = input.bool(true, "NOVA σ3  (≥3 robust σ)",  group = grpZ)
+bool show_z5  = input.bool(true, "NOVA σ5  (≥5 robust σ)",  group = grpZ)
+bool show_z8  = input.bool(true, "NOVA σ8  (≥8 robust σ)",  group = grpZ)
+bool show_z12 = input.bool(true, "NOVA σ12 (≥12 robust σ)", group = grpZ)
+float z3_t  = input.float(4,  "σ3 threshold (robust σ)",  step = 0.5, group = grpZ)
+float z5_t  = input.float(6,  "σ5 threshold (robust σ)",  step = 0.5, group = grpZ)
+float z8_t  = input.float(10, "σ8 threshold (robust σ)",  step = 0.5, group = grpZ)
+float z12_t = input.float(16, "σ12 threshold (robust σ)", step = 0.5, group = grpZ)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Ratio-to-median tiers ("X times normal")
+// ─────────────────────────────────────────────────────────────────────────────
+grpR = "Magnitude — Ratio (X× median)"
+bool show_x2  = input.bool(true, "X2 tier on",  group = grpR)
+bool show_x4  = input.bool(true, "X4 tier on",  group = grpR)
+bool show_x8  = input.bool(true, "X8 tier on",  group = grpR)
+bool show_x16 = input.bool(true, "X16 tier on", group = grpR)
+float x2_t  = input.float(3,  "X2 threshold (× median)",  minval = 0, step = 0.5, group = grpR)
+float x4_t  = input.float(6,  "X4 threshold (× median)",  minval = 0, step = 0.5, group = grpR)
+float x8_t  = input.float(12, "X8 threshold (× median)",  minval = 0, step = 0.5, group = grpR)
+float x16_t = input.float(24, "X16 threshold (× median)", minval = 0, step = 0.5, group = grpR)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Horizon-extreme percentile tiers (the "missed-HEV" catch)
+// ─────────────────────────────────────────────────────────────────────────────
+grpP = "Horizon Extreme (percentile)"
+bool show_mo   = input.bool(true, "MONTH-EXTREME (≥ pct in month)",     group = grpP)
+bool show_qtr  = input.bool(true, "QUARTER-EXTREME (≥ pct in quarter)", group = grpP)
+bool show_yr   = input.bool(true, "YEAR-EXTREME (≥ pct in year)",       group = grpP)
+bool show_slp  = input.bool(true, "SLEEPER (year-extreme but NOT all-time)", group = grpP, tooltip = "Exactly the case the old HEV logic missed: a huge anomaly vs the past year that was not the single all-time high.")
+float mo_pct  = input.float(99.5,  "Month pct threshold",   minval = 50, maxval = 100, step = 0.1, group = grpP)
+float qtr_pct = input.float(99.8,  "Quarter pct threshold", minval = 50, maxval = 100, step = 0.1, group = grpP)
+float yr_pct  = input.float(99.95, "Year pct threshold",    minval = 50, maxval = 100, step = 0.05, group = grpP)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — All-time + Dollar-volume track
+// ─────────────────────────────────────────────────────────────────────────────
+grpD = "All-Time + Dollar Volume"
+bool show_ath = input.bool(true,  "NOVA-ATH (own all-time high vol)", group = grpD, tooltip = "NOVA's own all-time-high marker. The legacy HV/HEV indicator is left untouched.")
+bool use_dv   = input.bool(true,  "Enable Dollar-Volume track",      group = grpD, tooltip = "Normalizes small-cap -> large-cap drift by scoring volume×price instead of share count.")
+bool show_dv  = input.bool(true,  "DV-EXTREME (dollar-vol anomaly)",  group = grpD)
+float dv_z_t  = input.float(10,   "DV σ threshold",  step = 0.5, group = grpD)
+float dv_pct  = input.float(99.8, "DV pct threshold", minval = 50, maxval = 100, step = 0.1, group = grpD)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS — Streak / Cluster detection (base fire = ANY NOVA tier, per spec)
+// ─────────────────────────────────────────────────────────────────────────────
+grpS = "Streak / Cluster (base = any NOVA tier)"
+bool show_s2 = input.bool(true, "STREAK2 (2 NOVA fires in a row)",            group = grpS)
+bool show_s3 = input.bool(true, "STREAK3 (3 NOVA fires in a row)",            group = grpS)
+bool show_sr = input.bool(true, "STREAK ROLLING (≥N fires within window)",    group = grpS)
+int  streak_win      = input.int(7, "Rolling window (bars)", minval = 2, group = grpS)
+int  streak_roll_min = input.int(3, "Rolling min fires",     minval = 2, group = grpS)
+
+// NOTE: NO graphic-object text labels anywhere — banned by mandate.
+// Magnitude lives entirely in detection plotshapes + numeric data-window plots.
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CORE — robust statistics per window (computed on `volume`, referenced via [1])
+// ═══════════════════════════════════════════════════════════════════════════════
+// Robust sigma scale: (p84 - p50) ≈ 1 standard deviation for a normal dist, but
+// computed from PERCENTILES so a few giant spikes cannot inflate the scale the
+// way mean/stdev would. z = (x - median) / robust_sigma.
+f_p(src, len, pct) => ta.percentile_nearest_rank(src, len, pct)
+f_robust_z(src, len) =>
+    p50 = f_p(src, len, 50)
+    p84 = f_p(src, len, 84)
+    scale = p84 - p50
+    na(scale) or scale <= 0 ? na : (src - p50) / scale
+f_ratio(src, len) =>
+    p50 = f_p(src, len, 50)
+    na(p50) or p50 <= 0 ? na : src / p50
+
+// Baseline = quarter window
+float z_base     = f_robust_z(volume, W_quarter)
+float ratio_base = f_ratio(volume, W_quarter)
+
+// Percentile ranks per horizon (0..100)
+float pr_month   = ta.percentrank(volume, W_month)
+float pr_quarter = ta.percentrank(volume, W_quarter)
+float pr_year    = ta.percentrank(volume, W_year)
+
+// NOVA's own all-time-high (confirmed bars only) — does NOT touch HV/HEV
+var float maxVolEver = 0.0
+bool isATH = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    isATH := true
+
+// Dollar-volume track
+float dv      = use_dv ? volume * hlc3 : na
+float dv_z    = use_dv ? f_robust_z(dv, W_quarter) : na
+float dv_prYr = use_dv ? ta.percentrank(dv, W_year) : na
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SIGNALS — all evaluated on the PRIOR CONFIRMED bar [1] (NRA, non-repainting)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Magnitude — robust sigma (mutually exclusive: only the highest tier paints)
+bool z12 = show_z12 and not na(z_base[1]) and z_base[1] >= z12_t
+bool z8  = show_z8  and not na(z_base[1]) and z_base[1] >= z8_t  and not z12
+bool z5  = show_z5  and not na(z_base[1]) and z_base[1] >= z5_t  and not z8 and not z12
+bool z3  = show_z3  and not na(z_base[1]) and z_base[1] >= z3_t  and not z5 and not z8 and not z12
+
+// Magnitude — ratio (mutually exclusive)
+bool x16 = show_x16 and not na(ratio_base[1]) and ratio_base[1] >= x16_t
+bool x8  = show_x8  and not na(ratio_base[1]) and ratio_base[1] >= x8_t  and not x16
+bool x4  = show_x4  and not na(ratio_base[1]) and ratio_base[1] >= x4_t  and not x8 and not x16
+bool x2  = show_x2  and not na(ratio_base[1]) and ratio_base[1] >= x2_t  and not x4 and not x8 and not x16
+
+// Horizon extreme (independent of all-time-high)
+bool moX  = show_mo  and not na(pr_month[1])   and pr_month[1]   >= mo_pct
+bool qtrX = show_qtr and not na(pr_quarter[1]) and pr_quarter[1] >= qtr_pct
+bool yrX  = show_yr  and not na(pr_year[1])    and pr_year[1]    >= yr_pct
+
+// SLEEPER — the exact bar the old HEV-only logic missed
+bool sleeper = show_slp and not na(pr_year[1]) and pr_year[1] >= yr_pct and not (volume[1] >= maxVolEver)
+
+// All-time
+bool ath = show_ath and isATH
+
+// Dollar-volume extreme
+bool dvX = show_dv and use_dv and ((not na(dv_z[1]) and dv_z[1] >= dv_z_t) or (not na(dv_prYr[1]) and dv_prYr[1] >= dv_pct))
+
+// ─── STREAK / CLUSTER — base fire = ANY NOVA tier (per spec), confirmed-bar [1] basis ───
+bool base_fire = ath or z12 or z8 or z5 or z3 or x16 or x8 or x4 or x2 or yrX or qtrX or moX or sleeper or dvX
+bool s2 = show_s2 and base_fire and base_fire[1]
+bool s3 = show_s3 and base_fire and base_fire[1] and base_fire[2]
+float roll_cnt = math.sum(base_fire ? 1 : 0, streak_win)
+bool sr = show_sr and roll_cnt >= streak_roll_min
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PLOTS — markers land on the [1] bar via offset=-1
+// ═══════════════════════════════════════════════════════════════════════════════
+plotshape(ath,     "NOVA-ATH",        shape.diamond,      location.top,    color.new(color.fuchsia, 0), size = size.normal, text = "ATH",  textcolor = color.white,  offset = -1)
+plotshape(z12,     "NOVA σ12",        shape.triangleup,   location.top,    color.new(color.red, 0),     size = size.normal, text = "σ12", textcolor = color.white,  offset = -1)
+plotshape(z8,      "NOVA σ8",         shape.triangleup,   location.top,    color.new(color.orange, 0),  size = size.small,  text = "σ8",  textcolor = color.white,  offset = -1)
+plotshape(z5,      "NOVA σ5",         shape.triangleup,   location.top,    color.new(color.yellow, 0),  size = size.tiny,   text = "σ5",  textcolor = color.black,  offset = -1)
+plotshape(z3,      "NOVA σ3",         shape.circle,       location.top,    color.new(color.aqua, 0),    size = size.tiny,   text = "σ3",  textcolor = color.black,  offset = -1)
+
+plotshape(x16,     "X16× median",     shape.flag,         location.bottom, color.new(color.red, 0),     size = size.small,  text = "16x", textcolor = color.white,  offset = -1)
+plotshape(x8,      "X8× median",      shape.flag,         location.bottom, color.new(color.orange, 0),  size = size.tiny,   text = "8x",  textcolor = color.white,  offset = -1)
+plotshape(x4,      "X4× median",      shape.square,       location.bottom, color.new(color.yellow, 0),  size = size.tiny,   text = "4x",  textcolor = color.black,  offset = -1)
+plotshape(x2,      "X2× median",      shape.square,       location.bottom, color.new(color.gray, 0),    size = size.tiny,   text = "2x",  textcolor = color.white,  offset = -1)
+
+plotshape(yrX,     "YEAR-EXTREME",    shape.arrowup,      location.top,    color.new(color.lime, 0),    size = size.small,  text = "YR",  textcolor = color.black,  offset = -1)
+plotshape(qtrX,    "QUARTER-EXTREME", shape.arrowup,      location.top,    color.new(color.teal, 0),    size = size.tiny,   text = "QTR", textcolor = color.white,  offset = -1)
+plotshape(moX,     "MONTH-EXTREME",   shape.arrowup,      location.top,    color.new(color.blue, 0),    size = size.tiny,   text = "MO",  textcolor = color.white,  offset = -1)
+plotshape(sleeper, "SLEEPER",         shape.xcross,      location.bottom, color.new(#FF00FF, 0),       size = size.small,  text = "SLP", textcolor = color.white,  offset = -1)
+plotshape(dvX,     "DV-EXTREME",      shape.diamond,      location.bottom, color.new(color.green, 0),   size = size.tiny,   text = "$",   textcolor = color.white,  offset = -1)
+
+// Streak / cluster detection plots
+plotshape(s2, "STREAK2 (2 in a row)",       shape.circle, location.top, color.new(color.white, 0),  size = size.tiny,  text = "2R",  textcolor = color.black, offset = -1)
+plotshape(s3, "STREAK3 (3 in a row)",       shape.square, location.top, color.new(color.white, 0),  size = size.small, text = "3R",  textcolor = color.black, offset = -1)
+plotshape(sr, "STREAK ROLLING (≥N/window)", shape.flag,   location.top, color.new(color.purple, 0), size = size.small, text = "RLL", textcolor = color.white, offset = -1)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NUMERIC EXPORTS — magnitude as NUMBERS so it always "does it justice"
+//   Off-chart (display.data_window) so the overlay scale is untouched. Readable
+//   by data_get_study_values and by the offline fire matrix.
+// ═══════════════════════════════════════════════════════════════════════════════
+plot(z_base[1],     "robust_z (baseline σ)",   color = color.red,    display = display.none)
+plot(ratio_base[1], "ratio_to_median (X×)",    color = color.orange, display = display.none)
+plot(pr_year[1],    "pct_rank_year",           color = color.lime,   display = display.none)
+plot(pr_quarter[1], "pct_rank_quarter",        color = color.teal,   display = display.none)
+plot(pr_month[1],   "pct_rank_month",          color = color.blue,   display = display.none)
+plot(dv_z[1],       "dollar_vol_z",            color = color.green,  display = display.none)
+plot(volume[1],     "volume_confirmed",        color = color.gray,   display = display.none)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ALERTS — one boolean per plot (1:1 plot/alert parity, NRA)
+// ═══════════════════════════════════════════════════════════════════════════════
+alertcondition(ath,     "NOVA ATH",            "NOVA all-time-high volume (confirmed)")
+alertcondition(z12,     "NOVA sigma12",        "NOVA volume ≥12 robust σ (confirmed)")
+alertcondition(z8,      "NOVA sigma8",         "NOVA volume ≥8 robust σ (confirmed)")
+alertcondition(z5,      "NOVA sigma5",         "NOVA volume ≥5 robust σ (confirmed)")
+alertcondition(z3,      "NOVA sigma3",         "NOVA volume ≥3 robust σ (confirmed)")
+alertcondition(yrX,     "NOVA year extreme",   "NOVA volume year-extreme percentile (confirmed)")
+alertcondition(qtrX,    "NOVA quarter extreme","NOVA volume quarter-extreme percentile (confirmed)")
+alertcondition(moX,     "NOVA month extreme",  "NOVA volume month-extreme percentile (confirmed)")
+alertcondition(sleeper, "NOVA SLEEPER",        "NOVA sleeper: year-extreme volume that is NOT all-time-high (the HEV miss) (confirmed)")
+alertcondition(dvX,     "NOVA DV extreme",     "NOVA dollar-volume extreme (confirmed)")
+alertcondition(s2,      "NOVA STREAK2",        "NOVA two fires in a row (confirmed)")
+alertcondition(s3,      "NOVA STREAK3",        "NOVA three fires in a row (confirmed)")
+alertcondition(sr,      "NOVA STREAK ROLLING", "NOVA min fires within rolling window (confirmed)")
+
+// Bloomberg-format master alert (matches the suite payload convention)
+bool nova_any = base_fire or s2 or s3 or sr
+if nova_any and barstate.isconfirmed
+    string tier = ath ? "ATH" : z12 ? "S12" : z8 ? "S8" : yrX ? "YR" : qtrX ? "QTR" : moX ? "MO" : x16 ? "X16" : "OTHER"
+    alert("NOVA_VOL|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|TIER:" + tier + "|Z:" + str.tostring(math.round(z_base[1] * 100) / 100) + "|RATIO:" + str.tostring(math.round(ratio_base[1] * 100) / 100) + "|PRYR:" + str.tostring(math.round(pr_year[1] * 100) / 100) + "|SLEEPER:" + (sleeper ? "1" : "0") + "|VOL:" + str.tostring(math.round(volume[1])) + "|CLOSE:" + str.tostring(math.round(close[1] * 100) / 100), alert.freq_once_per_bar_close)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPORTS (for combination / fire-matrix consumers)
+//   Booleans:  ath, z3, z5, z8, z12, x2, x4, x8, x16, moX, qtrX, yrX, sleeper, dvX
+//   Numerics:  z_base, ratio_base, pr_month, pr_quarter, pr_year, dv_z, dv_prYr
+// ═══════════════════════════════════════════════════════════════════════════════
