@@ -1,5 +1,19 @@
 # CHANGELOG — indicator suite
 
+## 2026-07-13 — TICK_FRIENDLY_INDEX now covers EVERY study (original ↔ tick pairs)
+
+- Merged the full tick-friendly suite from `claude/keen-faraday-mzq2i2` (Set A tick builds,
+  Set B date-roll, ULTRA/HW-Single/HW-Ultra dirs, `tools/check_plot_budget.sh`) with `main`'s
+  HUB Bear mirror + RVOL tier ladder + HV-NRA 50-step ladder onto one branch. The HUB tick
+  build now carries BOTH the interval-adaptive rolling RVOL tiers AND the tick-safe
+  `time(session)` fix (auto-merge verified: 3/3 tick-safe session calls + tier ladder present).
+- Rewrote `TICK_FRIENDLY_INDEX.md`: every one of the 95 non-vendor `.pine` files is on the
+  page — each tick-friendly build paired with its original non-tick source (Sections 1–2),
+  every original with NO tick build listed as an explicit GAP (Section 3), tick-safe-by-design
+  (Section 4), banned/stubs/strategies (Section 5).
+- New gate `tools/check_index_coverage.sh` — fails if any non-vendor `.pine` is missing from
+  the index, so a study can never silently drop off the page again.
+
 ## 2026-05-06 — Sync from TradingView
 
 Pulled latest source for all 5 canonical indicators directly from TradingView via MCP. Findings vs prior local copies:
