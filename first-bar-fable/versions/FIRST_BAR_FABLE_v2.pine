@@ -166,49 +166,44 @@ bool det_Hiroshima = conf and (rv_relVolRatio > th_hiro)
 // ══════════════════════════════════════════════════════════════════════════════
 // ENGINE: HYBRID MOMENTUM LONG 1-5 — Heavy Weapons Singles v2 parity
 // ══════════════════════════════════════════════════════════════════════════════
-groupHybrid = "Hybrid Momentum (LONG 1-5)"
-hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Momentum thresholds from Hiroshima ladder", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and auto-computed from the current TF's Hiroshima threshold (HW Singles v2 ladder). When OFF, the manual values below are used.")
-hyb_addReg1 = input.float(5.0, "Momentum 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
-hyb_addCum1 = input.float(3.0, "Momentum 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
-hyb_bodyRat1 = input.float(0.65, "Momentum 1 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-hyb_addReg2 = input.float(5.0, "Momentum 2 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
-hyb_addCum2 = input.float(3.0, "Momentum 2 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
-hyb_bodyRat2 = input.float(0.65, "Momentum 2 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-hyb_addReg3 = input.float(5.0, "Momentum 3 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
-hyb_addCum3 = input.float(3.0, "Momentum 3 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
-hyb_bodyRat3 = input.float(0.65, "Momentum 3 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-hyb_addReg4 = input.float(5.0, "Momentum 4 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
-hyb_addCum4 = input.float(3.0, "Momentum 4 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
-hyb_bodyRat4 = input.float(0.65, "Momentum 4 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
-hyb_addReg5 = input.float(5.0, "Momentum 5 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
-hyb_addCum5 = input.float(3.0, "Momentum 5 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
-hyb_bodyRat5 = input.float(0.65, "Momentum 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.05, group=groupHybrid)
+groupHybrid = "Hybrid LONG 1-5"
+hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Long thresholds (RVOL 1x → 2x ladder)", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and the Reg floors are auto-computed as a linear ladder from RVOL 1x (Long 5) up to 2× RVOL 1x (Long 1). When OFF, the manual values below are used.")
+hyb_addReg1 = input.float(5.0, "Long 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_addCum1 = input.float(3.0, "Long 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_bodyRat1 = input.float(0.74, "Long 1 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg2 = input.float(5.0, "Long 2 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_addCum2 = input.float(3.0, "Long 2 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_bodyRat2 = input.float(0.74, "Long 2 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg3 = input.float(5.0, "Long 3 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_addCum3 = input.float(3.0, "Long 3 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_bodyRat3 = input.float(0.74, "Long 3 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg4 = input.float(5.0, "Long 4 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_addCum4 = input.float(3.0, "Long 4 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_bodyRat4 = input.float(0.74, "Long 4 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg5 = input.float(5.0, "Long 5 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_addCum5 = input.float(3.0, "Long 5 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_bodyRat5 = input.float(0.74, "Long 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
 
-// HW Singles v2 Hiroshima curve (its own ladder — distinct from the Pre-Mythos f_th_hiro above)
-f_hw_hiro(int _s) =>
-    float s = _s
-    float th = s <= 10 ? 114.0 : s <= 15 ? 99.0 : s <= 30 ? 84.0 : s <= 45 ? 69.0 : s <= 60 ? 35.0 : s <= 300 ? 35.0 : s <= 600 ? 25.0 : s <= 900 ? 20.0 : s <= 3600 ? 10.0 : 8.0
-    th
-float hw_th_hiro = f_hw_hiro(tfSec)
-
-// Auto-derive ladder (HW Singles v2 verbatim)
-hybAutoReg1 = hw_th_hiro * 2.85
-hybAutoReg5 = hw_th_hiro * 1.1875
+// Auto-derive ladder: Reg floors ramp from RVOL 1x (Long 5) up to 2× RVOL 1x (Long 1).
+// th_1x = the Pre-Mythos RVOL 1x threshold for this TF (defined in the RVOL engine above).
+hybAutoReg5 = th_1x            // Long 5 = RVOL 1x
+hybAutoReg1 = th_1x * 2.0      // Long 1 = 2× RVOL 1x (RVOL 2x), and fires above
 hybAutoStep = (hybAutoReg1 - hybAutoReg5) / 4.0
-hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep
-hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep
-hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep
+hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep   // 1.75× RVOL 1x
+hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep   // 1.50× RVOL 1x
+hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep   // 1.25× RVOL 1x
 float hybCumPhi = 1.398 * 1.33
 hybAutoCum1 = hybCumPhi * math.sqrt(math.log(hybAutoReg1))
 hybAutoCum2 = hybCumPhi * math.sqrt(math.log(hybAutoReg2))
 hybAutoCum3 = hybCumPhi * math.sqrt(math.log(hybAutoReg3))
 hybAutoCum4 = hybCumPhi * math.sqrt(math.log(hybAutoReg4))
 hybAutoCum5 = hybCumPhi * math.sqrt(math.log(hybAutoReg5))
-float hybAutoBody1 = 0.69
-float hybAutoBody2 = 0.72
-float hybAutoBody3 = 0.75
-float hybAutoBody4 = 0.78
-float hybAutoBody5 = 0.81
+// Body ratio: 0.74 across the board (all five Long tiers)
+float hybAutoBody1 = 0.74
+float hybAutoBody2 = 0.74
+float hybAutoBody3 = 0.74
+float hybAutoBody4 = 0.74
+float hybAutoBody5 = 0.74
 hybReg1Eff = hyb_autoDerive ? hybAutoReg1 : hyb_addReg1
 hybReg2Eff = hyb_autoDerive ? hybAutoReg2 : hyb_addReg2
 hybReg3Eff = hyb_autoDerive ? hybAutoReg3 : hyb_addReg3
