@@ -2238,41 +2238,9 @@ plotshape(fire_hvdm_2of3_r, "HV+D+PBJ 2of3 Bear", shape.labeldown, location.belo
 plotshape(fire_hvdm_3of3_r, "HV+D+PBJ 3of3 Bear", shape.labeldown, location.belowbar, #FFD700, -1, "HVD+PBJ\n3of3", color.black, size=size.huge)
 
 // ══════════════════════════════════════════════════════════════════════════════
-// ALERTS — static alertcondition per plot + dynamic alert() aggregator
+// ALERTS — dynamic alert() only (alertcondition counts toward the 64-plot limit — suite standard).
+// In TradingView create the alert with Condition = this indicator + "Any alert() function call".
 // ══════════════════════════════════════════════════════════════════════════════
-alertcondition(fire_S1, "S1: Bull RVOL 1X/GS + Disp9 + PBJ", "S1: Bull RVOL 1X/GS + Disp9 + PBJ fired")
-alertcondition(fire_S2, "S2: Bear RVOL 1X/MOAB + Disp9 + PBJ", "S2: Bear RVOL 1X/MOAB + Disp9 + PBJ fired")
-alertcondition(fire_S3, "S3: Typhoon Bull", "S3: Typhoon Bull fired")
-alertcondition(fire_S4, "S4: Typhoon Bear", "S4: Typhoon Bear fired")
-alertcondition(fire_S5, "S5: Musashi Bull", "S5: Musashi Bull fired")
-alertcondition(fire_S6, "S6: Musashi Bear", "S6: Musashi Bear fired")
-alertcondition(fire_S7, "S7: Whale+PUP Bull", "S7: Whale+PUP Bull fired")
-alertcondition(fire_S8, "S8: Whale+PPD Bear", "S8: Whale+PPD Bear fired")
-alertcondition(fire_S9, "S9: B2B KRATOS + Disp9", "S9: B2B KRATOS + Disp9 fired")
-alertcondition(fire_S10, "S10: B2B SAAB + Disp9", "S10: B2B SAAB + Disp9 fired")
-alertcondition(fire_S11, "S11: Dynamite Bull", "S11: Dynamite Bull fired")
-alertcondition(fire_S12, "S12: Dynamite Bear", "S12: Dynamite Bear fired")
-alertcondition(fire_S13, "S13: Ignite Bull", "S13: Ignite Bull fired")
-alertcondition(fire_S14, "S14: Ignite Bear", "S14: Ignite Bear fired")
-alertcondition(fire_S15, "S15: Nagasaki 1stBar+", "S15: Nagasaki 1stBar+ fired")
-alertcondition(fire_S16, "S16: B2B Napalm Bull", "S16: B2B Napalm Bull fired")
-alertcondition(fire_S17, "S17: B2B Napalm Bear", "S17: B2B Napalm Bear fired")
-alertcondition(fire_S18, "S18: B2B PUP + Disp9", "S18: B2B PUP + Disp9 fired")
-alertcondition(fire_S19, "S19: B2B PPD + Disp9", "S19: B2B PPD + Disp9 fired")
-alertcondition(fire_S20, "S20: B2B FC Cluster Bull", "S20: B2B FC Cluster Bull fired")
-alertcondition(fire_S21, "S21: B2B FC Cluster Bear", "S21: B2B FC Cluster Bear fired")
-alertcondition(fire_S22, "S22: D9 Bull Study", "S22: D9 Bull Study fired")
-alertcondition(fire_S23, "S23: D9 Bear Study", "S23: D9 Bear Study fired")
-alertcondition(fire_S24, "S24: Unified Combo Bull + Disp9", "S24: Unified Combo Bull + Disp9 fired")
-alertcondition(fire_S25, "S25: Unified Combo Bear + Disp9", "S25: Unified Combo Bear + Disp9 fired")
-alertcondition(fire_S26, "S26: B2B TNT ENR ↔ NPM ENR Bull", "S26: B2B TNT ENR ↔ NPM ENR Bull fired")
-alertcondition(fire_S27, "S27: B2B TNT ENR ↔ NPM ENR Bear", "S27: B2B TNT ENR ↔ NPM ENR Bear fired")
-alertcondition(fire_co_bull_pbj or fire_co_bull_pb, "HVD CO Bull", "HVD Pipeline D CO Bull fired")
-alertcondition(fire_co_bear_pbj or fire_co_bear_pb, "HVD CO Bear", "HVD Pipeline D CO Bear fired")
-alertcondition(fire_b2b_bull_nopb or fire_b2b_bull_pbj or fire_b2b_bull_pb, "HVD B2B HV+D Bull", "HVD B2B HV+D Bull fired")
-alertcondition(fire_b2b_bear_nopb or fire_b2b_bear_pbj or fire_b2b_bear_pb, "HVD B2B HV+D Bear", "HVD B2B HV+D Bear fired")
-alertcondition(fire_hvdm_pup_b or fire_hvdm_rvol_b or fire_hvdm_cmb_b or fire_hvdm_pbjpup_b or fire_hvdm_pbjrvol_b or fire_hvdm_pbjcmb_b or fire_hvdm_2of3_b or fire_hvdm_3of3_b, "HVD Momentum Bull", "HVD Momentum Co-occ Bull fired")
-alertcondition(fire_hvdm_ppd_r or fire_hvdm_rvol_r or fire_hvdm_cmb_r or fire_hvdm_pbjppd_r or fire_hvdm_pbjrvol_r or fire_hvdm_pbjcmb_r or fire_hvdm_2of3_r or fire_hvdm_3of3_r, "HVD Momentum Bear", "HVD Momentum Co-occ Bear fired")
 
 if conf
     string bs = ""
