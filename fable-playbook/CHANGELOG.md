@@ -4,6 +4,35 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v4 + v4-NTS — 2026-07-14: full info-button play cards GENERATED from playbook_v1.json (single source of truth) — every toggle's tooltip = complete card (IDs, status, trigger, evidence integers, entry/stop/exit, ESTIMATED caveat) + 3 ABOUT inputs (playbook overview, evidence & limits, sizing & liquidity law).
+
+**Files:** `versions/FABLE_PLAYBOOK_v4.pine` ("Fable Playbook v4" / "FABLE PLAYS v4") +
+`versions/FABLE_PLAYBOOK_v4_NTS.pine` (non-tick-friendly twin, same T-NTS transform as
+v3/v3-NTS: tick guard removed, raw `timeframe.in_seconds`, " NTS" title/alert variants).
+- New generator `scripts/alpha/gen_playbook_tooltips.py` (lake root): reads
+  `contracts/playbook_v1.json`, maps S1..S19 to their play-id family (S18/S19 map to the
+  AB-01 literature arm + its mirror, not a JSON play id), and emits ONE deterministic
+  tooltip per S — play ids + status(es), one-line what-it-is, compressed trigger, evidence
+  (every MEASURED play in the family, id-prefixed; CANDIDATE families get the honest
+  "no n>=50 cell yet" fallback), entry/stop/exit (first-MEASURED-play representative for
+  multi-play families), and the required ESTIMATED/VALIDATED-promotion caveat sentence.
+  Escapes quotes, collapses whitespace, caps at 900 chars (TRIGGER truncated first, then
+  EVIDENCE, then the what-it-is clause — ENTRY/STOP/EXIT and the caveat sentence are never
+  truncated). Deterministic: re-running produces a byte-identical `S<N>\t<tooltip>` table.
+- Closes the L-54 wrapper-lessons finding: hand-written tooltips (v2/v3) had drifted thin
+  vs the playbook JSON. The settings-dialog info button is now the complete play card —
+  study UI and playbook cannot drift apart, because both read the one JSON file.
+- 3 new read-only "about" toggles (`ab_1`/`ab_2`/`ab_3`) at the top of the PLAY TOGGLES
+  group, before S1: playbook overview (50 plays, status ladder, portfolio caps,
+  automation gate), evidence & limits (scan design, MASS-divides-trend-from-fade key
+  finding, single-window/480-cell-scan limits), sizing & liquidity law (quarter-Kelly risk
+  cap, square-root-law ADV cap). `input.bool` — do not count toward the output cap.
+- Outputs unchanged at 21 (19 plotshape + 2 alertcondition) on both files, `input.bool`
+  count 22 (19 play toggles + 3 about toggles) — inputs do not count toward the ≤64 output
+  cap. Gates: no-fixed-windows PASS · `//@version=5` first line · zero `relativeVolume(` ·
+  v4/v4-NTS diff = 2 hunks (title+alert lines / tfSec guard block), matching the v3/v3-NTS
+  pair's hunk count exactly (same T-NTS transform, mechanically re-applied).
+
 ## v3-NTS — 2026-07-14 (TWIN MANDATE + AB-03)
 **File:** `versions/FABLE_PLAYBOOK_v3_NTS.pine` — the non-tick-friendly twin (operator law:
 every study ships BOTH builds). Sole functional delta: tfSec tick guard removed. THEOREM
