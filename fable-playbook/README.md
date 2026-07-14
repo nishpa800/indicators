@@ -9,7 +9,7 @@ Engines are verbatim adaptations of FIRST_BAR_FABLE_v2 blocks; no vendor imports
 (tick-safe by construction — no relativeVolume). Entry/stop/target law lives ONLY in the
 playbook JSON — this study detects, it never advises.
 
-- **Current version: v5** — `versions/FABLE_PLAYBOOK_v5.pine` (+ `versions/FABLE_PLAYBOOK_v5_NTS.pine`,
+- **Current version: v7** — `versions/FABLE_PLAYBOOK_v5.pine` (+ `versions/FABLE_PLAYBOOK_v5_NTS.pine`,
   the non-tick-friendly twin). Every S1-S19 toggle's info button is now LOGIC-FIRST: it
   opens with a verbatim "FIRES WHEN (ALL true): ①②③…" condition list (never truncated),
   then `► PLAYS:` (ids + status), `► EVIDENCE:`, `► ENTRY/STOP/EXIT:` (from

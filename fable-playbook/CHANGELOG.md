@@ -4,6 +4,13 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v7 + v7-NTS — 2026-07-14 (EMERGENCY, operator safety defect)
+ACTION-COLOR LAW + LABEL LAW: color = the operator's ACTION (GREEN trend long · LIME fade
+long · RED trend short · MAROON fade short · GRAY info-only); labels = action verb first,
+plain words — "VAC FADE"-class abbreviations BANNED. All 19 plots recolored/relabeled;
+COLOR LAW about-row added; trigger logic untouched (bool-line identity proven). v6 (alert
+aggregator restore) remains QUEUED — factory item 1.
+
 ## v5 + v5-NTS — 2026-07-14: LOGIC-FIRST info buttons — every toggle's ⓘ opens with the verbatim FIRES-WHEN conditions (never truncated), engines defined in 5 ABOUT rows incl. the RVOL-threshold honesty note; operator could not read v4's cards — lessons row filed.
 
 **Files:** `versions/FABLE_PLAYBOOK_v5.pine` ("Fable Playbook v5" / "FABLE PLAYS v5") +
