@@ -1,0 +1,199 @@
+//@version=5
+// ═════════════ FABLE PLAYBOOK v2 (2026-07-14) — the plays study ═════════════
+// Houses the Fable Playbook v1 play TRIGGERS (contracts/playbook_v1.json; 50 plays,
+// docs/2026-07-14_TV-TickBar-RE_FablePlaybook-v1-Top50Plays_v1.0.md). Engines are
+// VERBATIM adaptations from FIRST_BAR_FABLE_v2.pine @ 0859d60 (RVOL Pre-Mythos tiers,
+// Displacement family, PUP/PPD, FAUNA). MASS ladder per operator order: adjustable
+// floor input (default 2000; 1500/1750/4000 selectable) + fixed 1000/2000/4000 flags.
+// Detection window: first N bars of the session (default 3) — the playbook's opening
+// window. Plots are DETECTION triggers for plays, not advice; evidence + entry/stop/
+// target law live in the playbook JSON, never here. Rolling windows only; no vendor
+// imports (tick-safe: no relativeVolume, no timeframe.change).
+// v2: per-play ID mapping in tooltips; S17 Failed PUP short (BR-24); confluence plays
+// (BL-19..21/BR-11..13) are SCANNER-SIDE (multi-frame) — marked in tooltips, not chart plots.
+// Version control: fable-playbook/CHANGELOG.md · github.com/nishpa800/indicators
+// ═══════════════════════════════════════════════════════════════════════════
+indicator("Fable Playbook v5", shorttitle="FABLE PLAYS v5", overlay=true, max_labels_count=500, max_bars_back=4100)
+
+conf = barstate.isconfirmed
+int _tfSecRaw = timeframe.in_seconds(timeframe.period)
+bool _isTickChart = str.endswith(timeframe.period, "T") or na(_tfSecRaw) or _tfSecRaw <= 0
+int tfSec = _isTickChart ? 10 : _tfSecRaw
+
+// ── session window ──
+grpM = "★ PLAY WINDOW ★"
+int i_window = input.int(3, "Opening window (bars of session)", minval=1, maxval=90, group=grpM)
+bool is_new_sess = ta.change(time("D")) != 0
+var int barInSess = 0
+barInSess := is_new_sess ? 0 : barInSess + 1
+bool inWindow = barInSess < i_window
+
+// ── MASS ladder (operator: flexible floor) ──
+grpHV = "★ MASS (HV ladder) ★"
+int i_mass_floor = input.int(2000, "Mass floor (bars)", options=[1000, 1500, 1750, 2000, 4000], group=grpHV, tooltip="volume >= highest volume of the last N bars. Playbook default 2000; 1500/1750 selectable per operator order.")
+bool hvFloor = conf and volume >= ta.highest(volume, i_mass_floor)
+bool hv1000 = conf and volume >= ta.highest(volume, 1000)
+bool hv2000 = conf and volume >= ta.highest(volume, 2000)
+bool hv4000 = conf and volume >= ta.highest(volume, 4000)
+
+// ── Displacement family (FBF v2 engine, sigma inputs) ──
+grpD = "★ Displacement ★"
+i_d_type = input.string("Open to Close", "Range Type", options=["Open to Close", "High to Low"], group=grpD)
+i_d_len = input.int(100, "Std Dev Length", minval=1, group=grpD)
+i_d9 = input.float(9.0, "Sigma (main)", minval=0.1, step=0.5, group=grpD)
+i_d7 = input.float(7.0, "Sigma (secondary)", minval=0.1, step=0.5, group=grpD)
+float d_rng = i_d_type == "Open to Close" ? math.abs(open - close) : high - low
+float d_std = ta.stdev(d_rng, i_d_len)
+bool d9_bull = conf and d_rng > d_std * i_d9 and close > open
+bool d9_bear = conf and d_rng > d_std * i_d9 and close < open
+bool d7_bull = conf and d_rng > d_std * i_d7 and close > open
+bool d7_bear = conf and d_rng > d_std * i_d7 and close < open
+
+// ── RVOL Pre-Mythos tiers (FBF v2 Engine E verbatim curve) ──
+grpRV = "★ RVOL tiers ★"
+int rv_avgLen = input.int(30, "RVOL Avg Length", group=grpRV)
+int rv_smaLen = input.int(20, "RVOL SMA Length", group=grpRV)
+float rv_spike = math.abs(close - open)
+float rv_avgSpike = ta.sma(rv_spike, rv_avgLen)[1]
+float rv_normPrice = rv_spike / nz(rv_avgSpike, 1.0)
+float rv_avgVol = ta.sma(volume, rv_avgLen)[1]
+float rv_normVol = volume / nz(rv_avgVol, 1.0)
+float rv_diff = rv_normPrice - rv_normVol
+float rv_posDiff = rv_diff > 0 ? rv_diff : na
+float rv_smaDiff = ta.sma(rv_posDiff, rv_smaLen)
+bool rv_baseBull = (close > open) and (rv_posDiff > rv_smaDiff) and conf
+bool rv_baseBear = (close < open) and (rv_posDiff > rv_smaDiff) and conf
+f_th_1x(int _s) => _s <= 10 ? 38.0 : _s <= 15 ? 33.0 : _s <= 30 ? 28.0 : _s <= 45 ? 23.0 : _s <= 60 ? 20.0 : _s <= 120 ? 18.0 : _s <= 300 ? 13.0 : _s <= 360 ? 13.0 : _s <= 540 ? 11.0 : _s <= 600 ? 10.0 : _s <= 660 ? 9.0 : _s <= 900 ? 7.5 : _s <= 1560 ? 6.5 : _s <= 2340 ? 6.0 : _s <= 3600 ? 4.5 : _s <= 9000 ? 4.0 : _s <= 11700 ? 3.5 : _s < 259200 ? 1.8 : 1.0
+f_th_gs(int _s) => _s < 60 ? f_th_1x(_s) * 3.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 1500 ? 20.0 : _s <= 3000 ? 20.0 : _s <= 7260 ? 10.0 : _s <= 11700 ? 8.0 : _s <= 86400 ? 7.5 : _s <= 259200 ? 3.5 : 3.0
+float th_1x = f_th_1x(tfSec)
+float th_gs = f_th_gs(tfSec)
+bool det_RVOL1xB = rv_baseBull and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_RVOL1xR = rv_baseBear and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_GS = rv_baseBull and rv_normPrice >= th_gs
+bool det_MOAB = rv_baseBear and rv_normPrice >= th_gs
+bool anyTier = det_RVOL1xB or det_RVOL1xR or det_GS or det_MOAB
+
+// ── PUP / PPD (FBF v2 pocket pivot verbatim) ──
+grpPP = "★ Pocket Pivot ★"
+pp_barSize = input.float(3.0, "% Change (Barsize)", minval=0.1, step=0.1, group=grpPP)
+pp_lookback = input.int(10, "Lookback", minval=1, group=grpPP)
+float pp_redVol = close < open ? volume : 0.0
+float pp_greenVol = close > open ? volume : 0.0
+float pp_hiRedVol = ta.highest(pp_redVol[1], pp_lookback)
+float pp_hiGreenVol = ta.highest(pp_greenVol[1], pp_lookback)
+bool sigPUP = conf and ((close - open) / open) * 100 > pp_barSize and volume > pp_hiRedVol
+bool sigPPD = conf and ((open - close) / open) * 100 > pp_barSize and volume > pp_hiGreenVol
+
+// ── FAUNA (FBF v2 engine verbatim) ──
+f_faunaEngine() =>
+    fauna_atr = ta.atr(14)
+    fauna_avgVol = ta.sma(volume, 20)
+    fauna_avgBody = ta.sma(math.abs(close - open), 20)
+    fauna_avgDelta = ta.sma(math.abs(close - close[1]), 10)
+    fauna_trendMA = ta.sma(close, 50)
+    fauna_body = close - open
+    fauna_rng = high - low
+    fauna_bodySz = math.abs(fauna_body)
+    fauna_bodyRat = fauna_rng == 0 ? 0 : fauna_bodySz / fauna_rng
+    fauna_up = fauna_body > 0
+    fauna_dn = fauna_body < 0
+    MB_b = fauna_up and fauna_bodySz > 1.6 * fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8 * fauna_avgVol
+    RE_b = fauna_up and fauna_rng > 2.2 * fauna_atr and (high - close) < 0.15 * fauna_rng and volume > 1.8 * fauna_avgVol
+    TA_b = fauna_trendMA > fauna_trendMA[1] and (close - close[1]) > 1.6 * fauna_avgDelta and fauna_up and volume > 1.8 * fauna_avgVol
+    GG_b = (open - close[1]) > 0.9 * fauna_atr and fauna_up and low > close[1] and volume > 1.8 * fauna_avgVol
+    prev_body = close[1] - open[1]
+    prev_range = high[1] - low[1]
+    StrongBear = close[1] < open[1] and math.abs(prev_body) > 1.5 * fauna_avgBody[1] and volume[1] > 1.5 * fauna_avgVol[1]
+    WeakBear = close[1] < open[1] and (prev_range == 0 ? 0.0 : math.abs(prev_body) / prev_range) <= 0.2
+    excl_b = GG_b or (WeakBear and (MB_b or RE_b or TA_b)) or (StrongBear and (MB_b or RE_b or TA_b)) or (close[1] < open[1] and GG_b)
+    sigB = conf and (MB_b or RE_b or TA_b) and not excl_b
+    MB_r = fauna_dn and fauna_bodySz > 1.6 * fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8 * fauna_avgVol
+    RE_r = fauna_dn and fauna_rng > 2.2 * fauna_atr and (close - low) < 0.15 * fauna_rng and volume > 1.8 * fauna_avgVol
+    TA_r = fauna_trendMA < fauna_trendMA[1] and (close[1] - close) > 1.6 * fauna_avgDelta and fauna_dn and volume > 1.8 * fauna_avgVol
+    GG_r = (close[1] - open) > 0.9 * fauna_atr and fauna_dn and high < close[1] and volume > 1.8 * fauna_avgVol
+    StrongBull = close[1] > open[1] and math.abs(prev_body) > 1.5 * fauna_avgBody[1] and volume[1] > 1.5 * fauna_avgVol[1]
+    WeakBull = close[1] > open[1] and (prev_range == 0 ? 0.0 : math.abs(prev_body) / prev_range) <= 0.2
+    excl_r = GG_r or (WeakBull and (MB_r or RE_r or TA_r)) or (StrongBull and (MB_r or RE_r or TA_r)) or (close[1] > open[1] and GG_r)
+    sigR = conf and (MB_r or RE_r or TA_r) and not excl_r
+    [sigB, sigR]
+[faunaB, faunaR] = f_faunaEngine()
+
+// ── PLAY TRIGGERS (numbered to the playbook; window-gated except noted) ──
+grpS = "★ PLAY TOGGLES ★"
+ab_1 = input.bool(false, "ⓘ HOW TO READ THIS STUDY (read tooltip)", group=grpS, tooltip="Every toggle below is one detection plot = one play family. Its info button states the EXACT firing conditions first (all must be true on the same bar unless stated), then the play IDs, evidence, and forced discipline. Shapes on the chart = the condition set was TRUE on that bar. This study detects; position rules live in contracts/playbook_v1.json.")
+ab_2 = input.bool(false, "ⓘ ENGINES: MASS + DISPLACEMENT (read tooltip)", group=grpS, tooltip="MASS (HV ladder): volume ≥ the highest volume of the last N bars; N = the 'Mass floor' input (default 2000; 1000/1500/1750/4000 selectable). Fixed flags hv1000/2000/4000 also computed. DISPLACEMENT: |open−close| (or high−low per Range Type input) > σ × standard deviation of that range over the last 100 bars; σ-main default 9.0, σ-secondary 7.0. All windows ROLLING — no fixed anchors.")
+ab_3 = input.bool(false, "ⓘ ENGINE: RVOL TIERS (directional) (read tooltip)", group=grpS, tooltip="normPrice = |close−open| ÷ 30-bar average of |close−open| (prior bar). normVol = volume ÷ 30-bar average volume (prior bar). Base filter: (normPrice−normVol) > 20-bar mean of its positive values. Tiers by normPrice vs per-timeframe thresholds (Pre-Mythos curve, e.g. 1X=20 at 1m, 13 at 5m, 4.5 at 1h): SAAB(bull)/KRATOS(bear) = [0.56×1X, 1X); RVOL-1X bull/bear = [1X, GS); GRAND SLAM(bull)/MOAB(bear) = ≥GS. DIRECTION = bar color (green=bull tiers, red=bear tiers). HONESTY: these thresholds are the UNOPTIMIZED legacy curve — the tick-chart fallback maps every tick frame to the 10s bucket (38.0), an admitted jerry-rig; the RVOL threshold optimization campaign (W-CALIBRATE v2) is re-deriving them; expect these numbers to change.")
+ab_4 = input.bool(false, "ⓘ ENGINES: POCKET PIVOT + FAUNA + WINDOW (read tooltip)", group=grpS, tooltip="POCKET PIVOT UP: bar body > +3% AND volume > highest red-bar volume of prior 10 bars (DOWN = mirror vs green-bar volumes). FAUNA bull: any of MB (body>1.6×ATR14 & body/range>0.7 & vol>1.8×20-bar avg), RE (range>2.2×ATR & close near high & vol>1.8×), TA (50-bar trend up & delta>1.6×10-bar avg & vol>1.8×), minus exclusion patterns (gap-up GG, weak/strong prior-bar traps); bear = mirror. OPENING WINDOW: first N bars of the session (input, default 3); every play requires it except S17 and bar-confirmation applies everywhere.")
+ab_5 = input.bool(false, "ⓘ EVIDENCE, SIZING, LIMITS (read tooltip)", group=grpS, tooltip="Source: pre-registered first-15-min scan, top-750 x 8 frames x 3 months (2026-04-14..07-01), 111,265 signals vs 123,360 nulls/frame, +5/+10-session horizons. KEY: MASS divides trend from fade — record-volume displacement trends (bull legs strongest at 2 weeks), massless violence fades. LIMITS: single up-drift window; ~480 cells scanned so the best null cell is EXPECTED at 3.04 sigma; nothing here is VALIDATED yet (Harvey-Liu-Zhu t>=3 + Deflated Sharpe + PBO gates pend on new data). Risk-at-stop <= 0.25-0.5% of capital per play (quarter-Kelly on a shrunk edge; hard cap 1%) — Thorp/Chopra-Ziemba/Moreira-Muir. Position <= 1% of dollar-ADV at 20bps impact budget (square-root law, Toth/Almgren/Bucci); never >10% of ADV. CANDIDATE plays trade 0R (paper).")
+en_S1 = input.bool(true, "S1: Mass Bull Leg (BL-01..08)", group=grpS, tooltip="FIRES WHEN (ALL true): ① bar is one of the first N bars of the session (Opening window input, default 3) ② bar volume ≥ highest volume of the last MASS-floor bars (input, default 2000) ③ |open−close| > 9.0 × the standard deviation of |open−close| over the last 100 bars (Displacement σ-main input) ④ close > open (green bar) ⑤ bar confirmed ► PLAYS: BL-01..BL-08 [MEASURED, CANDIDATE] ► EVIDENCE: BL-01: 10d: 67.9% vs 53.0% null (+15.0), avg +4.30% vs +1.13%, n=78; BL-02: 5d: 65.5% vs 52.1% (+13.3), avg +3.24%, n=55; BL-03: 5d: 63.1% (+11.0), n=103; BL-04: 5d: 61.2% (+9.1), n=196; BL-05: 10d: 57.9% (+4.9), n=171 ► ENTRY/STOP/EXIT: ENTRY: enter on breach of signal-bar extreme (high for long / low for short) within the next 3 bars; else NO TRADE ► STOP: stop = signal price -/+ 1.0x the first-15-min range. Hard. ► EXIT: 10 sessions hard ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S2 = input.bool(true, "S2: Mass Bear Day Scalp (BR-01..06) — EOD MANDATORY", group=grpS, tooltip="FIRES WHEN (ALL true): ① bar is one of the first N bars of the session (Opening window input, default 3) ② bar volume ≥ highest volume of the last MASS-floor bars (input, default 2000) ③ |open−close| > 9.0 × the standard deviation of |open−close| over the last 100 bars (Displacement σ-main input) ④ close < open (red bar) ⑤ bar confirmed ► PLAYS: BR-01..BR-06,BR-16..BR-20 [MEASURED, CANDIDATE] ► EVIDENCE: BR-01: day: 60.8% vs 51.6% (+9.2), n=107; BR-02: day: 58.8% (+7.3), n=68; BR-03: day: 54.5% (+3.2), n=55; BR-04: day: 54.0% (+2.4), n=202 ► ENTRY/STOP/EXIT: ENTRY: enter on breach of signal-bar extreme (high for long / low for short) within the next 3 bars; else NO TRADE ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY — HORIZON DATA ORDERS IT: same cells REVERSE UP over 5-10 sessions (-12.6 at 5d) ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S3 = input.bool(true, "S3: PUP Runner (BL-09..11)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② POCKET PIVOT UP: (close−open)/open > 3% AND volume > the highest RED-bar volume of the prior 10 bars ③ NOT displaced (fails the 9σ test both directions) ④ volume is NOT a 1000-bar high (pure pivot, no mass) ⑤ confirmed ► PLAYS: BL-09..BL-11 [MEASURED] ► EVIDENCE: BL-09: 10d: 65.0% (+12.0), avg +7.70%, n=60; day +10.2, leg +4.5%; BL-10: day: 59.2% (+10.2), ret +1.29%, leg +4.5%, n=125; BL-11: 5d: 58.2% (+6.1), n=158 ► ENTRY/STOP/EXIT: ENTRY: enter at next-bar open after signal bar confirms ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: 10 sessions hard ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S4 = input.bool(true, "S4: PPD-Alone Fade->LONG (BL-16)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② POCKET PIVOT DOWN: (open−close)/open > 3% AND volume > the highest GREEN-bar volume of the prior 10 bars ③ NOT displaced (fails the 9σ test both directions) ④ volume is NOT a 1000-bar high (pure pivot, no mass) ⑤ confirmed ► PLAYS: BL-16 [MEASURED] ► EVIDENCE: BL-16: fade wins (+9.6), avg +0.60%, n=215 ► ENTRY/STOP/EXIT: ENTRY: enter long on reclaim of signal-bar midpoint ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S5 = input.bool(true, "S5: Naked Spike Bull ->SHORT (BR-08/09)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② green bar displaced: |open−close| > 9σ(100) ③ RVOL 1X BULL tier: normalized price spike (|close−open| ÷ its 30-bar average, prior bar) is ≥ the 1X threshold and < the Grand-Slam threshold for this timeframe (see RVOL TIERS info row), with the base filter posDiff > its 20-bar mean ④ volume NOT a 1000-bar high (naked spike — no mass) ⑤ confirmed ► PLAYS: BR-08..BR-09 [MEASURED] ► EVIDENCE: BR-08: bull side 37.8% (-10.6) => short wins, n=423 — the two biggest-n cells in the scan; BR-09: bull side 40.4% (-8.1) => short wins, n=627 — the two biggest-n cells in the scan ► ENTRY/STOP/EXIT: ENTRY: short on first close below signal bar low ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S6 = input.bool(true, "S6: Naked Spike Bear ->fade LONG (BL-18)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② red bar displaced: |open−close| > 9σ(100) ③ RVOL 1X BEAR tier: normalized price spike (|close−open| ÷ its 30-bar average, prior bar) is ≥ the 1X threshold and < the Grand-Slam threshold for this timeframe (see RVOL TIERS info row), with the base filter posDiff > its 20-bar mean ④ volume NOT a 1000-bar high (naked spike — no mass) ⑤ confirmed ► PLAYS: BL-18 [CANDIDATE] ► EVIDENCE: CANDIDATE — no n>=50 cell yet ► ENTRY/STOP/EXIT: ENTRY: long on reclaim of open ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S7 = input.bool(true, "S7: MOAB massless ->fade LONG (BL-14/15)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② MOAB tier: red bar, base filter true, normalized price spike ≥ the Grand-Slam threshold for this timeframe ③ volume NOT a 1000-bar high (extreme bear violence WITHOUT mass) ④ confirmed ► PLAYS: BL-14..BL-15 [MEASURED] ► EVIDENCE: BL-14: fade wins (+12.1), avg +0.87%, n=71; BL-15: fade wins (+9.1), n=120 ► ENTRY/STOP/EXIT: ENTRY: enter long on reclaim of signal-bar midpoint ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S8 = input.bool(true, "S8: GS unconfirmed ->2wk SHORT (BR-07)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② GRAND SLAM tier: green-bar mirror of MOAB (spike ≥ GS threshold) ③ volume NOT a 1000-bar high (euphoria WITHOUT mass) ④ confirmed ► PLAYS: BR-07 [MEASURED] ► EVIDENCE: BR-07: 10d: bull side 30.2% (n=53) => short edge +22.8 ► ENTRY/STOP/EXIT: ENTRY: short on first close below signal-bar midpoint ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: 10 sessions hard ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S9 = input.bool(true, "S9: GS mass-confirmed cont. (BL-25)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② GRAND SLAM tier (as S8) ③ volume IS a 1000-bar high (mass-confirmed euphoria) ④ confirmed ► PLAYS: BL-25 [CANDIDATE] ► EVIDENCE: CANDIDATE — no n>=50 cell yet ► ENTRY/STOP/EXIT: ENTRY: enter at next-bar open after signal bar confirms ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S10 = input.bool(true, "S10: MOAB mass-confirmed SHORT (BR-23)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② MOAB tier (as S7) ③ volume IS a 1000-bar high (mass-confirmed bear violence) ④ confirmed ► PLAYS: BR-23 [CANDIDATE] ► EVIDENCE: CANDIDATE — no n>=50 cell yet ► ENTRY/STOP/EXIT: ENTRY: enter on breach of signal-bar extreme (high for long / low for short) within the next 3 bars; else NO TRADE ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S11 = input.bool(true, "S11: FAUNA Mass Long (BL-24)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② volume ≥ MASS-floor high (default 2000 bars) ③ green bar displaced > 9σ(100) ④ bullish FAUNA pattern (see FAUNA info row: expansion-body/range/trend patterns vs 20-bar averages, with gap/weak-prior exclusions) ⑤ confirmed ► PLAYS: BL-24 [CANDIDATE] ► EVIDENCE: CANDIDATE — no n>=50 cell yet ► ENTRY/STOP/EXIT: ENTRY: enter on breach of signal-bar extreme (high for long / low for short) within the next 3 bars; else NO TRADE ► STOP: stop = signal price -/+ 1.0x the first-15-min range. Hard. ► EXIT: 5 sessions ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S12 = input.bool(true, "S12: PPD mass-confirmed SHORT (BR-21)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② volume ≥ MASS-floor high ③ red bar displaced > 9σ(100) ④ POCKET PIVOT DOWN (as S4 ②) ⑤ confirmed ► PLAYS: BR-21 [CANDIDATE] ► EVIDENCE: CANDIDATE — no n>=50 cell yet ► ENTRY/STOP/EXIT: ENTRY: enter on breach of signal-bar extreme (high for long / low for short) within the next 3 bars; else NO TRADE ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S13 = input.bool(true, "S13: d7-extra Bear (BR-22)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② red bar displaced > 7.0σ(100) (σ-secondary input) ③ NOT displaced > 9.0σ (the extra fires σ=7 adds over σ=9) ④ confirmed ► PLAYS: BR-22 [MEASURED] ► EVIDENCE: BR-22: day: 56.8% (+5.9), n=206 — the one standalone d7 cell above null ► ENTRY/STOP/EXIT: ENTRY: enter at next-bar open after signal bar confirms ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S14 = input.bool(true, "S14: Rocket-Fuel Fade core ->LONG (BL-12)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② volume IS a 1000-bar high ③ red bar displaced > 9σ(100) ④ POCKET PIVOT DOWN or bearish FAUNA ⑤ confirmed — the massless-violence FADE core: historically these 'bearish' opens resolved UP ► PLAYS: BL-12 [MEASURED] ► EVIDENCE: BL-12: same-day fade: signal-side hit 38.6% => fade wins 61.4% vs 48.4 (+13.0), avg day +0.58%, n=70 ► ENTRY/STOP/EXIT: ENTRY: enter long on reclaim of signal-bar midpoint ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S15 = input.bool(true, "S15: CORE Bull (confluence feed, BL-19..21)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② volume ≥ MASS-floor high ③ green bar displaced > 9σ(100) ④ ANY RVOL tier fires (SAAB/KRATOS/1X/GS/MOAB — see RVOL TIERS info row) ⑤ confirmed — the CORE bull confluence feed ► PLAYS: BL-19..BL-21 [CANDIDATE] ► EVIDENCE: CANDIDATE — no n>=50 cell yet ► ENTRY/STOP/EXIT: ENTRY: enter on breach of signal-bar extreme (high for long / low for short) within the next 3 bars; else NO TRADE ► STOP: stop = signal price -/+ 1.0x the first-15-min range. Hard. ► EXIT: 5 sessions ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S16 = input.bool(true, "S16: CORE Bear (confluence feed, BR-11..13)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② volume ≥ MASS-floor high ③ red bar displaced > 9σ(100) ④ ANY RVOL tier fires (SAAB/KRATOS/1X/GS/MOAB — see RVOL TIERS info row) ⑤ confirmed — the CORE bear confluence feed ► PLAYS: BR-11..BR-13 [CANDIDATE] ► EVIDENCE: CANDIDATE — no n>=50 cell yet ► ENTRY/STOP/EXIT: ENTRY: enter on breach of signal-bar extreme (high for long / low for short) within the next 3 bars; else NO TRADE ► STOP: stop = signal price -/+ 1.0x the first-15-min range. Hard. ► EXIT: EOD MANDATORY ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S18 = input.bool(true, "S18: MASS PURE Bull (AB-01 arm B)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② volume ≥ MASS-floor high ③ green bar ④ NOT displaced > 9σ — MASS WITHOUT VIOLENCE, the configuration the high-volume-premium literature (GKM JF 2001) says is STRONGER; A/B arm vs S1 ⑤ confirmed ► PLAYS: AB-01 [PRE-REGISTERED 2026-07-14] ► EVIDENCE: AB-01 [PRE-REGISTERED 2026-07-14] — mass WITHOUT displacement vs mass+d9 (GKM says without wins). Literature (displacement_conditioning): CONTRADICTED: GKM §4.3 — premium is STRONGER excluding extreme-return formation days (1.00→1.55% at 10d). Our mass+d9... ► ENTRY/STOP/EXIT: ENTRY: enter on breach of signal-bar extreme (high for long / low for short) within the next 3 bars; else NO TRADE ► STOP: stop = signal price -/+ 1.0x the first-15-min range. Hard. ► EXIT: 10 sessions hard (A/B vs S1) ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S19 = input.bool(true, "S19: MASS PURE Bear (AB-01 mirror)", group=grpS, tooltip="FIRES WHEN (ALL true): ① opening window ② volume ≥ MASS-floor high ③ red bar ④ NOT displaced > 9σ — MASS WITHOUT VIOLENCE, the configuration the high-volume-premium literature (GKM JF 2001) says is STRONGER; A/B arm vs S2 ⑤ confirmed ► PLAYS: AB-01 [PRE-REGISTERED 2026-07-14] ► EVIDENCE: AB-01 [PRE-REGISTERED 2026-07-14] — mass WITHOUT displacement vs mass+d9 (GKM says without wins). Literature (displacement_cond... ► ENTRY/STOP/EXIT: ENTRY: enter on breach of signal-bar extreme (high for long / low for short) within the next 3 bars; else NO TRADE ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD MANDATORY — HORIZON DATA ORDERS IT: same cells REVERSE UP over 5-10 sessions (-12.6 at 5d) (A/B vs S2) ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+en_S17 = input.bool(true, "S17: Failed PUP -> SHORT (BR-24)", group=grpS, tooltip="FIRES WHEN (ALL true): ① a POCKET PIVOT UP (S3 ②) fired on one of the LAST 3 bars ② this bar CLOSES below that PUP bar's low (the pivot FAILED) ③ confirmed. NOT window-gated — the failure can complete after the open ► PLAYS: BR-24 [CANDIDATE] ► EVIDENCE: CANDIDATE — no n>=50 cell yet ► ENTRY/STOP/EXIT: ENTRY: short the failure close ► STOP: stop = opposite extreme of the signal bar (long: bar low; short: bar high). Hard, no widening. ► EXIT: EOD ► All figures ESTIMATED from the pre-registered 2026-07-14 scan (single 3-month up-drift window); promotion to VALIDATED only via t>=3 + DSR>=0.95 + PBO<=0.05 + forward ledger (playbook v1.1 laws).")
+
+bool wg = inWindow
+bool S1 = wg and hvFloor and d9_bull
+bool S2 = wg and hvFloor and d9_bear
+bool S3 = wg and sigPUP and not (d9_bull or d9_bear) and not hv1000
+bool S4 = wg and sigPPD and not (d9_bull or d9_bear) and not hv1000
+bool S5 = wg and d9_bull and det_RVOL1xB and not hv1000
+bool S6 = wg and d9_bear and det_RVOL1xR and not hv1000
+bool S7 = wg and det_MOAB and not hv1000
+bool S8 = wg and det_GS and not hv1000
+bool S9 = wg and det_GS and hv1000
+bool S10 = wg and det_MOAB and hv1000
+bool S11 = wg and hvFloor and d9_bull and faunaB
+bool S12 = wg and hvFloor and d9_bear and sigPPD
+bool S13 = wg and d7_bear and not d9_bear
+bool S14 = wg and hv1000 and d9_bear and (sigPPD or faunaR)
+bool S15 = wg and hvFloor and d9_bull and anyTier
+bool S16 = wg and hvFloor and d9_bear and anyTier
+
+// S17: Failed PUP -> SHORT (BR-24). NOTE: S17 is NOT window-gated — the failure can
+// complete after the opening window.
+var float pupLow = na
+var int pupAge = 999
+pupAge := sigPUP ? 0 : pupAge + 1
+pupLow := sigPUP ? low : pupLow
+bool S17 = conf and pupAge > 0 and pupAge <= 3 and not na(pupLow) and close < pupLow
+bool S18 = wg and hvFloor and close > open and not d9_bull
+bool S19 = wg and hvFloor and close < open and not d9_bear
+
+plotshape(en_S1 and S1, "S1: Mass Bull Leg", shape.triangleup, location.belowbar, color.lime, 0, "MASS\nLEG", color.black, size=size.normal)
+plotshape(en_S2 and S2, "S2: Mass Bear Day Scalp", shape.triangledown, location.abovebar, color.red, 0, "MASS\nSCALP", color.white, size=size.normal)
+plotshape(en_S3 and S3, "S3: PUP Runner", shape.labelup, location.belowbar, color.green, 0, "PUP\nRUN", color.white, size=size.small)
+plotshape(en_S4 and S4, "S4: PPD Fade Long", shape.labelup, location.belowbar, color.teal, 0, "PPD\nFADE", color.white, size=size.small)
+plotshape(en_S5 and S5, "S5: Naked Spike Short", shape.labeldown, location.abovebar, color.maroon, 0, "SPIKE\nSHORT", color.white, size=size.small)
+plotshape(en_S6 and S6, "S6: Naked Bear Fade Long", shape.labelup, location.belowbar, color.aqua, 0, "VAC\nFADE", color.black, size=size.small)
+plotshape(en_S7 and S7, "S7: MOAB Fade Long", shape.labelup, location.belowbar, #00E676, 0, "MOAB\nFADE", color.black, size=size.small)
+plotshape(en_S8 and S8, "S8: GS Unconfirmed Short", shape.labeldown, location.abovebar, #FF6F00, 0, "GS\nFADE", color.white, size=size.small)
+plotshape(en_S9 and S9, "S9: GS Mass Continuation", shape.diamond, location.belowbar, color.yellow, 0, "GS\nMASS", color.black, size=size.small)
+plotshape(en_S10 and S10, "S10: MOAB Mass Short", shape.diamond, location.abovebar, color.fuchsia, 0, "MOAB\nMASS", color.white, size=size.small)
+plotshape(en_S11 and S11, "S11: FAUNA Mass Long", shape.triangleup, location.belowbar, #43A047, 0, "FAUNA\nMASS", color.white, size=size.small)
+plotshape(en_S12 and S12, "S12: PPD Mass Short", shape.triangledown, location.abovebar, #9C27B0, 0, "PPD\nMASS", color.white, size=size.small)
+plotshape(en_S13 and S13, "S13: d7-extra Bear", shape.xcross, location.abovebar, color.orange, 0, "D7\nBEAR", color.white, size=size.tiny)
+plotshape(en_S14 and S14, "S14: Rocket-Fuel Fade Long", shape.labelup, location.belowbar, #FFD700, 0, "FUEL\nFADE", color.black, size=size.normal)
+plotshape(en_S15 and S15, "S15: CORE Bull", shape.circle, location.belowbar, color.blue, 0, "CORE\nB", color.white, size=size.tiny)
+plotshape(en_S16 and S16, "S16: CORE Bear", shape.circle, location.abovebar, color.navy, 0, "CORE\nR", color.white, size=size.tiny)
+plotshape(en_S17 and S17, "S17: Failed PUP Short", shape.labeldown, location.abovebar, color.gray, 0, "FAIL\nPUP", color.white, size=size.small)
+plotshape(en_S18 and S18, "S18: Mass Pure Bull", shape.square, location.belowbar, #00C853, 0, "MASS\nPURE", color.white, size=size.small)
+plotshape(en_S19 and S19, "S19: Mass Pure Bear", shape.square, location.abovebar, #D50000, 0, "MASS\nPURE", color.white, size=size.small)
+
+bool anyBull = (en_S1 and S1) or (en_S3 and S3) or (en_S4 and S4) or (en_S6 and S6) or (en_S7 and S7) or (en_S9 and S9) or (en_S11 and S11) or (en_S14 and S14) or (en_S15 and S15) or (en_S18 and S18)
+bool anyBear = (en_S2 and S2) or (en_S5 and S5) or (en_S8 and S8) or (en_S10 and S10) or (en_S12 and S12) or (en_S13 and S13) or (en_S16 and S16) or (en_S17 and S17) or (en_S19 and S19)
+alertcondition(anyBull, "PLAYBOOK BULL", "Fable Playbook v5: bullish play trigger")
+alertcondition(anyBear, "PLAYBOOK BEAR", "Fable Playbook v5: bearish play trigger")

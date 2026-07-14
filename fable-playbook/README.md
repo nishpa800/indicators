@@ -9,8 +9,13 @@ Engines are verbatim adaptations of FIRST_BAR_FABLE_v2 blocks; no vendor imports
 (tick-safe by construction — no relativeVolume). Entry/stop/target law lives ONLY in the
 playbook JSON — this study detects, it never advises.
 
-- **Current version: v4** — `versions/FABLE_PLAYBOOK_v4.pine` (+ `versions/FABLE_PLAYBOOK_v4_NTS.pine`,
-  the non-tick-friendly twin). Every S1-S19 toggle's tooltip is now GENERATED from
-  `contracts/playbook_v1.json` by `scripts/alpha/gen_playbook_tooltips.py` (lake root) —
-  the settings-dialog info button is the complete play card (ids, status, trigger,
-  evidence, entry/stop/exit, ESTIMATED caveat); study UI and playbook cannot drift apart.
+- **Current version: v5** — `versions/FABLE_PLAYBOOK_v5.pine` (+ `versions/FABLE_PLAYBOOK_v5_NTS.pine`,
+  the non-tick-friendly twin). Every S1-S19 toggle's info button is now LOGIC-FIRST: it
+  opens with a verbatim "FIRES WHEN (ALL true): ①②③…" condition list (never truncated),
+  then `► PLAYS:` (ids + status), `► EVIDENCE:`, `► ENTRY/STOP/EXIT:` (from
+  `contracts/playbook_v1.json`, as generated for v4), and the ESTIMATED/VALIDATED-promotion
+  caveat. 5 ABOUT rows (`ab_1..ab_5`, before S1) define the shared engines (MASS,
+  Displacement, RVOL tiers incl. an honesty note on the unoptimized legacy threshold curve,
+  Pocket Pivot/FAUNA/window) so every toggle's tooltip can stay short and precise. v4's
+  cards led with bookkeeping and truncated the trigger first — the operator could not tell
+  what fires a plot from the info button; v5 fixes that (lessons ledger L-54 follow-up).
