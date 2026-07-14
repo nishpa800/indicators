@@ -4,6 +4,13 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v3-NTS — 2026-07-14 (TWIN MANDATE + AB-03)
+**File:** `versions/FABLE_PLAYBOOK_v3_NTS.pine` — the non-tick-friendly twin (operator law:
+every study ships BOTH builds). Sole functional delta: tfSec tick guard removed. THEOREM
+T-NTS: identical equations on time intervals (guard inert); on tick charts NTS loses every
+RVOL-tier play. AB-03 byte-compare pre-registered; operator hypothesis (NTS better on time
+frames) is refuted BY CONSTRUCTION for this study — empirical confirmation queued.
+
 ## v3 — 2026-07-14 (Fable-authored, triple-verified)
 **File:** `versions/FABLE_PLAYBOOK_v3.pine` — title "Fable Playbook v3".
 - S18/S19 MASS PURE bull/bear: the AB-01 literature arm (GKM JF 2001 — volume record
