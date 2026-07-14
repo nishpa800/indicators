@@ -4,6 +4,10 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v1-NTS — 2026-07-14: non-tick-friendly twin per L-49 TWIN MANDATE; sole deltas = tfSec guard removed + raw relativeVolume anchor + NTS title; T-NTS: identical on time intervals; never load on tick charts.
+
+---
+
 ## v1 — 2026-07-13
 
 **File:** `versions/FIRST_BAR_FABLE_DISPLACEMENT_5_v1.pine` — chart title

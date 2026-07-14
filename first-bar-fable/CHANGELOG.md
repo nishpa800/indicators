@@ -4,6 +4,10 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v2-NTS — 2026-07-14: non-tick-friendly twin per L-49 TWIN MANDATE; sole deltas = tfSec guard removed + raw relativeVolume anchor + NTS title; T-NTS: identical on time intervals; never load on tick charts.
+
+---
+
 ## Sibling variant studies — 2026-07-13
 
 Two operator-ordered variant studies now live beside this folder, each derived from
