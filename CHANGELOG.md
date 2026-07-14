@@ -1,5 +1,21 @@
 # CHANGELOG — indicator suite
 
+## 2026-07-13 — First Bar Fable Displacement 5 + Displacement 7 (new studies)
+
+Operator order (Anish): two new studies derived from `first-bar-fable/versions/FIRST_BAR_FABLE_v2.pine`
+@ `5ec5ef9` — identical except the "Displacement 9" engine default σ-multiplier:
+
+| Study | Folder | σ default | File |
+|---|---|---|---|
+| First Bar Fable Displacement 5 | `first-bar-fable-displacement-5/` | **5** | `versions/FIRST_BAR_FABLE_DISPLACEMENT_5_v1.pine` |
+| First Bar Fable Displacement 7 | `first-bar-fable-displacement-7/` | **7** | `versions/FIRST_BAR_FABLE_DISPLACEMENT_7_v1.pine` |
+
+Each variant = exactly 3 diff hunks vs base (comment header · indicator() title ·
+`i_d9_mult` default), machine-verified via transform manifest; gates run: no-fixed-windows
+PASS, RE10023 anchor-grep clean, 57/64 outputs, Pine v5. Also backfilled
+`first-bar-fable/CHANGELOG.md` v2.2 entry for commits `db8a182`/`be1fdf9`/`5ec5ef9` which
+had landed without log entries. Details: each folder's CHANGELOG.md.
+
 ## 2026-05-06 — Sync from TradingView
 
 Pulled latest source for all 5 canonical indicators directly from TradingView via MCP. Findings vs prior local copies:

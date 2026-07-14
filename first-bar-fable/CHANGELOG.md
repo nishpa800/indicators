@@ -4,6 +4,34 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## Sibling variant studies — 2026-07-13
+
+Two operator-ordered variant studies now live beside this folder, each derived from
+`versions/FIRST_BAR_FABLE_v2.pine` @ `5ec5ef9` with ONLY the "Displacement 9" engine
+default σ changed (everything else byte-identical, 3 diff hunks, machine-verified):
+
+- [`first-bar-fable-displacement-5/`](../first-bar-fable-displacement-5/) — "First Bar Fable Displacement 5" (σ default 5)
+- [`first-bar-fable-displacement-7/`](../first-bar-fable-displacement-7/) — "First Bar Fable Displacement 7" (σ default 7)
+
+---
+
+## v2.2 — 2026-07-13 (same file `versions/FIRST_BAR_FABLE_v2.pine`; **changelog backfilled 2026-07-13** — these three commits landed without entries)
+
+- **Hybrid LONG 1-5 rebuilt** (commit `5ec5ef9`): auto-derive ladder is now a linear
+  RVOL 1x → 2x Reg-floor ramp (Long 5 = RVOL 1x … Long 1 = 2× RVOL 1x), Cum floors
+  `1.398·1.33·√ln(Reg)`, body ratio 0.74 across all five tiers, inputs relabeled
+  "Long N" (group "Hybrid LONG 1-5"); replaces the HW Singles v2 Hiroshima-ladder
+  auto-derive (body 0.65).
+- **"main body too long" compile fix** (commit `be1fdf9`): 9 engines wrapped in
+  functions — no logic change.
+- **RE10140 fix** (commit `db8a182`): alertcondition() counts toward the 64-plot
+  limit; output budget rebalanced (57/64).
+- This file state (sha256 `d412ff6a59edd958ca4b99cff377098d2dc1584ddd364492570cd792d46add00`)
+  is byte-identical to the operator's Desktop export "Fabe 2 original needs 5 and 7 and
+  a lot more.txt" of 2026-07-13 19:42 CT (modulo trailing newline) — provenance anchored.
+
+---
+
 ## v2.1 — 2026-07-09 (same file `versions/FIRST_BAR_FABLE_v2.pine`)
 **S26/S27: B2B TNT ENR ↔ NPM ENR** — TNT OD v3's "TNT Enriched" (offset 0) and
 "NPM Enriched" (offset −1) VISUAL plots on two consecutive bars, either order.
