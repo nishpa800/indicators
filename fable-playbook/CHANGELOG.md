@@ -4,6 +4,8 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v8 + v8-NTS — 2026-07-14: THE COMPLETE BUILD — v6 alert aggregator + v7 action-color/label law combined (v7 was derived from v5 and lacked alerts; superseded same-day). Current version of record.
+
 ## v7 + v7-NTS — 2026-07-14 (EMERGENCY, operator safety defect)
 ACTION-COLOR LAW + LABEL LAW: color = the operator's ACTION (GREEN trend long · LIME fade
 long · RED trend short · MAROON fade short · GRAY info-only); labels = action verb first,
