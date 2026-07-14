@@ -4,6 +4,15 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v3 — 2026-07-14 (Fable-authored, triple-verified)
+**File:** `versions/FABLE_PLAYBOOK_v3.pine` — title "Fable Playbook v3".
+- S18/S19 MASS PURE bull/bear: the AB-01 literature arm (GKM JF 2001 — volume record
+  WITHOUT displacement; the configuration the high-volume-premium literature says is
+  STRONGER). A/B vs S1/S2 settles on the forward ledger, never by opinion.
+- Fable sovereign sign-off: pass 1 machine gates · pass 2 line-read of v2 diff + playbook
+  integrity (50 unique IDs, 25/25, all decisiveness fields, 21/21 pine↔playbook refs
+  resolve) · pass 3 v3 authored + re-gated + raw-URL byte-verified.
+
 ## v2 — 2026-07-14
 
 **File:** `versions/FABLE_PLAYBOOK_v2.pine` — chart title **"Fable Playbook v2"**,

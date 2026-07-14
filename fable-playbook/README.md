@@ -9,4 +9,4 @@ Engines are verbatim adaptations of FIRST_BAR_FABLE_v2 blocks; no vendor imports
 (tick-safe by construction — no relativeVolume). Entry/stop/target law lives ONLY in the
 playbook JSON — this study detects, it never advises.
 
-- **Current version: v2** — `versions/FABLE_PLAYBOOK_v2.pine`
+- **Current version: v3** — `versions/FABLE_PLAYBOOK_v2.pine`
