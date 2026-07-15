@@ -4,6 +4,21 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v3 — 2026-07-15: STYLE LAYER — white text · 50% transparency · size tiers (L-49 W-INDSTUDY three-pack wave)
+
+**Files:** `versions/FIRST_BAR_FABLE_DISPLACEMENT_5_v3.pine` (time) + `versions/FIRST_BAR_FABLE_DISPLACEMENT_5_NTS_v3.pine` (NTS twin, A7 pair).
+plotshape() STYLE layer ONLY — 57 plotshape calls per file retextured; zero engine / alert / checkbox / plot-title / plot-count changes. The `First Bar Fable Displacement 5` engine and every alert are byte-identical to the prior version; the per-line diff is EXACTLY the 57 plotshape lines (byte-verified, D=0).
+
+- **White label text:** every plotshape `textcolor` is now `color.white` (57/57). The 5 previously-black labels (S10 B2B SAAB, S16 B2B Napalm Bull, S18 B2B PUP, HV+D+PBJ 3of3 Bull, HV+D+PBJ 3of3 Bear) flipped to white; the other 52 were already white.
+- **50% transparency shape colors:** every plotshape shape color is wrapped to `color.new(<hue>, 50)` (57/57) — hues UNCHANGED (bull/bear color audit preserved). Named colors, hex literals, and color variables alike now carry transparency 50; no bare shape colors and no other transparency value remain.
+- **Size tiers — normal / large / huge:**
+  - **HUGE (12 — BOSS, the heaviest multi-condition composites):** CO HV+D+PBJ/PB+USE Bull/Bear (×4), B2B HV+D+PBJ Bull/Bear, S24/S25 Unified Combo Bull/Bear + Disp9, S26/S27 B2B TNT/NPM ENR Bull/Bear incl. their (T1st) variants.
+  - **NORMAL (5 — lightest singles):** S11/S12 Dynamite Bull/Bear, S22/S23 D9 Bull/Bear Study, S15 Nagasaki 1stBar+.
+  - **LARGE (40):** every other plotshape.
+- Exact per-title tier assignment recorded in `validation/indstudy/fbf_size_tiers_v1.json`; gated by `validation/wrappers/indicator_study_gate.py` (D=0) plus a dedicated style-check with an anti-fixture.
+
+---
+
 ## v2 — 2026-07-15: ALERT GRAMMAR v3 (L-49 W-INDSTUDY wave)
 
 **Files:** `versions/FIRST_BAR_FABLE_DISPLACEMENT_5_v2.pine` (time) + `versions/FIRST_BAR_FABLE_DISPLACEMENT_5_NTS_v2.pine` (NTS twin, A7 pair).
