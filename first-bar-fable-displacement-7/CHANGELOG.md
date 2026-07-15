@@ -4,6 +4,22 @@ Newest first. Each version = one file in `versions/`.
 
 ---
 
+## v2 — 2026-07-15: ALERT GRAMMAR v3 (L-49 W-INDSTUDY wave)
+
+**Files:** `versions/FIRST_BAR_FABLE_DISPLACEMENT_7_v2.pine` (time) + `versions/FIRST_BAR_FABLE_DISPLACEMENT_7_NTS_v2.pine` (NTS twin, A7 pair).
+Alert-layer ONLY — no plot, checkbox, or engine logic changed; the `First Bar Fable Displacement 7` engine and all plotshapes are byte-identical to the prior version (helper block + ALERTS block are the sole diffs).
+
+- **Plot-key-first grammar:** every alert message now leads with the canonical semantic plot key (TYPHOON, MUSASHI, WHALE+PUP, DYNAMITE, IGNITE, NAG, B2B_NPM, B2B_PUP+D9, UC+D9, B2B_ENR, HVD_MOMENTUM, …) then `Bull`/`Bear` once (never the S-ordinal; `S13`-style tokens are banned from messages), then `| {{ticker}} {{interval}} |` metadata `FB=Y/N`.
+- **Measured Displacement:** d9 signals carry `D=` = the measured σ ratio (`d9_rng/d9_std`, or `max(bar0,bar1)` for `or[1]` signals), one decimal.
+- **RVOL:** SAAB/KRATOS/GS/MOAB/RVOL1X signals carry `RVOL=` = `rv_normPrice`, one decimal.
+- **VRANK:** tick-safe calendar record-high flag `ATH/YH/QH/MH/WH` (trackers key off bar time only — no anchored windows, no bar_index).
+- **NTH:** Nagasaki (side-less) carries `NTH=Y#,Q#,M#` all-time-record ordinals + `DIR=NONE`.
+- **CO co-fires:** every message appends ` CO=<other canonical keys firing this bar>` when non-empty.
+- **Checkbox biconditional preserved:** each alert keeps its EXACT `en_*`/`fire_*`/first-bar guard — an unchecked plot can never alert; a checked + firing plot must alert. No alert added or removed (35 alert() calls, same as base).
+- No raw volume in any message; no commas inside numbers; one decimal everywhere.
+
+---
+
 ## v1-NTS — 2026-07-14: non-tick-friendly twin per L-49 TWIN MANDATE; sole deltas = tfSec guard removed + raw relativeVolume anchor + NTS title; T-NTS: identical on time intervals; never load on tick charts.
 
 ---
