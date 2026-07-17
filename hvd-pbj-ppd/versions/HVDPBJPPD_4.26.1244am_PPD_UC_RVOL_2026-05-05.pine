@@ -1012,8 +1012,18 @@ bool sigHV500=conf and volume>=ta.highest(volume,500)[1], bool sigHV1000=conf an
 int cc_win_bull=0
 bool cc_pbj_bull=false
 for i=0 to cc_window-1
-    // BINARY FIX (Anish 2026-06-04): one physical bar = 1 or 0; Matrix(CS2)+FVG(CS1) same-bar OR-collapse.
-    bool hv2=nz(comboSet3_Bull[i]) or nz(comboSet4_Bull[i]) or nz(comboSet1_Bull[i]) or nz(comboSet2_Bull[i])
+    // BINARY / VISUAL-OFFSET LAW (Anish): an EVENT is a VISUAL plot (post-offset),
+    // never a raw detection. Per VISUAL bar N-i, OR-collapse the three combo VISUAL
+    // plots into ONE binary hit (0 or 1) -- never 2 or 3:
+    //   * Matrix combo  (CS2 = comboSet3/4) offset  0  -> visual bar = detection bar   -> [i]
+    //   * FVG combo     (CS1 = comboSet1/2) offset -1  -> visual bar = detection bar-1 -> [i-1]
+    //   * Unified combo (CS3 = csNew3)      offset -1  -> visual bar = detection bar-1 -> [i-1]
+    // A "Unified combo" lands ALL THREE visual plots on ONE visual bar => exactly ONE hit.
+    // A 2-hit chain therefore REQUIRES TWO DISTINCT visual bars (never a single bar).
+    bool hv2=nz(comboSet3_Bull[i]) or nz(comboSet4_Bull[i])
+    if i>=1
+        if nz(comboSet1_Bull[i-1]) or nz(comboSet2_Bull[i-1]) or nz(csNew3_Bull[i-1])
+            hv2:=true
     if hv2
         cc_win_bull+=1
     if nz(sigBullPBJ[i]) or nz(sigBullPB[i])
@@ -1021,8 +1031,18 @@ for i=0 to cc_window-1
 int cc_win_bear=0
 bool cc_pbj_bear=false
 for i=0 to cc_window-1
-    // BINARY FIX (Anish 2026-06-04): one physical bar = 1 or 0; Matrix(CS2)+FVG(CS1) same-bar OR-collapse.
-    bool hv2=nz(comboSet3_Bear[i]) or nz(comboSet4_Bear[i]) or nz(comboSet1_Bear[i]) or nz(comboSet2_Bear[i])
+    // BINARY / VISUAL-OFFSET LAW (Anish): an EVENT is a VISUAL plot (post-offset),
+    // never a raw detection. Per VISUAL bar N-i, OR-collapse the three combo VISUAL
+    // plots into ONE binary hit (0 or 1) -- never 2 or 3:
+    //   * Matrix combo  (CS2 = comboSet3/4) offset  0  -> visual bar = detection bar   -> [i]
+    //   * FVG combo     (CS1 = comboSet1/2) offset -1  -> visual bar = detection bar-1 -> [i-1]
+    //   * Unified combo (CS3 = csNew3)      offset -1  -> visual bar = detection bar-1 -> [i-1]
+    // A "Unified combo" lands ALL THREE visual plots on ONE visual bar => exactly ONE hit.
+    // A 2-hit chain therefore REQUIRES TWO DISTINCT visual bars (never a single bar).
+    bool hv2=nz(comboSet3_Bear[i]) or nz(comboSet4_Bear[i])
+    if i>=1
+        if nz(comboSet1_Bear[i-1]) or nz(comboSet2_Bear[i-1]) or nz(csNew3_Bear[i-1])
+            hv2:=true
     if hv2
         cc_win_bear+=1
     if nz(sigBearPBJ[i]) or nz(sigBearPB[i])
