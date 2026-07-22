@@ -1,25 +1,31 @@
 # VOB Indicator Suite — Changelog
 
-## v12 — 2026-07-22 — Bull/Bear T3 Cluster + Bull/Bear V×HW + NAGASAKI+ANY
+## v11.1 — 2026-07-22 — Bull/Bear T3 Cluster + Bull/Bear V×HW + NAGASAKI+ANY
 
-W-INDSTUDY lane (L-49; manifests `manifest_vob-v12-{tick,time}_v12.json`, gate
+> **NAMING LAW (operator-dictated 2026-07-22, same session):** the VOB family names are
+> FROZEN — **VOB v10, VOB v11, VOB Asymmetric** — until the operator declares better
+> nomenclature. New versions bump the MINOR number only (v11.1, v11.2, …); a major bump
+> is REFUSED. This release first shipped mis-named "v12"; the operator revoked that name
+> within the hour and it was renamed v11.1 (the v12 files/manifests were removed; dated
+> rows in INDSTUDY_DEBTS.json are the record).
+
+W-INDSTUDY lane (L-49; manifests `manifest_vob-v11.1-{tick,time}_v11.1.json`, gate
 `indicator_study_gate.py` exit 0). Base = the operator's live Desktop host copy
 (`vob v11.txt`), intaken CRLF→LF as `versions/VOB_OPERATOR_HOST_v11.pine`
 (sha256 `f35668a0…121c4756`, commit `58ccd59`) — chosen over the stripped
 mirror MULTIPLES because it carries the individual T3/zone/Nagasaki VPs and
-toggles the operator's v12 asks reference. **Impetus (operator dictation
+toggles the operator's asks reference. **Impetus (operator dictation
 2026-07-22):** the study had no bullish/bearish T3 cluster and no dedicated
 bull/bear V×HW coincidence VPs, and no Nagasaki-plus-companion detection whose
 alert states what the companion is.
 
 ### Files (L-49.1 twin pair, same base, same pack)
-- `tick_friendly/VOB_TICKFRIENDLY_v12.pine` — title "VOB v12 TICK-FRIENDLY — Bull/Bear
-  T3 Cluster + Bull/Bear V×HW + NAG+ANY", shorttitle "VOB v12 TICK" (A9 tick marker).
-- `versions/VOB_v12.pine` — title "VOB v12 — Bull/Bear T3 Cluster + Bull/Bear V×HW +
-  NAG+ANY", shorttitle "VOB v12" (time build; v11 tick guards remain — semantic
-  no-ops on time charts).
+- `tick_friendly/VOB_TICKFRIENDLY_v11.1.pine` — title "VOB v11.1 TICK-FRIENDLY",
+  shorttitle "V11.1 TICK" (A9 tick marker; TV shorttitle law ≤10 chars).
+- `versions/VOB_v11.1.pine` — title "VOB v11.1", shorttitle "VOB v11.1" (time build;
+  v11 tick guards remain — semantic no-ops on time charts).
 
-### New in v12 (appended pack; exactly 2 declared edits vs base)
+### New in v11.1 (appended pack; exactly 2 declared edits vs base)
 1. **T3 Cluster Bull / T3 Cluster Bear** — dedicated sided VPs: 2+ same-side T3
    tiers on one candle (flag below/above bar, lime/red, `T3x↑`/`T3x↓`), each with
    its own cooldown, alertcondition, and Bloomberg `alert()` naming the tiers.
@@ -37,7 +43,7 @@ alert states what the companion is.
    Fire-condition reduction theorem: every composite companion implies a raw T3 or
    zone signal, so fire ⟺ NAG ∧ (raw T3[1] ∨ raw zone[1]).
 
-Output census v12: 14 plotshapes + 14 alertconditions = 28/64.
+Output census v11.1: 14 plotshapes + 14 alertconditions = 28/64.
 
 ## VOB v11 — HW-Single Coincidence + T3 Cluster — 2026-06-04
 

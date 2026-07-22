@@ -1,12 +1,12 @@
 //@version=5
 // ═══════════════════════════════════════════════════════════════════════════════
-// VARIANT: VOB v12 — Bull/Bear T3 Cluster + Bull/Bear V×HW + NAG+ANY — v12 (2026-07-22)
+// VARIANT: VOB v11.1 TICK-FRIENDLY — v11.1 (2026-07-22)
 // W-INDSTUDY transform (L-49 lane). Base: vob/versions/VOB_OPERATOR_HOST_v11.pine
 // (operator's live Desktop copy 'vob v11.txt', CRLF-to-LF normalized at intake,
 //  sha256 f35668a0d4ac9e843ca00f349827fa3d6359814e83c4b21dfe1d8a7e121c4756, commit 58ccd59).
 // EXACTLY TWO declared edits vs base:
-//   E1 indicator() line gains the v12 name + a shorttitle (nothing else on it changes)
-//   E2 the v12 detection pack is APPENDED at end of file (3 additions):
+//   E1 indicator() line gains the v11.1 name + a shorttitle (nothing else on it changes)
+//   E2 the v11.1 detection pack is APPENDED at end of file (3 additions):
 //     #1 side-typed T3 Cluster pair — dedicated Bull VP + Bear VP (2+ same-side T3, same candle)
 //     #2 side-typed VOB x HW-Single pair — dedicated Bull VP + Bear VP (side = VOB constituent)
 //     #3 NAGASAKI + ANY — fires iff a companion dp/vp sits ON the NAG candle; the alert
@@ -14,15 +14,17 @@
 //        and cooldowns never affect counting); REFBAR:-1 disclosed (marker paints on the
 //        NAG candle exactly like the NAG diamond).
 // The v11 direction-agnostic T3 Cluster + VxHW plots are PRESERVED (declared side_agnostic).
-// Output census v12: 14 plotshapes + 14 alertconditions = 28 / 64 budget.
-// Twin (L-49.1): vob/tick_friendly/VOB_TICKFRIENDLY_v12.pine (tick build, same base, same pack). The v11 tick guards remain in this file; they are semantic no-ops on time charts (in_seconds defined -> original values pass through).
+// NAMING LAW (operator, 2026-07-22): VOB family names are FROZEN (VOB v10 / VOB v11 /
+// VOB Asymmetric); new versions bump the MINOR number only (v11.1, v11.2, ...).
+// Output census v11.1: 14 plotshapes + 14 alertconditions = 28 / 64 budget.
+// Twin (L-49.1): vob/versions/VOB_v11.1.pine (time build, same base, same pack).
 // Version control: vob/CHANGELOG.md - github.com/nishpa800/indicators
 // ═══════════════════════════════════════════════════════════════════════════════
 // Pine is a Pine Editor tick-friendly
 // LINEAGE: VOB_v11_MULTIPLES (v6 host) -> tick-friendly v5 derivative.
 // TICK CHANGE (only one): timeframe.in_seconds() guarded for tick resolutions.
 // All detection plots + alertconditions preserved verbatim.
-indicator("VOB v12 — Bull/Bear T3 Cluster + Bull/Bear V×HW + NAG+ANY", shorttitle="VOB v12", overlay = true
+indicator("VOB v11.1 TICK-FRIENDLY", shorttitle="V11.1 TICK", overlay = true
              , max_lines_count = 500, max_labels_count = 500, max_bars_back = 5000)
 import TradingView/ta/7 as tv_ta
 
@@ -2143,10 +2145,10 @@ if plot_vobhws
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ███ v12 ADDITION #1 — SIDE-TYPED T3 CLUSTER (dedicated Bull VP + Bear VP) ███
+// ███ v11.1 ADDITION #1 — SIDE-TYPED T3 CLUSTER (dedicated Bull VP + Bear VP) ███
 // ═══════════════════════════════════════════════════════════════════════════════
 // The v11 T3 Cluster is direction-agnostic (one plot for any 2+ T3 mix; it is
-// UNCHANGED and declared side_agnostic in the W-INDSTUDY manifest). v12 adds
+// UNCHANGED and declared side_agnostic in the W-INDSTUDY manifest). v11.1 adds
 // DEDICATED sided VPs:
 //   Bull = 2 or more BULL T3 tiers (T3a..T3f Buy)  on the SAME candle
 //   Bear = 2 or more BEAR T3 tiers (T3a..T3f Sell) on the SAME candle
@@ -2155,10 +2157,10 @@ if plot_vobhws
 // Both sides can co-fire on a mixed 2+2 candle; each side has its own cooldown.
 
 bool show_tc_cluster_bull = input.bool(true, "T3 Cluster Bull (2+ bull T3 same candle)",
-     group = "Detection — v12 New",
+     group = "Detection — v11.1 New",
      tooltip = "Fires when 2 or more BULL T3 tiers (T3a..T3f Buy) fire on the same candle. Dedicated bull-side VP — the v11 direction-agnostic T3 Cluster is unchanged and can co-fire.")
 bool show_tc_cluster_bear = input.bool(true, "T3 Cluster Bear (2+ bear T3 same candle)",
-     group = "Detection — v12 New",
+     group = "Detection — v11.1 New",
      tooltip = "Fires when 2 or more BEAR T3 tiers (T3a..T3f Sell) fire on the same candle. Dedicated bear-side VP — the v11 direction-agnostic T3 Cluster is unchanged and can co-fire.")
 
 var int last_tc_cluster_bull = na
@@ -2172,8 +2174,8 @@ if plot_tc_cluster_bear
 
 plotshape(plot_tc_cluster_bull, "T3 Cluster Bull (2+ bull T3 same candle)", shape.flag, location.belowbar, color.new(color.lime, 0), size = size.normal, text = "T3x↑", textcolor = color.lime)
 plotshape(plot_tc_cluster_bear, "T3 Cluster Bear (2+ bear T3 same candle)", shape.flag, location.abovebar, color.new(color.red,  0), size = size.normal, text = "T3x↓", textcolor = color.red)
-alertcondition(plot_tc_cluster_bull, "T3 Cluster Bull (2+ bull T3 same candle)", "VOB v12 — 2 or more BULL T3 tiers fired on the same candle")
-alertcondition(plot_tc_cluster_bear, "T3 Cluster Bear (2+ bear T3 same candle)", "VOB v12 — 2 or more BEAR T3 tiers fired on the same candle")
+alertcondition(plot_tc_cluster_bull, "T3 Cluster Bull (2+ bull T3 same candle)", "VOB v11.1 — 2 or more BULL T3 tiers fired on the same candle")
+alertcondition(plot_tc_cluster_bear, "T3 Cluster Bear (2+ bear T3 same candle)", "VOB v11.1 — 2 or more BEAR T3 tiers fired on the same candle")
 
 if plot_tc_cluster_bull
     string tcb_tiers = (plot_t3_buy_a ? "A(" + str.tostring(sens_a) + ")," : "") + (plot_t3_buy_b ? "B(" + str.tostring(sens_b) + ")," : "") + (plot_t3_buy_c ? "C(" + str.tostring(sens_c) + ")," : "") + (plot_t3_buy_d ? "D(" + str.tostring(sens_d) + ")," : "") + (plot_t3_buy_e ? "E(" + str.tostring(sens_e) + ")," : "") + (plot_t3_buy_f ? "F(" + str.tostring(sens_f) + ")," : "")
@@ -2184,10 +2186,10 @@ if plot_tc_cluster_bear
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ███ v12 ADDITION #2 — SIDE-TYPED VOB × HW-SINGLE COINCIDENCE (Bull / Bear) ███
+// ███ v11.1 ADDITION #2 — SIDE-TYPED VOB × HW-SINGLE COINCIDENCE (Bull / Bear) ███
 // ═══════════════════════════════════════════════════════════════════════════════
 // The v11 coincidence plot is direction-agnostic (UNCHANGED; declared
-// side_agnostic in the manifest). v12 adds DEDICATED sided VPs. SIDE LAW
+// side_agnostic in the manifest). v11.1 adds DEDICATED sided VPs. SIDE LAW
 // (E-1: side comes ONLY from the plot key): the side is carried by the VOB
 // constituent —
 //   Bull = (any bull T3  OR any bull zone-formation marker) AND any HWS detection
@@ -2197,10 +2199,10 @@ if plot_tc_cluster_bear
 // non-repainting, 1:1 plot/alert parity, per-side cooldown lanes.
 
 bool show_vobhws_bull = input.bool(true, "VOB × HW-Single Coincidence Bull (bull T3/zone + any HWS)",
-     group = "Detection — v12 New",
+     group = "Detection — v11.1 New",
      tooltip = "Fires when a BULL VOB event (any T3a..T3f Buy or any bull zone-formation marker) lands on the same candle as ANY HW Single v3 detection. Side is carried by the VOB constituent; the HWS side is disclosed in the alert payload.")
 bool show_vobhws_bear = input.bool(true, "VOB × HW-Single Coincidence Bear (bear T3/zone + any HWS)",
-     group = "Detection — v12 New",
+     group = "Detection — v11.1 New",
      tooltip = "Fires when a BEAR VOB event (any T3a..T3f Sell or any bear zone-formation marker) lands on the same candle as ANY HW Single v3 detection. Side is carried by the VOB constituent; the HWS side is disclosed in the alert payload.")
 
 bool vobhws_bull_left = plot_t3_buy_a or plot_t3_buy_b or plot_t3_buy_c or plot_t3_buy_d or plot_t3_buy_e or plot_t3_buy_f or fire_zb_a or fire_zb_b or fire_zb_c or fire_zb_d or fire_zb_e or fire_zb_f
@@ -2216,8 +2218,8 @@ if plot_vobhws_bear
 
 plotshape(plot_vobhws_bull, "VOB × HW-Single Coincidence Bull", shape.labelup,   location.belowbar, color.new(#00C853, 0), size = size.normal, text = "V×HW↑", textcolor = color.white)
 plotshape(plot_vobhws_bear, "VOB × HW-Single Coincidence Bear", shape.labeldown, location.abovebar, color.new(#D50000, 0), size = size.normal, text = "V×HW↓", textcolor = color.white)
-alertcondition(plot_vobhws_bull, "VOB × HW-Single Coincidence Bull", "VOB v12 — BULL VOB T3/zone coincides with any HW Single v3 detection on the same candle")
-alertcondition(plot_vobhws_bear, "VOB × HW-Single Coincidence Bear", "VOB v12 — BEAR VOB T3/zone coincides with any HW Single v3 detection on the same candle")
+alertcondition(plot_vobhws_bull, "VOB × HW-Single Coincidence Bull", "VOB v11.1 — BULL VOB T3/zone coincides with any HW Single v3 detection on the same candle")
+alertcondition(plot_vobhws_bear, "VOB × HW-Single Coincidence Bear", "VOB v11.1 — BEAR VOB T3/zone coincides with any HW Single v3 detection on the same candle")
 
 if plot_vobhws_bull
     string vhb_src = ((plot_t3_buy_a or plot_t3_buy_b or plot_t3_buy_c or plot_t3_buy_d or plot_t3_buy_e or plot_t3_buy_f) ? "T3_BULL," : "") + ((fire_zb_a or fire_zb_b or fire_zb_c or fire_zb_d or fire_zb_e or fire_zb_f) ? "ZONE_BULL," : "")
@@ -2230,7 +2232,7 @@ if plot_vobhws_bear
 
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ███ v12 ADDITION #3 — NAGASAKI + ANY (companion dp/vp on the NAG candle) ███
+// ███ v11.1 ADDITION #3 — NAGASAKI + ANY (companion dp/vp on the NAG candle) ███
 // ═══════════════════════════════════════════════════════════════════════════════
 // Fires IF AND ONLY IF the Nagasaki candle (the all-time-high-volume candle —
 // the candle the NAG diamond paints on, offset -1) ALSO carries at least one
@@ -2261,7 +2263,7 @@ if plot_vobhws_bear
 // context but does not qualify as a companion by itself.
 
 bool show_nag_any = input.bool(true, "Nagasaki + ANY (companion dp/vp on the NAG candle)",
-     group = "Detection — v12 New",
+     group = "Detection — v11.1 New",
      tooltip = "Fires only when the Nagasaki all-time-high-volume candle also carries at least one companion detection (T3 a–f, zone formation a–f, VLB, Multi-Zone, T3 Cluster, VOB×HWS — RAW signals: visibility toggles and cooldowns do not affect counting). The alert names every companion in its ANY: field. Marker paints on the NAG candle (offset -1).")
 
 // Raw companion counts on the NAG candle ([1] = the ATH-volume candle)
@@ -2281,7 +2283,7 @@ if plot_nag_any
     last_nag_any := bar_index
 
 plotshape(plot_nag_any, "Nagasaki + ANY (same candle)", shape.diamond, location.top, color.new(color.fuchsia, 0), size = size.large, text = "NAG+", textcolor = color.fuchsia, offset = -1)
-alertcondition(plot_nag_any, "Nagasaki + ANY (same candle)", "VOB v12 — Nagasaki ATH-volume candle carries at least one companion dp/vp; the alert() payload names each companion in its ANY: field")
+alertcondition(plot_nag_any, "Nagasaki + ANY (same candle)", "VOB v11.1 — Nagasaki ATH-volume candle carries at least one companion dp/vp; the alert() payload names each companion in its ANY: field")
 
 if plot_nag_any
     string nag_list = ""
