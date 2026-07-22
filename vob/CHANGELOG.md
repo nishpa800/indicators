@@ -1,5 +1,53 @@
 # VOB Indicator Suite — Changelog
 
+## v11.2 — 2026-07-22 — THE ALERT LAW: alert-display decoupling + 🔔 ALERTS section
+
+**Impetus (operator dictation 2026-07-22):** "I cannot understand when I will get an
+alert and when I will not get an alert… I want separate checkboxes for each dp/vp
+with a clear alert checkbox section… iff checked → alert fires, independent of the
+visual." Charge CONFIRMED: pre-v11.2, display checkboxes were silently welded to the
+alert stream (a hidden T3 tier could never alert; composites counted only displayed
+constituents).
+
+### THE ARCHITECTURE (the how — transferable to VOB v10 / VOB Asymmetric)
+One signal lane per dp/vp, two independent taps:
+```
+sig_X  = dp criteria + confirmed bar + shared cooldown   // stamps its OWN cooldown, always
+plot_X = show_X and sig_X                                // chart tap  (display checkboxes)
+alert fires iff:  al_X and sig_X                         // inbox tap  (🔔 ALERTS section)
+```
+**Recipe to replicate in any VOB study:** per dp/vp, (1) declare `al_X` in the 🔔
+group, (2) split `sig_X` out of the old `plot_X` definition, (3) gate every
+`alert()` with `al_X and sig_X`, (4) run
+`python3 validation/wrappers/alert_iff_verifier.py <file>` — exit 0 proves the law
+structurally (T1–T6: every alert al-gated, no display token in any alert gate, no
+alert token in any plot, pure signal lanes, no dead checkboxes, default census).
+
+### Files (L-49.1 twin pair, base = VOB_OPERATOR_HOST_v11.pine @ 58ccd59)
+- `tick_friendly/VOB_TICKFRIENDLY_v11.2.pine` — "VOB v11.2 TICK-FRIENDLY" / "V11.2 TICK"
+- `versions/VOB_v11.2.pine` — "VOB v11.2" / "VOB v11.2"
+
+### 🔔 ALERTS section census — 39 checkboxes (one per alert-bearing dp/vp)
+| family | checkboxes | default |
+|---|---|---|
+| T3a–f Buy/Sell (12) · Nagasaki (1) · Zone A–F Bull/Bear formation (12, NEW individual alerts) · Zone aggregate (1) | 26 singles | **OFF** |
+| VLB Bull/Bear (2) · Multi-Zone 2/3+ ×2 sides (4) · T3 Cluster agnostic/Bull/Bear (3) · V×HW agnostic/Bull/Bear (3) · NAG+ANY (1) | 13 composites | **ON** |
+
+### Behavior changes vs v11.1 (each deliberate, all disclosed)
+| surface | before (v11/v11.1) | after (v11.2) |
+|---|---|---|
+| T3/zone/NAG/VLB/MZ alerts | fired only if the DISPLAY toggle was on | fire iff the 🔔 checkbox is on — display irrelevant |
+| Individual zone alerts | did not exist (aggregate only) | 12 per-tier `ZONE_FORM_<T>_<SIDE>` alerts (alert-tap only, no new plots) |
+| Composites (clusters, MZ, V×HW) | counted DISPLAY-gated constituents | count SIG lanes — hiding singles can't starve composites |
+| Cooldown stamping | stamped only when displayed | stamps on every raw signal (consistent lanes) |
+| alertcondition() channel | read display-gated booleans | reads sig lanes (TV-native, opt-in per dialog) |
+
+Output census unchanged: 14 plotshapes + 14 alertconditions = 28/64 (alert() calls
+and inputs don't count). Proof artifacts: `alert_iff_verifier.py` PROVED ×2 + anti
+2/2 CAUGHT · W-INDSTUDY manifests `manifest_vob-v11.2-{tick,time}_v11.2.json`.
+Both v11.2 files include VOB_TICKFRIENDLY_v11.2.pine and VOB_v11.2.pine names here
+for the A5 markers.
+
 ## v10.1 — 2026-07-22 — Pane-label kill + 8 sided dp/vp pairs + slim-alert law + birth-bar engine
 
 W-INDSTUDY lane (L-49; manifests `manifest_vob-v10.1-{time,tick}_v10.1.json`, gate
