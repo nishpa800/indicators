@@ -1,5 +1,64 @@
 # VOB Indicator Suite — Changelog
 
+## v10.1 — 2026-07-22 — Pane-label kill + 8 sided dp/vp pairs + slim-alert law + birth-bar engine
+
+W-INDSTUDY lane (L-49; manifests `manifest_vob-v10.1-{time,tick}_v10.1.json`, gate
+`indicator_study_gate.py` exit 0). Base = the operator's live Desktop host copy
+(`vob v10.txt`, CRLF sha256 `7f67e252...efe55d46`), intaken CRLF->LF as
+`versions/VOB_OPERATOR_HOST_v10.pine` (LF sha256 `79873843...1db94011`, commit `d743184`). **Impetus (operator dictation
+2026-07-22, five-questions session):** the BULL/BEAR pane labels obstruct the
+chart in totality ("I don't want it — get rid of it"); v10 lacked sided T3
+clusters; and three new detection families were dictated (Tier Level X3,
+X3 Failed Overlap, Birth Bar Proximity) plus a slim human-alert law with a
+birth-bar distance block.
+
+### Files (L-49.1 twin pair, same base, same pack)
+- `versions/VOB_v10.1.pine` — title "VOB v10.1", shorttitle "VOB10.1" (time build).
+- `tick_friendly/VOB_TICKFRIENDLY_v10.1.pine` — title "VOB v10.1 TICK-FRIENDLY",
+  shorttitle "V10.1 TICK" (A9 tick marker; base is rolling-window tick-safe).
+
+### v10.1 changes (17 declared edits vs base; both variants share the pack)
+1. **PANE LABELS KILLED IN TOTALITY** — the single `label.new()` constructor
+   (`f_emit_label`, base L1047-1053) and all 12 call sites REMOVED; the
+   `en_emission_labels` input and `max_labels_count` declaration arg removed.
+   Zero graphic-object labels remain: the TV graphic-objects toggle has nothing
+   left to show for this study. Payload PRESERVED as `VOB_ZONEFORM` log.info
+   lines (same fields + ZLO/ZHI/BIRTH_T zone geometry), gated by
+   `en_emission_logs` — emission data, not graphic objects (operator order).
+2. **T3 Cluster Bull / Bear** — 2+ same-side T3 prints on one candle (the {T1,T2,T3}
+   tier family degenerates to T3a-F in v10.1; alert lists each member with its
+   class: `TIERS:T3-A(2500),T3-C(2000),`). Shared `cooldown_bars`.
+3. **Tier Level X3 Bull / Bear** — TRUE rolling window over the last 3 same-side
+   tier prints (unbounded age, NO exclusion after a fire: the 4th/5th/6th print
+   at the level re-fires). Overlap = COMMON BAND: max(lows) <= min(highs) + buffer
+   (`x3_buffer`, default $0.05; touching counts). Binding range = dominant-zone
+   bounds; fire-candle and origin-swing-bar ranges were considered, rejected, and
+   are EMITTED per test (M_ZONE/M_CANDLE/M_ORIGIN in `VOB_X3_TEST`) so the
+   binding definition is empirically re-decidable (T-METALEARN loop).
+4. **X3 Failed Overlap Bull / Bear** — the test RAN (3 prints in memory, new print
+   landed) and the common band is EMPTY: the staircase/diagonal formation
+   (institutional one-way-flow read). `GAP:` in the alert = shortfall dollars.
+5. **Birth Bar Proximity Bull / Bear** — any vp fired while close is within
+   `bbp_pct` (default 1.0%) of the nearest ACTIVE birth level on that side.
+6. **Birth-bar reference engine** — birth level law (D4, ProofTEMVOB10BirthBars):
+   bullish zone birth = zone.lower, bearish = zone.upper; per side THE reference =
+   nearest active (actionability law); EMANATE = side of the latest active birth
+   (flips only on opposite-side birth or full invalidation; tie -> BULL).
+7. **SLIM-ALERT LAW (operator 2026-07-22)** — every alert() is the OPERATOR lane:
+   event id, DIR/TIER/SENS, VOL/POOL where relevant, CLOSE, plus the birth block
+   `BB_BULL:price(pct%)|BB_BEAR:price(pct%)|CLOSER:x|EMANATE:y`. RSI/SESS/SLOPE/
+   VOLRANK/stacks/gaps/EXCHANGE and the VLB per-tier OHLCV wall moved to log.info
+   mirrors (`VLB_*_DATA`, `MZ_*_DATA`). NOTHING IS ALERT-ONLY: every dropped field
+   lives on the log stream, joined by `T:` (epoch-ms bar time, added to
+   `VOB_EMISSION` and every event line).
+8. **Emission layer v2** — `VOB_EMISSION2` per-bar line (birth geometry, X3 memory
+   state, cluster counts); `VOB_TC`/`VOB_BBP` event lines.
+
+Output budget: 39 plotshapes + 15 alertconditions = **54/64** (was 38/64).
+Non-repaint law: every new dp is barstate.isconfirmed-gated with 1:1 plot/alert
+parity off a single boolean. X3/FO cooldown = `x3_cooldown` (default 0 by
+operator rolling-window law); TC/BBP share `cooldown_bars`.
+
 ## v11.1 — 2026-07-22 — Bull/Bear T3 Cluster + Bull/Bear V×HW + NAGASAKI+ANY
 
 > **NAMING LAW (operator-dictated 2026-07-22, same session):** the VOB family names are
