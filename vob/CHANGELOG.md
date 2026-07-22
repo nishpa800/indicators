@@ -1,5 +1,44 @@
 # VOB Indicator Suite — Changelog
 
+## v12 — 2026-07-22 — Bull/Bear T3 Cluster + Bull/Bear V×HW + NAGASAKI+ANY
+
+W-INDSTUDY lane (L-49; manifests `manifest_vob-v12-{tick,time}_v12.json`, gate
+`indicator_study_gate.py` exit 0). Base = the operator's live Desktop host copy
+(`vob v11.txt`), intaken CRLF→LF as `versions/VOB_OPERATOR_HOST_v11.pine`
+(sha256 `f35668a0…121c4756`, commit `58ccd59`) — chosen over the stripped
+mirror MULTIPLES because it carries the individual T3/zone/Nagasaki VPs and
+toggles the operator's v12 asks reference. **Impetus (operator dictation
+2026-07-22):** the study had no bullish/bearish T3 cluster and no dedicated
+bull/bear V×HW coincidence VPs, and no Nagasaki-plus-companion detection whose
+alert states what the companion is.
+
+### Files (L-49.1 twin pair, same base, same pack)
+- `tick_friendly/VOB_TICKFRIENDLY_v12.pine` — title "VOB v12 TICK-FRIENDLY — Bull/Bear
+  T3 Cluster + Bull/Bear V×HW + NAG+ANY", shorttitle "VOB v12 TICK" (A9 tick marker).
+- `versions/VOB_v12.pine` — title "VOB v12 — Bull/Bear T3 Cluster + Bull/Bear V×HW +
+  NAG+ANY", shorttitle "VOB v12" (time build; v11 tick guards remain — semantic
+  no-ops on time charts).
+
+### New in v12 (appended pack; exactly 2 declared edits vs base)
+1. **T3 Cluster Bull / T3 Cluster Bear** — dedicated sided VPs: 2+ same-side T3
+   tiers on one candle (flag below/above bar, lime/red, `T3x↑`/`T3x↓`), each with
+   its own cooldown, alertcondition, and Bloomberg `alert()` naming the tiers.
+   The v11 direction-agnostic T3 Cluster is unchanged and can co-fire.
+2. **VOB × HW-Single Coincidence Bull / Bear** — side carried by the VOB
+   constituent (bull vs bear T3/zone leg); HWS side disclosed in the payload
+   (`HWS:` field). v11 agnostic coincidence unchanged.
+3. **NAGASAKI + ANY** (`NAG+`, fuchsia diamond, offset −1 onto the NAG candle) —
+   fires iff the all-time-high-volume candle also carries ≥1 companion dp/vp.
+   RAW-signal counting law (operator-dictated): visibility toggles and cooldowns
+   never affect counting — an untoggled T3/zone still COUNTS iff it is on the NAG
+   candle. The `alert()` payload's `ANY:` field names every companion
+   (T3A_BUY…T3F_SELL, ZONE_A_BULL…ZONE_F_BEAR, VLB_BULL/BEAR, MZ_BULL/BEAR_2/3PLUS,
+   T3_CLUSTER_BULL/BEAR/MIXED, VOBXHWS_BULL/BEAR) + `HWS_CTX:` context + `REFBAR:-1`.
+   Fire-condition reduction theorem: every composite companion implies a raw T3 or
+   zone signal, so fire ⟺ NAG ∧ (raw T3[1] ∨ raw zone[1]).
+
+Output census v12: 14 plotshapes + 14 alertconditions = 28/64.
+
 ## VOB v11 — HW-Single Coincidence + T3 Cluster — 2026-06-04
 
 Two new files (NOT replacing v10). Built on the v10 body. **Host bumped to
