@@ -22,7 +22,7 @@
 // LINEAGE: VOB_v11_MULTIPLES (v6 host) -> tick-friendly v5 derivative.
 // TICK CHANGE (only one): timeframe.in_seconds() guarded for tick resolutions.
 // All detection plots + alertconditions preserved verbatim.
-indicator("VOB v12 TICK-FRIENDLY — Bull/Bear T3 Cluster + Bull/Bear V×HW + NAG+ANY", shorttitle="VOB v12 TICK", overlay = true
+indicator("VOB v12 TICK-FRIENDLY — Bull/Bear T3 Cluster + Bull/Bear V×HW + NAG+ANY", shorttitle="VOB12 TICK", overlay = true
              , max_lines_count = 500, max_labels_count = 500, max_bars_back = 5000)
 import TradingView/ta/7 as tv_ta
 
