@@ -1,5 +1,44 @@
 # VOB Indicator Suite — Changelog
 
+## v10.2 — 2026-07-23 — P-011 BUDGET FIX + THE ALERT LAW ported from v11.2 (HW/HCT excluded)
+
+W-INDSTUDY lane (manifests `manifest_vob-v10.2-{time,tick}_v10.2.json`, gate v1.3 exit 0).
+Base = `versions/VOB_v10.1.pine` @ `9950c33` (sha256 `f7c998fa...`). **Impetus (operator
+2026-07-23):** v10.1 REFUSED by TradingView at "78 plots > 64" — the P-011 counting law
+(a plotshape with text = 2 TV units; alertconditions free; v10.1 = 39 text-shapes = 78;
+gate v1.2's call-site counter said 54 = a false PASS, fixed in gate v1.3 which now
+reproduces TV's 78 exactly) — plus "take the alert approach and the plot count approach
+from v11.2; everything from v11.2 except the HCT thing."
+
+### Files (L-49.1 twin pair, same base, same pack)
+- `versions/VOB_v10.2.pine` — "VOB v10.2", shorttitle "VOB10.2" (time build).
+- `tick_friendly/VOB_TICKFRIENDLY_v10.2.pine` — "VOB v10.2 TICK-FRIENDLY",
+  shorttitle "V10.2 TICK" (A9 marker).
+
+### v10.2 changes (25 declared edits, diff-derived; both variants share the pack)
+1. **P-011 BUDGET FIX** — the 12 zone-marker plotshapes REMOVED (v11.2 plot-count
+   approach; −24 TV units). Zones still draw as lines/fills; per-tier ZONE_FORM_X_BULL/
+   BEAR alerts (12, each with its own 🔔) replace both the markers' info and the
+   aggregate ZONE_FORMATION payload. **TV units: 28 text-plotshapes = 56/64** (was 78).
+2. **THE ALERT LAW (v11.2) ported** — sig/show/al three-lane split for EVERY detection
+   (13 T3/NAG + 12 zones + 2 VLB + 4 MZ + 8 pack + NAG+ANY): sig_X = criteria +
+   confirmed + cooldown (stamps itself); plot_X = show_X and sig_X; **alert fires IFF
+   its 🔔 checkbox is checked — display-independent**. 40 new al_ inputs (singles OFF,
+   composites ON). alertconditions ride sig lanes.
+3. **Composites re-based on SIG lanes** (v11.2 rule, display-independent): MZ counts,
+   T3 Cluster counts, X3 pushes/prints, Failed Overlap, Birth-Bar-Proximity arming,
+   VOB_TC/VOB_BBP log conditions, history pushes, cooldown stamps. Behavior delta vs
+   v10.1: display toggles no longer suppress detection counting.
+4. **NAGASAKI + ANY ported from v11.2 WITHOUT the HW/HCT apparatus** (operator
+   exclusion: no HW-Single curves, no HCT displacement, no tv_ta import). Fires iff
+   the ATH-volume candle carries ≥1 raw companion (T3/zone [1]); ANY: list names all;
+   slim alert + BB block; offset −1 marker.
+5. Slim alerts + BB block + emission lanes (ZONEFORM/X3_TEST/BBP/EMISSION2, T: keys)
+   preserved from v10.1 unchanged.
+
+Verifiers: indicator_study_gate v1.3 PROVED ×2 (D_bytes=0, tv_units 56/64) ·
+alert_iff_verifier PROVED ×2 · anti-tamper 1→0. Supersedes v10.1 (REFUTED at 78).
+
 ## v11.3 — 2026-07-23 — v10.1 wave ported: pane-label kill + 6 pairs complete the 8-pack + T-ALERTMSG + birth-bar engine
 
 W-INDSTUDY lane (manifests `manifest_vob-v11.3-{time,tick}_v11.3.json`, gate exit 0).
