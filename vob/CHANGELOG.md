@@ -1,5 +1,30 @@
 # VOB Indicator Suite — Changelog
 
+## v11.4 — 2026-07-23 — P-012 FIX: the line-continuation refusal (supersedes v11.3)
+
+W-INDSTUDY lane (manifests `manifest_vob-v11.4-{time,tick}_v11.4.json`, gate v1.4 exit 0).
+Base = `versions/VOB_v11.2.pine` @ `5ba4cf5` (same base and same pack as v11.3). **Impetus
+(operator screenshot 2026-07-23):** TradingView refused v11.3 — "Syntax error at input
+'end of line without line continuation'" at the VOB_EMISSION statement. **Root cause
+(P-012):** the v11 lineage wraps that statement with 6-space continuation lines; the
+v11.3 edit appended `str.tostring(time)` as a NEW 8-space line — Pine refuses a wrapped
+statement with MIXED continuation indents. (The v10 lineage is uniformly 8-space, which
+is why v10.2 compiles-by-wrap and needed no fix.)
+
+### Files (L-49.1 twin pair)
+- `versions/VOB_v11.4.pine` — "VOB v11.4" (time build).
+- `tick_friendly/VOB_TICKFRIENDLY_v11.4.pine` — "VOB v11.4 TICK-FRIENDLY", "V11.4 TICK".
+
+### Change vs v11.3 (single defect fix; everything else byte-identical in intent)
+- The `T:{34}` argument is appended ON THE SAME final continuation line
+  (`..., str.tostring(time))`) — zero new continuation lines, wrap stays uniform 6-space.
+- Enforcement: gate v1.4 axis **A10 WRAP-CONSISTENCY** (string-aware paren balance; a
+  wrapped statement with mixed continuation indents is REFUSED). Founding refusal
+  reproduced: v11.3 REFUTED at line 1345, indents [6, 8]; v10.2 and the live bases PASS.
+
+Verifiers: gate v1.4 PROVED ×2 (D_bytes=0, 62/64 TV units, A10=0) · alert_iff_verifier
+PROVED ×2 (45/45) · anti-tamper 1→0. v11.3 manifests remain as the honest REFUTED record.
+
 ## v10.2 — 2026-07-23 — P-011 BUDGET FIX + THE ALERT LAW ported from v11.2 (HW/HCT excluded)
 
 W-INDSTUDY lane (manifests `manifest_vob-v10.2-{time,tick}_v10.2.json`, gate v1.3 exit 0).
