@@ -1,5 +1,43 @@
 # VOB Indicator Suite — Changelog
 
+## v11.3 — 2026-07-23 — v10.1 wave ported: pane-label kill + 6 pairs complete the 8-pack + T-ALERTMSG + birth-bar engine
+
+W-INDSTUDY lane (manifests `manifest_vob-v11.3-{time,tick}_v11.3.json`, gate exit 0).
+Base = `versions/VOB_v11.2.pine` @ `5ba4cf5` (sha256 `63377660...`; == the operator's
+Desktop `vob v11.2.txt` after CRLF->LF + trailing-newline normalization — verified,
+1-line diff). **Impetus (operator /goal 2026-07-23):** port the v10.1 wave onto v11.2.
+
+### Files (L-49.1 twin pair, same base, same pack)
+- `versions/VOB_v11.3.pine` — "VOB v11.3" (time build).
+- `tick_friendly/VOB_TICKFRIENDLY_v11.3.pine` — "VOB v11.3 TICK-FRIENDLY", shorttitle
+  "V11.3 TICK" (A9 marker).
+
+### v11.3 changes (37 declared edits; both variants share the pack)
+1. **PANE LABELS KILLED IN TOTALITY** — `f_emit_label` + 12 call sites and
+   `en_emission_labels` REMOVED; `max_labels_count` arg dropped. Payload preserved as
+   `VOB_ZONEFORM` log lines (+ ZLO/ZHI/BIRTH_T). Zero graphic-object labels remain.
+2. **8-pack COMPLETE** — T3 Cluster Bull/Bear existed (v11.1); added the missing six:
+   Tier Level X3 Bull/Bear (rolling last-3 common band, `x3_buffer` $0.05, no
+   exclusion, `x3_cooldown` default 0), X3 Failed Overlap Bull/Bear (band empty =
+   staircase read), Birth Bar Proximity Bull/Bear (`bbp_pct` 1.0%). All wired
+   **sig/show/al** per THE ALERT LAW (alertcondition on sig; alert IFF checkbox;
+   composites' checkboxes default ON). X3 pushes + BBP arming count SIG lanes
+   (display-independent — v11.2 composite rule; note: v10.1 counts display-gated
+   booleans — divergence recorded for the flagged v10 three-lane replication).
+3. **T-ALERTMSG applied** — every alert() slimmed to the operator lane + the birth
+   block `BB_BULL:price(pct%)|BB_BEAR:price(pct%)|CLOSER|EMANATE`; EXCHANGE dropped
+   everywhere (22-line mechanical sweep); fat payloads (T3 Bloomberg wall, VLB
+   per-tier OHLCV, MZ context, legacy T3_CLUSTER context, NAG_ATH RSI/SESS) moved to
+   log mirrors (`VLB_*_DATA`, `MZ_*_DATA`). NOTHING IS ALERT-ONLY (join key `T:`
+   epoch-ms added to `VOB_EMISSION` + every event line). Three-lane iff law PRESERVED.
+4. **Birth-bar engine** — nearest-active reference per side (bull=z.lower,
+   bear=z.upper, D4 birth law); EMANATE = latest-birth side (tie -> BULL).
+5. **T-METALEARN emission** — `VOB_X3_TEST` (M_ZONE/M_CANDLE/M_ORIGIN margins per
+   test: the range-definition race dataset), `VOB_BBP`, `VOB_EMISSION2` per bar.
+
+Output budget: **40/64** (was 28/64; +6 plotshapes +6 alertconditions).
+Non-repaint: all new sigs barstate.isconfirmed-gated; parity via single sig boolean.
+
 ## v11.2 — 2026-07-22 — THE ALERT LAW: alert-display decoupling + 🔔 ALERTS section
 
 **Impetus (operator dictation 2026-07-22):** "I cannot understand when I will get an
