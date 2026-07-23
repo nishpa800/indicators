@@ -1,5 +1,14 @@
 # CHANGELOG — indicator suite
 
+## 2026-07-23 — New: PBJ PB Consolidated v1
+
+Added `pbj-pb-consolidated/` — one Pine v5 study merging: full PB & PBJ 4-signal
+engine (base, defaults verbatim) + ONLY the four KC Rev 8 re-entry signals
+(Bull/Bear Re-entry Cross + Bull/Bear Re-entry Slope, KC defaults verbatim) +
+PUP/PPD pocket pivots from Anish 50% 1st Combo (v6→v5 port) + a single
+Displacement engine with Std Dev Multiplier as an input field defaulting to 4.5.
+Signal registry S1–S12. See `pbj-pb-consolidated/CHANGELOG.md`.
+
 ## 2026-05-06 — Sync from TradingView
 
 Pulled latest source for all 5 canonical indicators directly from TradingView via MCP. Findings vs prior local copies:
