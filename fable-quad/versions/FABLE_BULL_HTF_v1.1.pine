@@ -1,0 +1,2828 @@
+//@version=5
+// ═══ Fable Bull HTF v1.1 (FBULL HTF v1.1) — FABLE QUAD 2026-07-24, operator GO. Single-side study: every dp = real
+// plot + 🔔 + alert (1:1:1, CS-1/L-61). UC_core redefined; CO v7 13-term menu; Combo Chain
+// back-to-back binary law; HVD 2of3/3of3 no-PBJ; HV+PBJ+DISP; PBJ/PB+RS+RC; GS+ANY;
+// HTF: Typhoon/Musashi/Whale carry NO displacement requirement. Alert grammar T-ALERTMSG v1.2. Specs docs/2026-07-24_*FableBullBear*_v1.0-1.3. ═══
+// ══════════════════════════════════════════════════════════════════════════════
+// FIRST BAR FABLE v1 — in homage of Fable
+// ──────────────────────────────────────────────────────────────────────────────
+// Composite detection study. Every engine below is a VERBATIM port from its
+// canonical suite source (no re-derivation):
+//   • RVOL 0.56 engine (SAAB/Kratos/1X/GS/MOAB, Pre-Mythos curve) — B2B PUP v5.4
+//     Engine E L266-289 (identical curve in SQUARIFY v3 L497-517)
+//   • WTC / Hiroshima (RVOL Reg@Time)                — B2B PUP v5.4 L290-294
+//   • Displacement 9 (disp_rng > disp_std*9.0)       — SQUARIFY v3 L2237-2238
+//     (bear side = natural mirror; SQUARIFY defines bull only)
+//   • PBJ engine (zoo/supertrend latch)              — 1st PUP FAUNA L556-720
+//   • PUP / PPD pocket pivot                         — 1st PUP FAUNA L491-503
+//     (== B2B PUP v5.4 Engine A L74-80, same math/defaults)
+//   • Whale (pivot + HV milestone + PUP + PBJ)       — 1st PUP FAUNA L519-552, L722-726
+//   • FAUNA (fauna variant, for Typhoon)             — 1st PUP FAUNA L340-388
+//   • GZ1 / HV FVG engine (for Musashi)              — 1st PUP FAUNA L200-268
+//   • Yin Yang swing engine (for Typhoon)            — 1st PUP FAUNA L415-443
+//   • TYPHOON / MUSASHI / alignment layer            — 1st PUP FAUNA L751-798, L836-863
+//   • B2B SAAB / B2B KRATOS (S5 composites)          — B2B PUP v5.4 L970-984
+//   • u5 FAUNA (TNT variant, for DYNAMITE)           — TNT OD v3 L755-782
+//   • DYNAMITE (dedicated 100-bar σ engine)          — TNT OD v3 L960-975
+//   • TNT OD core (VOB/ANISH/FLUX/zones/charge/cont) — TNT OD v3 L377-696 (tod_ prefix)
+//   • IGNITE (TNT+CONT / NPM+CONT)                   — TNT OD v3 L1201-1205
+//   • B2B NAPALM Engine G                            — B2B PUP v5.4 L334-690 (tnt_ prefix)
+//   • Hybrid Momentum LONG 1-5                       — Heavy Weapons Singles v2 L83-351
+//   • Nagasaki (all-time-high volume)                — SQUARIFY v3 L525-532
+// Visual-only members (line/label/box) stripped from ported zone types; all
+// booleans and state mutation order preserved exactly.
+//
+// FIRST BAR MASTER (default ON): every detection requires its REFERENCE bar
+// (the bar the shape anchors to, honoring plot offset) to be the first bar of
+// the session (ta.change(time("D")) != 0 — fauna/squarify anchor). Two-bar B2B
+// patterns pass when the pair TOUCHES the first bar (B2B PUP g01 semantics).
+// Unchecked = detections fire on any bar.
+// v2: each S<N> checkbox gated plot AND alert. v3 ALERT LAW: visual checkbox gates the
+// plot ONLY; the 🔔 ALERT SECTION checkbox gates the alert ONLY (defaults ON = v2 behavior).
+//
+// INTERPRETATIONS (flagged for review):
+//   • S9/S10 "one of the first two bars must be displacement 9" = Disp9 on
+//     bar[0] or bar[1] (the two bars of the B2B pattern).
+//   • S15 "on the first bar" is baked into the signal itself (first-bar
+//     required even when the master toggle is OFF), like fauna's Typhoon.
+//   • "long (1-5)" = Hybrid Momentum LONG 1-5 tiers (Heavy Weapons Singles v2).
+// ──────────────────────────────────────────────────────────────────────────────
+// v2 ADDITIONS: S18 B2B PUP+Disp9, S19 B2B PPD+Disp9, S20/S21 B2B FC Cluster
+//   (Ultra v57; ALWAYS fires on any bar — OVERRIDES the First Bar Master),
+//   S22/S23 D9 Bull/Bear Study (HW v3), S24/S25 Unified Combo+Disp9 (HVD), and
+//   the HVD PBJ PPD groups: Pipeline D CO co-occurrence, Back-to-Back HV+D,
+//   HV+D Momentum co-occ (bull+bear). HVD Group 1 CO's USE gate is rebuilt from
+//   this study's ROLLING signals (source used fixed-window OD/Alpha-Strike).
+// ──────────────────────────────────────────────────────────────────────────────
+// DISPLACEMENT MAP (every displacement engine is adjustable; each drives ONLY):
+//   • "Displacement 9" (σ=9, len=100) → S1, S2, S9, S10, S15, S18, S19,
+//       S22/S23 (D9 studies), S24/S25 (Unified Combo's Disp9 requirement).
+//   • "Displacement — HV+D" (σ=5, len=100) → ALL HVD PBJ PPD plots
+//       (CO, B2B HV+D, HV+D Momentum). Also feeds hvd_fire.
+//   • "DYNAMITE" (σ=5, len=100 hardcoded) → S11/S12 only.
+//   • "TNT OD Engine (Ignite)" (σ=5) → S13/S14 only.
+//   • "TNT Engine (B2B Napalm)" (σ=5) → S16/S17 only.
+//   FC cluster (S20/S21) has no σ-displacement engine.
+// ══════════════════════════════════════════════════════════════════════════════
+// v3 ADDITIONS (2026-07-22): S28-S35 "+ANY" composites (4K/NAG/OPEN1/DYN x Bull/Bear,
+//   rendered as label.new - ZERO plot-budget cost, budget stays 57/64) + THE ALERT LAW
+//   (VOB v11.2 parity): sig/fire/alf three-lane split - 🔔 ALERT SECTION checkboxes
+//   gate alerts, visual checkboxes gate plots, fully independent. ANY = det-time same-bar
+//   union of the 53 v2 detections (raw det booleans; new rows excluded from ANY).
+//   OPEN1 suite = Ultra v57 verbatim ports (o1_ prefix). Design doc:
+//   docs/2026-07-22_TV-TickBar-RE_FirstBarFableV3-DPVPCensus-AlertSection-Design_v1.0.md
+// ═══ v5 (2026-07-23, operator GO): KC Rev-8 re-entry engine ported (verbatim defaults) +
+// R-S+ANY FABLE and R-S+R-C+ANY FABLE composites (dp/vp/alert; basket = any_BULL/any_BEAR,
+// v3/v5 rows excluded from basket - self-count impossible by construction) + ANY-QUALIFIER
+// LAW: every +/-ANY key names its host study (S28-S35 renamed "+ANY FABLE"). R-C+ANY FABLE
+// alone DEFERRED (HTF hypothesis, needs interval lattice). Renders label.new (zero budget);
+// alerts dynamic alert() only. Plot budget unchanged: 57/64. ═══
+indicator("Fable Bull HTF v1.1", shorttitle="FBULL HTF v1.1", overlay=true, max_labels_count=500, max_lines_count=500, max_bars_back=2500)
+
+import TradingView/ta/7 as tv_ta
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MASTER
+// ══════════════════════════════════════════════════════════════════════════════
+grpM = "★ MASTER ★"
+firstBarOnly = input.bool(true, "★ FIRST BAR MASTER ★", group=grpM, tooltip="ON (default): every detection only fires when its reference bar is the FIRST BAR of the session (day change). Two-bar B2B patterns pass when the pair touches the first bar. OFF: detections fire on any bar.")
+en_aggAlerts = input.bool(true, "Aggregate Alerts", group=grpM, tooltip="ON: one combined alert per direction per bar. OFF: individual alert per detection. v3 ALERT LAW: 🔔 ALERT SECTION checkboxes gate alerts; visual checkboxes gate plots only.")
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SIGNAL TOGGLES — checkbox = plot + alert
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SHARED GLOBALS + SESSION BOUNDARY
+// ══════════════════════════════════════════════════════════════════════════════
+conf = barstate.isconfirmed
+// tfSec guard (suite tick doctrine): timeframe.in_seconds() is na/0 on tick charts →
+// threshold ladders silently die without a fallback. Fallback 10s per SQUARIFY tick_friendly.
+// Time charts: tfSec = raw value, zero parity change.
+int _tfSecRaw = timeframe.in_seconds(timeframe.period)
+bool _isTickChart = str.endswith(timeframe.period, "T") or na(_tfSecRaw) or _tfSecRaw <= 0
+int tfSec = _isTickChart ? 10 : _tfSecRaw
+
+// Session boundary (1st PUP FAUNA / SQUARIFY anchor)
+bool is_new_day = ta.change(time("D")) != 0
+bool is_new_sess = is_new_day
+
+// Gap qualifier for alert strings (SQUARIFY v3 pattern)
+float _gapSize = math.abs(open - close[1])
+float _barRange = high - low
+string _FIRST = not is_new_sess ? "NOT !!!" : (_gapSize <= _barRange ? "FIRST !!!" : "FIRST XXX")
+
+f_add(string base, string part) => base == "" ? part : base + " + " + part
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: RVOL 0.56 (Pre-Mythos) — B2B PUP v5.4 Engine E parity
+// SAAB / KRATOS / RVOL 1X / GRAND SLAM / MOAB threshold on NORMALIZED PRICE SPIKE
+// ══════════════════════════════════════════════════════════════════════════════
+grpRV = "── RVOL ──"
+int rv_avgLen = input.int(30, "RVOL Avg Length", group=grpRV)
+int rv_smaLen = input.int(20, "RVOL SMA Length", group=grpRV)
+float rv_spike = math.abs(close - open)
+float rv_avgSpike = ta.sma(rv_spike, rv_avgLen)[1]
+float rv_normPrice = rv_spike / nz(rv_avgSpike, 1.0)
+float rv_avgVol = ta.sma(volume, rv_avgLen)[1]
+float rv_normVol = volume / nz(rv_avgVol, 1.0)
+float rv_diff = rv_normPrice - rv_normVol
+float rv_posDiff = rv_diff > 0 ? rv_diff : na
+float rv_smaDiff = ta.sma(rv_posDiff, rv_smaLen)
+bool rv_baseBull = (close > open) and (rv_posDiff > rv_smaDiff) and conf
+bool rv_baseBear = (close < open) and (rv_posDiff > rv_smaDiff) and conf
+// Pre-Mythos thresholds (B2B PUP v5.4 / SQUARIFY v3 shared curve)
+f_th_1x(int _s) => _s <= 10 ? 38.0 : _s <= 15 ? 33.0 : _s <= 30 ? 28.0 : _s <= 45 ? 23.0 : _s <= 60 ? 20.0 : _s <= 120 ? 18.0 : _s <= 300 ? 13.0 : _s <= 360 ? 13.0 : _s <= 540 ? 11.0 : _s <= 600 ? 10.0 : _s <= 660 ? 9.0 : _s <= 900 ? 7.5 : _s <= 1560 ? 6.5 : _s <= 2340 ? 6.0 : _s <= 3600 ? 4.5 : _s <= 9000 ? 4.0 : _s <= 11700 ? 3.5 : _s < 259200 ? 1.8 : 1.0
+f_th_gs(int _s) => _s < 60 ? f_th_1x(_s) * 3.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 1500 ? 20.0 : _s <= 3000 ? 20.0 : _s <= 7260 ? 10.0 : _s <= 11700 ? 8.0 : _s <= 86400 ? 7.5 : _s <= 259200 ? 3.5 : 3.0
+f_th_saab(int _s) => f_th_1x(_s) * 0.56
+f_th_wtc(int _s) => f_th_1x(_s) * 2.0
+f_th_hiro(int _s) => _s < 60 ? f_th_1x(_s) * 3.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 1500 ? 25.0 : _s <= 3060 ? 20.0 : _s <= 7260 ? 10.0 : _s <= 11700 ? 8.0 : _s <= 86400 ? 7.5 : _s <= 259200 ? 5 : 3.5
+float th_saab = f_th_saab(tfSec)
+float th_1x = f_th_1x(tfSec)
+float th_gs = f_th_gs(tfSec)
+float th_wtc = f_th_wtc(tfSec)
+float th_hiro = f_th_hiro(tfSec)
+bool det_SAAB = rv_baseBull and rv_normPrice >= th_saab and rv_normPrice < th_1x
+bool det_Kratos = rv_baseBear and rv_normPrice >= th_saab and rv_normPrice < th_1x
+bool det_RVOL1xB = rv_baseBull and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_RVOL1xR = rv_baseBear and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_GrandSlam = rv_baseBull and rv_normPrice >= th_gs
+bool det_MOAB = rv_baseBear and rv_normPrice >= th_gs
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: RVOL REG @ TIME — WTC / Hiroshima (B2B PUP v5.4 parity) + tick-safe anchor
+// ══════════════════════════════════════════════════════════════════════════════
+groupReg = "RVOL - Reg @ Time"
+reg_anchorTimeframe = input.timeframe("", "Anchor Timeframe (blank = chart)", group=groupReg)
+reg_length = input.int(30, "Length", minval=1, group=groupReg)
+reg_adjustRealtime = input.bool(true, "Adjust Unconfirmed", group=groupReg)
+// TICK-FRIENDLY FIX (RE10023): force "D" anchor only on tick charts; time charts keep "" (no parity change off tick).
+string reg_anchorSafe = ((reg_anchorTimeframe == "" and (str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
+[rv_curVol_reg, rv_pastVol_reg, _rv_u] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, true, reg_adjustRealtime)
+float rv_relVolRatio = rv_curVol_reg / rv_pastVol_reg
+bool det_WTC = conf and (rv_relVolRatio > th_wtc) and (rv_relVolRatio <= th_hiro)
+bool det_Hiroshima = conf and (rv_relVolRatio > th_hiro)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: HYBRID MOMENTUM LONG 1-5 — Heavy Weapons Singles v2 parity
+// ══════════════════════════════════════════════════════════════════════════════
+groupHybrid = "Hybrid LONG 1-5"
+hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Long thresholds (RVOL 1x → 2x ladder)", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and the Reg floors are auto-computed as a linear ladder from RVOL 1x (Long 5) up to 2× RVOL 1x (Long 1). When OFF, the manual values below are used.")
+hyb_addReg1 = input.float(5.0, "Long 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_addCum1 = input.float(3.0, "Long 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_bodyRat1 = input.float(0.74, "Long 1 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg2 = input.float(5.0, "Long 2 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_addCum2 = input.float(3.0, "Long 2 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_bodyRat2 = input.float(0.74, "Long 2 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg3 = input.float(5.0, "Long 3 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_addCum3 = input.float(3.0, "Long 3 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_bodyRat3 = input.float(0.74, "Long 3 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg4 = input.float(5.0, "Long 4 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_addCum4 = input.float(3.0, "Long 4 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_bodyRat4 = input.float(0.74, "Long 4 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg5 = input.float(5.0, "Long 5 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_addCum5 = input.float(3.0, "Long 5 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_bodyRat5 = input.float(0.74, "Long 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+
+// Auto-derive ladder: Reg floors ramp from RVOL 1x (Long 5) up to 2× RVOL 1x (Long 1).
+// th_1x = the Pre-Mythos RVOL 1x threshold for this TF (defined in the RVOL engine above).
+hybAutoReg5 = th_1x            // Long 5 = RVOL 1x
+hybAutoReg1 = th_1x * 2.0      // Long 1 = 2× RVOL 1x (RVOL 2x), and fires above
+hybAutoStep = (hybAutoReg1 - hybAutoReg5) / 4.0
+hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep   // 1.75× RVOL 1x
+hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep   // 1.50× RVOL 1x
+hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep   // 1.25× RVOL 1x
+float hybCumPhi = 1.398 * 1.33
+hybAutoCum1 = hybCumPhi * math.sqrt(math.log(hybAutoReg1))
+hybAutoCum2 = hybCumPhi * math.sqrt(math.log(hybAutoReg2))
+hybAutoCum3 = hybCumPhi * math.sqrt(math.log(hybAutoReg3))
+hybAutoCum4 = hybCumPhi * math.sqrt(math.log(hybAutoReg4))
+hybAutoCum5 = hybCumPhi * math.sqrt(math.log(hybAutoReg5))
+// Body ratio: 0.74 across the board (all five Long tiers)
+float hybAutoBody1 = 0.74
+float hybAutoBody2 = 0.74
+float hybAutoBody3 = 0.74
+float hybAutoBody4 = 0.74
+float hybAutoBody5 = 0.74
+hybReg1Eff = hyb_autoDerive ? hybAutoReg1 : hyb_addReg1
+hybReg2Eff = hyb_autoDerive ? hybAutoReg2 : hyb_addReg2
+hybReg3Eff = hyb_autoDerive ? hybAutoReg3 : hyb_addReg3
+hybReg4Eff = hyb_autoDerive ? hybAutoReg4 : hyb_addReg4
+hybReg5Eff = hyb_autoDerive ? hybAutoReg5 : hyb_addReg5
+hybCum1Eff = hyb_autoDerive ? hybAutoCum1 : hyb_addCum1
+hybCum2Eff = hyb_autoDerive ? hybAutoCum2 : hyb_addCum2
+hybCum3Eff = hyb_autoDerive ? hybAutoCum3 : hyb_addCum3
+hybCum4Eff = hyb_autoDerive ? hybAutoCum4 : hyb_addCum4
+hybCum5Eff = hyb_autoDerive ? hybAutoCum5 : hyb_addCum5
+hybBody1Eff = hyb_autoDerive ? hybAutoBody1 : hyb_bodyRat1
+hybBody2Eff = hyb_autoDerive ? hybAutoBody2 : hyb_bodyRat2
+hybBody3Eff = hyb_autoDerive ? hybAutoBody3 : hyb_bodyRat3
+hybBody4Eff = hyb_autoDerive ? hybAutoBody4 : hyb_bodyRat4
+hybBody5Eff = hyb_autoDerive ? hybAutoBody5 : hyb_bodyRat5
+
+[hybRegCur, hybRegPast, _hr] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, false, reg_adjustRealtime)
+[hybCumCur, hybCumPast, _hc] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, true, reg_adjustRealtime)
+hybRegRatio = hybRegCur / hybRegPast
+hybCumRatio = hybCumCur / hybCumPast
+hybBodySz = math.abs(close - open)
+hybRange = high - low
+hybBodyRat = hybRange == 0 ? 0.0 : hybBodySz / hybRange
+hybConvict1 = hybBodyRat >= hybBody1Eff
+hybBull1 = (close > open) and hybConvict1
+hybMom1 = conf and (hybRegRatio > hybReg1Eff) and (hybCumRatio > hybCum1Eff)
+sigAddLong1 = hybMom1 and hybBull1
+hybConvict2 = hybBodyRat >= hybBody2Eff
+hybBull2 = (close > open) and hybConvict2
+hybMom2 = conf and (hybRegRatio > hybReg2Eff) and (hybCumRatio > hybCum2Eff)
+sigAddLong2 = hybMom2 and hybBull2
+hybConvict3 = hybBodyRat >= hybBody3Eff
+hybBull3 = (close > open) and hybConvict3
+hybMom3 = conf and (hybRegRatio > hybReg3Eff) and (hybCumRatio > hybCum3Eff)
+sigAddLong3 = hybMom3 and hybBull3
+hybConvict4 = hybBodyRat >= hybBody4Eff
+hybBull4 = (close > open) and hybConvict4
+hybMom4 = conf and (hybRegRatio > hybReg4Eff) and (hybCumRatio > hybCum4Eff)
+sigAddLong4 = hybMom4 and hybBull4
+hybConvict5 = hybBodyRat >= hybBody5Eff
+hybBull5 = (close > open) and hybConvict5
+hybMom5 = conf and (hybRegRatio > hybReg5Eff) and (hybCumRatio > hybCum5Eff)
+sigAddLong5 = hybMom5 and hybBull5
+anyLong = sigAddLong1 or sigAddLong2 or sigAddLong3 or sigAddLong4 or sigAddLong5
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: DISPLACEMENT 9 — SQUARIFY v3 d9 parity (multiplier exposed, default 9.0)
+// ══════════════════════════════════════════════════════════════════════════════
+grp_d9 = "Displacement 9"
+i_d9_type = input.string("Open to Close", "Range Type", options=["Open to Close", "High to Low"], group=grp_d9)
+i_d9_len = input.int(100, "Std Dev Length", minval=1, group=grp_d9)
+i_d9_mult = input.float(9.0, "Std Dev Multiplier (9 strength)", minval=0.1, step=0.5, group=grp_d9)
+float d9_rng = i_d9_type == "Open to Close" ? math.abs(open - close) : high - low
+float d9_std = ta.stdev(d9_rng, i_d9_len)
+float d9_thresh = d9_std * i_d9_mult
+bool d9_bull = conf and d9_rng > d9_thresh and close > open
+bool d9_bear = conf and d9_rng > d9_thresh and close < open
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: PBJ (zoo / supertrend latch) — 1st PUP FAUNA parity
+// (PB level-approach path omitted: independent state, no PBJ output impact)
+// ══════════════════════════════════════════════════════════════════════════════
+grp_zoo = "PBJ Engine"
+zoo_ma_type = input.string("VWMA", "Signal MA Type", options=["EMA", "SMA", "WMA", "HMA", "VWMA"], group=grp_zoo)
+zoo_ma_len = input.int(5, "Signal MA Length", minval=1, group=grp_zoo)
+zoo_price_src = input.source(close, "Price Source", group=grp_zoo)
+zoo_use_st = input.bool(true, "Use Supertrend Line", group=grp_zoo)
+zoo_st_period = input.int(10, "Supertrend ATR Period", minval=1, group=grp_zoo)
+zoo_st_mult = input.float(2.0, "Supertrend ATR Mult", minval=0.1, step=0.1, group=grp_zoo)
+zoo_pbj_ma_period = input.int(20, "PBJ EMA Period", minval=1, group=grp_zoo)
+zoo_pbj_atr_period = input.int(14, "PBJ ATR Period", minval=1, group=grp_zoo)
+zoo_pbj_hh_ll = input.int(25, "PBJ HH/LL Lookback", minval=1, group=grp_zoo)
+zoo_pbj_atr_mult = input.float(3.0, "PBJ ATR Mult", minval=0.1, step=0.1, group=grp_zoo)
+zoo_pbj_vol_period = input.int(20, "PBJ Vol SMA Period", minval=1, group=grp_zoo)
+zoo_pbj_vol_mult = input.float(0.1, "PBJ Vol Mult", minval=0.0, step=0.05, group=grp_zoo)
+
+type pbjLvl
+    float upper
+    float lower
+    float vol
+    bool approached
+
+f_ma(src, len, t) =>
+    switch t
+        "EMA" => ta.ema(src, len)
+        "SMA" => ta.sma(src, len)
+        "WMA" => ta.wma(src, len)
+        "HMA" => ta.hma(src, len)
+        "VWMA" => ta.vwma(src, len)
+        => ta.sma(src, len)
+
+f_add_lvl(arr, up, lo, v) =>
+    if math.abs(up - lo) >= syminfo.mintick
+        array.push(arr, pbjLvl.new(up, lo, v, false))
+f_add_lander(is_bull, cross_sig, arr, atr_pb) =>
+    if cross_sig
+        float up = 0.0, float lo = 0.0
+        if is_bull
+            up := math.max(open[1], close[1]), lo := low[1]
+            if up - lo < atr_pb * 0.5
+                up := lo + atr_pb * 0.5
+        else
+            up := high[1], lo := math.min(open[1], close[1])
+            if up - lo < atr_pb * 0.5
+                lo := up - atr_pb * 0.5
+        f_add_lvl(arr, up, lo, volume[1])
+f_add_reaccel(is_bull, sig, arr, sig_line) =>
+    if sig and not na(sig_line)
+        float p1 = sig_line, float p2 = is_bull ? math.min(open, close) : math.max(open, close)
+        f_add_lvl(arr, math.max(p1, p2), math.min(p1, p2), volume)
+f_check_approach(arr, is_bull) =>
+    bool approached = false
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0
+            if i >= array.size(arr)
+                continue
+            l = array.get(arr, i)
+            if is_bull and close < l.lower
+                array.remove(arr, i)
+                continue
+            if not is_bull and close > l.upper
+                array.remove(arr, i)
+                continue
+            float ap = is_bull ? l.upper * 1.005 : l.lower * 0.995
+            if is_bull
+                if not l.approached and low <= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and low > l.upper
+                    l.approached := false
+            else
+                if not l.approached and high >= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and high < l.lower
+                    l.approached := false
+    approached
+f_pbjEngine() =>
+    float base_ma = f_ma(zoo_price_src, zoo_ma_len, zoo_ma_type)
+    float st_atr = zoo_st_mult * ta.atr(zoo_st_period)
+    float dyn_long = base_ma - st_atr
+    float dyn_short = base_ma + st_atr
+
+    var int st_dir = 1
+    float sig_line = 0.0
+    float curr_long = 0.0
+    curr_long := base_ma > nz(curr_long[1], dyn_long) ? math.max(dyn_long, nz(curr_long[1])) : dyn_long
+    float curr_short = 0.0
+    curr_short := base_ma < nz(curr_short[1], dyn_short) ? math.min(dyn_short, nz(curr_short[1])) : dyn_short
+
+    if zoo_use_st
+        if nz(st_dir[1]) == -1 and zoo_price_src > nz(curr_short[1])
+            st_dir := 1
+        else if nz(st_dir[1]) == 1 and zoo_price_src < nz(curr_long[1])
+            st_dir := -1
+        sig_line := st_dir == 1 ? curr_long : curr_short
+    else
+        sig_line := base_ma
+
+    bool buy_cross = ta.crossover(zoo_price_src, sig_line)
+    bool sell_cross = ta.crossunder(zoo_price_src, sig_line)
+    bool bull_reaccel = st_dir == 1 and sig_line > nz(sig_line[1]) and nz(sig_line[1]) == nz(sig_line[2])
+    bool bear_reaccel = st_dir == -1 and sig_line < nz(sig_line[1]) and nz(sig_line[1]) == nz(sig_line[2])
+
+    float pbj_ma = ta.ema(close, zoo_pbj_ma_period)
+    float pbj_atr = ta.atr(zoo_pbj_atr_period)
+    float avg_vol = ta.sma(volume, zoo_pbj_vol_period)
+    float thresh = close == 0 ? 0 : (pbj_atr / close * zoo_pbj_atr_mult)
+    float _pbjLowest = ta.lowest(low, zoo_pbj_hh_ll)
+    float _pbjHighest = ta.highest(high, zoo_pbj_hh_ll)
+    bool pbj_buy = low < pbj_ma * (1 - thresh) and low == _pbjLowest and volume > avg_vol * zoo_pbj_vol_mult
+    bool pbj_sell = high > pbj_ma * (1 + thresh) and high == _pbjHighest and volume > avg_vol * zoo_pbj_vol_mult
+
+    // PB level-approach path (1st PUP FAUNA / HVD parity — required for the HVD "+PB" plots)
+    bool enable_PB = true
+    float atr_pb = ta.atr(14) * 2.0
+    var bull_lvls = array.new<pbjLvl>()
+    var bear_lvls = array.new<pbjLvl>()
+
+    f_add_lander(true, buy_cross, bull_lvls, atr_pb)
+    f_add_lander(false, sell_cross, bear_lvls, atr_pb)
+    f_add_reaccel(true, bull_reaccel, bull_lvls, sig_line)
+    f_add_reaccel(false, bear_reaccel, bear_lvls, sig_line)
+
+    var bool wait_buy = false
+    var bool wait_sell = false
+    var bool wait_pbj_buy = false
+    var bool wait_pbj_sell = false
+    if conf
+        if f_check_approach(bull_lvls, true)
+            wait_buy := true
+        if f_check_approach(bear_lvls, false)
+            wait_sell := true
+    if pbj_buy
+        wait_pbj_buy := true
+    if pbj_sell
+        wait_pbj_sell := true
+    while array.size(bull_lvls) > 30
+        array.shift(bull_lvls)
+    while array.size(bear_lvls) > 30
+        array.shift(bear_lvls)
+
+    bool sig_pbj_buy = buy_cross and wait_pbj_buy
+    bool sig_pb_buy = buy_cross and wait_buy
+    bool sig_pbj_sell = sell_cross and wait_pbj_sell
+    bool sig_pb_sell = sell_cross and wait_sell
+    if sig_pb_buy
+        wait_buy := false
+    if sig_pbj_buy
+        wait_pbj_buy := false
+    if sig_pb_sell
+        wait_sell := false
+    if sig_pbj_sell
+        wait_pbj_sell := false
+
+    bool sigBullPBJ = barstate.isconfirmed and sig_pbj_buy
+    bool sigBearPBJ = barstate.isconfirmed and sig_pbj_sell
+    bool sigBullPB = barstate.isconfirmed and enable_PB and sig_pb_buy and not sig_pbj_buy
+    bool sigBearPB = barstate.isconfirmed and enable_PB and sig_pb_sell and not sig_pbj_sell
+    [sigBullPBJ, sigBearPBJ, sigBullPB, sigBearPB]
+
+[sigBullPBJ, sigBearPBJ, sigBullPB, sigBearPB] = f_pbjEngine()
+// FUTURE-PROOF PBJ WRAPPERS (fauna parity)
+bool anyBullPBJ = sigBullPBJ
+bool anyBearPBJ = sigBearPBJ
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: POCKET PIVOT (PUP / PPD) — 1st PUP FAUNA / B2B PUP shared math
+// ══════════════════════════════════════════════════════════════════════════════
+grp_pp = "Pocket Pivot Settings"
+pp_barSize = input.float(3.0, "% Change (Barsize)", minval=0.1, step=0.1, group=grp_pp)
+pp_lookback = input.int(10, "Lookback Days", minval=1, group=grp_pp)
+float pp_redVol = close < open ? volume : 0.0
+float pp_greenVol = close > open ? volume : 0.0
+float pp_hiRedVol = ta.highest(pp_redVol[1], pp_lookback)
+float pp_hiGreenVol = ta.highest(pp_greenVol[1], pp_lookback)
+bool pp_priceUp = ((close - open) / open) * 100 > pp_barSize
+bool pp_priceDn = ((open - close) / open) * 100 > pp_barSize
+bool pp_volBull = volume > pp_hiRedVol
+bool pp_volBear = volume > pp_hiGreenVol
+bool sigPUP = conf and pp_priceUp and pp_volBull
+bool sigPPD = conf and pp_priceDn and pp_volBear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: WHALE (Pocket Pivot + HV Milestone + PUP/PPD + PBJ) — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+grp_whale = "Whale Settings"
+wh_lenBull = input.int(20, "Bull SMA Length", minval=1, group=grp_whale, inline="whs")
+wh_lenBear = input.int(20, "Bear SMA Length", minval=1, group=grp_whale, inline="whs")
+wh_useQ = input.bool(true, "Quarterly High (63d)", group=grp_whale, inline="whf")
+wh_useY = input.bool(true, "Annual High (252d)", group=grp_whale, inline="whf")
+wh_useATH = input.bool(true, "All-Time High", group=grp_whale, inline="whf")
+
+f_whaleEngine() =>
+    float wh_sma_bull = ta.sma(close, wh_lenBull)
+    float wh_sma_bear = ta.sma(close, wh_lenBear)
+    float wh_volAvg = ta.sma(volume, 50)
+    float wh_hvy = ta.highest(volume, 252)
+    float wh_hvq = ta.highest(volume, 63)
+    var float wh_maxVolEver = 0.0
+    if volume > wh_maxVolEver
+        wh_maxVolEver := volume
+
+    wh_dnVolArr = array.new_float()
+    for i = 1 to wh_lenBull
+        if close[i] < close[i + 1]
+            array.push(wh_dnVolArr, volume[i])
+    float wh_maxDnVol = array.size(wh_dnVolArr) > 0 ? array.max(wh_dnVolArr) : 0.0
+
+    wh_upVolArr = array.new_float()
+    for i = 1 to wh_lenBear
+        if close[i] > close[i + 1]
+            array.push(wh_upVolArr, volume[i])
+    float wh_maxUpVol = array.size(wh_upVolArr) > 0 ? array.max(wh_upVolArr) : 0.0
+
+    bool wh_isHV = (wh_useQ and volume == wh_hvq) or (wh_useY and volume == wh_hvy) or (wh_useATH and volume == wh_maxVolEver)
+
+    bool wh_greenBar = close > close[1]
+    bool wh_surgeonBull = wh_greenBar and (low <= wh_sma_bull) and (close > wh_sma_bull) and (volume > wh_maxDnVol) and (volume > wh_volAvg)
+    bool wh_origBull = wh_greenBar and (low <= wh_sma_bull) and (volume > wh_maxDnVol)
+    bool wh_pivotBull = wh_surgeonBull or wh_origBull
+
+    bool wh_redBar = close < close[1]
+    bool wh_surgeonBear = wh_redBar and (high >= wh_sma_bear) and (close < wh_sma_bear) and (volume > wh_maxUpVol) and (volume > wh_volAvg)
+    bool wh_origBear = wh_redBar and (high >= wh_sma_bear) and (volume > wh_maxUpVol)
+    bool wh_pivotBear = wh_surgeonBear or wh_origBear
+
+    bool sigWhaleBull = conf and wh_pivotBull and wh_isHV and sigPUP and anyBullPBJ
+    bool sigWhaleBear = conf and wh_pivotBear and wh_isHV and sigPPD and anyBearPBJ
+    [sigWhaleBull, sigWhaleBear]
+
+[sigWhaleBull, sigWhaleBear] = f_whaleEngine()
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: FAUNA (fauna variant, for TYPHOON) — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+f_faunaEngine() =>
+    fauna_atr = ta.atr(14)
+    fauna_avgVol = ta.sma(volume, 20)
+    fauna_avgBody = ta.sma(math.abs(close - open), 20)
+    fauna_avgRange = ta.sma(high - low, 20)
+    fauna_avgDelta = ta.sma(math.abs(close - close[1]), 10)
+    fauna_trendMA = ta.sma(close, 50)
+    fauna_body = close - open
+    fauna_rng = high - low
+    fauna_bodySz = math.abs(fauna_body)
+    fauna_bodyRat = fauna_rng == 0 ? 0 : fauna_bodySz / fauna_rng
+    fauna_up = fauna_body > 0
+    fauna_dn = fauna_body < 0
+
+    MB_b = fauna_up and fauna_bodySz > 1.6 * fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8 * fauna_avgVol
+    RE_b = fauna_up and fauna_rng > 2.2 * fauna_atr and (high - close) < 0.15 * fauna_rng and volume > 1.8 * fauna_avgVol
+    TA_b = fauna_trendMA > fauna_trendMA[1] and (close - close[1]) > 1.6 * fauna_avgDelta and fauna_up and volume > 1.8 * fauna_avgVol
+
+    GG_b = (open - close[1]) > 0.9 * fauna_atr and fauna_up and low > close[1] and volume > 1.8 * fauna_avgVol
+    fauna_prev_body = close[1] - open[1]
+    fauna_prev_range = high[1] - low[1]
+    fauna_StrongBear = close[1] < open[1] and math.abs(fauna_prev_body) > 1.5 * fauna_avgBody[1] and volume[1] > 1.5 * fauna_avgVol[1]
+    fauna_WeakBear = close[1] < open[1] and (fauna_prev_range == 0 ? 0.0 : math.abs(fauna_prev_body) / fauna_prev_range) <= 0.2
+    TR_b = fauna_WeakBear and (MB_b or RE_b or TA_b)
+    ES_b = fauna_StrongBear and (MB_b or RE_b or TA_b)
+    GDR_b = close[1] < open[1] and GG_b
+    excluded_bull = GG_b or TR_b or ES_b or GDR_b
+
+    sigFAUNABull = conf and (MB_b or RE_b or TA_b) and not excluded_bull
+
+    MB_r = fauna_dn and fauna_bodySz > 1.6 * fauna_atr and fauna_bodyRat > 0.7 and volume > 1.8 * fauna_avgVol
+    RE_r = fauna_dn and fauna_rng > 2.2 * fauna_atr and (close - low) < 0.15 * fauna_rng and volume > 1.8 * fauna_avgVol
+    TA_r = fauna_trendMA < fauna_trendMA[1] and (close[1] - close) > 1.6 * fauna_avgDelta and fauna_dn and volume > 1.8 * fauna_avgVol
+
+    GG_r = (close[1] - open) > 0.9 * fauna_atr and fauna_dn and high < close[1] and volume > 1.8 * fauna_avgVol
+    fauna_StrongBull = close[1] > open[1] and math.abs(fauna_prev_body) > 1.5 * fauna_avgBody[1] and volume[1] > 1.5 * fauna_avgVol[1]
+    fauna_WeakBull = close[1] > open[1] and (fauna_prev_range == 0 ? 0.0 : math.abs(fauna_prev_body) / fauna_prev_range) <= 0.2
+    TR_r = fauna_WeakBull and (MB_r or RE_r or TA_r)
+    ES_r = fauna_StrongBull and (MB_r or RE_r or TA_r)
+    GDR_r = close[1] > open[1] and GG_r
+    excluded_bear = GG_r or TR_r or ES_r or GDR_r
+
+    sigFAUNABear = conf and (MB_r or RE_r or TA_r) and not excluded_bear
+    [sigFAUNABull, sigFAUNABear]
+
+[sigFAUNABull, sigFAUNABear] = f_faunaEngine()
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: GZ1 / HV FVG (for MUSASHI) — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+grp_gz1 = "GZ1 / HV Settings"
+gz1_threshPct = input.float(2, "FVG Threshold %", minval=0, maxval=100, step=0.1, group=grp_gz1)
+gz1_auto = input.bool(true, "Auto Threshold", group=grp_gz1)
+gz1_dist = input.int(7, "GZ1 Max Bar Distance", minval=1, maxval=200, group=grp_gz1)
+gz1_mitLvl = input.bool(false, "Show Mitigation Lines", group=grp_gz1)
+
+type gz_fvg
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+f_gzEngine() =>
+
+    // GZ1 HV Detection
+    float gz_v1 = volume[1]
+    float _hv5000 = ta.highest(volume, 5000)[1]
+    float _hv252 = ta.highest(volume, 252)[1]
+    bool gz_isHV = gz_v1 == _hv5000 or gz_v1 == _hv252
+
+    // GZ1 FVG Detection
+    float gz_thresh = gz1_auto ? ta.cum((high - low) / low) / bar_index : gz1_threshPct / 100
+    bool gz_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > gz_thresh
+    bool gz_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > gz_thresh
+
+    var gz_fvgs = array.new<gz_fvg>(0)
+    var int gz_lastT = 0
+    bool gz_bullGZI = false, bool gz_bearGZI = false, bool gz_bullHV = false, bool gz_bearHV = false
+
+    // Process Bull FVG
+    if gz_bFVG and time != gz_lastT
+        float mx = low, float mn = high[2]
+        if gz_isHV
+            gz_bullHV := true
+        if gz_fvgs.size() > 0
+            for i = 0 to gz_fvgs.size() - 1
+                gz_fvg e = gz_fvgs.get(i)
+                if e.bull and bar_index - e.idx <= gz1_dist
+                    float ob = math.max(e.mn, mn), float ot = math.min(e.mx, mx)
+                    if ob < ot or (ob <= ot and e.hv and gz_isHV)
+                        gz_bullGZI := true
+                        break
+        gz_fvgs.unshift(gz_fvg.new(mx, mn, true, time, bar_index, gz_isHV))
+        gz_lastT := time
+
+    // Process Bear FVG
+    if gz_sFVG and time != gz_lastT
+        float mx = low[2], float mn = high
+        if gz_isHV
+            gz_bearHV := true
+        if gz_fvgs.size() > 0
+            for i = 0 to gz_fvgs.size() - 1
+                gz_fvg e = gz_fvgs.get(i)
+                if not e.bull and bar_index - e.idx <= gz1_dist
+                    float ob = math.max(e.mn, mn), float ot = math.min(e.mx, mx)
+                    if ob < ot or (ob <= ot and e.hv and gz_isHV)
+                        gz_bearGZI := true
+                        break
+        gz_fvgs.unshift(gz_fvg.new(mx, mn, false, time, bar_index, gz_isHV))
+        gz_lastT := time
+
+    // Mitigation Lines (Optional)
+    if gz_fvgs.size() > 0 and gz1_mitLvl
+        for i = gz_fvgs.size() - 1 to 0
+            gz_fvg g = gz_fvgs.get(i)
+            if g.bull and close < g.mn
+                line.new(g.t, g.mn, time, g.mn, xloc.bar_time, color=color.new(#089981, 70), style=line.style_dashed)
+                gz_fvgs.remove(i)
+            else if not g.bull and close > g.mx
+                line.new(g.t, g.mx, time, g.mx, xloc.bar_time, color=color.new(#f23645, 70), style=line.style_dashed)
+                gz_fvgs.remove(i)
+    if gz_fvgs.size() > 50
+        gz_fvgs.pop()
+    [gz_bullGZI, gz_bearGZI, gz_bullHV, gz_bearHV]
+
+[gz_bullGZI, gz_bearGZI, gz_bullHV, gz_bearHV] = f_gzEngine()
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: YIN YANG SWING (for TYPHOON) — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+grp_yy_lb = "YY - Lookback Settings"
+yy_leftBars = input.int(75, "Left Bars", minval=1, group=grp_yy_lb, tooltip="Minimum bars to the left to confirm a pivot")
+yy_rightBars = input.int(1, "Right Bars", minval=1, group=grp_yy_lb, tooltip="Minimum bars to the right to confirm a pivot. Also determines plot offset.")
+grp_yy_atr = "YY - ATR Filter Settings"
+yy_atrLength = input.int(50, "ATR Length", minval=1, group=grp_yy_atr)
+yy_atrMult = input.float(3.5, "ATR Multiplier", step=0.1, group=grp_yy_atr, tooltip="The new swing must be at least this many ATRs away from the previous valid swing level.")
+
+type yy_sr
+    float price
+    bool isResistance
+
+yy_isSufficientDistance(currentPrice, lastPrice, thr) =>
+    na(lastPrice) ? true : math.abs(currentPrice - lastPrice) >= thr
+f_yyEngine() =>
+    var yy_srs = array.new<yy_sr>()
+    var float yy_lastValidLevel = na
+
+    float yy_atrValue = ta.atr(yy_atrLength)
+    float yy_threshold = yy_atrValue * yy_atrMult
+
+    float yy_rawHigh = ta.pivothigh(high, yy_leftBars, yy_rightBars)
+    float yy_rawLow = ta.pivotlow(low, yy_leftBars, yy_rightBars)
+
+
+    bool yy_validHigh = false
+    if not na(yy_rawHigh) and conf
+        if yy_isSufficientDistance(yy_rawHigh, yy_lastValidLevel, yy_threshold)
+            yy_validHigh := true
+            yy_lastValidLevel := yy_rawHigh
+            array.push(yy_srs, yy_sr.new(yy_rawHigh, true))
+
+    bool yy_validLow = false
+    if not na(yy_rawLow) and conf
+        if yy_isSufficientDistance(yy_rawLow, yy_lastValidLevel, yy_threshold)
+            yy_validLow := true
+            yy_lastValidLevel := yy_rawLow
+            array.push(yy_srs, yy_sr.new(yy_rawLow, false))
+    [yy_validHigh, yy_validLow]
+
+[yy_validHigh, yy_validLow] = f_yyEngine()
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MASTER OFFSET ALIGNMENT — 1st PUP FAUNA parity (moff drives Musashi anchoring)
+// ══════════════════════════════════════════════════════════════════════════════
+grp_align = "Alignment (Fauna parity)"
+i_req_fvg = input.bool(true, "Require FVG for Displacement", group=grp_align, tooltip="Fauna's master-offset switch. ON (fauna default): moff=1 — Musashi's PUP/Whale/PBJ legs and the Musashi first-bar check read bar[1]; plot offset -1. OFF: moff=0, all offset-0.")
+moff = i_req_fvg ? 1 : 0
+
+f_align(sig) => moff == 0 ? sig : sig[1]
+
+al_anyBullPBJ = f_align(anyBullPBJ)
+al_anyBearPBJ = f_align(anyBearPBJ)
+al_PUP = f_align(sigPUP)
+al_PPD = f_align(sigPPD)
+al_WhaleBull = f_align(sigWhaleBull)
+al_WhaleBear = f_align(sigWhaleBear)
+al_isFirstBar = f_align(is_new_sess)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TYPHOON + MUSASHI — 1st PUP FAUNA parity
+// ══════════════════════════════════════════════════════════════════════════════
+// MUSASHI — (GZI OR HV FVG) + PUP/PPD + Whale + anyPBJ (FVG legs RAW, rest ALIGNED — fauna asymmetry preserved)
+sigMusashiBull = conf and (gz_bullGZI or gz_bullHV) and al_PUP and al_WhaleBull and al_anyBullPBJ
+sigMusashiBear = conf and (gz_bearGZI or gz_bearHV) and al_PPD and al_WhaleBear and al_anyBearPBJ
+
+// TYPHOON — swing + first bar + FAUNA + (PUP/PPD OR (Whale + anyPBJ)) on the pivot bar
+bool typh_bull_extra = sigPUP[yy_rightBars] or (sigWhaleBull[yy_rightBars] and anyBullPBJ[yy_rightBars])
+bool typh_bear_extra = sigPPD[yy_rightBars] or (sigWhaleBear[yy_rightBars] and anyBearPBJ[yy_rightBars])
+bool sigTyphoonBull = conf and yy_validLow and is_new_sess[yy_rightBars] and sigFAUNABull[yy_rightBars] and typh_bull_extra
+bool sigTyphoonBear = conf and yy_validHigh and is_new_sess[yy_rightBars] and sigFAUNABear[yy_rightBars] and typh_bear_extra
+
+// ══════════════════════════════════════════════════════════════════════════════
+// B2B SAAB / B2B KRATOS — B2B PUP v5.4 S5 parity + Disp9-on-pattern constraint
+// ══════════════════════════════════════════════════════════════════════════════
+bool det_b2bPUP = sigPUP and nz(sigPUP[1])
+bool det_b2bPPD = sigPPD and nz(sigPPD[1])
+
+bool saab_dir_b = det_SAAB or det_RVOL1xB or det_GrandSlam
+bool saab_neut = det_WTC or det_Hiroshima
+bool saab_dir_b1 = nz(det_SAAB[1]) or nz(det_RVOL1xB[1]) or nz(det_GrandSlam[1])
+bool saab_neut1 = nz(det_WTC[1]) or nz(det_Hiroshima[1])
+bool det_S5_bull = det_b2bPUP and ((saab_dir_b and (saab_dir_b1 or saab_neut1)) or ((saab_dir_b or saab_neut) and saab_dir_b1))
+bool krat_dir = det_Kratos or det_RVOL1xR or det_MOAB
+bool krat_dir1 = nz(det_Kratos[1]) or nz(det_RVOL1xR[1]) or nz(det_MOAB[1])
+bool det_S5_bear = det_b2bPPD and ((krat_dir and (krat_dir1 or saab_neut1)) or ((krat_dir or saab_neut) and krat_dir1))
+
+// NEW CONSTRAINT: Disp9 on one of the two pattern bars (bar[0] or bar[1])
+bool det_S9_kratos = det_S5_bear and (d9_bear or nz(d9_bear[1]))
+bool det_S10_saab = det_S5_bull and (d9_bull or nz(d9_bull[1]))
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: u5 FAUNA (TNT OD variant, for DYNAMITE) — TNT OD v3 parity
+// ══════════════════════════════════════════════════════════════════════════════
+f_u5FaunaEngine() =>
+    float ATR14 = ta.atr(14)
+    float u5_f_atr = ATR14, float u5_f_avgVol = ta.sma(volume, 20), float u5_f_avgBody = ta.sma(math.abs(close - open), 20)
+    float u5_f_avgDelta = ta.sma(math.abs(close - close[1]), 10), float u5_f_trendMA = ta.sma(close, 50)
+    float u5_f_body = close - open, float u5_f_rng = high - low, float u5_f_bodySz = math.abs(u5_f_body)
+    float u5_f_bodyRat = u5_f_rng == 0 ? 0.0 : u5_f_bodySz / u5_f_rng
+    bool u5_f_up = u5_f_body > 0, bool u5_f_dn = u5_f_body < 0
+    float u5_f_prev_body = close[1] - open[1], float u5_f_prev_range = high[1] - low[1]
+    bool u5_MB_b = u5_f_up and u5_f_bodySz > 1.6 * u5_f_atr and u5_f_bodyRat > 0.70 and volume > 1.8 * u5_f_avgVol
+    bool u5_RE_b = u5_f_up and u5_f_rng > 2.2 * u5_f_atr and (high - close) < 0.15 * u5_f_rng and volume > 1.8 * u5_f_avgVol
+    bool u5_TA_b = u5_f_trendMA > u5_f_trendMA[1] and (close - close[1]) > 1.6 * u5_f_avgDelta and u5_f_up and volume > 1.8 * u5_f_avgVol
+    bool u5_GG_b = (open - close[1]) > 0.9 * u5_f_atr and u5_f_up and low > close[1] and volume > 1.8 * u5_f_avgVol
+    bool u5_StrongBear = close[1] < open[1] and math.abs(u5_f_prev_body) > 1.5 * u5_f_avgBody[1] and volume[1] > 1.5 * u5_f_avgVol[1]
+    bool u5_WeakBear = close[1] < open[1] and (u5_f_prev_range == 0 ? 0.0 : math.abs(u5_f_prev_body) / u5_f_prev_range) <= 0.2
+    bool u5_TR_b = u5_WeakBear and (u5_MB_b or u5_RE_b or u5_TA_b), bool u5_ES_b = u5_StrongBear and (u5_MB_b or u5_RE_b or u5_TA_b), bool u5_GDR_b = close[1] < open[1] and u5_GG_b
+    int u5_b_core = (u5_MB_b ? 1 : 0) + (u5_RE_b ? 1 : 0) + (u5_TA_b ? 1 : 0)
+    bool u5_b_gg_exc = u5_GG_b and not ((u5_b_core >= 2) and (u5_f_bodyRat >= 0.80))
+    bool u5_FAUNABull = barstate.isconfirmed and (u5_MB_b or u5_RE_b or u5_TA_b) and not (u5_TR_b or u5_ES_b or u5_GDR_b or u5_b_gg_exc)
+
+    bool u5_MB_r = u5_f_dn and u5_f_bodySz > 1.6 * u5_f_atr and u5_f_bodyRat > 0.70 and volume > 1.8 * u5_f_avgVol
+    bool u5_RE_r = u5_f_dn and u5_f_rng > 2.2 * u5_f_atr and (close - low) < 0.15 * u5_f_rng and volume > 1.8 * u5_f_avgVol
+    bool u5_TA_r = u5_f_trendMA < u5_f_trendMA[1] and (close[1] - close) > 1.6 * u5_f_avgDelta and u5_f_dn and volume > 1.8 * u5_f_avgVol
+    bool u5_GG_r = (close[1] - open) > 0.9 * u5_f_atr and u5_f_dn and high < close[1] and volume > 1.8 * u5_f_avgVol
+    bool u5_StrongBull = close[1] > open[1] and math.abs(u5_f_prev_body) > 1.5 * u5_f_avgBody[1] and volume[1] > 1.5 * u5_f_avgVol[1]
+    bool u5_WeakBull = close[1] > open[1] and (u5_f_prev_range == 0 ? 0.0 : math.abs(u5_f_prev_body) / u5_f_prev_range) <= 0.2
+    bool u5_TR_r = u5_WeakBull and (u5_MB_r or u5_RE_r or u5_TA_r), bool u5_ES_r = u5_StrongBull and (u5_MB_r or u5_RE_r or u5_TA_r), bool u5_GDR_r = close[1] > open[1] and u5_GG_r
+    int u5_s_core = (u5_MB_r ? 1 : 0) + (u5_RE_r ? 1 : 0) + (u5_TA_r ? 1 : 0)
+    bool u5_s_gg_exc = u5_GG_r and not ((u5_s_core >= 2) and (u5_f_bodyRat >= 0.80))
+    bool u5_FAUNABear = barstate.isconfirmed and (u5_MB_r or u5_RE_r or u5_TA_r) and not (u5_TR_r or u5_ES_r or u5_GDR_r or u5_s_gg_exc)
+    [u5_FAUNABull, u5_FAUNABear]
+
+[u5_FAUNABull, u5_FAUNABear] = f_u5FaunaEngine()
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DYNAMITE — TNT OD v3 parity (dedicated 100-bar σ engine)
+// ══════════════════════════════════════════════════════════════════════════════
+grpDyn = "★ DYNAMITE ★ (Displacement — DEDICATED to DYNAMITE only)"
+float dynStdMult = input.float(5.0, "Displacement Std Dev Multiplier (DYNAMITE-only)", minval=1.0, step=0.5, group=grpDyn, tooltip="σ-multiplier used ONLY by the DYNAMITE detection (B2B σ-range + FVG check). Hard-coded 100-bar stdev lookback.")
+float dyn_disp = math.abs(open - close)
+float dyn_std = ta.stdev(dyn_disp, 100)
+bool dyn_disp_b1 = dyn_disp[1] > nz(dyn_std[1]) * dynStdMult
+bool dyn_disp_b2 = dyn_disp[2] > nz(dyn_std[2]) * dynStdMult
+bool dyn_bullFVG = low > high[2] and close[1] > open[1]
+bool dyn_bearFVG = high < low[2] and close[1] < open[1]
+bool dyn_bull_dir = close[1] > open[1] and close[2] > open[2]
+bool dyn_bear_dir = close[1] < open[1] and close[2] < open[2]
+bool dyn_fauna_bull = nz(u5_FAUNABull[1]) and nz(u5_FAUNABull[2])
+bool dyn_fauna_bear = nz(u5_FAUNABear[1]) and nz(u5_FAUNABear[2])
+bool det_dynamiteBull = barstate.isconfirmed and dyn_disp_b1 and dyn_disp_b2 and dyn_bull_dir and dyn_fauna_bull and dyn_bullFVG
+bool det_dynamiteBear = barstate.isconfirmed and dyn_disp_b1 and dyn_disp_b2 and dyn_bear_dir and dyn_fauna_bear and dyn_bearFVG
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: TNT OD v3 CORE (tod_ prefix; for IGNITE) — VOB + ANISH + FLUX + TNT +
+// zones + charge + return + displacement + napalm + sudden change. Visual line/
+// label/box members stripped from types; all state logic verbatim.
+// ══════════════════════════════════════════════════════════════════════════════
+grpE = "TNT OD Engine (Ignite)"
+int tod_SENS = input.int(100, "Sensitivity", minval=1, group=grpE)
+int tod_SWING_LEN = input.int(10, "Swing Length", minval=3, group=grpE)
+string tod_DISP_TYPE = input.string("Open to Close", "Range Type", options=["Open to Close", "High to Low"], group=grpE)
+int tod_DISP_STD_LEN = input.int(100, "Disp Std Dev Length", minval=1, group=grpE)
+int tod_DISP_STD_X = input.int(5, "Disp Std Dev Mult", minval=0, group=grpE)
+float tod_RET_TNT_PCT = input.float(100.0, "Return to TNT %", minval=-10, step=0.1, group=grpE)
+int tod_SUDDEN_PROX = input.int(3, "Sudden Change Max Bar Distance", minval=1, group=grpE)
+int tod_maxZones = input.int(30, "Max TNT 1.0 Zones", minval=1, group=grpE)
+int tod_maxSuperZones = input.int(30, "Max TNT 2.0 Zones", minval=1, group=grpE)
+
+type tod_Zone
+    int originIdx
+    int confirmIdx
+    float upper
+    float lower
+    float level
+    float vol
+    bool isBull
+    bool isActive = true
+    bool returnFired = false
+
+type tod_SuperZone
+    int formBar
+    float zoneTop
+    float zoneBtm
+    float returnLevel
+    bool isBull
+    bool isActive = true
+    bool returnFired = false
+
+type tod_SwingPoint
+    float val = na
+    int idx = na
+    bool crossed = false
+
+type tod_BullBearEvent
+    int barIdx
+    float level
+    float upper
+    float lower
+    bool isBull
+    bool isTrue
+
+type tod_ChargeLevel
+    float level
+    bool isBull
+    int barIdx
+    bool violated = false
+
+int tod_EMA_FAST = tod_SENS, int tod_EMA_SLOW = tod_SENS + 13
+float tod_ATR_VAL = ta.atr(200)
+float tod_ATR_MULT = 3.5, float tod_ATR_MIN = 0.5
+int tod_MIN_SIG_GAP = tod_EMA_SLOW
+int tod_CONF_WINDOW = tod_EMA_SLOW * 2
+float ema_fast = ta.ema(close, tod_EMA_FAST), float ema_slow = ta.ema(close, tod_EMA_SLOW)
+float tod_volMedian = ta.median(volume, tod_EMA_SLOW), float tod_emaSlope = ema_fast - ema_fast[5], float tod_rsiVal = ta.rsi(close, 14)
+f_tod_temporal_ok(int a, int b, int c) =>
+    int mn = math.min(a, math.min(b, c)), int mx = math.max(a, math.max(b, c))
+    mx - mn <= tod_CONF_WINDOW and mn > 0
+f_tod_zones_overlap(float u1, float l1, float u2, float l2) => not na(u1) and not na(u2) and u1 >= l2 and u2 >= l1
+f_tod_synergy_bull(float vV, float vU, float vL, float aU, float aL) => vV > tod_volMedian * tod_EMA_SLOW * 0.5 and tod_emaSlope > 0 and tod_rsiVal < 80 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+f_tod_synergy_bear(float vV, float vU, float vL, float aU, float aL) => vV > tod_volMedian * tod_EMA_SLOW * 0.5 and tod_emaSlope < 0 and tod_rsiVal > 20 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+f_tod_engine() =>
+
+    // ENGINE 1: VOB
+    bool vob_bull_cross = ta.crossover(ema_fast, ema_slow) and barstate.isconfirmed
+    bool vob_bear_cross = ta.crossunder(ema_fast, ema_slow) and barstate.isconfirmed
+    var float vob_bull_upper = na, var float vob_bull_lower = na, var int vob_bull_origin = na, var float vob_bull_vol = na, var bool vob_bull_new = false
+    var float vob_bear_upper = na, var float vob_bear_lower = na, var int vob_bear_origin = na, var float vob_bear_vol = na, var bool vob_bear_new = false
+    float atr_hi = ta.highest(tod_ATR_VAL, 200) * 2.0
+    if vob_bull_cross
+        float cumVol = 0.0, int originBar = bar_index, float originLow = low
+        for i = 1 to tod_EMA_SLOW
+            if low[i] <= originLow
+                originLow := low[i], originBar := bar_index - i
+            cumVol += volume[i]
+        float src = math.min(open[bar_index - originBar], close[bar_index - originBar])
+        src := (src - originLow) < atr_hi * 0.5 ? originLow + atr_hi * 0.5 : src
+        vob_bull_upper := src, vob_bull_lower := originLow, vob_bull_origin := originBar, vob_bull_vol := cumVol, vob_bull_new := true
+    else
+        vob_bull_new := false
+    if vob_bear_cross
+        float cumVol = 0.0, int originBar = bar_index, float originHigh = high
+        for i = 1 to tod_EMA_SLOW
+            if high[i] >= originHigh
+                originHigh := high[i], originBar := bar_index - i
+            cumVol += volume[i]
+        float src = math.max(open[bar_index - originBar], close[bar_index - originBar])
+        src := (originHigh - src) < atr_hi * 0.5 ? originHigh - atr_hi * 0.5 : src
+        vob_bear_upper := originHigh, vob_bear_lower := src, vob_bear_origin := originBar, vob_bear_vol := cumVol, vob_bear_new := true
+    else
+        vob_bear_new := false
+
+    // SWING + ENGINE 2: ANISH
+    var int swingState = 0
+    var tod_SwingPoint swHigh = tod_SwingPoint.new(na, na), var tod_SwingPoint swLow = tod_SwingPoint.new(na, na)
+    float sw_upper = ta.highest(high, tod_SWING_LEN), float sw_lower = ta.lowest(low, tod_SWING_LEN)
+    swingState := high[tod_SWING_LEN] > sw_upper ? 0 : low[tod_SWING_LEN] < sw_lower ? 1 : swingState
+    if swingState == 0 and swingState[1] != 0
+        swHigh := tod_SwingPoint.new(high[tod_SWING_LEN], bar_index[tod_SWING_LEN])
+    if swingState == 1 and swingState[1] != 1
+        swLow := tod_SwingPoint.new(low[tod_SWING_LEN], bar_index[tod_SWING_LEN])
+
+    var float anish_bull_ob_upper = na, var float anish_bull_ob_lower = na, var int anish_bull_ob_idx = na
+    var float anish_bull_prev_upper = na, var float anish_bull_prev_lower = na, var int anish_bull_prev_idx = na, var bool anish_bull_new = false
+    var float anish_bear_ob_upper = na, var float anish_bear_ob_lower = na, var int anish_bear_ob_idx = na
+    var float anish_bear_prev_upper = na, var float anish_bear_prev_lower = na, var int anish_bear_prev_idx = na, var bool anish_bear_new = false
+
+    if close > swHigh.val and not swHigh.crossed and barstate.isconfirmed and not na(swHigh.val)
+        swHigh.crossed := true
+        float obLow = low[1], float obHigh = high[1], int obIdx = bar_index - 1
+        int lookback = bar_index - swHigh.idx
+        if lookback > 1
+            for i = 1 to lookback - 1
+                if open[i] > close[i] and low[i] <= obLow
+                    obLow := low[i], obHigh := high[i], obIdx := bar_index - i
+        anish_bull_prev_upper := anish_bull_ob_upper, anish_bull_prev_lower := anish_bull_ob_lower, anish_bull_prev_idx := anish_bull_ob_idx
+        anish_bull_ob_upper := obHigh, anish_bull_ob_lower := obLow, anish_bull_ob_idx := obIdx
+        anish_bull_new := not na(anish_bull_prev_upper) and obIdx <= nz(anish_bull_prev_idx, 0) + tod_EMA_SLOW and obHigh > nz(anish_bull_prev_lower, na) and obLow < nz(anish_bull_prev_upper, na)
+    else
+        anish_bull_new := false
+
+    if close < swLow.val and not swLow.crossed and barstate.isconfirmed and not na(swLow.val)
+        swLow.crossed := true
+        float obLow = low[1], float obHigh = high[1], int obIdx = bar_index - 1
+        int lookback = bar_index - swLow.idx
+        if lookback > 1
+            for i = 1 to lookback - 1
+                if open[i] < close[i] and high[i] >= obHigh
+                    obHigh := high[i], obLow := low[i], obIdx := bar_index - i
+        anish_bear_prev_upper := anish_bear_ob_upper, anish_bear_prev_lower := anish_bear_ob_lower, anish_bear_prev_idx := anish_bear_ob_idx
+        anish_bear_ob_upper := obHigh, anish_bear_ob_lower := obLow, anish_bear_ob_idx := obIdx
+        anish_bear_new := not na(anish_bear_prev_lower) and obIdx <= nz(anish_bear_prev_idx, 0) + tod_EMA_SLOW and obLow < nz(anish_bear_prev_upper, na) and obHigh > nz(anish_bear_prev_lower, na)
+    else
+        anish_bear_new := false
+
+    // ENGINE 3: FLUX
+    var float flux_bull_ob_top = na, var float flux_bull_ob_btm = na, var int flux_bull_ob_time = na
+    var bool flux_bull_ob_active = false, var bool flux_bull_pb_new = false, var int flux_bull_pb_idx = na
+    var float flux_bear_ob_top = na, var float flux_bear_ob_btm = na, var int flux_bear_ob_time = na
+    var bool flux_bear_ob_active = false, var bool flux_bear_pb_new = false, var int flux_bear_pb_idx = na
+    var tod_SwingPoint flux_swH = tod_SwingPoint.new(na, na), var tod_SwingPoint flux_swL = tod_SwingPoint.new(na, na)
+    if swingState == 0 and swingState[1] != 0
+        flux_swH := tod_SwingPoint.new(high[tod_SWING_LEN], bar_index[tod_SWING_LEN])
+    if swingState == 1 and swingState[1] != 1
+        flux_swL := tod_SwingPoint.new(low[tod_SWING_LEN], bar_index[tod_SWING_LEN])
+    if close > flux_swH.val and not flux_swH.crossed and barstate.isconfirmed and not na(flux_swH.val)
+        flux_swH.crossed := true
+        float boxBtm = math.min(open[1], close[1]), float boxTop = math.max(open[1], close[1]), int boxIdx = bar_index - 1
+        int lookback = bar_index - flux_swH.idx
+        if lookback > 1
+            for i = 1 to lookback - 1
+                if math.min(open[i], close[i]) < boxBtm
+                    boxBtm := math.min(open[i], close[i]), boxTop := math.max(open[i], close[i]), boxIdx := bar_index - i
+        float obSize = math.abs(boxTop - boxBtm)
+        if obSize <= tod_ATR_VAL * tod_ATR_MULT and obSize > tod_ATR_VAL * tod_ATR_MIN
+            flux_bull_ob_top := boxTop, flux_bull_ob_btm := boxBtm, flux_bull_ob_time := boxIdx, flux_bull_ob_active := true
+    if close < flux_swL.val and not flux_swL.crossed and barstate.isconfirmed and not na(flux_swL.val)
+        flux_swL.crossed := true
+        float boxTop = math.max(open[1], close[1]), float boxBtm = math.min(open[1], close[1]), int boxIdx = bar_index - 1
+        int lookback = bar_index - flux_swL.idx
+        if lookback > 1
+            for i = 1 to lookback - 1
+                if math.max(open[i], close[i]) > boxTop
+                    boxTop := math.max(open[i], close[i]), boxBtm := math.min(open[i], close[i]), boxIdx := bar_index - i
+        float obSize = math.abs(boxTop - boxBtm)
+        if obSize <= tod_ATR_VAL * tod_ATR_MULT and obSize > tod_ATR_VAL * tod_ATR_MIN
+            flux_bear_ob_top := boxTop, flux_bear_ob_btm := boxBtm, flux_bear_ob_time := boxIdx, flux_bear_ob_active := true
+    flux_bull_pb_new := false
+    if flux_bull_ob_active and barstate.isconfirmed
+        if close < flux_bull_ob_btm
+            flux_bull_ob_active := false
+        else if low[1] < flux_bull_ob_top and low[1] > flux_bull_ob_btm and close > open and close > high[1]
+            flux_bull_pb_new := true, flux_bull_pb_idx := flux_bull_ob_time
+    flux_bear_pb_new := false
+    if flux_bear_ob_active and barstate.isconfirmed
+        if close > flux_bear_ob_top
+            flux_bear_ob_active := false
+        else if high[1] > flux_bear_ob_btm and high[1] < flux_bear_ob_top and close < open and close < low[1]
+            flux_bear_pb_new := true, flux_bear_pb_idx := flux_bear_ob_time
+
+    // CONFLUENCE → TNT 1.0
+    var int vob_bull_conf_bar = 0, var int anish_bull_conf_bar = 0, var int flux_bull_conf_bar = 0
+    var int vob_bear_conf_bar = 0, var int anish_bear_conf_bar = 0, var int flux_bear_conf_bar = 0
+    var float vob_bull_u = na, var float vob_bull_l = na, var float vob_bear_u = na, var float vob_bear_l = na
+    if vob_bull_new
+        vob_bull_conf_bar := bar_index, vob_bull_u := vob_bull_upper, vob_bull_l := vob_bull_lower
+    if vob_bear_new
+        vob_bear_conf_bar := bar_index, vob_bear_u := vob_bear_upper, vob_bear_l := vob_bear_lower
+    if anish_bull_new
+        anish_bull_conf_bar := bar_index
+    if anish_bear_new
+        anish_bear_conf_bar := bar_index
+    if flux_bull_pb_new
+        flux_bull_conf_bar := bar_index
+    if flux_bear_pb_new
+        flux_bear_conf_bar := bar_index
+
+
+    var tod_tnt_zones = array.new<tod_Zone>(0)
+    var int tod_lastBullSigBar = 0, var int tod_lastBearSigBar = 0
+    bool tod_bullConf = f_tod_temporal_ok(vob_bull_conf_bar, anish_bull_conf_bar, flux_bull_conf_bar) and f_tod_zones_overlap(vob_bull_u, vob_bull_l, anish_bull_ob_upper, anish_bull_ob_lower)
+    bool tod_bearConf = f_tod_temporal_ok(vob_bear_conf_bar, anish_bear_conf_bar, flux_bear_conf_bar) and f_tod_zones_overlap(vob_bear_u, vob_bear_l, anish_bear_ob_upper, anish_bear_ob_lower)
+    bool tod_raw_bullTNT = tod_bullConf and f_tod_synergy_bull(nz(vob_bull_vol), nz(vob_bull_u), nz(vob_bull_l), nz(anish_bull_ob_upper), nz(anish_bull_ob_lower)) and barstate.isconfirmed and (bar_index - tod_lastBullSigBar) > tod_MIN_SIG_GAP
+    bool tod_raw_bearTNT = tod_bearConf and f_tod_synergy_bear(nz(vob_bear_vol), nz(vob_bear_u), nz(vob_bear_l), nz(anish_bear_ob_upper), nz(anish_bear_ob_lower)) and barstate.isconfirmed and (bar_index - tod_lastBearSigBar) > tod_MIN_SIG_GAP
+
+
+    var tod_charge_levels = array.new<tod_ChargeLevel>(0)
+    if tod_raw_bullTNT
+        tod_lastBullSigBar := bar_index
+        int _bullOrg = math.min(nz(vob_bull_origin, bar_index), math.min(nz(anish_bull_ob_idx, bar_index), nz(flux_bull_pb_idx, bar_index)))
+        int origin = _bullOrg > 0 ? _bullOrg : bar_index
+        float oU = math.min(nz(vob_bull_u, high), nz(anish_bull_ob_upper, high)), float oL = math.max(nz(vob_bull_l, low), nz(anish_bull_ob_lower, low)), float lvl = math.avg(oU, oL)
+        tod_tnt_zones.push(tod_Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bull_vol), true, true, false))
+        tod_charge_levels.push(tod_ChargeLevel.new(lvl, true, bar_index))
+    if tod_raw_bearTNT
+        tod_lastBearSigBar := bar_index
+        int _bearOrg = math.min(nz(vob_bear_origin, bar_index), math.min(nz(anish_bear_ob_idx, bar_index), nz(flux_bear_pb_idx, bar_index)))
+        int origin = _bearOrg > 0 ? _bearOrg : bar_index
+        float oU = math.min(nz(vob_bear_u, high), nz(anish_bear_ob_upper, high)), float oL = math.max(nz(vob_bear_l, low), nz(anish_bear_ob_lower, low)), float lvl = math.avg(oU, oL)
+        tod_tnt_zones.push(tod_Zone.new(origin, bar_index, oU, oL, lvl, nz(vob_bear_vol), false, true, false))
+        tod_charge_levels.push(tod_ChargeLevel.new(lvl, false, bar_index))
+
+    // Return + zone lifecycle
+    bool tod_raw_retBullTNT = false, bool tod_raw_retBearTNT = false
+    if tod_tnt_zones.size() > 0
+        for i = tod_tnt_zones.size() - 1 to 0
+            tod_Zone z = tod_tnt_zones.get(i)
+            if z.isActive
+                if z.isBull and close < z.lower
+                    z.isActive := false
+                if not z.isBull and close > z.upper
+                    z.isActive := false
+                if z.isActive and not z.returnFired and barstate.isconfirmed and bar_index > z.confirmIdx
+                    float zH = z.upper - z.lower
+                    if z.isBull
+                        float retLvl = z.lower + zH * (tod_RET_TNT_PCT / 100.0)
+                        if low <= retLvl and close > z.lower
+                            z.returnFired := true, tod_raw_retBullTNT := true
+                    if not z.isBull
+                        float retLvl = z.upper - zH * (tod_RET_TNT_PCT / 100.0)
+                        if high >= retLvl and close < z.upper
+                            z.returnFired := true, tod_raw_retBearTNT := true
+        while tod_tnt_zones.size() > tod_maxZones
+            tod_tnt_zones.shift()
+
+    // Displacement (Engine #1)
+    float tod_disp_range = tod_DISP_TYPE == "Open to Close" ? math.abs(open - close) : high - low
+    float tod_disp_std = ta.stdev(tod_disp_range, tod_DISP_STD_LEN), float tod_disp_threshold = tod_disp_std * tod_DISP_STD_X
+    bool tod_isBullishFVG = low > high[2] and open[1] < close[1], bool tod_isBearishFVG = high < low[2] and open[1] > close[1]
+    bool tod_prevBarDisplaced = tod_disp_range[1] > tod_disp_threshold[1]
+    bool tod_dispSignal = tod_prevBarDisplaced and (tod_isBullishFVG or tod_isBearishFVG) and barstate.isconfirmed
+    bool tod_dispBull = tod_dispSignal and close[1] > open[1], bool tod_dispBear = tod_dispSignal and close[1] < open[1]
+
+    // Napalm + Charge
+    bool tod_raw_napalmBull = false, bool tod_raw_napalmBear = false
+    float tod_pseudoBullLevel = na, float tod_pseudoBearLevel = na
+    if barstate.isconfirmed and tod_tnt_zones.size() > 0
+        if tod_dispBull
+            for i = tod_tnt_zones.size() - 1 to 0
+                tod_Zone z = tod_tnt_zones.get(i)
+                if not z.isBull and z.isActive and low[1] > z.level
+                    tod_raw_napalmBull := true, tod_pseudoBullLevel := z.level
+                    break
+        if tod_dispBear
+            for i = tod_tnt_zones.size() - 1 to 0
+                tod_Zone z = tod_tnt_zones.get(i)
+                if z.isBull and z.isActive and high[1] < z.level
+                    tod_raw_napalmBear := true, tod_pseudoBearLevel := z.level
+                    break
+    bool tod_raw_bullCharge = false, bool tod_raw_bearCharge = false
+    float tod_chargeBullLevel = na, float tod_chargeBearLevel = na
+    if barstate.isconfirmed and tod_charge_levels.size() > 0
+        if tod_dispBull
+            for i = tod_charge_levels.size() - 1 to 0
+                tod_ChargeLevel cl = tod_charge_levels.get(i)
+                if not cl.isBull and not cl.violated and close[1] > cl.level
+                    cl.violated := true, tod_raw_bullCharge := true, tod_chargeBullLevel := cl.level
+                    tod_charge_levels.push(tod_ChargeLevel.new(low[1], true, bar_index))
+                    break
+        if tod_dispBear
+            for i = tod_charge_levels.size() - 1 to 0
+                tod_ChargeLevel cl = tod_charge_levels.get(i)
+                if cl.isBull and not cl.violated and close[1] < cl.level
+                    cl.violated := true, tod_raw_bearCharge := true, tod_chargeBearLevel := cl.level
+                    tod_charge_levels.push(tod_ChargeLevel.new(high[1], false, bar_index))
+                    break
+    while tod_charge_levels.size() > 100
+        tod_charge_levels.shift()
+
+    // Super Charge + Super TNT (internal)
+    bool tod_raw_superTNTBull = tod_raw_bullTNT and tod_raw_bearCharge, bool tod_raw_superTNTBear = tod_raw_bearTNT and tod_raw_bullCharge
+
+    // Event log + TNT 2.0 (compact)
+    var tod_bull_events = array.new<tod_BullBearEvent>(0), var tod_bear_events = array.new<tod_BullBearEvent>(0)
+    bool tod_effectiveBullCharge = tod_raw_bullCharge and not tod_raw_bearTNT, bool tod_effectiveBearCharge = tod_raw_bearCharge and not tod_raw_bullTNT
+    bool tod_anyBullEvent = tod_raw_bullTNT or tod_raw_napalmBull or tod_effectiveBullCharge, bool tod_anyBearEvent = tod_raw_bearTNT or tod_raw_napalmBear or tod_effectiveBearCharge
+    if tod_anyBullEvent
+        int evtBar = tod_raw_bullTNT ? bar_index : bar_index - 1
+        float evtLvl = tod_raw_bullTNT ? math.avg(math.min(nz(vob_bull_u, high), nz(anish_bull_ob_upper, high)), math.max(nz(vob_bull_l, low), nz(anish_bull_ob_lower, low))) : tod_raw_napalmBull ? tod_pseudoBullLevel : tod_chargeBullLevel
+        tod_bull_events.push(tod_BullBearEvent.new(evtBar, evtLvl, high, low, true, tod_raw_bullTNT))
+        tod_bear_events.clear()
+        while tod_bull_events.size() > 20
+            tod_bull_events.shift()
+    if tod_anyBearEvent and not tod_anyBullEvent
+        int evtBar = tod_raw_bearTNT ? bar_index : bar_index - 1
+        float evtLvl = tod_raw_bearTNT ? math.avg(math.min(nz(vob_bear_u, high), nz(anish_bear_ob_upper, high)), math.max(nz(vob_bear_l, low), nz(anish_bear_ob_lower, low))) : tod_raw_napalmBear ? tod_pseudoBearLevel : tod_chargeBearLevel
+        tod_bear_events.push(tod_BullBearEvent.new(evtBar, evtLvl, high, low, false, tod_raw_bearTNT))
+        tod_bull_events.clear()
+        while tod_bear_events.size() > 20
+            tod_bear_events.shift()
+
+    var tod_super_zones = array.new<tod_SuperZone>(0)
+    var int tod_lastSuperBullBar = 0, var int tod_lastSuperBearBar = 0
+    bool tod_raw_bullTNT2 = false, bool tod_raw_bearTNT2 = false
+    if tod_bull_events.size() >= 2 and tod_anyBullEvent and barstate.isconfirmed and (bar_index - tod_lastSuperBullBar) > tod_MIN_SIG_GAP
+        tod_raw_bullTNT2 := true, tod_lastSuperBullBar := bar_index
+    if tod_bear_events.size() >= 2 and tod_anyBearEvent and not tod_anyBullEvent and barstate.isconfirmed and (bar_index - tod_lastSuperBearBar) > tod_MIN_SIG_GAP
+        tod_raw_bearTNT2 := true, tod_lastSuperBearBar := bar_index
+
+    // Return TNT 2.0 (compact — source parity: no SuperZone constructor exists in TNT OD v3, array stays empty)
+    bool tod_raw_retBullTNT2 = false, bool tod_raw_retBearTNT2 = false
+    if tod_super_zones.size() > 0 and barstate.isconfirmed
+        for i = tod_super_zones.size() - 1 to 0
+            tod_SuperZone sz = tod_super_zones.get(i)
+            if sz.isActive and not sz.returnFired
+                if sz.isBull and low <= sz.returnLevel and close > sz.zoneBtm
+                    sz.returnFired := true, tod_raw_retBullTNT2 := true
+                if not sz.isBull and high >= sz.returnLevel and close < sz.zoneTop
+                    sz.returnFired := true, tod_raw_retBearTNT2 := true
+        while tod_super_zones.size() > tod_maxSuperZones
+            tod_super_zones.shift()
+
+    // Sudden Change — Continuous only
+    var int tod_sc_lastBullChargeBar = na, var int tod_sc_lastBearChargeBar = na
+    var int tod_sc_lastRetBullBar = na, var int tod_sc_lastRetBearBar = na
+    var int tod_sc_lastBullTNTBar = na, var int tod_sc_lastBearTNTBar = na
+    var int tod_sc_lastBullTNT2Bar = na, var int tod_sc_lastBearTNT2Bar = na
+    bool tod_raw_contBull = (tod_raw_bullCharge and not na(tod_sc_lastRetBullBar) and (bar_index - 1 - tod_sc_lastRetBullBar) <= tod_SUDDEN_PROX) or ((tod_raw_bullTNT or tod_raw_bullTNT2) and not na(tod_sc_lastBullChargeBar) and (bar_index - tod_sc_lastBullChargeBar) <= tod_SUDDEN_PROX) or (tod_raw_bullCharge and ((not na(tod_sc_lastBullTNTBar) and (bar_index - 1 - tod_sc_lastBullTNTBar) <= tod_SUDDEN_PROX) or (not na(tod_sc_lastBullTNT2Bar) and (bar_index - 1 - tod_sc_lastBullTNT2Bar) <= tod_SUDDEN_PROX)))
+    bool tod_raw_contBear = (tod_raw_bearCharge and not na(tod_sc_lastRetBearBar) and (bar_index - 1 - tod_sc_lastRetBearBar) <= tod_SUDDEN_PROX) or ((tod_raw_bearTNT or tod_raw_bearTNT2) and not na(tod_sc_lastBearChargeBar) and (bar_index - tod_sc_lastBearChargeBar) <= tod_SUDDEN_PROX) or (tod_raw_bearCharge and ((not na(tod_sc_lastBearTNTBar) and (bar_index - 1 - tod_sc_lastBearTNTBar) <= tod_SUDDEN_PROX) or (not na(tod_sc_lastBearTNT2Bar) and (bar_index - 1 - tod_sc_lastBearTNT2Bar) <= tod_SUDDEN_PROX)))
+    if tod_raw_bullCharge
+        tod_sc_lastBullChargeBar := bar_index - 1
+    if tod_raw_bearCharge
+        tod_sc_lastBearChargeBar := bar_index - 1
+    if tod_raw_retBullTNT or tod_raw_retBullTNT2
+        tod_sc_lastRetBullBar := bar_index
+    if tod_raw_retBearTNT or tod_raw_retBearTNT2
+        tod_sc_lastRetBearBar := bar_index
+    if tod_raw_bullTNT
+        tod_sc_lastBullTNTBar := bar_index
+    if tod_raw_bearTNT
+        tod_sc_lastBearTNTBar := bar_index
+    if tod_raw_bullTNT2
+        tod_sc_lastBullTNT2Bar := bar_index
+    if tod_raw_bearTNT2
+        tod_sc_lastBearTNT2Bar := bar_index
+
+    // Consolidated detection (TNT OD v3 parity)
+    bool tod_det_bullTNT = tod_raw_bullTNT or tod_raw_bullTNT2 or tod_raw_superTNTBull
+    bool tod_det_bearTNT = tod_raw_bearTNT or tod_raw_bearTNT2 or tod_raw_superTNTBear
+    bool tod_det_bullNapalm = tod_raw_napalmBull or tod_raw_bullCharge
+    bool tod_det_bearNapalm = tod_raw_napalmBear or tod_raw_bearCharge
+    bool tod_det_contBull = tod_raw_contBull, bool tod_det_contBear = tod_raw_contBear
+    [tod_det_bullTNT, tod_det_bearTNT, tod_det_bullNapalm, tod_det_bearNapalm, tod_det_contBull, tod_det_contBear, tod_raw_retBullTNT, tod_raw_retBullTNT2, tod_raw_retBearTNT, tod_raw_retBearTNT2, tod_disp_range, tod_isBullishFVG, tod_isBearishFVG]
+
+[tod_det_bullTNT, tod_det_bearTNT, tod_det_bullNapalm, tod_det_bearNapalm, tod_det_contBull, tod_det_contBear, tod_raw_retBullTNT, tod_raw_retBullTNT2, tod_raw_retBearTNT, tod_raw_retBearTNT2, tod_disp_range, tod_isBullishFVG, tod_isBearishFVG] = f_tod_engine()
+
+// ══════════════════════════════════════════════════════════════════════════════
+// IGNITE — TNT OD v3 parity: (TNT or NPM) + Continuous same visual bar
+// ══════════════════════════════════════════════════════════════════════════════
+bool ign_tc_bull = tod_det_bullTNT and tod_det_contBull, bool ign_tc_bear = tod_det_bearTNT and tod_det_contBear
+bool ign_nc_bull = tod_det_bullNapalm and (tod_det_contBull[1] == true), bool ign_nc_bear = tod_det_bearNapalm and (tod_det_contBear[1] == true)
+bool det_igniteBull = ign_tc_bull or ign_nc_bull, bool det_igniteBear = ign_tc_bear or ign_nc_bear
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: B2B PUP v5.4 ENGINE G (tnt_ prefix; for B2B NAPALM) — verbatim port
+// ══════════════════════════════════════════════════════════════════════════════
+grpTNT = "── TNT Engine (B2B Napalm) ──"
+int tnt_SENS = input.int(100, "Sensitivity", minval=1, group=grpTNT)
+int tnt_SWING_LEN = input.int(10, "Swing Length", minval=3, group=grpTNT)
+int tnt_DISP_STD_X = input.int(5, "Disp Std Dev Mult", minval=0, group=grpTNT)
+int tnt_SUDDEN_PROX = input.int(3, "Sudden Change Max Bars", minval=1, group=grpTNT)
+int tnt_MAX_ZONES = input.int(30, "Max TNT Zones", minval=1, maxval=200, group=grpTNT, tooltip="How many active TNT zones to keep tracking for Napalm/Charge/Return scans.")
+float tnt_RET_PCT = input.float(100.0, "Return to TNT %", minval=-10, step=0.1, group=grpTNT)
+
+int tnt_EMA_FAST = tnt_SENS, int tnt_EMA_SLOW = tnt_SENS + 13
+float tnt_ATR_VAL = ta.atr(200), float tnt_ATR_MULT = 3.5, float tnt_ATR_MIN = 0.5
+int tnt_MIN_SIG_GAP = tnt_EMA_SLOW, int tnt_CW = tnt_EMA_SLOW * 2
+float tnt_ef = ta.ema(close, tnt_EMA_FAST), float tnt_es = ta.ema(close, tnt_EMA_SLOW)
+
+type tnt_SP
+    float val = na
+    int idx = na
+    bool crossed = false
+type TntZone
+    int confirmIdx
+    float upper
+    float lower
+    float level
+    bool isBull
+    bool isActive = true
+    bool returnFired = false
+type ChargeLvl
+    float level
+    bool isBull
+    int barIdx
+    bool violated = false
+f_tnt_tok(int a, int b, int c) =>
+    int mn = math.min(a, math.min(b, c)), int mx = math.max(a, math.max(b, c))
+    mx - mn <= tnt_CW and mn > 0
+f_tnt_zov(float u1, float l1, float u2, float l2) => not na(u1) and not na(u2) and u1 >= l2 and u2 >= l1
+float tnt_vMed = ta.median(volume, tnt_EMA_SLOW), float tnt_eSl = tnt_ef - tnt_ef[5], float tnt_rsi = ta.rsi(close, 14)
+f_tnt_sb(float vV, float vU, float vL, float aU, float aL) => vV > tnt_vMed * tnt_EMA_SLOW * 0.5 and tnt_eSl > 0 and tnt_rsi < 80 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+f_tnt_ss(float vV, float vU, float vL, float aU, float aL) => vV > tnt_vMed * tnt_EMA_SLOW * 0.5 and tnt_eSl < 0 and tnt_rsi > 20 and (math.min(vU - vL, aU - aL) > 0 ? math.max(0, math.min(vU, aU) - math.max(vL, aL)) / math.min(vU - vL, aU - aL) > 0.3 : false)
+f_b2bNapalmEngine() =>
+    bool tnt_vbc = ta.crossover(tnt_ef, tnt_es) and conf, bool tnt_vsc = ta.crossunder(tnt_ef, tnt_es) and conf
+    var float tnt_vbu = na, var float tnt_vbl = na, var float tnt_vbv = na, var bool tnt_vbn = false
+    var float tnt_vsu = na, var float tnt_vsl = na, var float tnt_vsv = na, var bool tnt_vsn = false
+    float tnt_ahi = ta.highest(tnt_ATR_VAL, 200) * 2.0
+    if tnt_vbc
+        float cv = 0.0, float ol = low
+        for i = 1 to tnt_EMA_SLOW
+            if low[i] <= ol
+                ol := low[i]
+            cv += volume[i]
+        float s = math.min(open, close)
+        s := (s - ol) < tnt_ahi * 0.5 ? ol + tnt_ahi * 0.5 : s
+        tnt_vbu := s, tnt_vbl := ol, tnt_vbv := cv, tnt_vbn := true
+    else
+        tnt_vbn := false
+    if tnt_vsc
+        float cv = 0.0, float oh = high
+        for i = 1 to tnt_EMA_SLOW
+            if high[i] >= oh
+                oh := high[i]
+            cv += volume[i]
+        float s = math.max(open, close)
+        s := (oh - s) < tnt_ahi * 0.5 ? oh - tnt_ahi * 0.5 : s
+        tnt_vsu := oh, tnt_vsl := s, tnt_vsv := cv, tnt_vsn := true
+    else
+        tnt_vsn := false
+
+    var int tnt_swSt = 0
+    var tnt_SP tnt_swH = tnt_SP.new(na, na), var tnt_SP tnt_swL = tnt_SP.new(na, na)
+    float tnt_swU = ta.highest(high, tnt_SWING_LEN), float tnt_swLL = ta.lowest(low, tnt_SWING_LEN)
+    tnt_swSt := high[tnt_SWING_LEN] > tnt_swU ? 0 : low[tnt_SWING_LEN] < tnt_swLL ? 1 : tnt_swSt
+    if tnt_swSt == 0 and tnt_swSt[1] != 0
+        tnt_swH := tnt_SP.new(high[tnt_SWING_LEN], bar_index[tnt_SWING_LEN])
+    if tnt_swSt == 1 and tnt_swSt[1] != 1
+        tnt_swL := tnt_SP.new(low[tnt_SWING_LEN], bar_index[tnt_SWING_LEN])
+    var float tnt_abu = na, var float tnt_abl = na, var int tnt_abi = na, var float tnt_apu = na, var float tnt_apl = na, var int tnt_api = na, var bool tnt_abn = false
+    var float tnt_asu = na, var float tnt_asl = na, var int tnt_asi = na, var float tnt_aspu = na, var float tnt_aspl = na, var int tnt_aspi = na, var bool tnt_asn = false
+    if close > tnt_swH.val and not tnt_swH.crossed and conf and not na(tnt_swH.val)
+        tnt_swH.crossed := true
+        float oL = low[1], float oH = high[1], int oI = bar_index - 1
+        int lb = bar_index - tnt_swH.idx
+        if lb > 1
+            for i = 1 to lb - 1
+                if open[i] > close[i] and low[i] <= oL
+                    oL := low[i], oH := high[i], oI := bar_index - i
+        tnt_apu := tnt_abu, tnt_apl := tnt_abl, tnt_api := tnt_abi
+        tnt_abu := oH, tnt_abl := oL, tnt_abi := oI
+        tnt_abn := not na(tnt_apu) and oI <= nz(tnt_api, 0) + tnt_EMA_SLOW and oH > nz(tnt_apl, na) and oL < nz(tnt_apu, na)
+    else
+        tnt_abn := false
+    if close < tnt_swL.val and not tnt_swL.crossed and conf and not na(tnt_swL.val)
+        tnt_swL.crossed := true
+        float oL = low[1], float oH = high[1], int oI = bar_index - 1
+        int lb = bar_index - tnt_swL.idx
+        if lb > 1
+            for i = 1 to lb - 1
+                if open[i] < close[i] and high[i] >= oH
+                    oH := high[i], oL := low[i], oI := bar_index - i
+        tnt_aspu := tnt_asu, tnt_aspl := tnt_asl, tnt_aspi := tnt_asi
+        tnt_asu := oH, tnt_asl := oL, tnt_asi := oI
+        tnt_asn := not na(tnt_aspl) and oI <= nz(tnt_aspi, 0) + tnt_EMA_SLOW and oL < nz(tnt_aspu, na) and oH > nz(tnt_aspl, na)
+    else
+        tnt_asn := false
+
+    var float tnt_fbu = na, var float tnt_fbl = na, var bool tnt_fba = false, var bool tnt_fbpn = false
+    var float tnt_fsu = na, var float tnt_fsl = na, var bool tnt_fsa = false, var bool tnt_fspn = false
+    var tnt_SP tnt_fswH = tnt_SP.new(na, na), var tnt_SP tnt_fswL = tnt_SP.new(na, na)
+    if tnt_swSt == 0 and tnt_swSt[1] != 0
+        tnt_fswH := tnt_SP.new(high[tnt_SWING_LEN], bar_index[tnt_SWING_LEN])
+    if tnt_swSt == 1 and tnt_swSt[1] != 1
+        tnt_fswL := tnt_SP.new(low[tnt_SWING_LEN], bar_index[tnt_SWING_LEN])
+    if close > tnt_fswH.val and not tnt_fswH.crossed and conf and not na(tnt_fswH.val)
+        tnt_fswH.crossed := true
+        float bB = math.min(open[1], close[1]), float bT = math.max(open[1], close[1])
+        int lb = bar_index - tnt_fswH.idx
+        if lb > 1
+            for i = 1 to lb - 1
+                if math.min(open[i], close[i]) < bB
+                    bB := math.min(open[i], close[i]), bT := math.max(open[i], close[i])
+        float os = math.abs(bT - bB)
+        if os <= tnt_ATR_VAL * tnt_ATR_MULT and os > tnt_ATR_VAL * tnt_ATR_MIN
+            tnt_fbu := bT, tnt_fbl := bB, tnt_fba := true
+    if close < tnt_fswL.val and not tnt_fswL.crossed and conf and not na(tnt_fswL.val)
+        tnt_fswL.crossed := true
+        float bT = math.max(open[1], close[1]), float bB = math.min(open[1], close[1])
+        int lb = bar_index - tnt_fswL.idx
+        if lb > 1
+            for i = 1 to lb - 1
+                if math.max(open[i], close[i]) > bT
+                    bT := math.max(open[i], close[i]), bB := math.min(open[i], close[i])
+        float os = math.abs(bT - bB)
+        if os <= tnt_ATR_VAL * tnt_ATR_MULT and os > tnt_ATR_VAL * tnt_ATR_MIN
+            tnt_fsu := bT, tnt_fsl := bB, tnt_fsa := true
+    tnt_fbpn := false
+    if tnt_fba and conf
+        if close < tnt_fbl
+            tnt_fba := false
+        else if low[1] < tnt_fbu and low[1] > tnt_fbl and close > open and close > high[1]
+            tnt_fbpn := true
+    tnt_fspn := false
+    if tnt_fsa and conf
+        if close > tnt_fsu
+            tnt_fsa := false
+        else if high[1] > tnt_fsl and high[1] < tnt_fsu and close < open and close < low[1]
+            tnt_fspn := true
+
+    var int tnt_vcb = 0, var int tnt_acb = 0, var int tnt_fcb = 0, var int tnt_vcs = 0, var int tnt_acs = 0, var int tnt_fcs = 0
+    var float tnt_vcu = na, var float tnt_vcl = na, var float tnt_vdu = na, var float tnt_vdl = na
+    if tnt_vbn
+        tnt_vcb := bar_index, tnt_vcu := tnt_vbu, tnt_vcl := tnt_vbl
+    if tnt_vsn
+        tnt_vcs := bar_index, tnt_vdu := tnt_vsu, tnt_vdl := tnt_vsl
+    if tnt_abn
+        tnt_acb := bar_index
+    if tnt_asn
+        tnt_acs := bar_index
+    if tnt_fbpn
+        tnt_fcb := bar_index
+    if tnt_fspn
+        tnt_fcs := bar_index
+
+    var int tnt_lBSB = 0, var int tnt_lSSB = 0
+    bool tnt_bConf = f_tnt_tok(tnt_vcb, tnt_acb, tnt_fcb) and f_tnt_zov(tnt_vcu, tnt_vcl, tnt_abu, tnt_abl)
+    bool tnt_sConf = f_tnt_tok(tnt_vcs, tnt_acs, tnt_fcs) and f_tnt_zov(tnt_vdu, tnt_vdl, tnt_asu, tnt_asl)
+    bool det_bullTNT_raw = tnt_bConf and f_tnt_sb(nz(tnt_vbv), nz(tnt_vcu), nz(tnt_vcl), nz(tnt_abu), nz(tnt_abl)) and conf and (bar_index - tnt_lBSB) > tnt_MIN_SIG_GAP
+    bool det_bearTNT_raw = tnt_sConf and f_tnt_ss(nz(tnt_vsv), nz(tnt_vdu), nz(tnt_vdl), nz(tnt_asu), nz(tnt_asl)) and conf and (bar_index - tnt_lSSB) > tnt_MIN_SIG_GAP
+    if det_bullTNT_raw
+        tnt_lBSB := bar_index
+    if det_bearTNT_raw
+        tnt_lSSB := bar_index
+
+    // ── ZONE TRACKING (for Napalm + Charge + Return) ──
+
+    var bull_tnt_zones = array.new<TntZone>(0)
+    var bear_tnt_zones = array.new<TntZone>(0)
+
+    if det_bullTNT_raw
+        float oU = math.min(nz(tnt_vcu, high), nz(tnt_abu, high))
+        float oL = math.max(nz(tnt_vcl, low), nz(tnt_abl, low))
+        float lvl = math.avg(oU, oL)
+        bull_tnt_zones.push(TntZone.new(bar_index, oU, oL, lvl, true, true, false))
+    if det_bearTNT_raw
+        float oU = math.min(nz(tnt_vdu, high), nz(tnt_asu, high))
+        float oL = math.max(nz(tnt_vdl, low), nz(tnt_asl, low))
+        float lvl = math.avg(oU, oL)
+        bear_tnt_zones.push(TntZone.new(bar_index, oU, oL, lvl, false, true, false))
+
+    // Invalidate zones whose levels close has fully broken
+    if bull_tnt_zones.size() > 0
+        for i = bull_tnt_zones.size() - 1 to 0
+            if i < bull_tnt_zones.size()
+                TntZone z = bull_tnt_zones.get(i)
+                if z.isActive and close < z.lower
+                    z.isActive := false
+    if bear_tnt_zones.size() > 0
+        for i = bear_tnt_zones.size() - 1 to 0
+            if i < bear_tnt_zones.size()
+                TntZone z = bear_tnt_zones.get(i)
+                if z.isActive and close > z.upper
+                    z.isActive := false
+
+    while bull_tnt_zones.size() > tnt_MAX_ZONES
+        bull_tnt_zones.shift()
+    while bear_tnt_zones.size() > tnt_MAX_ZONES
+        bear_tnt_zones.shift()
+
+    // Return-to-TNT
+    bool det_retBullTNT = false
+    bool det_retBearTNT = false
+    if conf
+        if bull_tnt_zones.size() > 0
+            for i = bull_tnt_zones.size() - 1 to 0
+                if i < bull_tnt_zones.size()
+                    TntZone z = bull_tnt_zones.get(i)
+                    if z.isActive and not z.returnFired and bar_index > z.confirmIdx
+                        float zH = z.upper - z.lower
+                        float retLvl = z.lower + zH * (tnt_RET_PCT / 100.0)
+                        if low <= retLvl and close > z.lower
+                            z.returnFired := true
+                            det_retBullTNT := true
+        if bear_tnt_zones.size() > 0
+            for i = bear_tnt_zones.size() - 1 to 0
+                if i < bear_tnt_zones.size()
+                    TntZone z = bear_tnt_zones.get(i)
+                    if z.isActive and not z.returnFired and bar_index > z.confirmIdx
+                        float zH = z.upper - z.lower
+                        float retLvl = z.upper - zH * (tnt_RET_PCT / 100.0)
+                        if high >= retLvl and close < z.upper
+                            z.returnFired := true
+                            det_retBearTNT := true
+
+    // TNT internal displacement
+    float tnt_dr = math.abs(open - close), float tnt_ds = ta.stdev(tnt_dr, 100), float tnt_dt = tnt_ds * tnt_DISP_STD_X
+    bool tnt_dBull = conf and tnt_dr[1] > tnt_dt[1] and low > high[2] and close[1] > open[1]
+    bool tnt_dBear = conf and tnt_dr[1] > tnt_dt[1] and high < low[2] and close[1] < open[1]
+
+    // ── NAPALM (scans ALL active opposing zones) ──
+    bool det_bullNapalm = false
+    bool det_bearNapalm = false
+    if conf and tnt_dBull and bear_tnt_zones.size() > 0
+        for i = bear_tnt_zones.size() - 1 to 0
+            if i < bear_tnt_zones.size()
+                TntZone z = bear_tnt_zones.get(i)
+                if z.isActive and low[1] > z.level
+                    det_bullNapalm := true
+                    break
+    if conf and tnt_dBear and bull_tnt_zones.size() > 0
+        for i = bull_tnt_zones.size() - 1 to 0
+            if i < bull_tnt_zones.size()
+                TntZone z = bull_tnt_zones.get(i)
+                if z.isActive and high[1] < z.level
+                    det_bearNapalm := true
+                    break
+
+    // ── CHARGE (multi-level array) ──
+
+    var charge_lvls = array.new<ChargeLvl>(0)
+    if det_bullTNT_raw
+        float lvl = math.avg(math.min(nz(tnt_vcu, high), nz(tnt_abu, high)), math.max(nz(tnt_vcl, low), nz(tnt_abl, low)))
+        charge_lvls.push(ChargeLvl.new(lvl, true, bar_index, false))
+    if det_bearTNT_raw
+        float lvl = math.avg(math.min(nz(tnt_vdu, high), nz(tnt_asu, high)), math.max(nz(tnt_vdl, low), nz(tnt_asl, low)))
+        charge_lvls.push(ChargeLvl.new(lvl, false, bar_index, false))
+
+    bool det_bullCharge = false
+    bool det_bearCharge = false
+    if conf and tnt_dBull and charge_lvls.size() > 0
+        for i = charge_lvls.size() - 1 to 0
+            if i < charge_lvls.size()
+                ChargeLvl cl = charge_lvls.get(i)
+                if not cl.isBull and not cl.violated and close[1] > cl.level
+                    cl.violated := true
+                    det_bullCharge := true
+                    break
+    if conf and tnt_dBear and charge_lvls.size() > 0
+        for i = charge_lvls.size() - 1 to 0
+            if i < charge_lvls.size()
+                ChargeLvl cl = charge_lvls.get(i)
+                if cl.isBull and not cl.violated and close[1] < cl.level
+                    cl.violated := true
+                    det_bearCharge := true
+                    break
+
+    while charge_lvls.size() > 100
+        charge_lvls.shift()
+
+    // Backwards-compat aggregates → B2B NAPALM
+    bool det_bullNapCons = det_bullNapalm or det_bullCharge
+    bool det_bearNapCons = det_bearNapalm or det_bearCharge
+    bool det_b2bBullNapalm = det_bullNapCons and nz(det_bullNapCons[1])
+    bool det_b2bBearNapalm = det_bearNapCons and nz(det_bearNapCons[1])
+    [det_b2bBullNapalm, det_b2bBearNapalm]
+
+[det_b2bBullNapalm, det_b2bBearNapalm] = f_b2bNapalmEngine()
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NAGASAKI — SQUARIFY v3 parity (all-time-high volume on bar[0])
+// ══════════════════════════════════════════════════════════════════════════════
+var float maxVol = 0.0
+bool isNagasaki = false
+if bar_index == 0
+    maxVol := volume
+else if volume > maxVol
+    isNagasaki := true
+    maxVol := volume
+sigNagasaki = isNagasaki
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════  v2 ADDITIONS  ══════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+// Pentagon (RVOL Reg@Time middle tier — needed by Unified Combo comboSets)
+bool det_Pentagon = conf and (rv_relVolRatio >= th_1x) and (rv_relVolRatio <= th_wtc)
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TNT OD v3 — TIER 2 ENRICHED (TNT ENR / NPM ENR) + v3 CONDITIONAL GATE
+// Verbatim port. u5 atoms that are token-identical to engines already in this
+// file are REUSED: u5_RVOL1x/GS/MOAB/SAAB/Kratos ≡ det_* (same Pre-Mythos curve),
+// u5_Pentagon/WTC/Hiroshima ≡ det_* (same curves + same relativeVolume ratio),
+// u5_PUP/PPD ≡ sigPUP/sigPPD (3%/10 defaults), u5_PBJ ≡ sigBullPBJ/sigBearPBJ
+// (identical zoo defaults), u5_Nagasaki ≡ sigNagasaki, u5_FAUNA/DYNAMITE ≡ ported.
+// ══════════════════════════════════════════════════════════════════════════════
+// WMD + HV1000 (TNT OD v3 L750, L752-753)
+bool u5_WMD = det_Pentagon or det_WTC or det_Hiroshima or sigNagasaki
+bool u5_HV1000 = conf and volume >= ta.highest(volume, 1000)[1]
+
+// CS1 (FVG Combo) + its own GZI sub-engine (TNT OD v3 L897-945; dist=7, 63d tier, body 0.85)
+type u5_fvg_s
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+float u5_gz_v1 = volume[1], float u5_hv5k = ta.highest(volume, 5000)[1], float u5_hv252 = ta.highest(volume, 252)[1], float u5_hv63 = ta.highest(volume, 63)[1]
+bool u5_gz_isHV = (u5_gz_v1 == u5_hv5k) or (u5_gz_v1 == u5_hv252) or (u5_gz_v1 == u5_hv63)
+float u5_gz_thresh = ta.cum((high - low) / low) / bar_index
+bool u5_gz_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > u5_gz_thresh
+bool u5_gz_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > u5_gz_thresh
+var u5_gz_fvgs = array.new<u5_fvg_s>(0)
+var int u5_gz_lastT = 0
+bool u5_gz_bullGZI = false, bool u5_gz_bearGZI = false, bool u5_gz_bullHV = false, bool u5_gz_bearHV = false
+if conf and u5_gz_bFVG and time != u5_gz_lastT
+    float mx = low, float mn = high[2]
+    if u5_gz_isHV
+        u5_gz_bullHV := true
+    if u5_gz_fvgs.size() > 0
+        for i = 0 to u5_gz_fvgs.size() - 1
+            u5_fvg_s e = u5_gz_fvgs.get(i)
+            if e.bull and bar_index - e.idx <= 7 and (math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and u5_gz_isHV))
+                u5_gz_bullGZI := true
+                break
+    u5_gz_fvgs.unshift(u5_fvg_s.new(mx, mn, true, time, bar_index, u5_gz_isHV))
+    u5_gz_lastT := time
+if conf and u5_gz_sFVG and time != u5_gz_lastT
+    float mx = low[2], float mn = high
+    if u5_gz_isHV
+        u5_gz_bearHV := true
+    if u5_gz_fvgs.size() > 0
+        for i = 0 to u5_gz_fvgs.size() - 1
+            u5_fvg_s e = u5_gz_fvgs.get(i)
+            if not e.bull and bar_index - e.idx <= 7 and (math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and u5_gz_isHV))
+                u5_gz_bearGZI := true
+                break
+    u5_gz_fvgs.unshift(u5_fvg_s.new(mx, mn, false, time, bar_index, u5_gz_isHV))
+    u5_gz_lastT := time
+if u5_gz_fvgs.size() > 0
+    for i = u5_gz_fvgs.size() - 1 to 0
+        u5_fvg_s g = u5_gz_fvgs.get(i)
+        if (g.bull and close < g.mn) or (not g.bull and close > g.mx)
+            u5_gz_fvgs.remove(i)
+if u5_gz_fvgs.size() > 50
+    u5_gz_fvgs.pop()
+
+float u5_cs_bp1 = high[1] - low[1] == 0 ? 0.0 : math.abs(close[1] - open[1]) / (high[1] - low[1])
+bool u5_cs_vb = u5_cs_bp1 >= 0.85
+bool u5_CS1_Bull = conf and u5_cs_vb and (u5_gz_bullHV or u5_gz_bullGZI) and (nz(det_SAAB[1]) or nz(det_RVOL1xB[1]) or nz(det_GrandSlam[1]) or nz(det_Pentagon[1]) or nz(det_WTC[1]) or nz(det_Hiroshima[1]) or nz(sigNagasaki[1]))
+bool u5_CS1_Bear = conf and u5_cs_vb and (u5_gz_bearHV or u5_gz_bearGZI) and (nz(det_Kratos[1]) or nz(det_RVOL1xR[1]) or nz(det_MOAB[1]) or nz(det_Pentagon[1]) or nz(det_WTC[1]) or nz(det_Hiroshima[1]) or nz(sigNagasaki[1]))
+
+// ── HCT ENGINE (Displacement #4, TNT OD v3 L1041-1118; its OWN curves — do NOT unify) ──
+grpHCT = "★ HCT (Displacement #4 — v3 gate) ★"
+float hct_disp_strength = input.float(6.0, "HCT Disp σ-mult", minval=1.0, step=0.5, group=grpHCT, tooltip="HCT's own displacement engine — INDEPENDENT of every other displacement. Feeds the v3 gate (→ TNT ENR / NPM ENR / S26/S27).")
+int hct_disp_lookback = input.int(100, "HCT Disp Lookback", minval=10, group=grpHCT)
+float hct_threshPct = input.float(2.0, "HCT FVG Threshold % (when Auto OFF)", minval=0, maxval=100, step=0.1, group=grpHCT)
+bool hct_auto = input.bool(true, "HCT Auto FVG Threshold", group=grpHCT)
+f_hct_1x(int _s) => _s <= 10 ? 38.0 : _s <= 15 ? 33.0 : _s <= 30 ? 28.0 : _s <= 45 ? 23.0 : _s <= 60 ? 20.0 : _s <= 120 ? 19.0 : _s <= 180 ? 17.0 : _s <= 240 ? 16.0 : _s <= 300 ? 15.0 : _s <= 360 ? 14.0 : _s <= 420 ? 12.0 : _s <= 480 ? 11.0 : _s <= 540 ? 10.0 : _s <= 600 ? 10.0 : _s <= 900 ? 8.4 : _s <= 1800 ? 6.9 : _s <= 3600 ? 5.9 : _s <= 7200 ? 3.0 : 1.8
+f_hct_gs(int _s) => _s <= 10 ? 114.0 : _s <= 15 ? 99.0 : _s <= 30 ? 84.0 : _s <= 45 ? 69.0 : _s <= 60 ? 35.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 900 ? 20.0 : _s <= 3600 ? 10.0 : 8.0
+f_hct_wtc(int _s) => f_hct_1x(_s) * 2.0
+f_hct_hiro(int _s) => f_hct_gs(_s)
+float hct_th_1x = f_hct_1x(tfSec)
+float hct_th_gs = f_hct_gs(tfSec)
+float hct_th_wtc = f_hct_wtc(tfSec)
+float hct_th_hiro = f_hct_hiro(tfSec)
+bool hct_BullRVOL1x = rv_baseBull and rv_normPrice >= hct_th_1x and rv_normPrice < hct_th_gs
+bool hct_BearRVOL1x = rv_baseBear and rv_normPrice >= hct_th_1x and rv_normPrice < hct_th_gs
+bool hct_GrandSlam = rv_baseBull and rv_normPrice >= hct_th_gs
+bool hct_MOAB = rv_baseBear and rv_normPrice >= hct_th_gs
+bool hct_Pentagon = conf and rv_relVolRatio >= hct_th_1x and rv_relVolRatio <= hct_th_wtc
+bool hct_WTC = conf and rv_relVolRatio > hct_th_wtc and rv_relVolRatio <= hct_th_hiro
+bool hct_Hiroshima = conf and rv_relVolRatio > hct_th_hiro
+float hct_thresh = hct_auto ? ta.cum((high - low) / low) / bar_index : hct_threshPct / 100.0
+bool hct_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > hct_thresh
+bool hct_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > hct_thresh
+float hct_barRange = high[1] - low[1]
+float hct_rangeStdev = ta.stdev(high - low, hct_disp_lookback)
+bool hct_dispCandleMet = hct_barRange > hct_disp_strength * nz(hct_rangeStdev[1])
+bool hct_dispBull = conf and hct_dispCandleMet and (close[1] > open[1]) and hct_bFVG
+bool hct_dispBear = conf and hct_dispCandleMet and (close[1] < open[1]) and hct_sFVG
+bool hct_noDisp = (not hct_dispBull) and (not hct_dispBear)
+bool hct_groupA_Bull = hct_BullRVOL1x or hct_GrandSlam
+bool hct_groupA_Bear = hct_BearRVOL1x or hct_MOAB
+bool hct_groupB = hct_Pentagon or hct_WTC or hct_Hiroshima
+bool hct_baseYY = (hct_groupA_Bull or hct_groupA_Bear) and hct_groupB
+bool hct_baseN = sigNagasaki and (hct_groupA_Bull or hct_groupA_Bear)
+bool hct_baseNV = sigNagasaki and hct_groupB
+bool hct_baseT = sigNagasaki and (hct_groupA_Bull or hct_groupA_Bear) and hct_groupB
+bool hct_baseNH = (hct_Pentagon and hct_WTC) or (hct_Pentagon and hct_Hiroshima) or (hct_WTC and hct_Hiroshima)
+bool hct_baseAny = hct_baseYY or hct_baseN or hct_baseNV or hct_baseT or hct_baseNH
+bool hct_bull = hct_baseAny and hct_dispBull
+bool hct_bear = hct_baseAny and hct_dispBear
+
+// ── UC placeholder (TNT OD v3 L1132-1135, ported as-is for v3 parity) ──
+int uc_bull_count = (u5_FAUNABull ? 1 : 0) + ((det_RVOL1xB or det_GrandSlam or det_SAAB) ? 1 : 0) + (u5_WMD ? 1 : 0) + (sigPUP ? 1 : 0) + (u5_CS1_Bull ? 1 : 0)
+int uc_bear_count = (u5_FAUNABear ? 1 : 0) + ((det_RVOL1xR or det_MOAB or det_Kratos) ? 1 : 0) + (u5_WMD ? 1 : 0) + (sigPPD ? 1 : 0) + (u5_CS1_Bear ? 1 : 0)
+bool uc_bull = conf and uc_bull_count >= 2
+bool uc_bear = conf and uc_bear_count >= 2
+
+// ── NagAny (TNT OD v3 L1142-1143) ──
+bool nagAny_bull = conf and sigNagasaki and (det_Pentagon or det_WTC or det_Hiroshima or det_RVOL1xB or det_GrandSlam or det_SAAB)
+bool nagAny_bear = conf and sigNagasaki and (det_Pentagon or det_WTC or det_Hiroshima or det_RVOL1xR or det_MOAB or det_Kratos)
+
+// ── Gate displacement (Engine #5) + master v3 gate (TNT OD v3 L1153-1168) ──
+grpGate = "★ v3 GATE (→ TNT ENR / NPM ENR / S26/S27) ★"
+en_newGate = input.bool(true, "✓ Apply v3 conditional gate", group=grpGate, tooltip="TNT OD v3 parity: TNT ENR / NPM ENR (and therefore S26/S27) additionally require ANY of: RVOL 1x / Grand Slam (MOAB) / UC / Nagasaki+Any / HCT / Displacement ≥ gate σ-mult. OFF = legacy v2 behavior.")
+float gateStdMult = input.float(6.5, "Gate Displacement Std Dev Mult (Engine #5)", minval=1.0, step=0.1, group=grpGate, tooltip="σ-multiplier DEDICATED to the v3 gate. Reuses the TNT OD Engine #1 stdev length (100). Affects ONLY the gate (→ TNT ENR / NPM ENR / S26/S27).")
+float gate_disp_std = ta.stdev(tod_disp_range, tod_DISP_STD_LEN)
+float gate_disp_threshold = gate_disp_std * gateStdMult
+bool gate_disp_bull = conf and (tod_disp_range[1] > nz(gate_disp_threshold[1])) and tod_isBullishFVG and (close[1] > open[1])
+bool gate_disp_bear = conf and (tod_disp_range[1] > nz(gate_disp_threshold[1])) and tod_isBearishFVG and (close[1] < open[1])
+bool gate_bull_raw = det_RVOL1xB or det_GrandSlam or uc_bull or nagAny_bull or hct_bull or gate_disp_bull
+bool gate_bear_raw = det_RVOL1xR or det_MOAB or uc_bear or nagAny_bear or hct_bear or gate_disp_bear
+bool gate_bull = (not en_newGate) or gate_bull_raw
+bool gate_bear = (not en_newGate) or gate_bear_raw
+
+// ── Suppression combos (TNT OD v3 L1175-1184, L1216-1219) ──
+grpT2 = "Tier 2 Signals (enrichment required)"
+en_rcNTBull = input.bool(true, "✓ RC NPM+TNT Bull", group=grpT2, tooltip="Rare Combo: Napalm AND TNT on the same visual bar (suppresses TNT/NPM ENR when it fires). Offset = -1.")
+en_rcNTBear = input.bool(true, "✓ RC NPM+TNT Bear", group=grpT2, tooltip="Bearish mirror.")
+en_t2tntBull = input.bool(true, "✓ TNT Enriched Bull", group=grpT2, tooltip="Raw TNT detection PLUS at least one enrichment co-signal on same bar (RVOL1x / GrandSlam / PUP / CS1 / FAUNA / WMD / HV1000 / DYNAMITE). Hard-gated — never fires without enrichment. Offset = 0.")
+en_t2tntBear = input.bool(true, "✓ TNT Enriched Bear", group=grpT2, tooltip="Bearish raw TNT + bearish enrichment co-signal. Hard-gated. Offset = 0.")
+en_t2npmBull = input.bool(true, "✓ NPM Enriched Bull", group=grpT2, tooltip="Raw Napalm PLUS enrichment co-signal on visual bar 1 (bar[1] of detection time). Hard-gated. Offset = -1.")
+en_t2npmBear = input.bool(true, "✓ NPM Enriched Bear", group=grpT2, tooltip="Bearish raw Napalm + bearish enrichment on visual bar 1. Hard-gated. Offset = -1.")
+bool tod_det_bullRetTNT = tod_raw_retBullTNT or tod_raw_retBullTNT2
+bool tod_det_bearRetTNT = tod_raw_retBearTNT or tod_raw_retBearTNT2
+bool sig_rcNTBull = tod_det_bullNapalm and (tod_det_bullTNT[1] == true) and en_rcNTBull and nz(gate_bull[1])
+bool sig_rcNTBear = tod_det_bearNapalm and (tod_det_bearTNT[1] == true) and en_rcNTBear and nz(gate_bear[1])
+bool det_rcTRBull = tod_det_bullTNT and tod_det_bullRetTNT, bool det_rcTRBear = tod_det_bearTNT and tod_det_bearRetTNT
+bool det_rcRNBull = tod_det_bullNapalm and (tod_det_bullRetTNT[1] == true), bool det_rcRNBear = tod_det_bearNapalm and (tod_det_bearRetTNT[1] == true)
+bool det_pnBull = tod_det_bullNapalm and (sigBullPBJ[1] == true), bool det_pnBear = tod_det_bearNapalm and (sigBearPBJ[1] == true)
+bool det_ptBull = tod_det_bullTNT and sigBullPBJ, bool det_ptBear = tod_det_bearTNT and sigBearPBJ
+bool supp_bullNPM = sig_rcNTBull or det_rcRNBull or det_pnBull
+bool supp_bearNPM = sig_rcNTBear or det_rcRNBear or det_pnBear
+bool supp_bullTNT = sig_rcNTBull or det_rcTRBull or det_ptBull
+bool supp_bearTNT = sig_rcNTBear or det_rcTRBear or det_ptBear
+
+// ── Enrichment gates (TNT OD v3 L1228-1231; N vs N1 asymmetry preserved) ──
+bool enrichBull_N = det_RVOL1xB or det_GrandSlam or sigPUP or u5_CS1_Bull or u5_FAUNABull or u5_WMD or u5_HV1000
+bool enrichBear_N = det_RVOL1xR or det_MOAB or sigPPD or u5_CS1_Bear or u5_FAUNABear or u5_WMD or u5_HV1000
+bool enrichBull_N1 = nz(det_RVOL1xB[1]) or nz(det_GrandSlam[1]) or nz(sigPUP[1]) or nz(u5_CS1_Bull[1]) or nz(u5_FAUNABull[1]) or nz(det_Pentagon[1]) or nz(det_WTC[1]) or nz(det_Hiroshima[1]) or nz(sigNagasaki[1]) or nz(u5_HV1000[1]) or det_dynamiteBull or nz(det_dynamiteBull[1])
+bool enrichBear_N1 = nz(det_RVOL1xR[1]) or nz(det_MOAB[1]) or nz(sigPPD[1]) or nz(u5_CS1_Bear[1]) or nz(u5_FAUNABear[1]) or nz(det_Pentagon[1]) or nz(det_WTC[1]) or nz(det_Hiroshima[1]) or nz(sigNagasaki[1]) or nz(u5_HV1000[1]) or det_dynamiteBear or nz(det_dynamiteBear[1])
+
+// ── THE TWO VISUAL PLOTS (TNT OD v3 L1260-1263) ──
+// TNT ENR: boolean fires bar N → VISUAL bar N (offset 0)
+// NPM ENR: boolean fires bar N → VISUAL bar N-1 (offset -1)
+bool p_t2tntBull = tod_det_bullTNT and not supp_bullTNT and enrichBull_N and en_t2tntBull and gate_bull
+bool p_t2tntBear = tod_det_bearTNT and not supp_bearTNT and enrichBear_N and en_t2tntBear and gate_bear
+bool p_t2npmBull = tod_det_bullNapalm and not supp_bullNPM and enrichBull_N1 and en_t2npmBull and nz(gate_bull[1])
+bool p_t2npmBear = tod_det_bearNapalm and not supp_bearNPM and enrichBear_N1 and en_t2npmBear and nz(gate_bear[1])
+
+// ── S26/S27: B2B TNT ENR ↔ NPM ENR (VISUAL back-to-back, either order) ──
+// Case B (NPM visual first, TNT visual second): both booleans fire the SAME bar
+//   → visuals land on bar[1] (NPM) and bar[0] (TNT). Render offset 0.
+// Case A (TNT visual first, NPM visual second): TNT fires, NPM fires 2 bars later
+//   → visuals land on bar[2] (TNT) and bar[1] (NPM). Render offset -1.
+bool enrB2B_bull_sameBar = p_t2tntBull and p_t2npmBull
+bool enrB2B_bull_tntFirst = p_t2npmBull and nz(p_t2tntBull[2])
+bool enrB2B_bear_sameBar = p_t2tntBear and p_t2npmBear
+bool enrB2B_bear_tntFirst = p_t2npmBear and nz(p_t2tntBear[2])
+bool det_S26 = enrB2B_bull_sameBar or enrB2B_bull_tntFirst
+bool det_S27 = enrB2B_bear_sameBar or enrB2B_bear_tntFirst
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: HV+D DISPLACEMENT — HVD PBJ PPD parity (DRIVES ALL HVD PBJ PPD PLOTS)
+// Adjustable displacement engine. Range type / stdev length / σ-multiplier below.
+// ══════════════════════════════════════════════════════════════════════════════
+grp_hvd1 = "Displacement — HV+D (→ ALL HVD PBJ PPD plots: CO, B2B HV+D, HV+D Momentum)"
+d1_type = input.string("Open to Close", "HV+D Range Type", options=["Open to Close", "High to Low"], group=grp_hvd1)
+d1_len = input.int(100, "HV+D Std Dev Length", minval=1, group=grp_hvd1)
+d1_mult = input.float(5.0, "HV+D Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd1, tooltip="σ-multiplier for the HV+D displacement engine. Drives EVERY HVD PBJ PPD detection plot.")
+float d1_rng = d1_type == "Open to Close" ? math.abs(open - close) : high - low
+float d1_std = ta.stdev(d1_rng, d1_len)
+float d1_thresh = d1_std * d1_mult
+bool d1_prevDisp = d1_rng[1] > d1_thresh[1]
+bool d1_bullFVG = low > high[2] and close[1] > open[1]
+bool d1_bearFVG = high < low[2] and close[1] < open[1]
+bool d1_bull = conf and d1_prevDisp and d1_bullFVG
+bool d1_bear = conf and d1_prevDisp and d1_bearFVG
+
+grpHVBase = "HV+D: Base HV tiers (rolling highest-volume)"
+bool ub50 = input.bool(true, "50-Bar", group=grpHVBase), bool ub75 = input.bool(true, "75-Bar", group=grpHVBase), bool ub100 = input.bool(true, "100-Bar", group=grpHVBase), bool ub150 = input.bool(true, "150-Bar", group=grpHVBase), bool ub200 = input.bool(true, "200-Bar", group=grpHVBase), bool ub250 = input.bool(true, "250-Bar", group=grpHVBase), bool ub300 = input.bool(true, "300-Bar", group=grpHVBase)
+bool ub350 = input.bool(true, "350-Bar", group=grpHVBase), bool ub400 = input.bool(true, "400-Bar", group=grpHVBase), bool ub450 = input.bool(true, "450-Bar", group=grpHVBase), bool ub500 = input.bool(true, "500-Bar", group=grpHVBase), bool ub550 = input.bool(true, "550-Bar", group=grpHVBase), bool ub600 = input.bool(true, "600-Bar", group=grpHVBase), bool ub650 = input.bool(true, "650-Bar", group=grpHVBase), bool ub700 = input.bool(true, "700-Bar", group=grpHVBase), bool ub750 = input.bool(true, "750-Bar", group=grpHVBase), bool ub1000 = input.bool(true, "1000-Bar", group=grpHVBase)
+useHEV = input.bool(true, "All-Time High Volume (HEV)", group=grpHVBase)
+bool is50 = volume[1] == ta.highest(volume, 50)[1], bool is75 = volume[1] == ta.highest(volume, 75)[1], bool is100 = volume[1] == ta.highest(volume, 100)[1], bool is150 = volume[1] == ta.highest(volume, 150)[1], bool is200 = volume[1] == ta.highest(volume, 200)[1], bool is250 = volume[1] == ta.highest(volume, 250)[1], bool is300 = volume[1] == ta.highest(volume, 300)[1], bool is350 = volume[1] == ta.highest(volume, 350)[1], bool is400 = volume[1] == ta.highest(volume, 400)[1]
+bool is450 = volume[1] == ta.highest(volume, 450)[1], bool is500 = volume[1] == ta.highest(volume, 500)[1], bool is550 = volume[1] == ta.highest(volume, 550)[1], bool is600 = volume[1] == ta.highest(volume, 600)[1], bool is650 = volume[1] == ta.highest(volume, 650)[1], bool is700 = volume[1] == ta.highest(volume, 700)[1], bool is750 = volume[1] == ta.highest(volume, 750)[1], bool is1000 = volume[1] == ta.highest(volume, 1000)[1]
+var float maxVolEver = 0.0
+bool isHEV = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    isHEV := true
+int baseRank = is1000 ? 1000 : is750 ? 750 : is700 ? 700 : is650 ? 650 : is600 ? 600 : is550 ? 550 : is500 ? 500 : is450 ? 450 : is400 ? 400 : is350 ? 350 : is300 ? 300 : is250 ? 250 : is200 ? 200 : is150 ? 150 : is100 ? 100 : is75 ? 75 : is50 ? 50 : 0
+bool base_enabled = (ub50 and baseRank == 50) or (ub75 and baseRank == 75) or (ub100 and baseRank == 100) or (ub150 and baseRank == 150) or (ub200 and baseRank == 200) or (ub250 and baseRank == 250) or (ub300 and baseRank == 300) or (ub350 and baseRank == 350) or (ub400 and baseRank == 400) or (ub450 and baseRank == 450) or (ub500 and baseRank == 500) or (ub550 and baseRank == 550) or (ub600 and baseRank == 600) or (ub650 and baseRank == 650) or (ub700 and baseRank == 700) or (ub750 and baseRank == 750) or (ub1000 and baseRank == 1000)
+bool hev_hit = useHEV and isHEV
+bool base_hv_hit = hev_hit or (base_enabled and not isHEV)
+bool hvd_fire_bull = base_hv_hit and d1_bull
+bool hvd_fire_bear = base_hv_hit and d1_bear
+
+// ── GZ1 / HV FVG (HVD params: adds 63d HV tier, dist=12) — for Unified Combo comboSets ──
+grp_hgz = "Unified Combo — GZ1 / HV FVG"
+hgz_auto = input.bool(true, "Auto FVG Threshold", group=grp_hgz)
+hgz_threshPct = input.float(2, "FVG Threshold %", minval=0, maxval=100, step=0.1, group=grp_hgz)
+hgz_dist = input.int(12, "GZ1 Max Bar Distance", minval=1, maxval=200, group=grp_hgz)
+type hgz_fvg
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+float hgz_v1 = volume[1]
+float _hgz5000 = ta.highest(volume, 5000)[1]
+float _hgz252 = ta.highest(volume, 252)[1]
+float _hgz63 = ta.highest(volume, 63)[1]
+bool hgz_isHV = (hgz_v1 == _hgz5000) or (hgz_v1 == _hgz252) or (hgz_v1 == _hgz63)
+float hgz_thresh = hgz_auto ? ta.cum((high - low) / low) / bar_index : hgz_threshPct / 100
+bool hgz_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > hgz_thresh
+bool hgz_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > hgz_thresh
+var hgz_fvgs = array.new<hgz_fvg>(0)
+var int hgz_lastT = 0
+bool hgz_bullGZI = false, bool hgz_bearGZI = false, bool hgz_bullHV = false, bool hgz_bearHV = false
+if conf and hgz_bFVG and time != hgz_lastT
+    float mx = low, float mn = high[2]
+    if hgz_isHV
+        hgz_bullHV := true
+    if hgz_fvgs.size() > 0
+        for i = 0 to hgz_fvgs.size() - 1
+            hgz_fvg e = hgz_fvgs.get(i)
+            if e.bull and bar_index - e.idx <= hgz_dist
+                if math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and hgz_isHV)
+                    hgz_bullGZI := true
+                    break
+    hgz_fvgs.unshift(hgz_fvg.new(mx, mn, true, time, bar_index, hgz_isHV))
+    hgz_lastT := time
+if conf and hgz_sFVG and time != hgz_lastT
+    float mx = low[2], float mn = high
+    if hgz_isHV
+        hgz_bearHV := true
+    if hgz_fvgs.size() > 0
+        for i = 0 to hgz_fvgs.size() - 1
+            hgz_fvg e = hgz_fvgs.get(i)
+            if not e.bull and bar_index - e.idx <= hgz_dist
+                if math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and hgz_isHV)
+                    hgz_bearGZI := true
+                    break
+    hgz_fvgs.unshift(hgz_fvg.new(mx, mn, false, time, bar_index, hgz_isHV))
+    hgz_lastT := time
+if hgz_fvgs.size() > 0
+    for i = hgz_fvgs.size() - 1 to 0
+        hgz_fvg g = hgz_fvgs.get(i)
+        if g.bull and close < g.mn
+            hgz_fvgs.remove(i)
+        else if not g.bull and close > g.mx
+            hgz_fvgs.remove(i)
+if hgz_fvgs.size() > 50
+    hgz_fvgs.pop()
+
+// ── Matrix Neo/Trinity + Long/Short momentum (reuses hybrid RVOL ratios) ──
+grp_matrix = "Unified Combo — Matrix / Momentum"
+neo_len = input.int(67, "Matrix Number Lookback", minval=1, group=grp_matrix)
+float ls_reg1 = input.float(10.0, "Momentum 1 Reg Floor", minval=0.5, step=0.1, group=grp_matrix), float ls_cum1 = input.float(5.0, "Momentum 1 Cum Floor", minval=0.5, step=0.1, group=grp_matrix), float ls_body1 = input.float(0.69, "Momentum 1 Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=grp_matrix)
+float ls_reg2 = input.float(8.0, "Momentum 2 Reg Floor", minval=0.5, step=0.1, group=grp_matrix), float ls_cum2 = input.float(4.0, "Momentum 2 Cum Floor", minval=0.5, step=0.1, group=grp_matrix), float ls_body2 = input.float(0.69, "Momentum 2 Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=grp_matrix)
+bool is_matrix_number = volume == ta.highest(volume, neo_len)
+bool sigNeoBull = conf and is_matrix_number and u5_FAUNABull
+bool sigNeoBear = conf and is_matrix_number and u5_FAUNABear
+bool sigTrinityBull = conf and is_matrix_number and not u5_FAUNABull and close > open
+bool sigTrinityBear = conf and is_matrix_number and not u5_FAUNABear and close < open
+float ls_regRatio = nz(hybRegRatio)
+float ls_cumRatio = nz(hybCumRatio)
+float ls_bodyRat = (high - low) == 0 ? 0.0 : math.abs(close - open) / (high - low)
+bool sigLong1 = conf and ls_regRatio > ls_reg1 and ls_cumRatio > ls_cum1 and close > open and ls_bodyRat >= ls_body1
+bool sigShort1 = conf and ls_regRatio > ls_reg1 and ls_cumRatio > ls_cum1 and close < open and ls_bodyRat >= ls_body1
+bool sigLong2 = conf and ls_regRatio > ls_reg2 and ls_cumRatio > ls_cum2 and close > open and ls_bodyRat >= ls_body2
+bool sigShort2 = conf and ls_regRatio > ls_reg2 and ls_cumRatio > ls_cum2 and close < open and ls_bodyRat >= ls_body2
+bool neo_bull_aligned = sigNeoBull and (sigLong1 or sigLong2)
+bool neo_bear_aligned = sigNeoBear and (sigShort1 or sigShort2)
+bool trinity_bull_aligned = sigTrinityBull and (sigLong1 or sigLong2)
+bool trinity_bear_aligned = sigTrinityBear and (sigShort1 or sigShort2)
+
+// ── Combo Sets → csNew3 (Unified Combo base + CMB momentum term) ──
+grp_cs = "Unified Combo — Combo Sets"
+cs_bodyPct_FVG = input.float(0.74, "Min Body% FVG", minval=0.0, maxval=1.0, step=0.05, group=grp_cs)
+cs_bodyPct_MAT = input.float(0.74, "Min Body% Matrix", minval=0.0, maxval=1.0, step=0.05, group=grp_cs)
+cs_inc_pentagon_FVG = input.bool(true, "Pentagon in FVG Sets", group=grp_cs)
+cs_inc_pentagon_MAT = input.bool(true, "Pentagon in Matrix Sets", group=grp_cs)
+float cs_bp1 = high[1] - low[1] == 0 ? 0.0 : math.abs(close[1] - open[1]) / (high[1] - low[1])
+bool cs_vb = cs_bp1 >= cs_bodyPct_FVG
+bool comboSet1_Bull = conf and cs_vb and (hgz_bullHV or hgz_bullGZI) and (det_SAAB[1] or det_RVOL1xB[1] or det_GrandSlam[1])
+bool comboSet1_Bear = conf and cs_vb and (hgz_bearHV or hgz_bearGZI) and (det_Kratos[1] or det_RVOL1xR[1] or det_MOAB[1])
+bool comboSet2_Bull = conf and cs_vb and (hgz_bullHV or hgz_bullGZI) and ((cs_inc_pentagon_FVG and det_Pentagon[1]) or det_WTC[1] or det_Hiroshima[1] or sigNagasaki[1])
+bool comboSet2_Bear = conf and cs_vb and (hgz_bearHV or hgz_bearGZI) and ((cs_inc_pentagon_FVG and det_Pentagon[1]) or det_WTC[1] or det_Hiroshima[1] or sigNagasaki[1])
+bool cs_vm = ls_bodyRat >= cs_bodyPct_MAT
+bool matrix_any_bull = sigNeoBull or sigTrinityBull or neo_bull_aligned or trinity_bull_aligned
+bool matrix_any_bear = sigNeoBear or sigTrinityBear or neo_bear_aligned or trinity_bear_aligned
+bool comboSet3_Bull = cs_vm and matrix_any_bull and (det_SAAB or det_RVOL1xB or det_GrandSlam)
+bool comboSet3_Bear = cs_vm and matrix_any_bear and (det_Kratos or det_RVOL1xR or det_MOAB)
+bool comboSet4_Bull = cs_vm and matrix_any_bull and ((cs_inc_pentagon_MAT and det_Pentagon) or det_WTC or det_Hiroshima or sigNagasaki)
+bool comboSet4_Bear = cs_vm and matrix_any_bear and ((cs_inc_pentagon_MAT and det_Pentagon) or det_WTC or det_Hiroshima or sigNagasaki)
+bool csNew1_Bull = comboSet1_Bull or comboSet2_Bull
+bool csNew1_Bear = comboSet1_Bear or comboSet2_Bear
+bool csNew2_Bull = comboSet3_Bull or comboSet4_Bull
+bool csNew2_Bear = comboSet3_Bear or comboSet4_Bear
+bool csNew3_Bull = csNew1_Bull and nz(csNew2_Bull[1])
+bool csNew3_Bear = csNew1_Bear and nz(csNew2_Bear[1])
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ENGINE: FC CLUSTER (Ultra v57 parity) — for B2B FC Cluster (fc_ prefix)
+// ══════════════════════════════════════════════════════════════════════════════
+fc_b1_inRng(v) => v > 2.9 and v < 1000000.0
+fc_b1_chk(loA, hiA, loB, hiB) => loA <= hiB and loB <= hiA
+fc_b4_inRng(v) => v > 2.9 and v < 1000000.0
+fc_b4_chk(loA, hiA, loB, hiB) => loA <= hiB and loB <= hiA
+f_fcEngine() =>
+    float fc_atr14 = ta.atr(14)
+    float fc_avgVol20 = ta.sma(volume, 20)
+    float fc_avgDelta = ta.sma(math.abs(close - close[1]), 10)
+    float fc_trendMA = ta.sma(close, 50)
+    float fc_body = close - open
+    float fc_rng = high - low
+    float fc_bodySize = math.abs(fc_body)
+    float fc_bodyRatio = fc_rng == 0 ? 0 : fc_bodySize / fc_rng
+    bool fc_bodyUp = fc_body > 0
+    bool fc_bodyDn = fc_body < 0
+    bool fc_wide = fc_rng > 2.2 * fc_atr14
+    bool fc_upTrend = fc_trendMA > fc_trendMA[1]
+    bool fc_dnTrend = fc_trendMA < fc_trendMA[1]
+    bool fc_inSession = not na(time(timeframe.period, "0930-1600", "America/New_York"))
+    bool fc_bull_MB = conf and fc_bodyUp and fc_bodySize > 1.6 * fc_atr14 and fc_bodyRatio > 0.7 and volume > 1.8 * fc_avgVol20
+    bool fc_bull_RE = conf and fc_bodyUp and fc_wide and (high - close) < 0.15 * fc_rng and volume > 1.8 * fc_avgVol20
+    bool fc_bull_TA = conf and fc_upTrend and (close - close[1]) > 1.6 * fc_avgDelta and fc_bodyUp and volume > 1.8 * fc_avgVol20
+    bool fc_bear_MB = conf and fc_bodyDn and fc_bodySize > 1.6 * fc_atr14 and fc_bodyRatio > 0.7 and volume > 1.8 * fc_avgVol20
+    bool fc_bear_RE = conf and fc_bodyDn and fc_wide and (close - low) < 0.15 * fc_rng and volume > 1.8 * fc_avgVol20
+    bool fc_bear_TA = conf and fc_dnTrend and (close[1] - close) > 1.6 * fc_avgDelta and fc_bodyDn and volume > 1.8 * fc_avgVol20
+    // bull cluster
+    var int fc_b1_s1 = 0
+    fc_b1_s1 := fc_bull_MB ? fc_b1_s1 + 1 : 0
+    bool fc_b1_ind1 = fc_bull_MB and fc_b1_s1 >= 2
+    bool fc_b1_ev2 = fc_bull_MB or fc_bull_RE or fc_bull_TA
+    var int fc_b1_s2 = 0
+    if ta.change(dayofmonth) != 0
+        fc_b1_s2 := 0
+    else if not fc_b1_ev2
+        fc_b1_s2 := 0
+    if fc_b1_ev2
+        fc_b1_s2 += 1
+    bool fc_b1_ind2 = fc_b1_ev2 and fc_b1_s2 >= 2
+    bool fc_b1_ev3 = (fc_bull_MB or fc_bull_RE) and fc_inSession
+    var int fc_b1_s3 = 0
+    fc_b1_s3 := fc_b1_ev3 ? fc_b1_s3 + 1 : 0
+    bool fc_b1_ind3 = fc_b1_ev3 and fc_b1_s3 >= 2
+    bool fc_b1_2of3 = (fc_b1_ind1 ? 1 : 0) + (fc_b1_ind2 ? 1 : 0) + (fc_b1_ind3 ? 1 : 0) >= 2
+    float fc_b1_spk = math.abs(fc_body)
+    float fc_b1_avgSpk = ta.sma(fc_b1_spk, 30)[1]
+    float fc_b1_rvolP = fc_b1_spk / nz(fc_b1_avgSpk, 1)
+    float fc_b1_avgVolD = ta.sma(volume, 30)[1]
+    float fc_b1_rvolV = volume / nz(fc_b1_avgVolD, 1)
+    float fc_b1_diff = fc_b1_rvolP - fc_b1_rvolV
+    float fc_b1_pos = fc_b1_diff > 0 ? fc_b1_diff : na
+    float fc_b1_smaP = ta.sma(fc_b1_pos, 20)
+    bool fc_b1_base = fc_bodyUp and nz(fc_b1_pos) > nz(fc_b1_smaP)
+    bool fc_b1_thEv = fc_b1_base and fc_b1_inRng(fc_b1_rvolP) and conf
+    bool fc_b1_uBar = fc_b1_base and fc_b1_inRng(fc_b1_rvolP)
+    var float fc_b1_sum = 0.0
+    var int fc_b1_len = 0
+    if fc_b1_uBar
+        fc_b1_len += 1
+        fc_b1_sum += fc_b1_rvolP
+    else
+        fc_b1_len := 0
+        fc_b1_sum := 0.0
+    bool fc_b1_seqEv = (fc_b1_len >= 2 and fc_b1_sum >= 0.1) and conf
+    var int[] fc_b1_thIdx = array.new_int()
+    var float[] fc_b1_thHi = array.new_float()
+    var float[] fc_b1_thLo = array.new_float()
+    var int[] fc_b1_sqIdx = array.new_int()
+    var float[] fc_b1_sqHi = array.new_float()
+    var float[] fc_b1_sqLo = array.new_float()
+    bool fc_b1_ovlp = false
+    if array.size(fc_b1_thIdx) > 0
+        while bar_index - array.get(fc_b1_thIdx, 0) > 20
+            array.shift(fc_b1_thIdx)
+            array.shift(fc_b1_thHi)
+            array.shift(fc_b1_thLo)
+            if array.size(fc_b1_thIdx) == 0
+                break
+    if array.size(fc_b1_sqIdx) > 0
+        while bar_index - array.get(fc_b1_sqIdx, 0) > 20
+            array.shift(fc_b1_sqIdx)
+            array.shift(fc_b1_sqHi)
+            array.shift(fc_b1_sqLo)
+            if array.size(fc_b1_sqIdx) == 0
+                break
+    if fc_b1_thEv
+        array.push(fc_b1_thIdx, bar_index)
+        array.push(fc_b1_thHi, high)
+        array.push(fc_b1_thLo, low)
+        if array.size(fc_b1_sqIdx) > 0
+            for i = 0 to array.size(fc_b1_sqIdx) - 1
+                if fc_b1_chk(low, high, array.get(fc_b1_sqLo, i), array.get(fc_b1_sqHi, i))
+                    fc_b1_ovlp := true
+                    break
+    if fc_b1_seqEv and not fc_b1_ovlp
+        array.push(fc_b1_sqIdx, bar_index)
+        array.push(fc_b1_sqHi, high)
+        array.push(fc_b1_sqLo, low)
+        if array.size(fc_b1_thIdx) > 0
+            for i = 0 to array.size(fc_b1_thIdx) - 1
+                if fc_b1_chk(low, high, array.get(fc_b1_thLo, i), array.get(fc_b1_thHi, i))
+                    fc_b1_ovlp := true
+                    break
+    bool sBullFC = conf and fc_b1_2of3 and fc_b1_ovlp
+    // bear cluster (asymmetries preserved: fc_b4_neg has extra bodyDn guard; fc_b4_sum >= 0.5)
+    var int fc_b4_s1 = 0
+    fc_b4_s1 := fc_bear_MB ? fc_b4_s1 + 1 : 0
+    bool fc_b4_ind1 = fc_bear_MB and fc_b4_s1 >= 2
+    bool fc_b4_ev2 = fc_bear_MB or fc_bear_RE or fc_bear_TA
+    var int fc_b4_s2 = 0
+    if ta.change(dayofmonth) != 0
+        fc_b4_s2 := 0
+    else if not fc_b4_ev2
+        fc_b4_s2 := 0
+    if fc_b4_ev2
+        fc_b4_s2 += 1
+    bool fc_b4_ind2 = fc_b4_ev2 and fc_b4_s2 >= 2
+    bool fc_b4_ev3 = (fc_bear_MB or fc_bear_RE) and fc_inSession
+    var int fc_b4_s3 = 0
+    fc_b4_s3 := fc_b4_ev3 ? fc_b4_s3 + 1 : 0
+    bool fc_b4_ind3 = fc_b4_ev3 and fc_b4_s3 >= 2
+    bool fc_b4_2of3 = (fc_b4_ind1 ? 1 : 0) + (fc_b4_ind2 ? 1 : 0) + (fc_b4_ind3 ? 1 : 0) >= 2
+    float fc_b4_spk = math.abs(fc_body)
+    float fc_b4_avgSpk = ta.sma(fc_b4_spk, 30)[1]
+    float fc_b4_rvolP = fc_b4_spk / nz(fc_b4_avgSpk, 1)
+    float fc_b4_avgVolD = ta.sma(volume, 30)[1]
+    float fc_b4_rvolV = volume / nz(fc_b4_avgVolD, 1)
+    float fc_b4_diff = fc_b4_rvolP - fc_b4_rvolV
+    float fc_b4_neg = (fc_b4_diff > 0 and fc_bodyDn) ? fc_b4_diff : na
+    float fc_b4_smaN = ta.sma(fc_b4_neg, 20)
+    bool fc_b4_base = fc_bodyDn and nz(fc_b4_neg) > nz(fc_b4_smaN)
+    bool fc_b4_thEv = fc_b4_base and fc_b4_inRng(fc_b4_rvolP) and conf
+    bool fc_b4_dBar = fc_b4_base and fc_b4_inRng(fc_b4_rvolP)
+    var float fc_b4_sum = 0.0
+    var int fc_b4_len = 0
+    if fc_b4_dBar
+        fc_b4_len += 1
+        fc_b4_sum += fc_b4_rvolP
+    else
+        fc_b4_len := 0
+        fc_b4_sum := 0.0
+    bool fc_b4_seqEv = (fc_b4_len >= 2 and fc_b4_sum >= 0.5) and conf
+    var int[] fc_b4_thIdx = array.new_int()
+    var float[] fc_b4_thHi = array.new_float()
+    var float[] fc_b4_thLo = array.new_float()
+    var int[] fc_b4_sqIdx = array.new_int()
+    var float[] fc_b4_sqHi = array.new_float()
+    var float[] fc_b4_sqLo = array.new_float()
+    bool fc_b4_ovlp = false
+    if array.size(fc_b4_thIdx) > 0
+        while bar_index - array.get(fc_b4_thIdx, 0) > 20
+            array.shift(fc_b4_thIdx)
+            array.shift(fc_b4_thHi)
+            array.shift(fc_b4_thLo)
+            if array.size(fc_b4_thIdx) == 0
+                break
+    if array.size(fc_b4_sqIdx) > 0
+        while bar_index - array.get(fc_b4_sqIdx, 0) > 20
+            array.shift(fc_b4_sqIdx)
+            array.shift(fc_b4_sqHi)
+            array.shift(fc_b4_sqLo)
+            if array.size(fc_b4_sqIdx) == 0
+                break
+    if fc_b4_thEv
+        array.push(fc_b4_thIdx, bar_index)
+        array.push(fc_b4_thHi, high)
+        array.push(fc_b4_thLo, low)
+        if array.size(fc_b4_sqIdx) > 0
+            for i = 0 to array.size(fc_b4_sqIdx) - 1
+                if fc_b4_chk(low, high, array.get(fc_b4_sqLo, i), array.get(fc_b4_sqHi, i))
+                    fc_b4_ovlp := true
+                    break
+    if fc_b4_seqEv and not fc_b4_ovlp
+        array.push(fc_b4_sqIdx, bar_index)
+        array.push(fc_b4_sqHi, high)
+        array.push(fc_b4_sqLo, low)
+        if array.size(fc_b4_thIdx) > 0
+            for i = 0 to array.size(fc_b4_thIdx) - 1
+                if fc_b4_chk(low, high, array.get(fc_b4_thLo, i), array.get(fc_b4_thHi, i))
+                    fc_b4_ovlp := true
+                    break
+    bool sBearFC = conf and fc_b4_2of3 and fc_b4_ovlp
+    [sBullFC, sBearFC]
+
+[sBullFC, sBearFC] = f_fcEngine()
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HVD GROUP 2 — BACK-TO-BACK HV+D
+// ══════════════════════════════════════════════════════════════════════════════
+bool b2b_bull_raw = hvd_fire_bull and nz(hvd_fire_bull[1])
+bool b2b_bull_pbj = b2b_bull_raw and (nz(sigBullPBJ[1]) or nz(sigBullPBJ[2]))
+bool b2b_bull_pb = b2b_bull_raw and (nz(sigBullPB[1]) or nz(sigBullPB[2])) and not b2b_bull_pbj
+bool b2b_bull_nopb = b2b_bull_raw and not b2b_bull_pbj and not b2b_bull_pb
+bool b2b_bear_raw = hvd_fire_bear and nz(hvd_fire_bear[1])
+bool b2b_bear_pbj = b2b_bear_raw and (nz(sigBearPBJ[1]) or nz(sigBearPBJ[2]))
+bool b2b_bear_pb = b2b_bear_raw and (nz(sigBearPB[1]) or nz(sigBearPB[2])) and not b2b_bear_pbj
+bool b2b_bear_nopb = b2b_bear_raw and not b2b_bear_pbj and not b2b_bear_pb
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HVD GROUP 3 — HV+D MOMENTUM CO-OCC
+// ══════════════════════════════════════════════════════════════════════════════
+bool _m_pup1 = nz(sigPUP[1])
+bool _m_ppd1 = nz(sigPPD[1])
+bool _m_rv1b = nz(det_RVOL1xB[1]) or nz(det_GrandSlam[1])
+bool _m_rv1r = nz(det_RVOL1xR[1]) or nz(det_MOAB[1])
+bool _m_cb1b = csNew3_Bull
+bool _m_cb1r = csNew3_Bear
+bool _m_pj1b = nz(sigBullPBJ[1])
+bool _m_pj1r = nz(sigBearPBJ[1])
+bool hvdm_pup_nopbj_b = hvd_fire_bull and _m_pup1 and not _m_pj1b
+bool hvdm_pbjpup_b = hvd_fire_bull and _m_pj1b and _m_pup1
+bool hvdm_rvol_nopbj_b = hvd_fire_bull and _m_rv1b and not _m_pj1b
+bool hvdm_pbjrvol_b = hvd_fire_bull and _m_pj1b and _m_rv1b
+bool hvdm_cmb_nopbj_b = hvd_fire_bull and _m_cb1b and not _m_pj1b
+bool hvdm_pbjcmb_b = hvd_fire_bull and _m_pj1b and _m_cb1b
+int hvdm_b_cnt = (_m_pup1 ? 1 : 0) + (_m_rv1b ? 1 : 0) + (_m_cb1b ? 1 : 0)
+bool hvdm_2of3_b_raw = hvd_fire_bull and _m_pj1b and hvdm_b_cnt >= 2
+bool hvdm_3of3_b = hvd_fire_bull and _m_pj1b and _m_pup1 and _m_rv1b and _m_cb1b
+bool hvdm_2of3_b = hvdm_2of3_b_raw and not hvdm_3of3_b
+bool hvdm_vis_pbjpup_b = hvdm_pbjpup_b and not hvdm_2of3_b_raw
+bool hvdm_vis_pbjrvol_b = hvdm_pbjrvol_b and not hvdm_2of3_b_raw
+bool hvdm_vis_pbjcmb_b = hvdm_pbjcmb_b and not hvdm_2of3_b_raw
+bool hvdm_ppd_nopbj_r = hvd_fire_bear and _m_ppd1 and not _m_pj1r
+bool hvdm_pbjppd_r = hvd_fire_bear and _m_pj1r and _m_ppd1
+bool hvdm_rvol_nopbj_r = hvd_fire_bear and _m_rv1r and not _m_pj1r
+bool hvdm_pbjrvol_r = hvd_fire_bear and _m_pj1r and _m_rv1r
+bool hvdm_cmb_nopbj_r = hvd_fire_bear and _m_cb1r and not _m_pj1r
+bool hvdm_pbjcmb_r = hvd_fire_bear and _m_pj1r and _m_cb1r
+int hvdm_r_cnt = (_m_ppd1 ? 1 : 0) + (_m_rv1r ? 1 : 0) + (_m_cb1r ? 1 : 0)
+bool hvdm_2of3_r_raw = hvd_fire_bear and _m_pj1r and hvdm_r_cnt >= 2
+bool hvdm_3of3_r = hvd_fire_bear and _m_pj1r and _m_ppd1 and _m_rv1r and _m_cb1r
+bool hvdm_2of3_r = hvdm_2of3_r_raw and not hvdm_3of3_r
+bool hvdm_vis_pbjppd_r = hvdm_pbjppd_r and not hvdm_2of3_r_raw
+bool hvdm_vis_pbjrvol_r = hvdm_pbjrvol_r and not hvdm_2of3_r_raw
+bool hvdm_vis_pbjcmb_r = hvdm_pbjcmb_r and not hvdm_2of3_r_raw
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HVD GROUP 1 — PIPELINE D TRIPLE CO-OCCURRENCE (rolling-only USE gate)
+// NOTE: the source's use_any_* gate pulled in FIXED-SESSION-WINDOW signals
+// (Opening Drive sessionBarCount, Alpha Strike firstOfDay). Per this study's
+// rolling-only rule those are dropped; use_any_* is rebuilt from First Bar
+// Fable's own ROLLING detections. Deliberate deviation — documented in CHANGELOG.
+// ══════════════════════════════════════════════════════════════════════════════
+bool use_any_bull = det_S10_saab or det_dynamiteBull or det_igniteBull or det_b2bBullNapalm or sigTyphoonBull or sigMusashiBull or sigWhaleBull or det_GrandSlam or det_RVOL1xB or det_SAAB or sigPUP or sigFAUNABull or csNew1_Bull or csNew2_Bull or csNew3_Bull or sBullFC or hvd_fire_bull
+bool use_any_bear = det_S9_kratos or det_dynamiteBear or det_igniteBear or det_b2bBearNapalm or sigTyphoonBear or sigMusashiBear or sigWhaleBear or det_MOAB or det_RVOL1xR or det_Kratos or sigPPD or sigFAUNABear or csNew1_Bear or csNew2_Bear or csNew3_Bear or sBearFC or hvd_fire_bear
+bool co_bull_pbj = hvd_fire_bull and nz(sigBullPBJ[1]) and nz(use_any_bull[1])
+bool co_bull_pb = hvd_fire_bull and nz(sigBullPB[1]) and nz(use_any_bull[1])
+bool co_bear_pbj = hvd_fire_bear and nz(sigBearPBJ[1]) and nz(use_any_bear[1])
+bool co_bear_pb = hvd_fire_bear and nz(sigBearPB[1]) and nz(use_any_bear[1])
+
+// ══════════════════════════════════════════════════════════════════════════════
+// NEW DETECTION BOOLEANS
+// ══════════════════════════════════════════════════════════════════════════════
+// Unified Combo + Disp9 (csNew3 AND displacement-9, matching direction)
+bool det_UC_bull = csNew3_Bull and d9_bull
+bool det_UC_bear = csNew3_Bear and d9_bear
+// B2B PUP / PPD + Disp9 on one of the two pattern bars (bar[0] or bar[1])
+bool det_b2bPUP_d9 = det_b2bPUP and (d9_bull or nz(d9_bull[1]))
+bool det_b2bPPD_d9 = det_b2bPPD and (d9_bear or nz(d9_bear[1]))
+// B2B FC Cluster — FC cluster on two consecutive bars (ALWAYS fires on any bar; overrides first-bar mode)
+bool det_b2bFC_bull = sBullFC and nz(sBullFC[1])
+bool det_b2bFC_bear = sBearFC and nz(sBearFC[1])
+// D9 Bull/Bear Study (HW v3 parity): disp≥9σ AND (RVOL1x or GS/MOAB) AND (HV500 or HV1000 or Nagasaki), same confirmed bar
+bool hv500_raw = volume == ta.highest(volume, 500)
+bool hv1000_raw = volume == ta.highest(volume, 1000)
+bool det_D9bull = conf and d9_bull and (det_RVOL1xB or det_GrandSlam) and (hv500_raw or hv1000_raw or sigNagasaki)
+bool det_D9bear = conf and d9_bear and (det_RVOL1xR or det_MOAB) and (hv500_raw or hv1000_raw or sigNagasaki)
+
+// ── v2 detection toggles (checkbox = plot + alert) ──
+
+grp_co = "★ HVD — Pipeline D Triple Co-occurrence ★"
+
+grp_b2b = "★ HVD — Back-to-Back HV+D ★"
+
+grp_hvdm = "★ HVD — HV+D Momentum Co-occ ★"
+
+// ══ v3 INPUTS ══
+grpV3 = "★ v3 +ANY SIGNALS ★"
+var float hq_maxEver = 0.0
+if volume > hq_maxEver
+    hq_maxEver := volume
+f_rungN(string s) => s == "50" ? 50 : s == "100" ? 100 : s == "250" ? 250 : s == "500" ? 500 : s == "1000" ? 1000 : s == "2000" ? 2000 : 4000
+f_hvHit(string s) => s == "HEV" ? volume >= hq_maxEver : volume >= ta.highest(volume, f_rungN(s))[1]
+string s28_rung = input.string("4000", "S28/S29 — HV Rung (ladder)", options=["50","100","250","500","1000","2000","4000","HEV"], group=grpV3, tooltip="GATES: volume ≥ trailing-N highest (N = rung; HEV = all-time high) ∧ ANY same-side v2 detection (raw basket). Ladder = the HEV/Naga study rungs. SEPARATE from the HV+PBJ+DISP dropdown (DEF-4).")
+string hq_rung = input.string("4000", "HV+PBJ+DISP — HV Rung (ladder)", options=["50","100","250","500","1000","2000","4000","HEV"], group="★ HV+PBJ+DISP ★", tooltip="GATES: ① volume ≥ trailing-N highest (N = this rung; HEV = all-time high) ② PBJ (side) ③ the dedicated displacement — all same confirmed candle.")
+
+
+// ══ v5 — KC RE-ENTRY (KC Rev 8 engine, verbatim defaults) + ANY-FABLE COMPOSITES ══
+grpV5 = "v5 — KC Re-entry + ANY FABLE"
+string kc_maType     = input.string("EMA", "KC MA Type", options=["SMA", "EMA", "HMA", "VWMA", "LSMA"], group=grpV5)
+int    kc_length     = input.int(20, "KC MA Length", minval=1, group=grpV5)
+float  kc_mult       = input.float(2.0, "KC Multiplier", minval=0.001, group=grpV5)
+kc_src               = input.source(close, "KC Source", group=grpV5)
+string kc_bandsStyle = input.string("Average True Range", "KC Bands Style", options=["Average True Range", "True Range", "Range"], group=grpV5)
+int    kc_atrLength  = input.int(10, "KC ATR Length", minval=1, group=grpV5)
+int   kc_slopeLookbackBars     = input.int(3, "KC Slope Lookback Bars", minval=1, group=grpV5, tooltip="Prior bars checked to confirm the MA was flat/opposite before the strong slope begins.")
+float kc_bullishSlopeThreshold = input.float(title="KC Bullish Slope Threshold", defval=0.05, step=0.001, group=grpV5)
+float kc_bearishSlopeThreshold = input.float(title="KC Bearish Slope Threshold", defval=0.05, step=0.001, group=grpV5)
+
+// ══ 🔔 ALERT SECTION - THE ALERT LAW (VOB v11.2 parity) ══
+// alert fires IFF its 🔔 box is checked; fully independent of the visual checkboxes.
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DETECTIONS
+// ══════════════════════════════════════════════════════════════════════════════
+// S1/S2 — RVOL tier + Disp9 + PBJ
+bool det_S1 = conf and (det_RVOL1xB or det_GrandSlam) and d9_bull and anyBullPBJ
+bool det_S2 = conf and (det_RVOL1xR or det_MOAB) and d9_bear and anyBearPBJ
+
+// S15 — Nagasaki + any bullish qualifier, ON THE FIRST BAR (baked in)
+bool det_S15 = conf and is_new_sess and sigNagasaki and (anyLong or anyBullPBJ or d9_bull or det_RVOL1xB or det_GrandSlam)
+
+// ═══════════════════════  v3 ADDITIONS  ═══════════════════════
+// ENGINE: 4K HV — HVN Sense-A rolling highest-volume-bar test (glossary §HVN; same
+// construction as u5_HV1000, lookback operator-adjustable with floor 4000).
+bool det_HV4K = conf and f_hvHit(s28_rung)
+
+// ENGINE: OPEN1 SUITE — Ultra v57 VERBATIM ports, o1_ prefix (tod_/tnt_ precedent).
+// ROC / LD oscillator + combo (Ultra v57 L647-690; f_has(x,1) ≡ same-bar x, inlined;
+// b5/r5 defined in v57 but unused by the combo — not ported).
+o1_roc_pN = close[5]
+o1_roc_val = o1_roc_pN != 0 ? ((close - o1_roc_pN) / o1_roc_pN) * 100 : 0.0
+o1_roc_ar = ta.sma(math.abs(o1_roc_val - o1_roc_val[1]), 100)
+o1_roc_ema = ta.ema(o1_roc_ar != 0 ? (o1_roc_val / o1_roc_ar) : 0.0, 5)
+o1_ld_esa = ta.ema(hlc3, 8)
+o1_ld_atr = ta.atr(100)
+o1_ld_ci = ((hlc3 - o1_ld_esa) / (o1_ld_atr == 0 ? 1 : o1_ld_atr)) * 100
+o1_ld_wt1 = ta.ema(o1_ld_ci, 21)
+o1_ld_wt2 = ta.sma(o1_ld_wt1, 4)
+o1_ld_hist = o1_ld_wt1 - o1_ld_wt2
+o1_ld_xup = ta.crossover(o1_ld_wt1, o1_ld_wt2)
+o1_ld_xdn = ta.crossunder(o1_ld_wt1, o1_ld_wt2)
+o1_b1 = ta.crossover(o1_roc_ema, 2.0)
+o1_b2 = o1_ld_xup and o1_ld_wt1 < -60
+o1_b3 = o1_ld_xup and o1_ld_hist > 5.0
+o1_b4 = ta.crossover(o1_ld_hist, 15.0)
+o1_r1 = ta.crossunder(o1_roc_ema, -1.25)
+o1_r2 = o1_ld_xdn and o1_ld_wt1 > 60
+o1_r3 = o1_ld_xdn and o1_ld_hist < -5.0
+o1_r4 = ta.crossunder(o1_ld_hist, -15.0)
+o1_bull2 = (o1_b1 and o1_b4) or (o1_b3 and o1_b2)
+o1_bear2 = (o1_r1 and o1_r4) or (o1_r3 and o1_r2)
+// heavy-weapons core mapping (v57 hasBullHW/anyBullRVOL → this study's engine names)
+o1_hwBull = det_RVOL1xB or det_GrandSlam or det_WTC or det_Hiroshima or sigNagasaki
+o1_hwBear = det_RVOL1xR or det_MOAB or det_WTC or det_Hiroshima or sigNagasaki
+o1_sigROCBull = conf and (sigBullPBJ and o1_bull2) and o1_hwBull and (close > open)
+o1_sigROCBear = conf and (sigBearPBJ and o1_bear2) and o1_hwBear and (close < open)
+// Ultra DISP engine (v57 L692-698) — INDEPENDENT displacement: σ=5, len=100, o-c range
+// (hardcoded in v57; NOT this study's Disp9/DYNAMITE/TNT engines — see DISPLACEMENT MAP)
+float o1_disp_rng = math.abs(open - close)
+float o1_disp_thresh = ta.stdev(o1_disp_rng, 100) * 5
+bool o1_disp_prev = o1_disp_rng[1] > o1_disp_thresh[1]
+bool o1_sigDISPBull = conf and o1_disp_prev and (low > high[2] and close[1] > open[1])
+bool o1_sigDISPBear = conf and o1_disp_prev and (high < low[2] and close[1] < open[1])
+// Super PBJ/PB composites (v57 L753-756)
+o1_superBullPBJ = conf and o1_sigDISPBull and sigBullPBJ and sigFAUNABull and o1_hwBull
+o1_superBullPB = conf and o1_sigDISPBull and sigBullPB and sigFAUNABull and o1_hwBull
+o1_superBearPBJ = conf and o1_sigDISPBear and sigBearPBJ and sigFAUNABear and o1_hwBear
+o1_superBearPB = conf and o1_sigDISPBear and sigBearPB and sigFAUNABear and o1_hwBear
+// Trend template + armed state machines (v57 L524-579; ema200_1m = ema200[21] — plain
+// 21-bar lookback, tick-safe; sPPBull/sPPBear ≡ sigPUP/sigPPD, identical math+defaults)
+float o1_ema50 = ta.ema(close, 50)
+float o1_ema150 = ta.ema(close, 150)
+float o1_ema200 = ta.ema(close, 200)
+float o1_ema200_1m = o1_ema200[21]
+float o1_w52Hi = ta.highest(high, 252)
+float o1_w52Lo = ta.lowest(low, 252)
+bool o1_bullPass = close > o1_ema50 and close >= o1_ema150 and close >= o1_ema200 and o1_ema50 > o1_ema150 and o1_ema50 > o1_ema200 and o1_ema150 >= o1_ema200 and o1_ema200 > o1_ema200_1m and close > (o1_w52Lo * 1.30) and close >= (o1_w52Hi * 0.75)
+bool o1_bearPass = close < o1_ema50 and close <= o1_ema150 and close <= o1_ema200 and o1_ema50 < o1_ema150 and o1_ema50 < o1_ema200 and o1_ema150 <= o1_ema200 and o1_ema200 < o1_ema200_1m and close < (o1_w52Hi * 0.70) and close <= (o1_w52Lo * 1.25)
+var int o1_neutralCount = 0
+o1_neutralCount := (not o1_bullPass and not o1_bearPass) ? o1_neutralCount + 1 : 0
+var bool o1_neutralDone = false
+if o1_neutralCount >= 5
+    o1_neutralDone := true
+var bool o1_pupArmed = false
+if o1_neutralDone and sigPUP
+    o1_pupArmed := true
+if o1_bearPass and o1_pupArmed
+    o1_pupArmed := false
+    o1_neutralDone := false
+bool o1_firstPUPPass = o1_pupArmed and o1_bullPass and not o1_bullPass[1]
+if o1_firstPUPPass
+    o1_pupArmed := false
+    o1_neutralDone := false
+var bool o1_ppdArmed = false
+if o1_neutralDone and sigPPD
+    o1_ppdArmed := true
+if o1_bullPass and o1_ppdArmed
+    o1_ppdArmed := false
+    o1_neutralDone := false
+bool o1_firstPPDPass = o1_ppdArmed and o1_bearPass and not o1_bearPass[1]
+if o1_firstPPDPass
+    o1_ppdArmed := false
+    o1_neutralDone := false
+bool o1_superPup = sigPUP and o1_bullPass
+bool o1_superPPD = sigPPD and o1_bearPass
+// OPEN1± (v57 L870-871 + L891-892 verbatim; sessBar==1 ≡ is_new_sess first-bar anchor;
+// bullGZI/bullHV ≡ gz_bullGZI/gz_bullHV — this study's GZ1/HV-FVG engine)
+o1_anyBullHW = o1_hwBull or o1_sigROCBull or o1_superBullPBJ or o1_superBullPB
+o1_anyBearHW = o1_hwBear or o1_sigROCBear or o1_superBearPBJ or o1_superBearPB
+bool det_open1Bull = conf and is_new_sess and (gz_bullGZI or gz_bullHV) and (o1_anyBullHW or sigBullPBJ or o1_sigROCBull or (o1_firstPUPPass and o1_superPup))
+bool det_open1Bear = conf and is_new_sess and (gz_bearGZI or gz_bearHV) and (o1_anyBearHW or sigBearPBJ or o1_sigROCBear or (o1_firstPPDPass and o1_superPPD))
+
+// ============================================================================
+// v5 ENGINE — KC Basis and Bands (KC Rev 8, verbatim)
+// ============================================================================
+kc_ma = switch kc_maType
+    "SMA"  => ta.sma(kc_src, kc_length)
+    "EMA"  => ta.ema(kc_src, kc_length)
+    "HMA"  => ta.hma(kc_src, kc_length)
+    "VWMA" => ta.vwma(kc_src, kc_length)
+    "LSMA" => ta.linreg(kc_src, kc_length, 0)
+
+kc_range_val = switch kc_bandsStyle
+    "True Range"         => ta.tr(true)
+    "Average True Range" => ta.atr(kc_atrLength)
+    => ta.rma(high - low, kc_length)
+
+kc_upper = kc_ma + kc_range_val * kc_mult
+kc_lower = kc_ma - kc_range_val * kc_mult
+
+kc_cross_above_basis      = ta.crossover(kc_src, kc_ma)
+kc_cross_below_basis      = ta.crossunder(kc_src, kc_ma)
+kc_reentry_from_above     = ta.crossunder(kc_src, kc_upper)
+kc_reentry_from_below     = ta.crossover(kc_src, kc_lower)
+
+kc_current_slope           = kc_ma - kc_ma[1]
+kc_prior_trend_change      = kc_ma[1] - kc_ma[kc_slopeLookbackBars]
+kc_midline_bullish_signal  = kc_current_slope > kc_bullishSlopeThreshold and kc_prior_trend_change < (kc_bullishSlopeThreshold / 2)
+kc_midline_bearish_signal  = kc_current_slope < (-kc_bearishSlopeThreshold) and kc_prior_trend_change > (-kc_bearishSlopeThreshold / 2)
+
+var waiting_for_bearish_cross = false
+var waiting_for_bullish_cross = false
+if kc_reentry_from_above
+    waiting_for_bearish_cross := true
+if kc_cross_above_basis
+    waiting_for_bearish_cross := false
+bearish_reentry_cross_signal = waiting_for_bearish_cross and kc_cross_below_basis
+if bearish_reentry_cross_signal
+    waiting_for_bearish_cross := false
+
+if kc_reentry_from_below
+    waiting_for_bullish_cross := true
+if kc_cross_below_basis
+    waiting_for_bullish_cross := false
+bullish_reentry_cross_signal = waiting_for_bullish_cross and kc_cross_above_basis
+if bullish_reentry_cross_signal
+    waiting_for_bullish_cross := false
+
+var waiting_for_slope_bearish = false
+var waiting_for_slope_bullish = false
+if kc_reentry_from_above
+    waiting_for_slope_bearish := true
+bearish_reentry_slope_signal = waiting_for_slope_bearish and kc_midline_bearish_signal
+if bearish_reentry_slope_signal
+    waiting_for_slope_bearish := false
+
+if kc_reentry_from_below
+    waiting_for_slope_bullish := true
+bullish_reentry_slope_signal = waiting_for_slope_bullish and kc_midline_bullish_signal
+if bullish_reentry_slope_signal
+    waiting_for_slope_bullish := false
+
+// ANY UNIONS — raw det-time booleans of the 53 v2 rows (D-ANY-1..4: same confirmed bar,
+// independent of ALL checkboxes, v3 rows excluded — no recursion)
+bool any_BULL = det_S1 or sigTyphoonBull or sigMusashiBull or sigWhaleBull or det_S10_saab or det_dynamiteBull or ign_tc_bull or ign_nc_bull or det_S15 or det_b2bBullNapalm or det_b2bPUP_d9 or det_b2bFC_bull or det_D9bull or det_UC_bull or enrB2B_bull_sameBar or enrB2B_bull_tntFirst or co_bull_pbj or co_bull_pb or b2b_bull_nopb or b2b_bull_pbj or b2b_bull_pb or hvdm_pup_nopbj_b or hvdm_rvol_nopbj_b or hvdm_cmb_nopbj_b or hvdm_vis_pbjpup_b or hvdm_vis_pbjrvol_b or hvdm_vis_pbjcmb_b or hvdm_2of3_b or hvdm_3of3_b
+bool any_BEAR = det_S2 or sigTyphoonBear or sigMusashiBear or sigWhaleBear or det_S9_kratos or det_dynamiteBear or ign_tc_bear or ign_nc_bear or det_b2bBearNapalm or det_b2bPPD_d9 or det_b2bFC_bear or det_D9bear or det_UC_bear or enrB2B_bear_sameBar or enrB2B_bear_tntFirst or co_bear_pbj or co_bear_pb or b2b_bear_nopb or b2b_bear_pbj or b2b_bear_pb or hvdm_ppd_nopbj_r or hvdm_rvol_nopbj_r or hvdm_cmb_nopbj_r or hvdm_vis_pbjppd_r or hvdm_vis_pbjrvol_r or hvdm_vis_pbjcmb_r or hvdm_2of3_r or hvdm_3of3_r
+
+// v3 COMPOSITE DETECTIONS S28-S35
+bool det_S28 = det_HV4K and any_BULL
+bool det_S29 = det_HV4K and any_BEAR
+bool det_S30 = conf and sigNagasaki and any_BULL
+bool det_S31 = conf and sigNagasaki and any_BEAR
+bool det_S32 = det_open1Bull and any_BULL
+bool det_S33 = det_open1Bear and any_BEAR
+bool det_S34 = det_dynamiteBull and any_BULL
+bool det_S35 = det_dynamiteBear and any_BEAR
+// v5 KC dets — raw + ANY-FABLE composites (basket = any_BULL/any_BEAR; v3/v5 rows excluded — no recursion, no self-count)
+bool det_kcRS_b = conf and bullish_reentry_slope_signal
+bool det_kcRS_r = conf and bearish_reentry_slope_signal
+bool det_kcRC_b = conf and bullish_reentry_cross_signal
+bool det_kcRC_r = conf and bearish_reentry_cross_signal
+bool det_RSany_b = det_kcRS_b and any_BULL
+bool det_RSany_r = det_kcRS_r and any_BEAR
+bool det_RSRCany_b = det_kcRS_b and det_kcRC_b and any_BULL
+bool det_RSRCany_r = det_kcRS_r and det_kcRC_r and any_BEAR
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIRST BAR MASTER GATES (per reference bar / offset)
+// ══════════════════════════════════════════════════════════════════════════════
+bool fb0 = not firstBarOnly or is_new_sess
+bool fb1 = not firstBarOnly or nz(is_new_sess[1])
+bool fb01 = not firstBarOnly or is_new_sess or nz(is_new_sess[1])
+bool fbs = not firstBarOnly or nz(is_new_sess[yy_rightBars])
+bool fbm = not firstBarOnly or al_isFirstBar
+bool fb12 = not firstBarOnly or nz(is_new_sess[1]) or nz(is_new_sess[2])
+
+// ══════════════════════════════════════════════════════════════════════════════
+// QUAD ADDITIONS (2026-07-24 specs v1.0-v1.3) — UC_core · CO v7 · CC · no-PBJ 2of3/3of3 ·
+// HV+PBJ+DISP · PBJ/PB+RS+RC · GS/MOAB+ANY · LTF displacement fork
+// ══════════════════════════════════════════════════════════════════════════════
+// UC_core (MAJOR REDEF): [(FVG-1 ∨ FVG-2) now ∧ MAT prior] ∨ [FVG-1 ∧ FVG-2 same candle]
+bool uc_core_Bull = csNew3_Bull or (comboSet1_Bull and comboSet2_Bull)
+bool uc_core_Bear = csNew3_Bear or (comboSet1_Bear and comboSet2_Bear)
+// S24/S25 detection inherits UC_core
+bool det_UCq_bull = uc_core_Bull and d9_bull
+bool det_UCq_bear = uc_core_Bear and d9_bear
+// HVD momentum CMB member inherits UC_core (spec v1.1 §2: one definition, no forks) —
+// the q_ family recomputes every combo-touching momentum row on UC_core
+bool q_cb1b = uc_core_Bull
+bool q_cb1r = uc_core_Bear
+bool hvdm_cmb_nopbj_q_b = hvd_fire_bull and q_cb1b and not _m_pj1b
+bool hvdm_cmb_nopbj_q_r = hvd_fire_bear and q_cb1r and not _m_pj1r
+bool hvdm_pbjcmb_q_b = hvd_fire_bull and _m_pj1b and q_cb1b
+bool hvdm_pbjcmb_q_r = hvd_fire_bear and _m_pj1r and q_cb1r
+int q_b_cnt = (_m_pup1 ? 1 : 0) + (_m_rv1b ? 1 : 0) + (q_cb1b ? 1 : 0)
+int q_r_cnt = (_m_ppd1 ? 1 : 0) + (_m_rv1r ? 1 : 0) + (q_cb1r ? 1 : 0)
+bool hvdm_3of3_q_b = hvd_fire_bull and _m_pj1b and _m_pup1 and _m_rv1b and q_cb1b
+bool hvdm_2of3_q_b_raw = hvd_fire_bull and _m_pj1b and q_b_cnt >= 2
+bool hvdm_2of3_q_b = hvdm_2of3_q_b_raw and not hvdm_3of3_q_b
+bool hvdm_3of3_q_r = hvd_fire_bear and _m_pj1r and _m_ppd1 and _m_rv1r and q_cb1r
+bool hvdm_2of3_q_r_raw = hvd_fire_bear and _m_pj1r and q_r_cnt >= 2
+bool hvdm_2of3_q_r = hvdm_2of3_q_r_raw and not hvdm_3of3_q_r
+bool hvdm_vis_pbjpup_q_b = hvdm_pbjpup_b and not hvdm_2of3_q_b_raw
+bool hvdm_vis_pbjrvol_q_b = hvdm_pbjrvol_b and not hvdm_2of3_q_b_raw
+bool hvdm_vis_pbjcmb_q_b = hvdm_pbjcmb_q_b and not hvdm_2of3_q_b_raw
+bool hvdm_vis_pbjppd_q_r = hvdm_pbjppd_r and not hvdm_2of3_q_r_raw
+bool hvdm_vis_pbjrvol_q_r = hvdm_pbjrvol_r and not hvdm_2of3_q_r_raw
+bool hvdm_vis_pbjcmb_q_r = hvdm_pbjcmb_q_r and not hvdm_2of3_q_r_raw
+// HVD 2of3/3of3 WITHOUT PBJ (disjoint — DEF-2)
+bool hvdm_3of3_nopbj_b = hvd_fire_bull and not _m_pj1b and _m_pup1 and _m_rv1b and q_cb1b
+bool hvdm_2of3_nopbj_b = hvd_fire_bull and not _m_pj1b and q_b_cnt >= 2 and not hvdm_3of3_nopbj_b
+bool hvdm_3of3_nopbj_r = hvd_fire_bear and not _m_pj1r and _m_ppd1 and _m_rv1r and q_cb1r
+bool hvdm_2of3_nopbj_r = hvd_fire_bear and not _m_pj1r and q_r_cnt >= 2 and not hvdm_3of3_nopbj_r
+// DYNAMITE achieved σ (pattern bars [1],[2]) for the number law
+float dynAch1 = nz(dyn_std[1]) > 0 ? nz(dyn_disp[1]) / nz(dyn_std[1]) : 0.0
+float dynAch2 = nz(dyn_std[2]) > 0 ? nz(dyn_disp[2]) / nz(dyn_std[2]) : 0.0
+// CO v7 qualifier menus (13 terms, side-appropriate; DEF-1: q11 = B2B HV+D; anti-recursion: q13 raw KC)
+bool coQ_bull = hvdm_pup_nopbj_b or hvdm_rvol_nopbj_b or hvdm_cmb_nopbj_q_b or hvdm_pbjpup_b or hvdm_pbjrvol_b or hvdm_pbjcmb_q_b or hvdm_2of3_q_b_raw or hvdm_3of3_q_b or hvdm_2of3_nopbj_b or hvdm_3of3_nopbj_b or b2b_bull_raw or sigNagasaki or (det_kcRS_b and det_kcRC_b)
+bool coQ_bear = hvdm_ppd_nopbj_r or hvdm_rvol_nopbj_r or hvdm_cmb_nopbj_q_r or hvdm_pbjppd_r or hvdm_pbjrvol_r or hvdm_pbjcmb_q_r or hvdm_2of3_q_r_raw or hvdm_3of3_q_r or hvdm_2of3_nopbj_r or hvdm_3of3_nopbj_r or b2b_bear_raw or sigNagasaki or (det_kcRS_r and det_kcRC_r)
+bool co_bull_pbj_v7 = co_bull_pbj and uc_core_Bull and coQ_bull
+bool co_bull_pb_v7 = co_bull_pb and uc_core_Bull and coQ_bull
+bool co_bear_pbj_v7 = co_bear_pbj and uc_core_Bear and coQ_bear
+bool co_bear_pb_v7 = co_bear_pb and uc_core_Bear and coQ_bear
+// COMBO CHAIN v2 (operator 2026-07-24): UC same-candle = (CS1 AND CS2 one candle) OR (any FVG AND MAT one candle).
+// Fire iff: [two consecutive constituent candles AND >=1 of the two is a UC candle] OR [>=2 UC candles within any 3 consecutive].
+bool matq_bull = comboSet3_Bull or comboSet4_Bull
+bool matq_bear = comboSet3_Bear or comboSet4_Bear
+bool uc_sc_bull = (comboSet1_Bull and comboSet2_Bull) or ((comboSet1_Bull or comboSet2_Bull) and matq_bull)
+bool uc_sc_bear = (comboSet1_Bear and comboSet2_Bear) or ((comboSet1_Bear or comboSet2_Bear) and matq_bear)
+bool cc_hit_bull = comboSet1_Bull or comboSet2_Bull or matq_bull
+bool cc_hit_bear = comboSet1_Bear or comboSet2_Bear or matq_bear
+int uc3_bull = (uc_sc_bull ? 1 : 0) + (nz(uc_sc_bull[1]) ? 1 : 0) + (nz(uc_sc_bull[2]) ? 1 : 0)
+int uc3_bear = (uc_sc_bear ? 1 : 0) + (nz(uc_sc_bear[1]) ? 1 : 0) + (nz(uc_sc_bear[2]) ? 1 : 0)
+bool det_CC_bull = conf and ((cc_hit_bull and nz(cc_hit_bull[1]) and (uc_sc_bull or nz(uc_sc_bull[1]))) or uc3_bull >= 2)
+bool det_CC_bear = conf and ((cc_hit_bear and nz(cc_hit_bear[1]) and (uc_sc_bear or nz(uc_sc_bear[1]))) or uc3_bear >= 2)
+// achieved-depth reporter (grammar v1.2 number law; capped 2400 by Pine history physics)
+f_hvDepth() =>
+    int d = 0
+    for i = 1 to math.max(math.min(2400, bar_index), 1)
+        if nz(volume[i], -1.0) >= volume
+            break
+        d := i
+    d
+// HV+PBJ+DISP — dedicated displacement engine (DEF-3) + own rung dropdown (DEF-4)
+string hq_dtype = input.string("Open to Close", "HV+PBJ+DISP — Disp Range Type", options=["Open to Close", "High to Low"], group="★ HV+PBJ+DISP ★")
+int hq_dlen = input.int(100, "HV+PBJ+DISP — Disp StdDev Length", minval=1, group="★ HV+PBJ+DISP ★")
+float hq_dmult = input.float(9.0, "HV+PBJ+DISP — Disp StdDev Multiplier", minval=0.1, step=0.5, group="★ HV+PBJ+DISP ★", tooltip="DEDICATED engine — tuning this moves NO other row (tether law).")
+float hq_drng = hq_dtype == "Open to Close" ? math.abs(open - close) : high - low
+float hq_dstd = ta.stdev(hq_drng, hq_dlen)
+bool hq_dbull = conf and hq_drng > hq_dstd * hq_dmult and close > open
+bool hq_dbear = conf and hq_drng > hq_dstd * hq_dmult and close < open
+bool det_HQ_bull = conf and f_hvHit(hq_rung) and sigBullPBJ and hq_dbull
+bool det_HQ_bear = conf and f_hvHit(hq_rung) and sigBearPBJ and hq_dbear
+// PBJ/PB + RS + RC same-candle combos
+bool det_PBJRSRC_bull = conf and sigBullPBJ and det_kcRS_b and det_kcRC_b
+bool det_PBJRSRC_bear = conf and sigBearPBJ and det_kcRS_r and det_kcRC_r
+bool det_PBRSRC_bull = conf and sigBullPB and det_kcRS_b and det_kcRC_b
+bool det_PBRSRC_bear = conf and sigBearPB and det_kcRS_r and det_kcRC_r
+// GS/MOAB + ANY
+bool det_GSany = det_GrandSlam and any_BULL
+bool det_MOABany = det_MOAB and any_BEAR
+// [HTF build: LTF displacement engine excluded — no dead knobs]
+
+// alert number helpers (grammar v1.2: achieved values; D the only decimal)
+f_i(float v) => str.tostring(math.round(v))
+f_d(float v) => str.tostring(v, "#.#")
+float d9_ach = d9_std > 0 ? d9_rng / d9_std : 0.0
+float dyn_ach = 0.0
+float hvd_ach = d1_std > 0 ? d1_rng / d1_std : 0.0
+float gap_abs = math.abs(open - close[1])
+float rng_abs = high - low
+bool gGR = gap_abs > rng_abs and rng_abs > 0
+string tagBlock = (is_new_sess ? "FIRST" : "") + (gGR ? (is_new_sess ? " " : "") + "G>R" + f_i(gap_abs / nz(close[1], close) * 100) + "%/" + str.tostring(gap_abs / rng_abs, "#.#") + "x" : "")
+
+color c_ty_bull = color.new(color.aqua, 75)
+color c_ty_bear = color.new(color.orange, 75)
+color c_mu_bull = color.new(#FFD700, 75)
+color c_mu_bear = color.new(#FF4500, 75)
+color c_wh_bear = color.new(#DC143C, 75)
+grpQ = "★ BULL HTF ROWS ★"
+grpQA = "🔔 ALERTS — BULL HTF ★"
+en_qS1 = input.bool(true, "S1: Bull RVOL 1X/GS + Disp9 + PBJ", group=grpQ, tooltip="GATES (same confirmed candle): ① green candle ② RVOL price-spike ≥ 1X tier OR ≥ Grand Slam tier (Pre-Mythos curve) ③ Displacement 9 bull ④ PBJ Bull ⑤ First Bar Master when ON. D-REQ: YES — Displacement 9 engine (σ input, default 9.0; shared with S9/S10/S18/S22/S24).")
+al_qS1 = input.bool(true, "🔔 S1: Bull RVOL 1X/GS + Disp9 + PBJ", group=grpQA)
+en_qS3 = input.bool(true, "S3: Typhoon Bull", group=grpQ, tooltip="GATES: ① swing LOW pivot (Right Bars back) ② pivot bar is FIRST bar ③ FAUNA bull on pivot ④ PUP OR (Whale+PBJ) on pivot. Marker ON the pivot bar. D-REQ: THIS BUILD (HTF): NO. LTF sibling: YES — dedicated LTF engine on the PIVOT bar (σ input 9.0; moves no other row).")
+al_qS3 = input.bool(true, "🔔 S3: Typhoon Bull", group=grpQA)
+en_qS5 = input.bool(true, "S5: Musashi Bull", group=grpQ, tooltip="GATES: ① GZ1 overlap-FVG OR HV-FVG ② aligned PUP ③ Whale ④ PBJ Bull. D-REQ: THIS BUILD (HTF): NO. LTF sibling: YES — dedicated LTF engine on the alignment bar.")
+al_qS5 = input.bool(true, "🔔 S5: Musashi Bull", group=grpQA)
+en_qS7 = input.bool(true, "S7: Whale+PUP Bull", group=grpQ, tooltip="GATES: ① whale pivot (green bar reclaiming SMA-20 on volume > every down-day volume in window) ② HV milestone (63d/252d/ATH per toggles) ③ PUP ④ PBJ Bull. D-REQ: THIS BUILD (HTF): NO. LTF sibling: YES — dedicated LTF engine on the signal bar.")
+al_qS7 = input.bool(true, "🔔 S7: Whale+PUP Bull", group=grpQA)
+en_qS10 = input.bool(true, "S10: B2B SAAB + Disp9", group=grpQ, tooltip="GATES: ① back-to-back PUP pair ② SAAB-tier RVOL on BOTH pattern bars ③ Disp9 on either pattern bar ④ pair touches the first bar (Master ON). D-REQ: YES — Displacement 9 engine (shared knob).")
+al_qS10 = input.bool(true, "🔔 S10: B2B SAAB + Disp9", group=grpQA)
+en_qS11 = input.bool(true, "S11: Dynamite Bull", group=grpQ, tooltip="GATES: ① displacement bars at [2] and [1], both bull — DEDICATED DYNAMITE engine ② FAUNA on both ③ bullish FVG on bar[0]. Marker one bar back. D-REQ: YES — DYNAMITE engine (σ input 5.0; lookback FIXED 100; shared only with S34).")
+al_qS11 = input.bool(true, "🔔 S11: Dynamite Bull", group=grpQA)
+en_qS13T = input.bool(true, "S13: Ignite TNT Bull", group=grpQ, tooltip="GATES: TNT + CONT on the SAME bar (TNT OD σ5 engine). Sibling row = Ignite Napalm (other geometry); one S13 checkbox gates both. D-REQ: YES — TNT OD engine (σ input 5, len input 100).")
+al_qS13T = input.bool(true, "🔔 S13: Ignite TNT Bull", group=grpQA)
+en_qS13N = input.bool(true, "S13: Ignite Napalm Bull", group=grpQ, tooltip="GATES: NPM + CONT; the pattern's visual bar is the PRIOR bar — marker one bar back. D-REQ: YES — TNT OD engine (shared with Ignite TNT).")
+al_qS13N = input.bool(true, "🔔 S13: Ignite Napalm Bull", group=grpQA)
+en_qS15 = input.bool(true, "S15: Nagasaki 1stBar+", group=grpQ, tooltip="GATES: ① ALL-TIME-HIGH volume (Nagasaki) ② ≥1 of: LONG 1-5 / PBJ Bull / Disp9 bull / RVOL 1X / Grand Slam ③ FIRST BAR — baked in (fires even with Master OFF). D-REQ: CONDITIONAL — Disp9 is one OR-qualifier (adjustable).")
+al_qS15 = input.bool(true, "🔔 S15: Nagasaki 1stBar+", group=grpQA)
+en_qS16 = input.bool(true, "S16: B2B Napalm Bull", group=grpQ, tooltip="GATES: (Napalm OR Charge) on bar[0] AND bar[1] (Engine G). Pair-touch first-bar law. D-REQ: YES — B2B Napalm engine (σ input 5; lookback FIXED 100).")
+al_qS16 = input.bool(true, "🔔 S16: B2B Napalm Bull", group=grpQA)
+en_qS18 = input.bool(true, "S18: B2B PUP + Disp9", group=grpQ, tooltip="GATES: ① B2B PUP pattern ② Disp9. Pair-touch first-bar law. D-REQ: YES — Displacement 9 engine (shared knob).")
+al_qS18 = input.bool(true, "🔔 S18: B2B PUP + Disp9", group=grpQA)
+en_qS20 = input.bool(true, "S20: B2B FC Cluster Bull", group=grpQ, tooltip="GATES: Ultra v57 FC cluster pair. ⚠ ALWAYS fires on ANY bar — overrides the First Bar Master. D-REQ: NO.")
+al_qS20 = input.bool(true, "🔔 S20: B2B FC Cluster Bull", group=grpQA)
+en_qS22 = input.bool(true, "S22: D9 Bull Study", group=grpQ, tooltip="GATES: Displacement 9 bull alone (range > σ×stdev, green candle, confirmed). D-REQ: YES — it IS the Displacement 9 engine.")
+al_qS22 = input.bool(true, "🔔 S22: D9 Bull Study", group=grpQA)
+en_qS24 = input.bool(true, "S24: Unified Combo Bull + Disp9", group=grpQ, tooltip="GATES: ① UC_core — NEW DEFINITION: [(FVG-1 ∨ FVG-2) now ∧ MAT prior bar] OR [FVG-1 ∧ FVG-2 on the SAME candle] ② Disp9. Marker one bar back. D-REQ: YES — Displacement 9 engine (the D9 conjunct; combos themselves have no σ term).")
+al_qS24 = input.bool(true, "🔔 S24: Unified Combo Bull + Disp9", group=grpQA)
+en_qS26S = input.bool(true, "S26: ENR Same-Bar Bull", group=grpQ, tooltip="GATES: B2B TNT⇄NPM, both legs resolve same-bar (pair bars[1,0]). RC NPM+TNT toggles SUPPRESS this family. D-REQ: YES — TNT/NPM legs + dedicated ENR gate σ (input 6.5).")
+al_qS26S = input.bool(true, "🔔 S26: ENR Same-Bar Bull", group=grpQA)
+en_qS26T = input.bool(true, "S26: ENR TNT-1st Bull", group=grpQ, tooltip="GATES: TNT fired first, NPM completed next bar (pair bars[2,1]). Marker one bar back. D-REQ: YES — TNT/NPM legs + ENR gate σ.")
+al_qS26T = input.bool(true, "🔔 S26: ENR TNT-1st Bull", group=grpQA)
+en_qCOJ = input.bool(true, "CO: HV+D+PBJ+USE Bull (v7)", group=grpQ, tooltip="GATES (v7): ① HV+D fires NOW ② PBJ Bull PRIOR bar ③ USE union PRIOR bar ④ UC_core present ⑤ ≥1 of the 13-term menu: HVD+PUP / HVD+RVOL / HVD+CMB / HVD+PBJ+PUP / +RVOL / +CMB / HVD+PBJ 2of3 / 3of3 / HVD 2of3 (no PBJ) / 3of3 (no PBJ) / B2B HV+D / Nagasaki / R-S∧R-C same candle. Marker one bar back. D-REQ: YES — HV+D engine (σ input 5.0; one knob moves ALL HVD rows).")
+al_qCOJ = input.bool(true, "🔔 CO: HV+D+PBJ+USE Bull (v7)", group=grpQA)
+en_qCOB = input.bool(true, "CO: HV+D+PB+USE Bull (v7)", group=grpQ, tooltip="GATES (v7): as CO PBJ with the PB level-approach signal replacing PBJ in ②. Same UC_core + 13-term menu. D-REQ: YES — HV+D engine.")
+al_qCOB = input.bool(true, "🔔 CO: HV+D+PB+USE Bull (v7)", group=grpQA)
+en_qB2BH = input.bool(true, "B2B HV+D Bull", group=grpQ, tooltip="GATES: HV+D now AND prior bar; NO PBJ and NO PB on either pattern bar (pure row, disjoint). D-REQ: YES — HV+D engine (both bars).")
+al_qB2BH = input.bool(true, "🔔 B2B HV+D Bull", group=grpQA)
+en_qB2BJ = input.bool(true, "B2B HV+D+PBJ Bull", group=grpQ, tooltip="GATES: B2B HV+D pair + PBJ Bull on either pattern bar. D-REQ: YES — HV+D engine.")
+al_qB2BJ = input.bool(true, "🔔 B2B HV+D+PBJ Bull", group=grpQA)
+en_qB2BP = input.bool(true, "B2B HV+D+PB Bull", group=grpQ, tooltip="GATES: B2B HV+D pair + PB on either pattern bar, PBJ absent. D-REQ: YES — HV+D engine.")
+al_qB2BP = input.bool(true, "🔔 B2B HV+D+PB Bull", group=grpQA)
+en_qMPUP = input.bool(true, "HV+D+PUP Bull", group=grpQ, tooltip="GATES: HV+D now + PUP prior bar + PBJ ABSENT (disjoint from +PBJ rows). D-REQ: YES — HV+D engine.")
+al_qMPUP = input.bool(true, "🔔 HV+D+PUP Bull", group=grpQA)
+en_qMRV = input.bool(true, "HV+D+RVOL Bull", group=grpQ, tooltip="GATES: HV+D now + (RVOL 1X OR Grand Slam) prior bar + PBJ absent. D-REQ: YES — HV+D engine.")
+al_qMRV = input.bool(true, "🔔 HV+D+RVOL Bull", group=grpQA)
+en_qMCMB = input.bool(true, "HV+D+CMB Bull", group=grpQ, tooltip="GATES: HV+D now + combo (UC_core member — NEW definition) + PBJ absent. D-REQ: YES — HV+D engine.")
+al_qMCMB = input.bool(true, "🔔 HV+D+CMB Bull", group=grpQA)
+en_qMJP = input.bool(true, "HV+D+PBJ+PUP Bull", group=grpQ, tooltip="GATES: HV+D + PBJ prior + PUP prior. Hidden when the 2of3 row fires (no double-marking). D-REQ: YES — HV+D engine.")
+al_qMJP = input.bool(true, "🔔 HV+D+PBJ+PUP Bull", group=grpQA)
+en_qMJR = input.bool(true, "HV+D+PBJ+RVOL Bull", group=grpQ, tooltip="GATES: HV+D + PBJ + RVOL member. Hidden when 2of3 fires. D-REQ: YES — HV+D engine.")
+al_qMJR = input.bool(true, "🔔 HV+D+PBJ+RVOL Bull", group=grpQA)
+en_qMJC = input.bool(true, "HV+D+PBJ+CMB Bull", group=grpQ, tooltip="GATES: HV+D + PBJ + combo member (UC_core). Hidden when 2of3 fires. D-REQ: YES — HV+D engine.")
+al_qMJC = input.bool(true, "🔔 HV+D+PBJ+CMB Bull", group=grpQA)
+en_qM23J = input.bool(true, "HV+D+PBJ 2of3 Bull", group=grpQ, tooltip="HAS PBJ. GATES: HV+D + PBJ + EXACTLY 2 of {PUP, RVOL/GS, CMB} (all 3 → the 3of3 row). D-REQ: YES — HV+D engine.")
+al_qM23J = input.bool(true, "🔔 HV+D+PBJ 2of3 Bull", group=grpQA)
+en_qM33J = input.bool(true, "HV+D+PBJ 3of3 Bull", group=grpQ, tooltip="HAS PBJ. GATES: HV+D + PBJ + ALL of PUP, RVOL/GS, CMB. D-REQ: YES — HV+D engine.")
+al_qM33J = input.bool(true, "🔔 HV+D+PBJ 3of3 Bull", group=grpQA)
+en_qM23N = input.bool(true, "HV+D 2of3 Bull (no PBJ)", group=grpQ, tooltip="NO PBJ — fires only when PBJ is ABSENT. GATES: HV+D + EXACTLY 2 of {PUP, RVOL/GS, CMB}. D-REQ: YES — HV+D engine.")
+al_qM23N = input.bool(true, "🔔 HV+D 2of3 Bull (no PBJ)", group=grpQA)
+en_qM33N = input.bool(true, "HV+D 3of3 Bull (no PBJ)", group=grpQ, tooltip="NO PBJ. GATES: HV+D + ALL of PUP, RVOL/GS, CMB, PBJ absent. D-REQ: YES — HV+D engine.")
+al_qM33N = input.bool(true, "🔔 HV+D 3of3 Bull (no PBJ)", group=grpQA)
+en_qCC = input.bool(true, "CC: Combo Chain Bull", group=grpQ, tooltip="CHAIN v2 (operator law): fires iff EITHER two consecutive constituent candles (CS1/CS2/MAT, binary per candle) with AT LEAST ONE of the two being a UC candle, OR at least 2 UC candles within any 3 consecutive candles (middle may be empty). UC same-candle = (CS1 AND CS2 on one candle) OR (any FVG combo AND MAT on one candle). A stacked candle counts ONE. D-REQ: NO — combos have no σ term.")
+al_qCC = input.bool(true, "🔔 CC: Combo Chain Bull", group=grpQA)
+en_qS28 = input.bool(true, "S28: 4K + ANY FABLE Bull", group=grpQ, tooltip="GATES: ① volume ≥ trailing-N highest, N from the S28/S29 HV-rung dropdown (50…4000, HEV = all-time high) ② ANY bullish v2 detection same candle (raw basket — ignores every checkbox). D-REQ: NO.")
+al_qS28 = input.bool(true, "🔔 S28: 4K + ANY FABLE Bull", group=grpQA)
+en_qS30 = input.bool(true, "S30: NAG + ANY FABLE Bull", group=grpQ, tooltip="GATES: ① Nagasaki (all-time-high volume) ② ANY bullish v2 detection same candle. D-REQ: NO.")
+al_qS30 = input.bool(true, "🔔 S30: NAG + ANY FABLE Bull", group=grpQA)
+en_qS32 = input.bool(true, "S32: OPEN1+ + ANY FABLE Bull", group=grpQ, tooltip="GATES: ① Ultra v57 opener: FIRST bar + (GZI or HV-FVG) + heavy-weapons/PBJ/ROC/superPUP menu ② ANY bullish v2 detection. First-bar BAKED. ⚠ internal Ultra displacement σ5/len100 HARDCODED (v57 verbatim — the only fixed σ). D-REQ: CONDITIONAL — OPEN1 Ultra internal, FIXED σ5/100.")
+al_qS32 = input.bool(true, "🔔 S32: OPEN1+ + ANY FABLE Bull", group=grpQA)
+en_qS34 = input.bool(true, "S34: DYNAMITE + ANY FABLE Bull", group=grpQ, tooltip="GATES: ① S11 Dynamite detection ② ANY bullish v2 detection. Marker one bar back. D-REQ: YES — DYNAMITE engine (σ adjustable, lookback FIXED 100).")
+al_qS34 = input.bool(true, "🔔 S34: DYNAMITE + ANY FABLE Bull", group=grpQA)
+en_qRSA = input.bool(true, "R-S + ANY FABLE Bull", group=grpQ, tooltip="GATES: ① KC re-entry SLOPE signal ② ANY bullish v2 detection same candle. (Raw R-S row REMOVED — engine runs internally.) D-REQ: NO.")
+al_qRSA = input.bool(true, "🔔 R-S + ANY FABLE Bull", group=grpQA)
+en_qRRA = input.bool(true, "R-S+R-C + ANY FABLE Bull", group=grpQ, tooltip="GATES: ① KC SLOPE AND KC CROSS on the SAME candle ② ANY bullish v2 detection. D-REQ: NO.")
+al_qRRA = input.bool(true, "🔔 R-S+R-C + ANY FABLE Bull", group=grpQA)
+en_qHQ = input.bool(true, "HV+PBJ+DISP Bull", group=grpQ, tooltip="GATES (same candle): ① volume ≥ trailing-N highest — N from THIS row's HV-rung dropdown (50…4000/HEV) ② PBJ Bull ③ the dedicated displacement (own Range/Length/σ inputs). D-REQ: YES — DEDICATED engine (σ input 9.0; moves NO other row).")
+al_qHQ = input.bool(true, "🔔 HV+PBJ+DISP Bull", group=grpQA)
+en_qPJR = input.bool(true, "PBJ+RS+RC Bull", group=grpQ, tooltip="GATES: ① PBJ Bull ② KC R-S ③ KC R-C — all three on the SAME candle. D-REQ: NO.")
+al_qPJR = input.bool(true, "🔔 PBJ+RS+RC Bull", group=grpQA)
+en_qPBR = input.bool(true, "PB+RS+RC Bull", group=grpQ, tooltip="GATES: ① PB level-approach Bull ② R-S ③ R-C — same candle. D-REQ: NO.")
+al_qPBR = input.bool(true, "🔔 PB+RS+RC Bull", group=grpQA)
+en_qGSA = input.bool(true, "GS + ANY FABLE Bull", group=grpQ, tooltip="GATES: ① Grand-Slam-tier RVOL spike ② ANY bullish v2 detection same candle. D-REQ: NO.")
+al_qGSA = input.bool(true, "🔔 GS + ANY FABLE Bull", group=grpQA)
+
+bool sig_qS1 = (det_S1) and fb0
+bool fire_qS1 = en_qS1 and sig_qS1
+bool alf_qS1 = al_qS1 and sig_qS1
+bool sig_qS3 = (sigTyphoonBull) and fbs
+bool fire_qS3 = en_qS3 and sig_qS3
+bool alf_qS3 = al_qS3 and sig_qS3
+bool sig_qS5 = (sigMusashiBull) and fbm
+bool fire_qS5 = en_qS5 and sig_qS5
+bool alf_qS5 = al_qS5 and sig_qS5
+bool sig_qS7 = (sigWhaleBull) and fb0
+bool fire_qS7 = en_qS7 and sig_qS7
+bool alf_qS7 = al_qS7 and sig_qS7
+bool sig_qS10 = (det_S10_saab) and fb01
+bool fire_qS10 = en_qS10 and sig_qS10
+bool alf_qS10 = al_qS10 and sig_qS10
+bool sig_qS11 = (det_dynamiteBull) and fb1
+bool fire_qS11 = en_qS11 and sig_qS11
+bool alf_qS11 = al_qS11 and sig_qS11
+bool sig_qS13T = (ign_tc_bull) and fb0
+bool fire_qS13T = en_qS13T and sig_qS13T
+bool alf_qS13T = al_qS13T and sig_qS13T
+bool sig_qS13N = (ign_nc_bull) and fb1
+bool fire_qS13N = en_qS13N and sig_qS13N
+bool alf_qS13N = al_qS13N and sig_qS13N
+bool sig_qS15 = (det_S15) and fb0
+bool fire_qS15 = en_qS15 and sig_qS15
+bool alf_qS15 = al_qS15 and sig_qS15
+bool sig_qS16 = (det_b2bBullNapalm) and fb01
+bool fire_qS16 = en_qS16 and sig_qS16
+bool alf_qS16 = al_qS16 and sig_qS16
+bool sig_qS18 = (det_b2bPUP_d9) and fb01
+bool fire_qS18 = en_qS18 and sig_qS18
+bool alf_qS18 = al_qS18 and sig_qS18
+bool sig_qS20 = (det_b2bFC_bull)
+bool fire_qS20 = en_qS20 and sig_qS20
+bool alf_qS20 = al_qS20 and sig_qS20
+bool sig_qS22 = (det_D9bull) and fb0
+bool fire_qS22 = en_qS22 and sig_qS22
+bool alf_qS22 = al_qS22 and sig_qS22
+bool sig_qS24 = (det_UCq_bull) and fb1
+bool fire_qS24 = en_qS24 and sig_qS24
+bool alf_qS24 = al_qS24 and sig_qS24
+bool sig_qS26S = (enrB2B_bull_sameBar) and fb01
+bool fire_qS26S = en_qS26S and sig_qS26S
+bool alf_qS26S = al_qS26S and sig_qS26S
+bool sig_qS26T = (enrB2B_bull_tntFirst) and fb12
+bool fire_qS26T = en_qS26T and sig_qS26T
+bool alf_qS26T = al_qS26T and sig_qS26T
+bool sig_qCOJ = (co_bull_pbj_v7) and fb1
+bool fire_qCOJ = en_qCOJ and sig_qCOJ
+bool alf_qCOJ = al_qCOJ and sig_qCOJ
+bool sig_qCOB = (co_bull_pb_v7) and fb1
+bool fire_qCOB = en_qCOB and sig_qCOB
+bool alf_qCOB = al_qCOB and sig_qCOB
+bool sig_qB2BH = (b2b_bull_nopb) and fb1
+bool fire_qB2BH = en_qB2BH and sig_qB2BH
+bool alf_qB2BH = al_qB2BH and sig_qB2BH
+bool sig_qB2BJ = (b2b_bull_pbj) and fb1
+bool fire_qB2BJ = en_qB2BJ and sig_qB2BJ
+bool alf_qB2BJ = al_qB2BJ and sig_qB2BJ
+bool sig_qB2BP = (b2b_bull_pb) and fb1
+bool fire_qB2BP = en_qB2BP and sig_qB2BP
+bool alf_qB2BP = al_qB2BP and sig_qB2BP
+bool sig_qMPUP = (hvdm_pup_nopbj_b) and fb1
+bool fire_qMPUP = en_qMPUP and sig_qMPUP
+bool alf_qMPUP = al_qMPUP and sig_qMPUP
+bool sig_qMRV = (hvdm_rvol_nopbj_b) and fb1
+bool fire_qMRV = en_qMRV and sig_qMRV
+bool alf_qMRV = al_qMRV and sig_qMRV
+bool sig_qMCMB = (hvdm_cmb_nopbj_q_b) and fb1
+bool fire_qMCMB = en_qMCMB and sig_qMCMB
+bool alf_qMCMB = al_qMCMB and sig_qMCMB
+bool sig_qMJP = (hvdm_vis_pbjpup_q_b) and fb1
+bool fire_qMJP = en_qMJP and sig_qMJP
+bool alf_qMJP = al_qMJP and sig_qMJP
+bool sig_qMJR = (hvdm_vis_pbjrvol_q_b) and fb1
+bool fire_qMJR = en_qMJR and sig_qMJR
+bool alf_qMJR = al_qMJR and sig_qMJR
+bool sig_qMJC = (hvdm_vis_pbjcmb_q_b) and fb1
+bool fire_qMJC = en_qMJC and sig_qMJC
+bool alf_qMJC = al_qMJC and sig_qMJC
+bool sig_qM23J = (hvdm_2of3_q_b) and fb1
+bool fire_qM23J = en_qM23J and sig_qM23J
+bool alf_qM23J = al_qM23J and sig_qM23J
+bool sig_qM33J = (hvdm_3of3_q_b) and fb1
+bool fire_qM33J = en_qM33J and sig_qM33J
+bool alf_qM33J = al_qM33J and sig_qM33J
+bool sig_qM23N = (hvdm_2of3_nopbj_b) and fb1
+bool fire_qM23N = en_qM23N and sig_qM23N
+bool alf_qM23N = al_qM23N and sig_qM23N
+bool sig_qM33N = (hvdm_3of3_nopbj_b) and fb1
+bool fire_qM33N = en_qM33N and sig_qM33N
+bool alf_qM33N = al_qM33N and sig_qM33N
+bool sig_qCC = (det_CC_bull) and fb0
+bool fire_qCC = en_qCC and sig_qCC
+bool alf_qCC = al_qCC and sig_qCC
+bool sig_qS28 = (det_S28) and fb0
+bool fire_qS28 = en_qS28 and sig_qS28
+bool alf_qS28 = al_qS28 and sig_qS28
+bool sig_qS30 = (det_S30) and fb0
+bool fire_qS30 = en_qS30 and sig_qS30
+bool alf_qS30 = al_qS30 and sig_qS30
+bool sig_qS32 = (det_S32)
+bool fire_qS32 = en_qS32 and sig_qS32
+bool alf_qS32 = al_qS32 and sig_qS32
+bool sig_qS34 = (det_S34) and fb1
+bool fire_qS34 = en_qS34 and sig_qS34
+bool alf_qS34 = al_qS34 and sig_qS34
+bool sig_qRSA = (det_RSany_b) and fb0
+bool fire_qRSA = en_qRSA and sig_qRSA
+bool alf_qRSA = al_qRSA and sig_qRSA
+bool sig_qRRA = (det_RSRCany_b) and fb0
+bool fire_qRRA = en_qRRA and sig_qRRA
+bool alf_qRRA = al_qRRA and sig_qRRA
+bool sig_qHQ = (det_HQ_bull) and fb0
+bool fire_qHQ = en_qHQ and sig_qHQ
+bool alf_qHQ = al_qHQ and sig_qHQ
+bool sig_qPJR = (det_PBJRSRC_bull) and fb0
+bool fire_qPJR = en_qPJR and sig_qPJR
+bool alf_qPJR = al_qPJR and sig_qPJR
+bool sig_qPBR = (det_PBRSRC_bull) and fb0
+bool fire_qPBR = en_qPBR and sig_qPBR
+bool alf_qPBR = al_qPBR and sig_qPBR
+bool sig_qGSA = (det_GSany) and fb0
+bool fire_qGSA = en_qGSA and sig_qGSA
+bool alf_qGSA = al_qGSA and sig_qGSA
+
+plotshape(fire_qS1, "S1: Bull RVOL 1X/GS + Disp9 + PBJ", shape.triangleup, location.belowbar, #00C853, 0, "1X/GS\nD9 PBJ", color.white, size=size.small)
+plotshape(fire_qS3, "S3: Typhoon Bull", shape.labelup, location.belowbar, #00B8D4B3, -yy_rightBars, "TYPHOON+", color.white, size=size.small)
+plotshape(fire_qS5, "S5: Musashi Bull", shape.diamond, location.belowbar, #FFEB3B, -moff, "+ Musashi", color.black, size=size.small)
+plotshape(fire_qS7, "S7: Whale+PUP Bull", shape.circle, location.belowbar, #18FFFFB3, 0, "WH+PUP", color.black, size=size.tiny)
+plotshape(fire_qS10, "S10: B2B SAAB + Disp9", shape.square, location.belowbar, #76FF03, 0, "B2B\nSAAB D9", color.black, size=size.normal)
+plotshape(fire_qS11, "S11: Dynamite Bull", shape.cross, location.belowbar, #1DE9B6B3, -1, "★ DYNAMITE", color.white, size=size.large)
+plotshape(fire_qS13T, "S13: Ignite TNT Bull", shape.xcross, location.belowbar, #2196F3, 0, "IGNITE\nTNT", color.white, size=size.normal)
+plotshape(fire_qS13N, "S13: Ignite Napalm Bull", shape.flag, location.belowbar, #FFD700B3, -1, "IGNITE\nNPM", color.black, size=size.normal)
+plotshape(fire_qS15, "S15: Nagasaki 1stBar+", shape.arrowup, location.belowbar, #00E676, 0, "NAG+", color.white, size=size.large)
+plotshape(fire_qS16, "S16: B2B Napalm Bull", shape.triangleup, location.belowbar, #4DD0E166, 0, "NPM\nB2B", color.white, size=size.large)
+plotshape(fire_qS18, "S18: B2B PUP + Disp9", shape.triangleup, location.bottom, #00C853, 0, "B2B PUP\nD9", color.white, size=size.normal)
+plotshape(fire_qS20, "S20: B2B FC Cluster Bull", shape.labelup, location.bottom, #00B8D4B3, 0, "B2B\nFC", color.white, size=size.large)
+plotshape(fire_qS22, "S22: D9 Bull Study", shape.diamond, location.bottom, #FFEB3B, 0, "D9\nSTUDY", color.black, size=size.normal)
+plotshape(fire_qS24, "S24: Unified Combo Bull + Disp9", shape.circle, location.bottom, #18FFFFB3, -1, "UC\nD9", color.black, size=size.small)
+plotshape(fire_qS26S, "S26: ENR Same-Bar Bull", shape.square, location.bottom, #76FF03, 0, "ENR\nSAME", color.black, size=size.large)
+plotshape(fire_qS26T, "S26: ENR TNT-1st Bull", shape.cross, location.bottom, #1DE9B6B3, -1, "ENR\nT1ST", color.white, size=size.large)
+plotshape(fire_qCOJ, "CO: HV+D+PBJ+USE Bull (v7)", shape.triangleup, location.top, #00C853, -1, "CO\nPBJ", color.white, size=size.huge)
+plotshape(fire_qCOB, "CO: HV+D+PB+USE Bull (v7)", shape.labelup, location.top, #00B8D4B3, -1, "CO\nPB", color.white, size=size.large)
+plotshape(fire_qB2BH, "B2B HV+D Bull", shape.diamond, location.top, #FFEB3B, -1, "B2B", color.black, size=size.large)
+plotshape(fire_qB2BJ, "B2B HV+D+PBJ Bull", shape.circle, location.top, #18FFFFB3, -1, "B2B\nPBJ", color.black, size=size.huge)
+plotshape(fire_qB2BP, "B2B HV+D+PB Bull", shape.square, location.top, #76FF03, -1, "B2B\nPB", color.black, size=size.large)
+plotshape(fire_qMPUP, "HV+D+PUP Bull", shape.cross, location.top, #1DE9B6B3, -1, "HVD\nPUP", color.white, size=size.normal)
+plotshape(fire_qMRV, "HV+D+RVOL Bull", shape.xcross, location.top, #2196F3, -1, "HVD\nRVOL", color.white, size=size.normal)
+plotshape(fire_qMCMB, "HV+D+CMB Bull", shape.flag, location.top, #FFD700B3, -1, "HVD\nCMB", color.black, size=size.normal)
+plotshape(fire_qMJP, "HV+D+PBJ+PUP Bull", shape.arrowup, location.top, #00E676, -1, "HVD+PBJ\nPUP", color.white, size=size.large)
+plotshape(fire_qMJR, "HV+D+PBJ+RVOL Bull", shape.triangleup, location.top, #4DD0E166, -1, "HVD+PBJ\nRVOL", color.white, size=size.large)
+plotshape(fire_qMJC, "HV+D+PBJ+CMB Bull", shape.labelup, location.top, #FFFFFF66, -1, "HVD+PBJ\nCMB", color.black, size=size.large)
+plotshape(fire_qM23J, "HV+D+PBJ 2of3 Bull", shape.triangleup, location.abovebar, #00C853, -1, "HVD+PBJ\n2of3", color.white, size=size.large)
+plotshape(fire_qM33J, "HV+D+PBJ 3of3 Bull", shape.labelup, location.abovebar, #00B8D4B3, -1, "HVD+PBJ\n3of3", color.white, size=size.huge)
+plotshape(fire_qM23N, "HV+D 2of3 Bull (no PBJ)", shape.diamond, location.abovebar, #FFEB3B, -1, "HVD\n2of3", color.black, size=size.large)
+plotshape(fire_qM33N, "HV+D 3of3 Bull (no PBJ)", shape.circle, location.abovebar, #18FFFFB3, -1, "HVD\n3of3", color.black, size=size.huge)
+plotshape(fire_qCC, "CC: Combo Chain Bull", shape.labelup, location.bottom, #FFFFFF66, 0, "CC", color.black, size=size.normal)
+plotshape(fire_qS28, "S28: 4K + ANY FABLE Bull", shape.square, location.abovebar, #76FF03, 0, "4K\n+ANY", color.black, size=size.large)
+plotshape(fire_qS30, "S30: NAG + ANY FABLE Bull", shape.cross, location.abovebar, #1DE9B6B3, 0, "NAG\n+ANY", color.white, size=size.large)
+plotshape(fire_qS32, "S32: OPEN1+ + ANY FABLE Bull", shape.xcross, location.abovebar, #2196F3, 0, "OPEN1\n+ANY", color.white, size=size.huge)
+plotshape(fire_qS34, "S34: DYNAMITE + ANY FABLE Bull", shape.flag, location.abovebar, #FFD700B3, -1, "DYN\n+ANY", color.black, size=size.large)
+plotshape(fire_qRSA, "R-S + ANY FABLE Bull", shape.arrowup, location.abovebar, #00E676, 0, "R-S\n+ANY", color.white, size=size.large)
+plotshape(fire_qRRA, "R-S+R-C + ANY FABLE Bull", shape.triangleup, location.abovebar, #4DD0E166, 0, "R-S+R-C\n+ANY", color.white, size=size.huge)
+plotshape(fire_qHQ, "HV+PBJ+DISP Bull", shape.xcross, location.bottom, #2196F3, 0, "HV+PBJ\nDISP", color.white, size=size.large)
+plotshape(fire_qPJR, "PBJ+RS+RC Bull", shape.flag, location.bottom, #FFD700B3, 0, "PBJ\nRS+RC", color.black, size=size.large)
+plotshape(fire_qPBR, "PB+RS+RC Bull", shape.arrowup, location.bottom, #00E676, 0, "PB\nRS+RC", color.white, size=size.large)
+plotshape(fire_qGSA, "GS + ANY FABLE Bull", shape.triangleup, location.bottom, #4DD0E166, 0, "GS\n+ANY", color.white, size=size.large)
+
+// ══ ALERT ENGINE — canonical grammar v1.2 (T-ALERTMSG): SIDE n | [FIRST][ G>R] | tokens | RVr ══
+int qn = (fire_qS1 ? 1 : 0) + (fire_qS3 ? 1 : 0) + (fire_qS5 ? 1 : 0) + (fire_qS7 ? 1 : 0) + (fire_qS10 ? 1 : 0) + (fire_qS11 ? 1 : 0) + (fire_qS13T ? 1 : 0) + (fire_qS13N ? 1 : 0) + (fire_qS15 ? 1 : 0) + (fire_qS16 ? 1 : 0) + (fire_qS18 ? 1 : 0) + (fire_qS20 ? 1 : 0) + (fire_qS22 ? 1 : 0) + (fire_qS24 ? 1 : 0) + (fire_qS26S ? 1 : 0) + (fire_qS26T ? 1 : 0) + (fire_qCOJ ? 1 : 0) + (fire_qCOB ? 1 : 0) + (fire_qB2BH ? 1 : 0) + (fire_qB2BJ ? 1 : 0) + (fire_qB2BP ? 1 : 0) + (fire_qMPUP ? 1 : 0) + (fire_qMRV ? 1 : 0) + (fire_qMCMB ? 1 : 0) + (fire_qMJP ? 1 : 0) + (fire_qMJR ? 1 : 0) + (fire_qMJC ? 1 : 0) + (fire_qM23J ? 1 : 0) + (fire_qM33J ? 1 : 0) + (fire_qM23N ? 1 : 0) + (fire_qM33N ? 1 : 0) + (fire_qCC ? 1 : 0) + (fire_qS28 ? 1 : 0) + (fire_qS30 ? 1 : 0) + (fire_qS32 ? 1 : 0) + (fire_qS34 ? 1 : 0) + (fire_qRSA ? 1 : 0) + (fire_qRRA ? 1 : 0) + (fire_qHQ ? 1 : 0) + (fire_qPJR ? 1 : 0) + (fire_qPBR ? 1 : 0) + (fire_qGSA ? 1 : 0)
+string qhdr = "BULL " + str.tostring(qn) + (tagBlock != "" ? " | " + tagBlock : "") + " | "
+string qtail = " | RV" + f_i(rv_relVolRatio)
+string qmsg = ""
+if conf
+    if alf_qS1
+        qmsg := f_add(qmsg, "S1:" + (rv_normPrice >= th_gs ? "GS" : "1X") + f_i(rv_normPrice) + ",D" + f_d(d9_ach))
+    if alf_qS3
+        qmsg := f_add(qmsg, "S3:TYPHOON")
+    if alf_qS5
+        qmsg := f_add(qmsg, "S5:MUSASHI" + (gz_bullHV ? "," + f_i(f_hvDepth()) : ""))
+    if alf_qS7
+        qmsg := f_add(qmsg, "S7:WHALE+PUP," + f_i(f_hvDepth()))
+    if alf_qS10
+        qmsg := f_add(qmsg, "S10:SAAB" + f_i(rv_normPrice) + "/" + f_i(nz(rv_normPrice[1])) + ",D" + f_d(d9_ach))
+    if alf_qS11
+        qmsg := f_add(qmsg, "S11:DYN,D" + f_d(dynAch1) + "/" + f_d(dynAch2))
+    if alf_qS13T
+        qmsg := f_add(qmsg, "S13:IGN-TNT")
+    if alf_qS13N
+        qmsg := f_add(qmsg, "S13:IGN-NPM")
+    if alf_qS15
+        qmsg := f_add(qmsg, "S15:NAG" + str.tostring(bar_index) + (d9_bull ? ",D" + f_d(d9_ach) : ""))
+    if alf_qS16
+        qmsg := f_add(qmsg, "S16:B2BNPM")
+    if alf_qS18
+        qmsg := f_add(qmsg, "S18:B2BPUP,D" + f_d(d9_ach))
+    if alf_qS20
+        qmsg := f_add(qmsg, "S20:B2BFC")
+    if alf_qS22
+        qmsg := f_add(qmsg, "S22:D9,D" + f_d(d9_ach))
+    if alf_qS24
+        qmsg := f_add(qmsg, "S24:UC,D" + f_d(d9_ach))
+    if alf_qS26S
+        qmsg := f_add(qmsg, "S26:ENR-SAME")
+    if alf_qS26T
+        qmsg := f_add(qmsg, "S26:ENR-T1ST")
+    if alf_qCOJ
+        qmsg := f_add(qmsg, "CO-PBJ:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qCOB
+        qmsg := f_add(qmsg, "CO-PB:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qB2BH
+        qmsg := f_add(qmsg, "B2B-HVD:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + "/" + f_d(nz(hvd_ach[1])))
+    if alf_qB2BJ
+        qmsg := f_add(qmsg, "B2B-HVD+PBJ:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + "/" + f_d(nz(hvd_ach[1])))
+    if alf_qB2BP
+        qmsg := f_add(qmsg, "B2B-HVD+PB:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + "/" + f_d(nz(hvd_ach[1])))
+    if alf_qMPUP
+        qmsg := f_add(qmsg, "HVD+PUP:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qMRV
+        qmsg := f_add(qmsg, "HVD+RVOL:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + ",1X" + f_i(nz(rv_normPrice[1])))
+    if alf_qMCMB
+        qmsg := f_add(qmsg, "HVD+CMB:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qMJP
+        qmsg := f_add(qmsg, "HVD+PBJ+PUP:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qMJR
+        qmsg := f_add(qmsg, "HVD+PBJ+RVOL:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + ",1X" + f_i(nz(rv_normPrice[1])))
+    if alf_qMJC
+        qmsg := f_add(qmsg, "HVD+PBJ+CMB:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qM23J
+        qmsg := f_add(qmsg, "HVD+PBJ-2of3:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qM33J
+        qmsg := f_add(qmsg, "HVD+PBJ-3of3:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qM23N
+        qmsg := f_add(qmsg, "HVD-2of3-NoPBJ:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qM33N
+        qmsg := f_add(qmsg, "HVD-3of3-NoPBJ:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach))
+    if alf_qCC
+        qmsg := f_add(qmsg, "CC")
+    if alf_qS28
+        qmsg := f_add(qmsg, "S28:4K," + f_i(f_hvDepth()))
+    if alf_qS30
+        qmsg := f_add(qmsg, "S30:NAG" + str.tostring(bar_index))
+    if alf_qS32
+        qmsg := f_add(qmsg, "S32:OPEN1" + (gz_bullHV ? "," + f_i(f_hvDepth()) : ""))
+    if alf_qS34
+        qmsg := f_add(qmsg, "S34:DYN,D" + f_d(dynAch1) + "/" + f_d(dynAch2))
+    if alf_qRSA
+        qmsg := f_add(qmsg, "RS+ANY")
+    if alf_qRRA
+        qmsg := f_add(qmsg, "RS+RC+ANY")
+    if alf_qHQ
+        qmsg := f_add(qmsg, "HV:" + f_i(f_hvDepth()) + ",PBJ,D" + f_d(hq_dstd > 0 ? hq_drng / hq_dstd : 0.0))
+    if alf_qPJR
+        qmsg := f_add(qmsg, "PBJ+RS+RC")
+    if alf_qPBR
+        qmsg := f_add(qmsg, "PB+RS+RC")
+    if alf_qGSA
+        qmsg := f_add(qmsg, "GS" + f_i(rv_normPrice) + "+ANY")
+    if en_aggAlerts
+        if qmsg != ""
+            alert(qhdr + qmsg + qtail, alert.freq_once_per_bar_close)
+    else
+        if alf_qS1
+            alert(qhdr + "S1:" + (rv_normPrice >= th_gs ? "GS" : "1X") + f_i(rv_normPrice) + ",D" + f_d(d9_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qS3
+            alert(qhdr + "S3:TYPHOON" + qtail, alert.freq_once_per_bar_close)
+        if alf_qS5
+            alert(qhdr + "S5:MUSASHI" + (gz_bullHV ? "," + f_i(f_hvDepth()) : "") + qtail, alert.freq_once_per_bar_close)
+        if alf_qS7
+            alert(qhdr + "S7:WHALE+PUP," + f_i(f_hvDepth()) + qtail, alert.freq_once_per_bar_close)
+        if alf_qS10
+            alert(qhdr + "S10:SAAB" + f_i(rv_normPrice) + "/" + f_i(nz(rv_normPrice[1])) + ",D" + f_d(d9_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qS11
+            alert(qhdr + "S11:DYN,D" + f_d(dynAch1) + "/" + f_d(dynAch2) + qtail, alert.freq_once_per_bar_close)
+        if alf_qS13T
+            alert(qhdr + "S13:IGN-TNT" + qtail, alert.freq_once_per_bar_close)
+        if alf_qS13N
+            alert(qhdr + "S13:IGN-NPM" + qtail, alert.freq_once_per_bar_close)
+        if alf_qS15
+            alert(qhdr + "S15:NAG" + str.tostring(bar_index) + (d9_bull ? ",D" + f_d(d9_ach) : "") + qtail, alert.freq_once_per_bar_close)
+        if alf_qS16
+            alert(qhdr + "S16:B2BNPM" + qtail, alert.freq_once_per_bar_close)
+        if alf_qS18
+            alert(qhdr + "S18:B2BPUP,D" + f_d(d9_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qS20
+            alert(qhdr + "S20:B2BFC" + qtail, alert.freq_once_per_bar_close)
+        if alf_qS22
+            alert(qhdr + "S22:D9,D" + f_d(d9_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qS24
+            alert(qhdr + "S24:UC,D" + f_d(d9_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qS26S
+            alert(qhdr + "S26:ENR-SAME" + qtail, alert.freq_once_per_bar_close)
+        if alf_qS26T
+            alert(qhdr + "S26:ENR-T1ST" + qtail, alert.freq_once_per_bar_close)
+        if alf_qCOJ
+            alert(qhdr + "CO-PBJ:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qCOB
+            alert(qhdr + "CO-PB:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qB2BH
+            alert(qhdr + "B2B-HVD:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + "/" + f_d(nz(hvd_ach[1])) + qtail, alert.freq_once_per_bar_close)
+        if alf_qB2BJ
+            alert(qhdr + "B2B-HVD+PBJ:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + "/" + f_d(nz(hvd_ach[1])) + qtail, alert.freq_once_per_bar_close)
+        if alf_qB2BP
+            alert(qhdr + "B2B-HVD+PB:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + "/" + f_d(nz(hvd_ach[1])) + qtail, alert.freq_once_per_bar_close)
+        if alf_qMPUP
+            alert(qhdr + "HVD+PUP:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qMRV
+            alert(qhdr + "HVD+RVOL:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + ",1X" + f_i(nz(rv_normPrice[1])) + qtail, alert.freq_once_per_bar_close)
+        if alf_qMCMB
+            alert(qhdr + "HVD+CMB:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qMJP
+            alert(qhdr + "HVD+PBJ+PUP:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qMJR
+            alert(qhdr + "HVD+PBJ+RVOL:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + ",1X" + f_i(nz(rv_normPrice[1])) + qtail, alert.freq_once_per_bar_close)
+        if alf_qMJC
+            alert(qhdr + "HVD+PBJ+CMB:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qM23J
+            alert(qhdr + "HVD+PBJ-2of3:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qM33J
+            alert(qhdr + "HVD+PBJ-3of3:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qM23N
+            alert(qhdr + "HVD-2of3-NoPBJ:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qM33N
+            alert(qhdr + "HVD-3of3-NoPBJ:" + f_i(f_hvDepth()) + ",D" + f_d(hvd_ach) + qtail, alert.freq_once_per_bar_close)
+        if alf_qCC
+            alert(qhdr + "CC" + qtail, alert.freq_once_per_bar_close)
+        if alf_qS28
+            alert(qhdr + "S28:4K," + f_i(f_hvDepth()) + qtail, alert.freq_once_per_bar_close)
+        if alf_qS30
+            alert(qhdr + "S30:NAG" + str.tostring(bar_index) + qtail, alert.freq_once_per_bar_close)
+        if alf_qS32
+            alert(qhdr + "S32:OPEN1" + (gz_bullHV ? "," + f_i(f_hvDepth()) : "") + qtail, alert.freq_once_per_bar_close)
+        if alf_qS34
+            alert(qhdr + "S34:DYN,D" + f_d(dynAch1) + "/" + f_d(dynAch2) + qtail, alert.freq_once_per_bar_close)
+        if alf_qRSA
+            alert(qhdr + "RS+ANY" + qtail, alert.freq_once_per_bar_close)
+        if alf_qRRA
+            alert(qhdr + "RS+RC+ANY" + qtail, alert.freq_once_per_bar_close)
+        if alf_qHQ
+            alert(qhdr + "HV:" + f_i(f_hvDepth()) + ",PBJ,D" + f_d(hq_dstd > 0 ? hq_drng / hq_dstd : 0.0) + qtail, alert.freq_once_per_bar_close)
+        if alf_qPJR
+            alert(qhdr + "PBJ+RS+RC" + qtail, alert.freq_once_per_bar_close)
+        if alf_qPBR
+            alert(qhdr + "PB+RS+RC" + qtail, alert.freq_once_per_bar_close)
+        if alf_qGSA
+            alert(qhdr + "GS" + f_i(rv_normPrice) + "+ANY" + qtail, alert.freq_once_per_bar_close)

@@ -24,3 +24,14 @@ MAT (set3∨set4), UC (UC_core NEW def), Combo Chain — bull + bear. EVERY row 
 DETECTION candle (offset 0): chart == chain census 1:1. No First Bar Master. Engines = v5
 base verbatim (RVOL/FVG/matrix settings feed CS1–CS4 — load-bearing). Built for the
 operator's CSV parity check of the back-to-back chain law.
+
+## v1.1 (2026-07-24) — Fable Bull LTF v1.1 · Fable Bull HTF v1.1 · Fable Bear LTF v1.1 · Fable Bear HTF v1.1
+Operator visual-law + chain-v2 wave (v1 SUPERSEDED — stacked locations + chain flaw charge).
+VISUAL LAW: all four locations used (below bar / bottom / top / above bar) in family blocks;
+distinct shapes per location; same-location overlaps differentiated by translucency (8-digit
+hex const literals — P-017-legal, Style picker intact); bull palette greens/cyans/blues/
+yellows/white ONLY, bear palette reds/oranges/pinks/purples ONLY. CHAIN v2: UC same-candle =
+(CS1∧CS2) ∨ ((CS1∨CS2)∧MAT); fire iff [two consecutive constituent candles with ≥1 UC candle]
+OR [≥2 UC candles within any 3 consecutive] — battery 10/10 PROVED (MAT→FVG no longer fires
+without a UC). Frozen defaults: chain uses same-candle UC; S24/CO keep UC_core pending
+operator ruling; 2-of-3 middle candle may be empty.
