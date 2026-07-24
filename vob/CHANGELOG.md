@@ -1,5 +1,35 @@
 # VOB Indicator Suite — Changelog
 
+## v10.5 + v11.8 — 2026-07-24 — RE10140 FIX (input colors on plots = runtime series; the plot budget truth)
+
+W-INDSTUDY lane (manifests `manifest_vob-v10.5-*` / `manifest_vob-v11.8-*`). Bases:
+`VOB_v10.4.pine` / `VOB_v11.7.pine` @ `744637b`. **Impetus (operator screenshot
+2026-07-24 00:53):** TV runtime error RE10140 — "The script creates too many plots (100).
+The limit is 64" on the v10.4 paste.
+
+### P-017 — THE DYNAMIC-COLOR PLOT-COST LAW (extends P-011)
+- An `input.color`-driven `color`/`textcolor` arg on plotshape/plotchar is a runtime
+  color SERIES: each one consumes a plot slot. The 28-input group pushed 56 -> 100+.
+- Colors on plot*() calls must be BARE compile-time const literals (`#hex` /
+  `color.name`) — zero plot cost.
+- A bare const color is also exactly what makes the TV **Style-tab color picker**
+  appear on a plot row; `color.new(...)` wrapping hides it. That hidden picker WAS
+  the "no color choice" defect — the const fix delivers the choice natively.
+- `input.color` on plot arguments is BANNED estate-wide (proposed gate axis A11).
+
+### Files
+- `versions/VOB_v10.5.pine` + `tick_friendly/VOB_TICKFRIENDLY_v10.5.pine`
+- `versions/VOB_v11.8.pine` + `tick_friendly/VOB_TICKFRIENDLY_v11.8.pine`
+
+### Changes
+1. Detection Marker Colors input group REMOVED (both lineages).
+2. Every plotshape color/textcolor -> bare const literal (the original palette:
+   T3 tier hexes, lime/red composites, purple NAG, fuchsia NAG+ANY, etc.).
+3. Operator's shape x location marker table (v10.4/v11.7 wave) preserved verbatim.
+4. **Color choice = Settings -> Style -> swatch per plot row** (now visible).
+5. v10.5 supersedes v10.4 (REFUTED by TV RE10140); v11.8 supersedes v11.7
+   (same input-color pattern, fixed preemptively — it was never pasted).
+
 ## v10.4 + v11.7 — 2026-07-24 — VISUAL-IDENTITY FIX (operator screenshot = the standard)
 
 W-INDSTUDY lane (manifests `manifest_vob-v10.4-*` / `manifest_vob-v11.7-*`). Bases:
