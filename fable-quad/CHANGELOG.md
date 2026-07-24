@@ -17,3 +17,10 @@ tooltip enumerates gates + displacement tether (D-REQ column). 135 dead legacy i
 per study. Heritage shape×location collisions disclosed (inherited v2 visual language; all NEW
 rows collision-free). Specs: docs/2026-07-24_*FableBullBear*_v1.0–v1.3 + BudgetSpec v1.1/v1.2.
 1FABLE v6 pair remains untouched.
+
+## CCC v1 (2026-07-24) — Combo Chain Constituents v1
+Diagnostic/parity harness (operator chain-flaw suspicion): 10 rows only — FVG CS1, FVG CS2,
+MAT (set3∨set4), UC (UC_core NEW def), Combo Chain — bull + bear. EVERY row marks its
+DETECTION candle (offset 0): chart == chain census 1:1. No First Bar Master. Engines = v5
+base verbatim (RVOL/FVG/matrix settings feed CS1–CS4 — load-bearing). Built for the
+operator's CSV parity check of the back-to-back chain law.
