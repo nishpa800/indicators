@@ -18,3 +18,14 @@
 - Budget law: 23 text plotshapes × 2 (P-011) = 46/64 per study; pair split is the
   L-61 lawful design (46 text-vp in one study = 92 > 64, TV refuses).
 - L-61 graphic-object inventory: ZERO (no label/line/box/table/polyline).
+
+## v2 — 2026-07-24 (ONE SOURCE CODE — operator order)
+- MERGED: the v1 BULL/BEAR pair collapses into ONE study (KC_COMBO_v2 + TICK twin), all
+  46 dp. Unit law honored inside one file (P-011: text plotshape=2u): 42 textless +
+  4 texted pentas = 50/64. 46 text-vp would be 92/64 (TV refusal; VOB v10.1@78 exhibit).
+- IDENTITY WITHOUT TEXT: tier→shape (2 ● · 3 ▲/▼ · 4 ◆ · 5 label+text), side→location
+  (BULL belowbar / BEAR abovebar), each combo its OWN const color (46 distinct; Style-tab
+  row per combo, P-017 pickers); Data Window + all alerts carry exact combo names.
+- IPSF now 184 in one panel: 46 VP ⊥ 46 ALERT checkboxes · 46 disp strengths (3.0/0=off) ·
+  46 HV dropdowns (Not required | 50..4000 | Nagasaki).
+- v1 pair moved to superseded/ (history preserved; ledger lists v2 only).
