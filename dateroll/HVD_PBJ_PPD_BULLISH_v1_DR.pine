@@ -16,7 +16,7 @@
 // ============================================================================
 
 //@version=5
-indicator("BASE HV+D ↔ PBJ v1 — BULLISH (38) [Tick-Friendly]", shorttitle="HVD PBJ BULL TF", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
+indicator("BASE HV+D ↔ PBJ v1 — BULLISH (38) [Tick-Friendly]", shorttitle="HVD PBJ BULL TF DR", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
 
 import TradingView/ta/7 as tv_ta
 
