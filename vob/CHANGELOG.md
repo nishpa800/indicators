@@ -1,5 +1,33 @@
 # VOB Indicator Suite — Changelog
 
+## v11.6 — 2026-07-24 — AGNOSTIC-LANE KILL (redundant direction-agnostic composites removed)
+
+W-INDSTUDY lane (manifests `manifest_vob-v11.6-*`, gate exit 0 ×2). Base: `VOB_v11.5.pine`
+@ `47b2446` (e4ed41c93025c2e7…). **Impetus (operator order 2026-07-24):** an agnostic
+dp/vp/alert whose every fire candle ALWAYS carries a directional dp/vp is redundant
+architecture — "how is that allowed."
+
+### Files
+- `versions/VOB_v11.6.pine` + `tick_friendly/VOB_TICKFRIENDLY_v11.6.pine`
+
+### Changes (7 declared edits per variant)
+1. **REMOVED: "T3 Cluster (2+ same candle)" (direction-agnostic)** — dp, vp,
+   alertcondition, alert(), `show_tc_cluster`, `al_tc_cluster`, `last_tc_cluster`,
+   `tc_fire_cnt`. Redundancy theorem: fired iff >=2 sided T3 sig lanes true on the
+   same candle — each already a directional dp/vp. `tc_bull_cnt`/`tc_bear_cnt` kept
+   (feed the side-typed clusters). Mixed 1+1 candles remain visible as their two
+   sided T3 markers + `T3_CLUSTER_MIXED` in the NAG+ANY payload.
+2. **REMOVED: "VOB × HW-Single Coincidence" (direction-agnostic)** — dp, vp,
+   alertcondition, alert(), `show_vobhws`, `al_vobhws`, `last_vobhws`, `vob_tc_any`,
+   `vob_left_side`. Redundancy theorem: sig == (bull OR bear constituents) AND
+   hws_any == V×HW Bull OR V×HW Bear (side carried by the VOB constituent, E-1).
+3. `any_sig_fired` / `bbp_armed` drop the dead terms — provable no-op for arming
+   (`sig_tc_cluster ⟹ any_t3`, same disjunction); `TC,`/payload token now emitted
+   only by the sided clusters (disclosed payload delta).
+4. Budget: −2 text plotshapes (−4 TV units, P-011) · −2 alertconditions · −2 🔔
+   checkboxes. Doctrine tightened (L-49.3): side_agnostic declarations are lawful
+   for ATOMS only (Nagasaki, NAG+ANY) — never for composites of sided constituents.
+
 ## v10.3 + v11.5 — 2026-07-23 — ZONE LIFECYCLE telemetry + sensitivity tags (reticular-net session)
 
 W-INDSTUDY lane under T-VOBPACK/T-INDSTUDY (manifests `manifest_vob-v10.3-*` / `manifest_vob-v11.5-*`,
