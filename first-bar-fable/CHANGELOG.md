@@ -43,3 +43,5 @@ alert law (sig/fire/alf), ANY = raw det-time union of the 53 v2 detections.
 ## v2 — First Bar Fable v2
 53 detections / 57 plot rows, B2B/HVD/Ignite/Dynamite/Typhoon/Musashi/Whale/Napalm
 suite ports, first-bar master law.
+
+**UPSTREAM-DELTA (v6, retro-filled 2026-07-24 per audit):** split-not-labels (→ CS-1/L-61); commit-verify the base before pinning (v5 was untracked); deterministic builder = family warp path; dual-domain A7 via pair_debt. Ledger rows 27-28.
