@@ -1,5 +1,38 @@
 # VOB Indicator Suite — Changelog
 
+## v10.3 + v11.5 — 2026-07-23 — ZONE LIFECYCLE telemetry + sensitivity tags (reticular-net session)
+
+W-INDSTUDY lane under T-VOBPACK/T-INDSTUDY (manifests `manifest_vob-v10.3-*` / `manifest_vob-v11.5-*`,
+gate v1.4 exit 0 ×4). Bases: `VOB_v10.2.pine` @ `b1e144a` and `VOB_v11.4.pine` @ `700b43e`.
+**Impetus (operator reticular-net dictation, 2026-07-23):** (a) "Survivorship bias: I have no
+idea when a line was drawn and when it was killed"; (b) "I have no idea which line is 100
+sensitivity and which is 1,400 — there's just no graceful way to see this."
+
+### Files
+- `versions/VOB_v10.3.pine` + `tick_friendly/VOB_TICKFRIENDLY_v10.3.pine` (56/64 TV units)
+- `versions/VOB_v11.5.pine` + `tick_friendly/VOB_TICKFRIENDLY_v11.5.pine` (40/64 TV units)
+
+### Changes (9 declared edits per variant; identical intent across lineages)
+1. **VOB_ZONEKILL emission — the survivorship fix.** Every zone death now emits
+   (`T|SIDE|SENS|ZLO|ZHI|MID|ZVOL|BIRTH_T|AGE_MS|REASON|CLOSE`) at all three death
+   paths inside f_vob: **BREACH** (close through boundary), **DEDUP** (newer zone
+   within 3×ATR replaces older), **EVICT** (>15-zone FIFO drop). Confirmed-bar gated
+   (intrabar provisional kills never emit). Paired with VOB_ZONEFORM births, zone
+   LIFETIMES are complete on the log stream → survival analysis (Kaplan–Meier per
+   sensitivity, hazard by age/distance) is computable with no chart access.
+2. **Sensitivity tags — the line-identification fix.** Each drawn zone gets a boxless,
+   zone-colored number tag (`label.style_none`, text = its sensitivity) at the zone
+   midline, `sens_tag_off` bars right of the last bar. Toggle `show_sens_tags` (ON).
+   Multiple stacked instances set different Tag Column offsets (e.g. 3/6/9/12) so a
+   4-study reticular net reads as four clean columns. These are the operator-ordered
+   tags ("that might be a time where a pane label would be helpful") — 4-character
+   axis-style marks, NOT the killed metadata walls. Labels cost 0 TV plot units.
+
+Verifiers: gate v1.4 PROVED ×4 (D_bytes=0; A10=0) · alert_iff_verifier PROVED ×4
+(no alert-surface change) · anti-tamper 1→0 per lineage.
+CORRECTION (LAW-CANDOR): earlier reports said v11.3/v11.4 = "62/64" — that figure was
+call-site arithmetic; the measured TV-unit integer is **40/64** (cert A4_tv_plot_units).
+
 ## v11.4 — 2026-07-23 — P-012 FIX: the line-continuation refusal (supersedes v11.3)
 
 W-INDSTUDY lane (manifests `manifest_vob-v11.4-{time,tick}_v11.4.json`, gate v1.4 exit 0).
