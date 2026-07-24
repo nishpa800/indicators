@@ -1,0 +1,686 @@
+//@version=5
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  KC COMBO BULL TICK v1 — 2026-07-24 — chart_domain=tick                    
+// ║  23 dp = the MAIN-list KC combos (side-pure, every combo contains R-S;   
+// ║  R-C-only combos live in the PARKING LOT HTF bucket, NOT here).           
+// ║  Enumeration of record: docs/2026-07-24_..._NoSinglesComboEnumeration_v3.2
+// ║  PAIR LAW: this study is one half of the BULL+BEAR pair — TV counting law 
+// ║  P-011 (text plotshape = 2 units): 46 text-vp = 92 > 64 ⇒ STUDY SPLIT     
+// ║  (L-61 lawful design). This file: 23 text-vp = 46/64 units. ac = free.    
+// ║  L-61 GRAPHIC-OBJECT INVENTORY: 0 label.new / 0 line.new / 0 box.new /    
+// ║  0 table.* / 0 polyline.new — every vp is a REAL plotshape.               
+// ║  OFFSET REGISTRY: ALL 23 dp offset=0 (co-fire condition bar). D-member    
+// ║  combos: the displaced candle itself is bar[1] (S11/S12 source law).      
+// ║  REPAINT DOCTRINE: PB/PBJ/PUP(PPD)/D members conf-gated (source verbatim);
+// ║  R-C/R-S members raw-crossover (KC Rev 8 verbatim). A dp whose HV gate    
+// ║  is active is conf-gated through the gate; 'Not required' leaves the      
+// ║  pure-KC combos raw, preserving 1:1 KC parity.                            
+// ║  IPSF REGISTRY (92 fields): 23 VP checkboxes ⊥ 23 ALERT checkboxes        
+// ║  (fully independent) · 23 displacement-gate strengths (default 3.0,       
+// ║  0 = not required) · 23 HV dropdowns (Not required | 50..4000 step 50 |   
+// ║  Nagasaki; inclusive ≥ semantics).                                        
+// ║  GATE EQUATION per dp i: D_i = ∧members ∧ [m_i=0 ∨ rng>m_i·σ] ∧ HV(c_i)   
+// ╚══════════════════════════════════════════════════════════════════════════╝
+indicator("KC COMBO — BULL TICK (23 dp, gated)", shorttitle="KCC-BULL-TICK", overlay=true, max_bars_back=5000)
+
+// ============================================================================
+// SHARED — confirmed-bar gate
+// ============================================================================
+conf = barstate.isconfirmed
+
+// ============================================================================
+// INPUTS — OKEH Zoo Engine  (defaults preserved verbatim from PBJ PB CONSOL)
+// ============================================================================
+grp_eng = "OKEH — Zoo Engine"
+zoo_ma_type   = input.string("VWMA", "Base MA Type", options=["VWMA","EMA","SMA","WMA","HMA"], group=grp_eng)
+zoo_ma_len    = input.int(5, "Base MA Length", minval=1, group=grp_eng)
+zoo_price_src = input.source(close, "Price Source", group=grp_eng)
+
+grp_pbj_filter = "OKEH — PB&J Filter"
+zoo_pbj_ma_period   = input.int(20,   "MA Period",          minval=1,  group=grp_pbj_filter)
+zoo_pbj_atr_period  = input.int(14,   "ATR Period",         minval=1,  group=grp_pbj_filter)
+zoo_pbj_hh_ll       = input.int(25,   "HH/LL Lookback",     minval=1,  group=grp_pbj_filter)
+zoo_pbj_atr_mult    = input.float(3.0,"ATR Multiplier",     step=0.1,  group=grp_pbj_filter)
+zoo_pbj_vol_period  = input.int(20,   "Volume MA Period",   minval=1,  group=grp_pbj_filter)
+zoo_pbj_vol_mult    = input.float(0.1,"Volume Multiplier",  step=0.1,  group=grp_pbj_filter)
+
+grp_st = "OKEH — Supertrend"
+zoo_use_st    = input.bool(true,  "Apply ATR Supertrend", group=grp_st)
+zoo_st_period = input.int(10,     "ATR Period",           group=grp_st)
+zoo_st_mult   = input.float(2.0,  "Multiplier",           group=grp_st)
+
+group_kc_indicator  = "KC: Indicator Settings"
+string kc_maType     = input.string("EMA", "MA Type", options=["SMA", "EMA", "HMA", "VWMA", "LSMA"], group=group_kc_indicator)
+int    kc_length     = input.int(20, "MA Length", minval=1, group=group_kc_indicator)
+float  kc_mult       = input.float(2.0, "Multiplier", minval=0.001, group=group_kc_indicator)
+kc_src               = input.source(close, "Source", group=group_kc_indicator)
+string kc_bandsStyle = input.string("Average True Range", "Bands Style", options=["Average True Range", "True Range", "Range"], group=group_kc_indicator)
+int    kc_atrLength  = input.int(10, "ATR Length", minval=1, group=group_kc_indicator)
+
+group_kc_slope_calc = "KC: Slope Calculation Settings"
+int   kc_slopeLookbackBars     = input.int(3, "Slope Lookback Bars", minval=1, group=group_kc_slope_calc)
+float kc_bullishSlopeThreshold = input.float(title="Bullish Slope Threshold", defval=0.05, step=0.001, group=group_kc_slope_calc)
+float kc_bearishSlopeThreshold = input.float(title="Bearish Slope Threshold", defval=0.05, step=0.001, group=group_kc_slope_calc)
+
+grp_pp = "Pocket Pivot (PUP / PPD)"
+barSize    = input.float(3.0, "% Change (Barsize)", minval=0.1, step=0.1, group=grp_pp)
+ppLookback = input.int(10, "Lookback Days", minval=1, group=grp_pp)
+
+grp_disp = "Displacement MEMBER engine (the D in combo names; NOT the per-dp gate)"
+disp_type   = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp)
+disp_len    = input.int(100, "Std Dev Length", minval=1, group=grp_disp)
+disp_mult   = input.float(4.5, "Std Dev Multiplier (member D)", minval=0.1, step=0.1, group=grp_disp)
+
+// ============================================================================
+// ENGINE — Zoo Moving Average  (verbatim)
+// ============================================================================
+f_ma(src, len, t) =>
+    switch t
+        "EMA"  => ta.ema(src, len)
+        "SMA"  => ta.sma(src, len)
+        "WMA"  => ta.wma(src, len)
+        "HMA"  => ta.hma(src, len)
+        "VWMA" => ta.vwma(src, len)
+        => ta.sma(src, len)
+
+float base_ma = f_ma(zoo_price_src, zoo_ma_len, zoo_ma_type)
+
+// ============================================================================
+// ENGINE — Supertrend  (verbatim)
+// ============================================================================
+float st_atr     = zoo_st_mult * ta.atr(zoo_st_period)
+float dyn_long   = base_ma - st_atr
+float dyn_short  = base_ma + st_atr
+
+var int st_dir   = 1
+float sig_line   = 0.0
+float curr_long  = 0.0
+curr_long  := base_ma > nz(curr_long[1], dyn_long)   ? math.max(dyn_long, nz(curr_long[1]))   : dyn_long
+float curr_short = 0.0
+curr_short := base_ma < nz(curr_short[1], dyn_short) ? math.min(dyn_short, nz(curr_short[1])) : dyn_short
+
+if zoo_use_st
+    if nz(st_dir[1]) == -1 and zoo_price_src > nz(curr_short[1])
+        st_dir := 1
+    else if nz(st_dir[1]) == 1 and zoo_price_src < nz(curr_long[1])
+        st_dir := -1
+    sig_line := st_dir == 1 ? curr_long : curr_short
+else
+    sig_line := base_ma
+
+// ============================================================================
+// ENGINE — Crossovers & Re-acceleration  (verbatim)
+// ============================================================================
+bool buy_cross    = ta.crossover(zoo_price_src, sig_line)
+bool sell_cross   = ta.crossunder(zoo_price_src, sig_line)
+bool is_rising    = sig_line > nz(sig_line[1])
+bool is_falling   = sig_line < nz(sig_line[1])
+bool bull_reaccel = st_dir == 1  and is_rising  and nz(sig_line[1]) == nz(sig_line[2])
+bool bear_reaccel = st_dir == -1 and is_falling and nz(sig_line[1]) == nz(sig_line[2])
+
+// ============================================================================
+// ENGINE — PB&J Filter  (verbatim)
+// ============================================================================
+float pbj_ma  = ta.ema(close, zoo_pbj_ma_period)
+float pbj_atr = ta.atr(zoo_pbj_atr_period)
+float avg_vol = ta.sma(volume, zoo_pbj_vol_period)
+float thresh  = close == 0 ? 0 : (pbj_atr / close * zoo_pbj_atr_mult)
+
+bool pbj_buy  = low  < pbj_ma * (1 - thresh) and low  == ta.lowest(low, zoo_pbj_hh_ll)   and volume > avg_vol * zoo_pbj_vol_mult
+bool pbj_sell = high > pbj_ma * (1 + thresh) and high == ta.highest(high, zoo_pbj_hh_ll) and volume > avg_vol * zoo_pbj_vol_mult
+
+// ============================================================================
+// ENGINE — Level Management (PB zones)  (verbatim)
+// ============================================================================
+type lvl
+    float upper
+    float lower
+    float vol
+    bool  approached
+
+float atr_pb = ta.atr(14) * 2.0
+
+var bull_lvls = array.new<lvl>()
+var bear_lvls = array.new<lvl>()
+
+f_add_lvl(arr, up, lo, v) =>
+    if math.abs(up - lo) >= syminfo.mintick
+        array.push(arr, lvl.new(up, lo, v, false))
+
+f_add_lander(is_bull, cross, arr) =>
+    if cross
+        float up = 0.0
+        float lo = 0.0
+        if is_bull
+            up := math.max(open[1], close[1])
+            lo := low[1]
+            if up - lo < atr_pb * 0.5
+                up := lo + atr_pb * 0.5
+        else
+            up := high[1]
+            lo := math.min(open[1], close[1])
+            if up - lo < atr_pb * 0.5
+                lo := up - atr_pb * 0.5
+        f_add_lvl(arr, up, lo, volume[1])
+
+f_add_reaccel(is_bull, sig, arr) =>
+    if sig and not na(sig_line)
+        float p1 = sig_line
+        float p2 = is_bull ? math.min(open, close) : math.max(open, close)
+        f_add_lvl(arr, math.max(p1, p2), math.min(p1, p2), volume)
+
+f_check_approach(arr, is_bull) =>
+    bool approached = false
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0
+            if i >= array.size(arr)
+                continue
+            l = array.get(arr, i)
+            if is_bull and close < l.lower
+                array.remove(arr, i)
+                continue
+            if not is_bull and close > l.upper
+                array.remove(arr, i)
+                continue
+            float ap = is_bull ? l.upper * 1.005 : l.lower * 0.995
+            if is_bull
+                if not l.approached and low <= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and low > l.upper
+                    l.approached := false
+            else
+                if not l.approached and high >= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and high < l.lower
+                    l.approached := false
+    approached
+
+f_add_lander(true,  buy_cross,  bull_lvls)
+f_add_lander(false, sell_cross, bear_lvls)
+f_add_reaccel(true,  bull_reaccel, bull_lvls)
+f_add_reaccel(false, bear_reaccel, bear_lvls)
+
+var bool wait_buy      = false
+var bool wait_sell     = false
+var bool wait_pbj_buy  = false
+var bool wait_pbj_sell = false
+
+if barstate.isconfirmed
+    if f_check_approach(bull_lvls, true)
+        wait_buy := true
+    if f_check_approach(bear_lvls, false)
+        wait_sell := true
+
+if pbj_buy
+    wait_pbj_buy := true
+if pbj_sell
+    wait_pbj_sell := true
+
+while array.size(bull_lvls) > 30
+    array.shift(bull_lvls)
+while array.size(bear_lvls) > 30
+    array.shift(bear_lvls)
+
+bool pre_pb_buy   = buy_cross and wait_buy
+bool pre_pbj_buy  = buy_cross and wait_pbj_buy
+bool pre_pb_sell  = sell_cross and wait_sell
+bool pre_pbj_sell = sell_cross and wait_pbj_sell
+
+if pre_pb_buy
+    wait_buy     := false
+if pre_pbj_buy
+    wait_pbj_buy := false
+if pre_pb_sell
+    wait_sell     := false
+if pre_pbj_sell
+    wait_pbj_sell := false
+
+bool sigBullPB  = barstate.isconfirmed and pre_pb_buy and not pre_pbj_buy
+bool sigBullPBJ = barstate.isconfirmed and pre_pbj_buy
+bool sigBearPB  = barstate.isconfirmed and pre_pb_sell and not pre_pbj_sell
+bool sigBearPBJ = barstate.isconfirmed and pre_pbj_sell
+
+// ============================================================================
+// ENGINE — KC Basis and Bands  (KC Rev 8, verbatim)
+// ============================================================================
+kc_ma = switch kc_maType
+    "SMA"  => ta.sma(kc_src, kc_length)
+    "EMA"  => ta.ema(kc_src, kc_length)
+    "HMA"  => ta.hma(kc_src, kc_length)
+    "VWMA" => ta.vwma(kc_src, kc_length)
+    "LSMA" => ta.linreg(kc_src, kc_length, 0)
+
+kc_range_val = switch kc_bandsStyle
+    "True Range"         => ta.tr(true)
+    "Average True Range" => ta.atr(kc_atrLength)
+    => ta.rma(high - low, kc_length)
+
+kc_upper = kc_ma + kc_range_val * kc_mult
+kc_lower = kc_ma - kc_range_val * kc_mult
+
+kc_cross_above_basis      = ta.crossover(kc_src, kc_ma)
+kc_cross_below_basis      = ta.crossunder(kc_src, kc_ma)
+kc_reentry_from_above     = ta.crossunder(kc_src, kc_upper)
+kc_reentry_from_below     = ta.crossover(kc_src, kc_lower)
+
+kc_current_slope           = kc_ma - kc_ma[1]
+kc_prior_trend_change      = kc_ma[1] - kc_ma[kc_slopeLookbackBars]
+kc_midline_bullish_signal  = kc_current_slope > kc_bullishSlopeThreshold and kc_prior_trend_change < (kc_bullishSlopeThreshold / 2)
+kc_midline_bearish_signal  = kc_current_slope < (-kc_bearishSlopeThreshold) and kc_prior_trend_change > (-kc_bearishSlopeThreshold / 2)
+
+var waiting_for_bearish_cross = false
+var waiting_for_bullish_cross = false
+
+if kc_reentry_from_above
+    waiting_for_bearish_cross := true
+if kc_cross_above_basis
+    waiting_for_bearish_cross := false
+bearish_reentry_cross_signal = waiting_for_bearish_cross and kc_cross_below_basis
+if bearish_reentry_cross_signal
+    waiting_for_bearish_cross := false
+
+if kc_reentry_from_below
+    waiting_for_bullish_cross := true
+if kc_cross_below_basis
+    waiting_for_bullish_cross := false
+bullish_reentry_cross_signal = waiting_for_bullish_cross and kc_cross_above_basis
+if bullish_reentry_cross_signal
+    waiting_for_bullish_cross := false
+
+var waiting_for_slope_bearish = false
+var waiting_for_slope_bullish = false
+
+if kc_reentry_from_above
+    waiting_for_slope_bearish := true
+bearish_reentry_slope_signal = waiting_for_slope_bearish and kc_midline_bearish_signal
+if bearish_reentry_slope_signal
+    waiting_for_slope_bearish := false
+
+if kc_reentry_from_below
+    waiting_for_slope_bullish := true
+bullish_reentry_slope_signal = waiting_for_slope_bullish and kc_midline_bullish_signal
+if bullish_reentry_slope_signal
+    waiting_for_slope_bullish := false
+
+// DEVIATION-1 (disclosed): source master toggles showReentryCrosses/Slopes REMOVED —
+// per-dp VP checkboxes are the ONLY visibility control in this study.
+bool sigBullReCross = bullish_reentry_cross_signal
+bool sigBearReCross = bearish_reentry_cross_signal
+bool sigBullReSlope = bullish_reentry_slope_signal
+bool sigBearReSlope = bearish_reentry_slope_signal
+
+// ============================================================================
+// ENGINE — Pocket Pivot (PUP / PPD)  (verbatim; master toggles removed, DEVIATION-2)
+// ============================================================================
+float redVol = close < open ? volume : 0.0
+float greenVol = close > open ? volume : 0.0
+float hiRedVol = ta.highest(redVol[1], ppLookback)
+float hiGreenVol = ta.highest(greenVol[1], ppLookback)
+
+bool priceUp = ((close - open) / open) * 100 > barSize
+bool priceDn = ((open - close) / open) * 100 > barSize
+bool volBull = volume > hiRedVol
+bool volBear = volume > hiGreenVol
+
+bool sPPBull = priceUp and volBull
+bool sPPBear = priceDn and volBear
+
+bool sigPUP = conf and sPPBull
+bool sigPPD = conf and sPPBear
+
+// ============================================================================
+// ENGINE — Displacement MEMBER (the D in combo names; verbatim S11/S12 FVG form)
+// ============================================================================
+float disp_rng = disp_type == "Open to Close" ? math.abs(open - close) : high - low
+float disp_std = ta.stdev(disp_rng, disp_len)
+float disp_thresh = disp_std * disp_mult
+bool  disp_prevDisp = disp_rng[1] > disp_thresh[1]
+bool  disp_bullFVG  = low > high[2] and close[1] > open[1]
+bool  disp_bearFVG  = high < low[2] and close[1] < open[1]
+
+bool sigDispBull = conf and disp_prevDisp and disp_bullFVG
+bool sigDispBear = conf and disp_prevDisp and disp_bearFVG
+
+// ============================================================================
+// ENGINE — Nagasaki (all-time-high volume; HW SINGLE construction)
+// ============================================================================
+var float navMaxVolEver = 0.0
+bool isNaga = conf and volume > navMaxVolEver
+if conf
+    navMaxVolEver := math.max(navMaxVolEver, volume)
+
+// ============================================================================
+// GATES — per-dp IPSF gate functions
+//   Displacement gate: same-candle |range| > m × stdev(range, len); m=0 → not required.
+//   HV gate: rank-1-in-N (volume == highest of last N incl. self; >= form for float
+//   safety — mathematically identical). INCLUSIVE ≥ semantics: highest-of-4000 and
+//   Nagasaki automatically pass any smaller N. "Nagasaki" option = ATH volume only.
+// ============================================================================
+f_dispOK(float m) =>
+    m <= 0.0 ? true : disp_rng > disp_std * m
+
+f_hvOK(string c) =>
+    int n = (c == "Not required" or c == "Nagasaki") ? 50 : int(str.tonumber(c))
+    float th = ta.highest(volume, n)
+    c == "Not required" ? true : c == "Nagasaki" ? isNaga : conf and volume >= th
+
+// ============================================================================
+// IPSF — 23 VP CHECKBOXES (visual only; NO effect on alerts) — BULL
+// ============================================================================
+grpVP = "★ VP Checkboxes — show/hide visual (independent of alerts) ★"
+v01 = input.bool(true, "VP C01: BULL PB+RS", group=grpVP)
+v02 = input.bool(true, "VP C02: BULL PBJ+RS", group=grpVP)
+v03 = input.bool(true, "VP C03: BULL RC+RS", group=grpVP)
+v04 = input.bool(true, "VP C04: BULL RS+PUP", group=grpVP)
+v05 = input.bool(true, "VP C05: BULL RS+D", group=grpVP)
+v06 = input.bool(true, "VP C06: BULL PB+RC+RS", group=grpVP)
+v07 = input.bool(true, "VP C07: BULL PB+RS+PUP", group=grpVP)
+v08 = input.bool(true, "VP C08: BULL PB+RS+D", group=grpVP)
+v09 = input.bool(true, "VP C09: BULL PBJ+RC+RS", group=grpVP)
+v10 = input.bool(true, "VP C10: BULL PBJ+RS+PUP", group=grpVP)
+v11 = input.bool(true, "VP C11: BULL PBJ+RS+D", group=grpVP)
+v12 = input.bool(true, "VP C12: BULL RC+RS+PUP", group=grpVP)
+v13 = input.bool(true, "VP C13: BULL RC+RS+D", group=grpVP)
+v14 = input.bool(true, "VP C14: BULL RS+PUP+D", group=grpVP)
+v15 = input.bool(true, "VP C15: BULL PB+RC+RS+PUP", group=grpVP)
+v16 = input.bool(true, "VP C16: BULL PB+RC+RS+D", group=grpVP)
+v17 = input.bool(true, "VP C17: BULL PB+RS+PUP+D", group=grpVP)
+v18 = input.bool(true, "VP C18: BULL PBJ+RC+RS+PUP", group=grpVP)
+v19 = input.bool(true, "VP C19: BULL PBJ+RC+RS+D", group=grpVP)
+v20 = input.bool(true, "VP C20: BULL PBJ+RS+PUP+D", group=grpVP)
+v21 = input.bool(true, "VP C21: BULL RC+RS+PUP+D", group=grpVP)
+v22 = input.bool(true, "VP C22: BULL PB+RC+RS+PUP+D", group=grpVP)
+v23 = input.bool(true, "VP C23: BULL PBJ+RC+RS+PUP+D", group=grpVP)
+
+// ============================================================================
+// IPSF — 23 ALERT CHECKBOXES (alert inclusion only; NO effect on visuals)
+// ============================================================================
+grpAL = "★ Alert Checkboxes — include in alerts (independent of visuals) ★"
+a01 = input.bool(true, "ALERT C01: BULL PB+RS", group=grpAL)
+a02 = input.bool(true, "ALERT C02: BULL PBJ+RS", group=grpAL)
+a03 = input.bool(true, "ALERT C03: BULL RC+RS", group=grpAL)
+a04 = input.bool(true, "ALERT C04: BULL RS+PUP", group=grpAL)
+a05 = input.bool(true, "ALERT C05: BULL RS+D", group=grpAL)
+a06 = input.bool(true, "ALERT C06: BULL PB+RC+RS", group=grpAL)
+a07 = input.bool(true, "ALERT C07: BULL PB+RS+PUP", group=grpAL)
+a08 = input.bool(true, "ALERT C08: BULL PB+RS+D", group=grpAL)
+a09 = input.bool(true, "ALERT C09: BULL PBJ+RC+RS", group=grpAL)
+a10 = input.bool(true, "ALERT C10: BULL PBJ+RS+PUP", group=grpAL)
+a11 = input.bool(true, "ALERT C11: BULL PBJ+RS+D", group=grpAL)
+a12 = input.bool(true, "ALERT C12: BULL RC+RS+PUP", group=grpAL)
+a13 = input.bool(true, "ALERT C13: BULL RC+RS+D", group=grpAL)
+a14 = input.bool(true, "ALERT C14: BULL RS+PUP+D", group=grpAL)
+a15 = input.bool(true, "ALERT C15: BULL PB+RC+RS+PUP", group=grpAL)
+a16 = input.bool(true, "ALERT C16: BULL PB+RC+RS+D", group=grpAL)
+a17 = input.bool(true, "ALERT C17: BULL PB+RS+PUP+D", group=grpAL)
+a18 = input.bool(true, "ALERT C18: BULL PBJ+RC+RS+PUP", group=grpAL)
+a19 = input.bool(true, "ALERT C19: BULL PBJ+RC+RS+D", group=grpAL)
+a20 = input.bool(true, "ALERT C20: BULL PBJ+RS+PUP+D", group=grpAL)
+a21 = input.bool(true, "ALERT C21: BULL RC+RS+PUP+D", group=grpAL)
+a22 = input.bool(true, "ALERT C22: BULL PB+RC+RS+PUP+D", group=grpAL)
+a23 = input.bool(true, "ALERT C23: BULL PBJ+RC+RS+PUP+D", group=grpAL)
+
+// ============================================================================
+// IPSF — 23 DISPLACEMENT-GATE STRENGTHS (std-dev mult; 0 = not required)
+// ============================================================================
+grpDG = "★ IPSF — Displacement Gate per dp (0 = not required; default 3.0) ★"
+m01 = input.float(3.0, "DISP C01: BULL PB+RS", minval=0.0, step=0.1, group=grpDG)
+m02 = input.float(3.0, "DISP C02: BULL PBJ+RS", minval=0.0, step=0.1, group=grpDG)
+m03 = input.float(3.0, "DISP C03: BULL RC+RS", minval=0.0, step=0.1, group=grpDG)
+m04 = input.float(3.0, "DISP C04: BULL RS+PUP", minval=0.0, step=0.1, group=grpDG)
+m05 = input.float(3.0, "DISP C05: BULL RS+D", minval=0.0, step=0.1, group=grpDG)
+m06 = input.float(3.0, "DISP C06: BULL PB+RC+RS", minval=0.0, step=0.1, group=grpDG)
+m07 = input.float(3.0, "DISP C07: BULL PB+RS+PUP", minval=0.0, step=0.1, group=grpDG)
+m08 = input.float(3.0, "DISP C08: BULL PB+RS+D", minval=0.0, step=0.1, group=grpDG)
+m09 = input.float(3.0, "DISP C09: BULL PBJ+RC+RS", minval=0.0, step=0.1, group=grpDG)
+m10 = input.float(3.0, "DISP C10: BULL PBJ+RS+PUP", minval=0.0, step=0.1, group=grpDG)
+m11 = input.float(3.0, "DISP C11: BULL PBJ+RS+D", minval=0.0, step=0.1, group=grpDG)
+m12 = input.float(3.0, "DISP C12: BULL RC+RS+PUP", minval=0.0, step=0.1, group=grpDG)
+m13 = input.float(3.0, "DISP C13: BULL RC+RS+D", minval=0.0, step=0.1, group=grpDG)
+m14 = input.float(3.0, "DISP C14: BULL RS+PUP+D", minval=0.0, step=0.1, group=grpDG)
+m15 = input.float(3.0, "DISP C15: BULL PB+RC+RS+PUP", minval=0.0, step=0.1, group=grpDG)
+m16 = input.float(3.0, "DISP C16: BULL PB+RC+RS+D", minval=0.0, step=0.1, group=grpDG)
+m17 = input.float(3.0, "DISP C17: BULL PB+RS+PUP+D", minval=0.0, step=0.1, group=grpDG)
+m18 = input.float(3.0, "DISP C18: BULL PBJ+RC+RS+PUP", minval=0.0, step=0.1, group=grpDG)
+m19 = input.float(3.0, "DISP C19: BULL PBJ+RC+RS+D", minval=0.0, step=0.1, group=grpDG)
+m20 = input.float(3.0, "DISP C20: BULL PBJ+RS+PUP+D", minval=0.0, step=0.1, group=grpDG)
+m21 = input.float(3.0, "DISP C21: BULL RC+RS+PUP+D", minval=0.0, step=0.1, group=grpDG)
+m22 = input.float(3.0, "DISP C22: BULL PB+RC+RS+PUP+D", minval=0.0, step=0.1, group=grpDG)
+m23 = input.float(3.0, "DISP C23: BULL PBJ+RC+RS+PUP+D", minval=0.0, step=0.1, group=grpDG)
+
+// ============================================================================
+// IPSF — 23 HV-GATE DROPDOWNS (rank-1 in N bars; inclusive ≥; Naga = ATH only)
+// ============================================================================
+grpHV = "★ IPSF — High-Volume Gate per dp (≥ N means N-or-deeper incl. Naga) ★"
+h01 = input.string("Not required", "HV C01: BULL PB+RS", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h02 = input.string("Not required", "HV C02: BULL PBJ+RS", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h03 = input.string("Not required", "HV C03: BULL RC+RS", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h04 = input.string("Not required", "HV C04: BULL RS+PUP", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h05 = input.string("Not required", "HV C05: BULL RS+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h06 = input.string("Not required", "HV C06: BULL PB+RC+RS", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h07 = input.string("Not required", "HV C07: BULL PB+RS+PUP", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h08 = input.string("Not required", "HV C08: BULL PB+RS+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h09 = input.string("Not required", "HV C09: BULL PBJ+RC+RS", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h10 = input.string("Not required", "HV C10: BULL PBJ+RS+PUP", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h11 = input.string("Not required", "HV C11: BULL PBJ+RS+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h12 = input.string("Not required", "HV C12: BULL RC+RS+PUP", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h13 = input.string("Not required", "HV C13: BULL RC+RS+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h14 = input.string("Not required", "HV C14: BULL RS+PUP+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h15 = input.string("Not required", "HV C15: BULL PB+RC+RS+PUP", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h16 = input.string("Not required", "HV C16: BULL PB+RC+RS+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h17 = input.string("Not required", "HV C17: BULL PB+RS+PUP+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h18 = input.string("Not required", "HV C18: BULL PBJ+RC+RS+PUP", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h19 = input.string("Not required", "HV C19: BULL PBJ+RC+RS+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h20 = input.string("Not required", "HV C20: BULL PBJ+RS+PUP+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h21 = input.string("Not required", "HV C21: BULL RC+RS+PUP+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h22 = input.string("Not required", "HV C22: BULL PB+RC+RS+PUP+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h23 = input.string("Not required", "HV C23: BULL PBJ+RC+RS+PUP+D", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+
+// ============================================================================
+// DETECTION PLOTS — 23 dp (members ∧ displacement gate ∧ HV gate; offset 0)
+// ============================================================================
+bool sig_c01 = sigBullPB and sigBullReSlope and f_dispOK(m01) and f_hvOK(h01)
+bool fire_c01 = v01 and sig_c01
+bool alf_c01 = a01 and sig_c01
+bool sig_c02 = sigBullPBJ and sigBullReSlope and f_dispOK(m02) and f_hvOK(h02)
+bool fire_c02 = v02 and sig_c02
+bool alf_c02 = a02 and sig_c02
+bool sig_c03 = sigBullReCross and sigBullReSlope and f_dispOK(m03) and f_hvOK(h03)
+bool fire_c03 = v03 and sig_c03
+bool alf_c03 = a03 and sig_c03
+bool sig_c04 = sigBullReSlope and sigPUP and f_dispOK(m04) and f_hvOK(h04)
+bool fire_c04 = v04 and sig_c04
+bool alf_c04 = a04 and sig_c04
+bool sig_c05 = sigBullReSlope and sigDispBull and f_dispOK(m05) and f_hvOK(h05)
+bool fire_c05 = v05 and sig_c05
+bool alf_c05 = a05 and sig_c05
+bool sig_c06 = sigBullPB and sigBullReCross and sigBullReSlope and f_dispOK(m06) and f_hvOK(h06)
+bool fire_c06 = v06 and sig_c06
+bool alf_c06 = a06 and sig_c06
+bool sig_c07 = sigBullPB and sigBullReSlope and sigPUP and f_dispOK(m07) and f_hvOK(h07)
+bool fire_c07 = v07 and sig_c07
+bool alf_c07 = a07 and sig_c07
+bool sig_c08 = sigBullPB and sigBullReSlope and sigDispBull and f_dispOK(m08) and f_hvOK(h08)
+bool fire_c08 = v08 and sig_c08
+bool alf_c08 = a08 and sig_c08
+bool sig_c09 = sigBullPBJ and sigBullReCross and sigBullReSlope and f_dispOK(m09) and f_hvOK(h09)
+bool fire_c09 = v09 and sig_c09
+bool alf_c09 = a09 and sig_c09
+bool sig_c10 = sigBullPBJ and sigBullReSlope and sigPUP and f_dispOK(m10) and f_hvOK(h10)
+bool fire_c10 = v10 and sig_c10
+bool alf_c10 = a10 and sig_c10
+bool sig_c11 = sigBullPBJ and sigBullReSlope and sigDispBull and f_dispOK(m11) and f_hvOK(h11)
+bool fire_c11 = v11 and sig_c11
+bool alf_c11 = a11 and sig_c11
+bool sig_c12 = sigBullReCross and sigBullReSlope and sigPUP and f_dispOK(m12) and f_hvOK(h12)
+bool fire_c12 = v12 and sig_c12
+bool alf_c12 = a12 and sig_c12
+bool sig_c13 = sigBullReCross and sigBullReSlope and sigDispBull and f_dispOK(m13) and f_hvOK(h13)
+bool fire_c13 = v13 and sig_c13
+bool alf_c13 = a13 and sig_c13
+bool sig_c14 = sigBullReSlope and sigPUP and sigDispBull and f_dispOK(m14) and f_hvOK(h14)
+bool fire_c14 = v14 and sig_c14
+bool alf_c14 = a14 and sig_c14
+bool sig_c15 = sigBullPB and sigBullReCross and sigBullReSlope and sigPUP and f_dispOK(m15) and f_hvOK(h15)
+bool fire_c15 = v15 and sig_c15
+bool alf_c15 = a15 and sig_c15
+bool sig_c16 = sigBullPB and sigBullReCross and sigBullReSlope and sigDispBull and f_dispOK(m16) and f_hvOK(h16)
+bool fire_c16 = v16 and sig_c16
+bool alf_c16 = a16 and sig_c16
+bool sig_c17 = sigBullPB and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(m17) and f_hvOK(h17)
+bool fire_c17 = v17 and sig_c17
+bool alf_c17 = a17 and sig_c17
+bool sig_c18 = sigBullPBJ and sigBullReCross and sigBullReSlope and sigPUP and f_dispOK(m18) and f_hvOK(h18)
+bool fire_c18 = v18 and sig_c18
+bool alf_c18 = a18 and sig_c18
+bool sig_c19 = sigBullPBJ and sigBullReCross and sigBullReSlope and sigDispBull and f_dispOK(m19) and f_hvOK(h19)
+bool fire_c19 = v19 and sig_c19
+bool alf_c19 = a19 and sig_c19
+bool sig_c20 = sigBullPBJ and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(m20) and f_hvOK(h20)
+bool fire_c20 = v20 and sig_c20
+bool alf_c20 = a20 and sig_c20
+bool sig_c21 = sigBullReCross and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(m21) and f_hvOK(h21)
+bool fire_c21 = v21 and sig_c21
+bool alf_c21 = a21 and sig_c21
+bool sig_c22 = sigBullPB and sigBullReCross and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(m22) and f_hvOK(h22)
+bool fire_c22 = v22 and sig_c22
+bool alf_c22 = a22 and sig_c22
+bool sig_c23 = sigBullPBJ and sigBullReCross and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(m23) and f_hvOK(h23)
+bool fire_c23 = v23 and sig_c23
+bool alf_c23 = a23 and sig_c23
+
+// ============================================================================
+// VISUAL PLOTS — 23 real plotshapes (L-61), text = combo name, tier-colored
+// (2=aqua 3=lime 4=yellow 5=orange). 23 × 2 units (text law P-011) = 46/64.
+// ============================================================================
+plotshape(fire_c01, title="C01: BULL PB+RS", style=shape.labelup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="PB+RS", textcolor=color.white, offset=0)
+plotshape(fire_c02, title="C02: BULL PBJ+RS", style=shape.labelup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="PBJ+RS", textcolor=color.white, offset=0)
+plotshape(fire_c03, title="C03: BULL RC+RS", style=shape.labelup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="RC+RS", textcolor=color.white, offset=0)
+plotshape(fire_c04, title="C04: BULL RS+PUP", style=shape.labelup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="RS+PUP", textcolor=color.white, offset=0)
+plotshape(fire_c05, title="C05: BULL RS+D", style=shape.labelup, location=location.belowbar, color=color.new(color.aqua, 0), size=size.small, text="RS+D", textcolor=color.white, offset=0)
+plotshape(fire_c06, title="C06: BULL PB+RC+RS", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="PB+RC+RS", textcolor=color.white, offset=0)
+plotshape(fire_c07, title="C07: BULL PB+RS+PUP", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="PB+RS+PUP", textcolor=color.white, offset=0)
+plotshape(fire_c08, title="C08: BULL PB+RS+D", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="PB+RS+D", textcolor=color.white, offset=0)
+plotshape(fire_c09, title="C09: BULL PBJ+RC+RS", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="PBJ+RC+RS", textcolor=color.white, offset=0)
+plotshape(fire_c10, title="C10: BULL PBJ+RS+PUP", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="PBJ+RS+PUP", textcolor=color.white, offset=0)
+plotshape(fire_c11, title="C11: BULL PBJ+RS+D", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="PBJ+RS+D", textcolor=color.white, offset=0)
+plotshape(fire_c12, title="C12: BULL RC+RS+PUP", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="RC+RS+PUP", textcolor=color.white, offset=0)
+plotshape(fire_c13, title="C13: BULL RC+RS+D", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="RC+RS+D", textcolor=color.white, offset=0)
+plotshape(fire_c14, title="C14: BULL RS+PUP+D", style=shape.labelup, location=location.belowbar, color=color.new(color.lime, 0), size=size.small, text="RS+PUP+D", textcolor=color.white, offset=0)
+plotshape(fire_c15, title="C15: BULL PB+RC+RS+PUP", style=shape.labelup, location=location.belowbar, color=color.new(color.yellow, 0), size=size.small, text="PB+RC+RS+PUP", textcolor=color.white, offset=0)
+plotshape(fire_c16, title="C16: BULL PB+RC+RS+D", style=shape.labelup, location=location.belowbar, color=color.new(color.yellow, 0), size=size.small, text="PB+RC+RS+D", textcolor=color.white, offset=0)
+plotshape(fire_c17, title="C17: BULL PB+RS+PUP+D", style=shape.labelup, location=location.belowbar, color=color.new(color.yellow, 0), size=size.small, text="PB+RS+PUP+D", textcolor=color.white, offset=0)
+plotshape(fire_c18, title="C18: BULL PBJ+RC+RS+PUP", style=shape.labelup, location=location.belowbar, color=color.new(color.yellow, 0), size=size.small, text="PBJ+RC+RS+PUP", textcolor=color.white, offset=0)
+plotshape(fire_c19, title="C19: BULL PBJ+RC+RS+D", style=shape.labelup, location=location.belowbar, color=color.new(color.yellow, 0), size=size.small, text="PBJ+RC+RS+D", textcolor=color.white, offset=0)
+plotshape(fire_c20, title="C20: BULL PBJ+RS+PUP+D", style=shape.labelup, location=location.belowbar, color=color.new(color.yellow, 0), size=size.small, text="PBJ+RS+PUP+D", textcolor=color.white, offset=0)
+plotshape(fire_c21, title="C21: BULL RC+RS+PUP+D", style=shape.labelup, location=location.belowbar, color=color.new(color.yellow, 0), size=size.small, text="RC+RS+PUP+D", textcolor=color.white, offset=0)
+plotshape(fire_c22, title="C22: BULL PB+RC+RS+PUP+D", style=shape.labelup, location=location.belowbar, color=color.new(color.orange, 0), size=size.small, text="PB+RC+RS+PUP+D", textcolor=color.white, offset=0)
+plotshape(fire_c23, title="C23: BULL PBJ+RC+RS+PUP+D", style=shape.labelup, location=location.belowbar, color=color.new(color.orange, 0), size=size.small, text="PBJ+RC+RS+PUP+D", textcolor=color.white, offset=0)
+
+// ============================================================================
+// ALERTS — 23 alertcondition (alert checkbox ∧ dp; vp checkbox NOT consulted)
+// + ANY + consolidated alert() once-per-bar-close. alertconditions are free (P-011).
+// ============================================================================
+alertcondition(alf_c01, title="C01: BULL PB+RS", message="BULL KC COMBO PB+RS fired on {{ticker}}")
+alertcondition(alf_c02, title="C02: BULL PBJ+RS", message="BULL KC COMBO PBJ+RS fired on {{ticker}}")
+alertcondition(alf_c03, title="C03: BULL RC+RS", message="BULL KC COMBO RC+RS fired on {{ticker}}")
+alertcondition(alf_c04, title="C04: BULL RS+PUP", message="BULL KC COMBO RS+PUP fired on {{ticker}}")
+alertcondition(alf_c05, title="C05: BULL RS+D", message="BULL KC COMBO RS+D fired on {{ticker}}")
+alertcondition(alf_c06, title="C06: BULL PB+RC+RS", message="BULL KC COMBO PB+RC+RS fired on {{ticker}}")
+alertcondition(alf_c07, title="C07: BULL PB+RS+PUP", message="BULL KC COMBO PB+RS+PUP fired on {{ticker}}")
+alertcondition(alf_c08, title="C08: BULL PB+RS+D", message="BULL KC COMBO PB+RS+D fired on {{ticker}}")
+alertcondition(alf_c09, title="C09: BULL PBJ+RC+RS", message="BULL KC COMBO PBJ+RC+RS fired on {{ticker}}")
+alertcondition(alf_c10, title="C10: BULL PBJ+RS+PUP", message="BULL KC COMBO PBJ+RS+PUP fired on {{ticker}}")
+alertcondition(alf_c11, title="C11: BULL PBJ+RS+D", message="BULL KC COMBO PBJ+RS+D fired on {{ticker}}")
+alertcondition(alf_c12, title="C12: BULL RC+RS+PUP", message="BULL KC COMBO RC+RS+PUP fired on {{ticker}}")
+alertcondition(alf_c13, title="C13: BULL RC+RS+D", message="BULL KC COMBO RC+RS+D fired on {{ticker}}")
+alertcondition(alf_c14, title="C14: BULL RS+PUP+D", message="BULL KC COMBO RS+PUP+D fired on {{ticker}}")
+alertcondition(alf_c15, title="C15: BULL PB+RC+RS+PUP", message="BULL KC COMBO PB+RC+RS+PUP fired on {{ticker}}")
+alertcondition(alf_c16, title="C16: BULL PB+RC+RS+D", message="BULL KC COMBO PB+RC+RS+D fired on {{ticker}}")
+alertcondition(alf_c17, title="C17: BULL PB+RS+PUP+D", message="BULL KC COMBO PB+RS+PUP+D fired on {{ticker}}")
+alertcondition(alf_c18, title="C18: BULL PBJ+RC+RS+PUP", message="BULL KC COMBO PBJ+RC+RS+PUP fired on {{ticker}}")
+alertcondition(alf_c19, title="C19: BULL PBJ+RC+RS+D", message="BULL KC COMBO PBJ+RC+RS+D fired on {{ticker}}")
+alertcondition(alf_c20, title="C20: BULL PBJ+RS+PUP+D", message="BULL KC COMBO PBJ+RS+PUP+D fired on {{ticker}}")
+alertcondition(alf_c21, title="C21: BULL RC+RS+PUP+D", message="BULL KC COMBO RC+RS+PUP+D fired on {{ticker}}")
+alertcondition(alf_c22, title="C22: BULL PB+RC+RS+PUP+D", message="BULL KC COMBO PB+RC+RS+PUP+D fired on {{ticker}}")
+alertcondition(alf_c23, title="C23: BULL PBJ+RC+RS+PUP+D", message="BULL KC COMBO PBJ+RC+RS+PUP+D fired on {{ticker}}")
+bool anyIncluded = alf_c01 or alf_c02 or alf_c03 or alf_c04 or alf_c05 or alf_c06 or alf_c07 or alf_c08 or alf_c09 or alf_c10 or alf_c11 or alf_c12 or alf_c13 or alf_c14 or alf_c15 or alf_c16 or alf_c17 or alf_c18 or alf_c19 or alf_c20 or alf_c21 or alf_c22 or alf_c23
+alertcondition(anyIncluded, title="ANY BULL KC COMBO", message="BULL KC COMBO (any included) fired on {{ticker}}")
+
+if conf
+    int   _n = 0
+    string _m = ""
+    if alf_c01
+        _n += 1
+        _m += "C01 PB+RS | "
+    if alf_c02
+        _n += 1
+        _m += "C02 PBJ+RS | "
+    if alf_c03
+        _n += 1
+        _m += "C03 RC+RS | "
+    if alf_c04
+        _n += 1
+        _m += "C04 RS+PUP | "
+    if alf_c05
+        _n += 1
+        _m += "C05 RS+D | "
+    if alf_c06
+        _n += 1
+        _m += "C06 PB+RC+RS | "
+    if alf_c07
+        _n += 1
+        _m += "C07 PB+RS+PUP | "
+    if alf_c08
+        _n += 1
+        _m += "C08 PB+RS+D | "
+    if alf_c09
+        _n += 1
+        _m += "C09 PBJ+RC+RS | "
+    if alf_c10
+        _n += 1
+        _m += "C10 PBJ+RS+PUP | "
+    if alf_c11
+        _n += 1
+        _m += "C11 PBJ+RS+D | "
+    if alf_c12
+        _n += 1
+        _m += "C12 RC+RS+PUP | "
+    if alf_c13
+        _n += 1
+        _m += "C13 RC+RS+D | "
+    if alf_c14
+        _n += 1
+        _m += "C14 RS+PUP+D | "
+    if alf_c15
+        _n += 1
+        _m += "C15 PB+RC+RS+PUP | "
+    if alf_c16
+        _n += 1
+        _m += "C16 PB+RC+RS+D | "
+    if alf_c17
+        _n += 1
+        _m += "C17 PB+RS+PUP+D | "
+    if alf_c18
+        _n += 1
+        _m += "C18 PBJ+RC+RS+PUP | "
+    if alf_c19
+        _n += 1
+        _m += "C19 PBJ+RC+RS+D | "
+    if alf_c20
+        _n += 1
+        _m += "C20 PBJ+RS+PUP+D | "
+    if alf_c21
+        _n += 1
+        _m += "C21 RC+RS+PUP+D | "
+    if alf_c22
+        _n += 1
+        _m += "C22 PB+RC+RS+PUP+D | "
+    if alf_c23
+        _n += 1
+        _m += "C23 PBJ+RC+RS+PUP+D | "
+    if _n > 0
+        alert("KCC-BULL [" + str.tostring(_n) + "] → " + _m, alert.freq_once_per_bar_close)
+
