@@ -1,3 +1,8 @@
+// ═══ RENAMED 2026-07-23 (lineage-collision cure, operator order): this SMALL study
+// (PBJ-PB-Consolidated base + KC re-entry + HV ladder, 15 plots) formerly shipped as
+// "1FABLE v4" — a version-number collision with the BIG First Bar Fable lineage
+// (v2→v3→v5, 57 plots). It is NOT that lineage and must never carry its version line.
+// The KC engine + composites now ALSO live in the big lineage as of 1FABLE v5.
 //@version=5
 // ═════════════════════════════════════════════════════════════════════════════
 //  FIRST BAR FABLE v4  —  PBJ PB Consolidated + KC Re-entry + PUP/PPD +
@@ -17,7 +22,7 @@
 //  SIDE-TYPING (L-49.3):  N1 = Bull, N2 = Bear.  HV co-signal = side_agnostic.
 //  CHART DOMAIN: time (non-tick).  Tick sibling = pair debt (see CHANGELOG).
 // ═════════════════════════════════════════════════════════════════════════════
-indicator("First Bar Fable v4", shorttitle="1FABLE v4", overlay=true, max_labels_count=500, max_bars_back=5000)
+indicator("FBF KC Companion v1", shorttitle="FBF KC CO v1", overlay=true, max_labels_count=500, max_bars_back=5000)
 
 // ╔════════════════════════════════════════════════════════════════════════════╗
 // ║  BASE:  "PBJ PB Consolidated v1" — four source engines, defaults verbatim.  ║
