@@ -129,3 +129,13 @@ papers, slide decks, transcripts.
 
 Full doctrine + install state + failure modes:
 `~/.claude/projects/-Users-anishpatel/memory/pdf_conversion_markitdown.md`
+
+## 📚 L-59 TEMPLATE-FIRST (propagated 2026-07-24 — taxonomy audit; was MISSING from this surface)
+EVERY task/fix/build FIRST checks `templates/INDEX.md` (+ graph.json) for its template — none
+→ instantiate from T-GOLD before working. Indicator-study work MUST consult the child templates
+(T-DP / T-VP / T-ALERTMSG — alert grammar is LAW; T-OFFSET owed). CHECKS are compulsory;
+UPSTREAM-DELTA fills before walking away. Gate: `python3 validation/wrappers/template_gate.py`.
+Founding propagation exhibit: alert format designed 2026-07-24 without checking T-ALERTMSG.
+> ⚠ L-49 MANIFEST LANE OVERRIDES the bare 'commit + push every change' rule above: every study
+> change ships ONLY via a W-INDSTUDY manifest + `indicator_study_gate.py` exit 0 + CS-1
+> `pane_label_gate.py` + `fbf_111_gate.py`. A manifestless push = the L-49.1 founding breach.
