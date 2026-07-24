@@ -1,5 +1,47 @@
 # VOB Indicator Suite — Changelog
 
+## v10.4 + v11.7 — 2026-07-24 — VISUAL-IDENTITY FIX (operator screenshot = the standard)
+
+W-INDSTUDY lane (manifests `manifest_vob-v10.4-*` / `manifest_vob-v11.7-*`). Bases:
+`VOB_v10.3.pine` / `VOB_v11.6.pine` @ `2587859`. **Impetus (operator order
+2026-07-24, screenshot-anchored):** the T3 12-pack painted identical circles
+below/above bar — "visual information-free architecture" — and no detection plot
+offered a color choice.
+
+### THE VISUAL-IDENTITY LAW (vaulted; memory + lessons ledger)
+- Distinct detection lanes may NEVER share (shape + location) such that
+  same-candle fires stack indistinguishably.
+- EVERY visual detection plot ships with its own `input.color`.
+- The operator's Style-tab fix (screenshot 2026-07-24 00:17) is the canonical
+  marker table — shipped as code defaults so it never needs hand-editing again.
+
+### Files
+- `versions/VOB_v10.4.pine` + `tick_friendly/VOB_TICKFRIENDLY_v10.4.pine` (28 color inputs)
+- `versions/VOB_v11.7.pine` + `tick_friendly/VOB_TICKFRIENDLY_v11.7.pine` (18 color inputs)
+
+### Changes
+1. **v10 T3 spread (operator table, verbatim):**
+   - Buy: a ○ top
+   - Buy: b ○ bottom
+   - Buy: c ○ abovebar
+   - Buy: d ○ belowbar
+   - Buy: e ▽ top
+   - Buy: f △ bottom
+   - Sell: a + top
+   - Sell: b + bottom
+   - Sell: c ✕ top
+   - Sell: d ✕ bottom
+   - Sell: e ✕ abovebar
+   - Sell: f ✕ belowbar
+   (v11 lineage carries no individual T3 markers — MULTIPLES host — table N/A there.)
+2. **Nagasaki diamond → flag** (both lineages): kills the NAG / NAG+ANY
+   same-glyph diamond/top collision.
+3. **Multi-Zone 3+ spread** (both lineages): Bull 3+ → abovebar, Bear 3+ → belowbar.
+4. **`Detection Marker Colors` input group** (both lineages): one `input.color` per plotshape,
+   defaults = previous hardcoded colors; textcolor follows the marker input where
+   it previously matched. Titles, texts, sizes, offsets, alert lanes untouched;
+   TV unit budgets unchanged (56/64 and 36/64).
+
 ## v11.6 — 2026-07-24 — AGNOSTIC-LANE KILL (redundant direction-agnostic composites removed)
 
 W-INDSTUDY lane (manifests `manifest_vob-v11.6-*`, gate exit 0 ×2). Base: `VOB_v11.5.pine`
