@@ -1,5 +1,25 @@
 # kc-combo CHANGELOG
 
+## v3 — 2026-07-25
+- FIX OF RECORD (P-019): v2 REFUSED by TV for exceeding 64 outputs. Root cause was
+  NEVER the IPSF inputs (inputs generate ZERO plot counts — TV docs + P-019 law):
+  v2 carried (a) 46 computed plot colors `color.new(color.rgb(..), 0)` — each
+  non-bare-const color arg costs +1 unit AND hides the Style-tab picker (P-017) —
+  and (b) 47 alertcondition() calls at +1 unit each ("All plot*() calls and
+  alertcondition() calls count towards the plot count" — official docs, CONFIRMED).
+  v2 worst-case = 46 + 46 + 47 = 139/64.
+- UNIT LAW SOLVED EXACTLY (gate v1.5, P-019): units = plot calls + dynamic-color
+  args + alertconditions; text= is FREE. Reproduces BOTH vendor refusal integers:
+  VOB v10.1 "78" = 39+24+15 and VOB v10.4 RE10140 "100" = 28+56+16. The P-011
+  model (text=2u, ac=0u) fit 78 by numerical coincidence and is REFUTED.
+- v3 = 46 dp plotshapes (bare #RRGGBB const colors → Style-tab picker restored on
+  every row, zero unit cost) + 1 ANY alertcondition = 47/64. All 46 dp, all 184
+  IPSF inputs, 46 ALERT checkboxes + consolidated alert() emission preserved.
+- Gates: indicator_study_gate v1.5 PROVED D_bytes=0 (47/64) · pane_label D_cs1=0
+  (graphic objects: 0) · fbf_111 D_111=0 (46 lanes). Anti battery 23/23 incl. new
+  T-ACBUDGET / T-DYNCOLOR. Tick sibling owed: pair_debt due 2026-07-27 (L-49.1).
+
+
 ## v1 — 2026-07-24
 - BORN: KC COMBO BULL + BEAR pair (+ TICK twins). 23 dp per study = the MAIN-list
   side-pure re-entry-anchored combos (every combo contains R-S; R-C-only bucket =
