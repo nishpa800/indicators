@@ -1,5 +1,14 @@
 # VOB BB — Birth Bar Study CHANGELOG
 
+## v1.1 (2026-07-26) — GRADED BIRTHS (default-forward wave, no operator trigger)
+- THE FORMATION GRADE: five birth-bar features (displacement/trend/volatility/depth/cycle)
+  scored 0-20 vs corpus-calibrated quintile boundaries (173,301 births; out-of-sample:
+  Grade A >=18 -> 77.5% hold (n=4,161) · Grade B >=14 -> 71.7% · base 62.4%).
+  Constants: derived/birthbar_calibration_v2/formation_score_constants.json.
+- New side-typed A-BIRTH Bull/Bear dp:vp:alert lanes (labelup/labeldown, size normal) —
+  "print the lines that will hold" made real; every birth alert now carries SCORE+GRADE.
+- Budget 20/64. Twins same wave.
+
 ## v1 (2026-07-26) — birth of the study class
 - NEW STUDY: 8 side-typed dp:vp:alert lanes — Birth/Survivor/Elder/Return × Bull/Bear.
 - Impetus: the birth-bar zero-label diagnosis (operator report, VSAT 180m) + the
