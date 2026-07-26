@@ -1,5 +1,28 @@
 # kc-combo CHANGELOG
 
+## v4 pair — 2026-07-25 (BULL + BEAR, maxed)
+- OPERATOR ORDER: "make a bullish version and max it out and make a bearish version
+  and max it out" + add HVD+ANY, UC+ANY, CS1+ANY, CS2+ANY, MAT+ANY, CC+ANY.
+- EACH STUDY = 50/64 (P-019 law; 14 spare): 23 MAIN combos (verbatim v3) + 11 HTF
+  combos (RC-anchored parking-lot list, unparked by this order) + 6 +ANY lanes
+  (member fires same confirmed candle as >=1 of the study's 34 combos) + ANY/2PLUS/
+  3PLUS/NAGASAKI aggregates + KC basis/upper/lower + Supertrend + combo-count
+  (data window) + 1 ANY alertcondition.
+- ENGINES PORTED VERBATIM (deterministic builder scripts/ind/build_kc_v4_pair.py,
+  dependency slices in scripts/ind/kc_v4_fragments/): CCC v1 CS1/CS2/MAT/UC/CC
+  (back-to-back pair chain law, the only chain law in CCC v1) + HVD BULLISH/BEARISH
+  (HV-rank ladder x prior-bar displacement FVG). conf-def deduped; render/q-lane/
+  tagBlock/masterGate layers excluded; grp_align def injected — all drops asserted.
+- IPSF: combos DISP 3.0 default + HV dropdown (v3 contract); +ANY lanes DISP 0.0 +
+  HV Not-required defaults (member engines carry own thresholds — disclosed);
+  aggregates VP/ALERT only. Lane numbering global: C01-23/H01-11/A01-06/X01-04 BULL,
+  C24-46/H12-22/A07-12/X05-08 BEAR.
+- Gates: indicator_study_gate v1.5 PROVED x2 D_bytes=0 (50/64) · pane_label D_cs1=0
+  x2 (graphic objects: 0) · fbf_111 D_111=0 x2 (44 lanes each) · battery 23/23
+  (T-REGRESSION 54/54 at adjudicated verdicts). Tick siblings owed: pair_debt due
+  2026-07-28 x2 (L-49.1). v3 remains the single-study build; the pair is the maxed lane.
+
+
 ## v3 — 2026-07-25
 - FIX OF RECORD (P-019): v2 REFUSED by TV for exceeding 64 outputs. Root cause was
   NEVER the IPSF inputs (inputs generate ZERO plot counts — TV docs + P-019 law):
