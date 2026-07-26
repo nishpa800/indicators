@@ -1,5 +1,27 @@
 # kc-combo CHANGELOG
 
+## v4.1 pair — 2026-07-25 (VISUAL-IDENTITY LAW II; supersedes v4, operator visual refusal)
+- OPERATOR CHARGES (all PROVED): bull yellows confusable with bear oranges; every
+  bear marker piled abovebar / every bull marker belowbar (unreadable stacks); no
+  on-chart language. LAW II enacted + machine-gated:
+  visual_identity_gate.py (D_vis = overlap + banned + textless + band-miss; exit 0
+  iff 0; selftest 5/5 planted violations refute).
+- ZERO cross-side color overlap at family level: BULL cool only (blues/greens/
+  cyans — MAIN keeps v3 blue-green gradient, HTF cyan, +ANY royal blue, agg green);
+  BEAR hot only (MAIN red gradient — v3 bear tail had drifted green, regenerated —
+  HTF pink, +ANY magenta, agg red). YELLOW + ORANGE BANNED both sides.
+- WHITE LETTER-CODE on every marker (text=code, textcolor=color.white — FREE under
+  P-019): B=PB J=PBJ C=RC S=RS U=PUP D=PPD X=Displacement; combos read as letter
+  runs (BS=PB+RS, JCSUX=PBJ+RC+RS+PUP+D); ported members dotted: H.A UC.A CS1.A
+  CS2.A M.A CC.A; A=ANY, 2+/3+, N=Naga. Legend in file header; codes also in every
+  input label, Style-tab title, and alert payload.
+- LOCATION = FAMILY BAND (color carries the side): belowbar=BULL MAIN+BEAR agg ·
+  abovebar=BEAR MAIN+BULL agg · bottom=BULL HTF+BEAR +ANY · top=BEAR HTF+BULL +ANY.
+- Context lines neutral grays (shared by declaration). Budget unchanged 50/64 x2.
+- Gates: study gate v1.5 PROVED x2 D_bytes=0 · visual_identity D_vis=0 · CS-1
+  D_cs1=0 x2 · 1:1:1 D_111=0 x2 · battery 23/23 (56/56 regression).
+
+
 ## v4 pair — 2026-07-25 (BULL + BEAR, maxed)
 - OPERATOR ORDER: "make a bullish version and max it out and make a bearish version
   and max it out" + add HVD+ANY, UC+ANY, CS1+ANY, CS2+ANY, MAT+ANY, CC+ANY.
