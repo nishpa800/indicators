@@ -1,5 +1,12 @@
 # VOB BB — Birth Bar Study CHANGELOG
 
+## v1.2 (2026-07-26) — TV-COMPILE FIX (operator paste found 9 problems in v1.1)
+- CE10123 x7: user-function bank resolution returned series int into ta.ema's simple
+  length. Root law learned: Pine user-function returns are ALWAYS series — never route
+  input constants through a helper when a built-in needs simple. Fix: inline ternaries.
+- CW10002 x2: ta.crossover/crossunder hoisted out of conditional expressions.
+- v1/v1.1 carry the landmine; v1.2 = first paste-valid build. Twins same wave.
+
 ## v1.1 (2026-07-26) — GRADED BIRTHS (default-forward wave, no operator trigger)
 - THE FORMATION GRADE: five birth-bar features (displacement/trend/volatility/depth/cycle)
   scored 0-20 vs corpus-calibrated quintile boundaries (173,301 births; out-of-sample:

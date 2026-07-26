@@ -1,0 +1,512 @@
+//@version=6
+// =============================================================================
+// VERSION: VOB BB v1.2 TICK-FRIENDLY (2026-07-26) — W-INDSTUDY create (L-49 lane). TV-COMPILE FIX WAVE.
+// v1.2 fixes the operator's 9-problem paste verdict on v1.1 (screenshots 18:53-18:57):
+//   CE10123 ×7 — bank sens routed through a user function; user-function returns are
+//   ALWAYS series in Pine -> series len into ta.ema(simple). Fix: inline ternary bank
+//   resolution at global scope. CW10002 ×2 — ta.crossover/under hoisted unconditional.
+// v1 and v1.1 carry the CE10123 landmine — v1.2 is the first PASTE-VALID build.
+// v1.1 adds THE FORMATION GRADE: five birth-bar features (displacement, trend,
+// volatility, structural depth, cycle time) scored 0–20 against corpus-calibrated
+// quintile boundaries (train-half pooled, TEST-half verified out-of-sample:
+// Grade A = score>=18 -> P(hold to A*) 77.5% (n=4,161) · Grade B >=14 -> 71.7%
+// (n=21,765) · base 62.4% · bottom decile 45.0%; 173,301 births; constants =
+// derived/birthbar_calibration_v2/formation_score_constants.json). A-BIRTH lanes
+// print the highest-probability births; every birth alert carries SCORE+GRADE.
+// VOB BB — Birth Bar Study. Born from the birth-bar zero-label diagnosis + the
+// 1.83M-birth full-corpus calibration (docs/2026-07-26_TV-TickBar-RE_
+// BirthBarZeroLabel-DiagnosisAndSurvivorDesign_v1.0–v1.3; cert
+// derived/birthbar_calibration_v2/ — E7 pinned-inventory PROVED).
+//
+// EARLIEST-ENTRY LAW (why this study exists): a zone birth is knowable at the
+// EMA-crossover confirmation bar and NEVER earlier (the anchor extreme is only
+// identified up to len2 bars after the fact — any mark before confirmation
+// repaints). BIRTH fires exactly at that first knowable bar = the theoretical
+// earliest long/short entry tied to zone origin. Default cooldown = 0.
+//
+// TWO-CONCEPTS LAW (operator-dictated 2026-07-26): ORIGIN ≠ RETURN.
+//   ORIGIN lanes: BIRTH (at confirmation) · SURVIVOR (lineage age ≥ A*) ·
+//                 ELDER (lineage age ≥ 3·A*).
+//   RETURN lane:  price revisits a living birth level (ATR-scaled band) — a
+//                 retest detector, NEVER a birth marker.
+// THE SURVIVAL LAW (fitted, R²=0.976, 34 sens cells, 1,831,429 births):
+//   A*(s) = s · max(0.6, 3.949 − 0.416·ln s);  ×0.62 when chart TF ≥ 2D.
+//   Production grid: A*(50)=116 · A*(75)=161 · A*(100)=203 · A*(125)=243.
+// LINEAGE AGE (dedup share 34.5% measured): when a newer same-side zone within
+// one ATR replaces an elder (DEDUP), the survivor INHERITS the elder's birth
+// bar and fired flags — the LEVEL's clock never spuriously resets.
+// Non-repainting: every lane barstate.isconfirmed. Rolling windows only.
+// Real-plot VPs only (L-61 CS-1); zone level lines are structure rendering
+// (graphic-object disclosure: exactly 2 line.new sites, both zone lines).
+// TV units: 8 plotshapes + 8 alertconditions = 16/64 (P-019 law; bare const colors).
+// SENSITIVITY BANKS (operator-dictated 2026-07-26): banks of SEVEN. B1 = 25,38,
+// 50,62,75,88,100 (quarter-steps, very-high-timeframe bank; 37.5/87.5 rounded to
+// int — Pine lengths). Then +100 ladders: B2 100–700 · B3 800–1400 · B4 1500–2100 ·
+// B5 2200–2800 · B6 2900–3000 (ladder caps at 3k ⇒ 2 live rungs, 5 disabled slots).
+// ONE study + Bank dropdown; stack copies (one bank each) to cover 25→3000.
+// chart_domain: tick. Time twin: vob_bb/VOB_BB_v1.2.pine. (2D+ discount inert on tick charts.)
+// =============================================================================
+indicator("VOB BB v1.2 TICK — Birth Bar Study", shorttitle="VOB BB1 TICK", overlay = true, max_lines_count = 500)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS
+// ─────────────────────────────────────────────────────────────────────────────
+string BK1 = "B1: 25–100 (very high TF, quarter-steps)"
+string BK2 = "B2: 100–700"
+string BK3 = "B3: 800–1400"
+string BK4 = "B4: 1500–2100"
+string BK5 = "B5: 2200–2800"
+string BK6 = "B6: 2900–3000 (ladder cap)"
+string BKC = "CUSTOM (use the seven inputs below)"
+string bank = input.string("B1: 25–100 (very high TF, quarter-steps)", "Sensitivity Bank", options = ["B1: 25–100 (very high TF, quarter-steps)", "B2: 100–700", "B3: 800–1400", "B4: 1500–2100", "B5: 2200–2800", "B6: 2900–3000 (ladder cap)", "CUSTOM (use the seven inputs below)"], group = "Sensitivities",
+     tooltip = "Operator ladder 2026-07-26: banks of SEVEN. Stack copies of this study, one bank each, to cover 25→3000. B6 carries only 2 live rungs (2900,3000) — the ladder caps at 3k; its other 5 slots are disabled. CUSTOM uses the seven manual inputs.")
+int cust_a = input.int(25,  "Custom Sens A", group = "Sensitivities", minval = 0)
+int cust_b = input.int(38,  "Custom Sens B", group = "Sensitivities", minval = 0)
+int cust_c = input.int(50,  "Custom Sens C", group = "Sensitivities", minval = 0)
+int cust_d = input.int(62,  "Custom Sens D", group = "Sensitivities", minval = 0)
+int cust_e = input.int(75,  "Custom Sens E", group = "Sensitivities", minval = 0)
+int cust_f = input.int(88,  "Custom Sens F", group = "Sensitivities", minval = 0)
+int cust_g = input.int(100, "Custom Sens G (0 = slot disabled)", group = "Sensitivities", minval = 0)
+
+// Bank resolution is INLINE (no user function): Pine forcibly series-qualifies
+// every user-function return, which would poison the sens constants and break
+// ta.ema's simple-int length (TV CE10123, operator paste 2026-07-26).
+int sens_a = bank == BKC ? cust_a : bank == BK1 ? 25  : bank == BK2 ? 100 : bank == BK3 ? 800  : bank == BK4 ? 1500 : bank == BK5 ? 2200 : 2900
+int sens_b = bank == BKC ? cust_b : bank == BK1 ? 38  : bank == BK2 ? 200 : bank == BK3 ? 900  : bank == BK4 ? 1600 : bank == BK5 ? 2300 : 3000
+int sens_c = bank == BKC ? cust_c : bank == BK1 ? 50  : bank == BK2 ? 300 : bank == BK3 ? 1000 : bank == BK4 ? 1700 : bank == BK5 ? 2400 : 0
+int sens_d = bank == BKC ? cust_d : bank == BK1 ? 62  : bank == BK2 ? 400 : bank == BK3 ? 1100 : bank == BK4 ? 1800 : bank == BK5 ? 2500 : 0
+int sens_e = bank == BKC ? cust_e : bank == BK1 ? 75  : bank == BK2 ? 500 : bank == BK3 ? 1200 : bank == BK4 ? 1900 : bank == BK5 ? 2600 : 0
+int sens_f = bank == BKC ? cust_f : bank == BK1 ? 88  : bank == BK2 ? 600 : bank == BK3 ? 1300 : bank == BK4 ? 2000 : bank == BK5 ? 2700 : 0
+int sens_g = bank == BKC ? cust_g : bank == BK1 ? 100 : bank == BK2 ? 700 : bank == BK3 ? 1400 : bank == BK4 ? 2100 : bank == BK5 ? 2800 : 0
+bool on_a = sens_a > 1
+bool on_b = sens_b > 1
+bool on_c = sens_c > 1
+bool on_d = sens_d > 1
+bool on_e = sens_e > 1
+bool on_f = sens_f > 1
+bool on_g = sens_g > 1
+
+int  atr_len       = input.int(14, "ATR Length (zone geometry + RETURN band)", minval = 1, group = "Engine")
+int  cooldown_bars = input.int(0,  "Cooldown Bars (0 = earliest entry, no throttle)", minval = 0, group = "Engine")
+bool lineage_age   = input.bool(true, "Lineage age inheritance on DEDUP (level clock survives replacement)", group = "Engine",
+     tooltip = "34.5% of zone deaths are administrative same-price replacements (measured, derived/birthbar_calibration_v2). ON = the surviving zone inherits the elder's birth bar + fired flags.")
+float astar_mult   = input.float(1.0, "A* multiplier (1.0 = fitted law)", minval = 0.1, step = 0.1, group = "Engine",
+     tooltip = "SURVIVOR threshold A*(s) = s·max(0.6, 3.949 − 0.416·ln s), ×0.62 on 2D+ charts (R²=0.976, 1.83M births). This input scales the law.")
+float ret_atr_mult = input.float(1.0, "RETURN band (× ATR)", minval = 0.1, step = 0.1, group = "Engine",
+     tooltip = "RETURN fires when close is within this many ATRs of the nearest LIVING birth level on that side. ATR-scaling proven mandatory (fixed 1% passes 0.0% of 2D births, 57.1% of tick births). Band default carries a dated calibration debt.")
+bool ret_srv_only  = input.bool(false, "RETURN: survivors only (level age ≥ A*)", group = "Engine")
+
+int grade_a_min = input.int(18, "Grade A min score 0-20 (calibrated: P(hold)=77.5%)", minval = 0, maxval = 20, group = "Formation Grade",
+     tooltip = "Five birth-bar features scored against corpus quintiles (173,301 births, out-of-sample verified). Score>=A -> ~77.5% hold; >=B -> ~71.7%; base 62.4%. Constants: derived/birthbar_calibration_v2/formation_score_constants.json")
+int grade_b_min = input.int(14, "Grade B min score 0-20 (calibrated: P(hold)=71.7%)", minval = 0, maxval = 20, group = "Formation Grade")
+bool show_birth_bull = input.bool(true, "Birth Bull (new bull zone confirmed — ORIGIN, earliest entry)", group = "Detection — ORIGIN lanes")
+bool show_birth_bear = input.bool(true, "Birth Bear (new bear zone confirmed — ORIGIN, earliest entry)", group = "Detection — ORIGIN lanes")
+bool show_srv_bull   = input.bool(true, "Survivor Bull (bull level lineage age ≥ A*)", group = "Detection — ORIGIN lanes")
+bool show_srv_bear   = input.bool(true, "Survivor Bear (bear level lineage age ≥ A*)", group = "Detection — ORIGIN lanes")
+bool show_eld_bull   = input.bool(true, "Elder Bull (bull level lineage age ≥ 3·A*)", group = "Detection — ORIGIN lanes")
+bool show_eld_bear   = input.bool(true, "Elder Bear (bear level lineage age ≥ 3·A*)", group = "Detection — ORIGIN lanes")
+bool show_birtha_bull = input.bool(true, "A-Birth Bull (Grade-A bull birth — highest P(hold))", group = "Detection — ORIGIN lanes")
+bool show_birtha_bear = input.bool(true, "A-Birth Bear (Grade-A bear birth — highest P(hold))", group = "Detection — ORIGIN lanes")
+bool show_ret_bull   = input.bool(true, "Return Bull (price revisits living bull birth level — NOT a birth)", group = "Detection — RETURN lane")
+bool show_ret_bear   = input.bool(true, "Return Bear (price revisits living bear birth level — NOT a birth)", group = "Detection — RETURN lane")
+
+bool al_birth_bull = input.bool(true, "🔔 Birth Bull — alert",    group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+bool al_birth_bear = input.bool(true, "🔔 Birth Bear — alert",    group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+bool al_srv_bull   = input.bool(true, "🔔 Survivor Bull — alert", group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+bool al_srv_bear   = input.bool(true, "🔔 Survivor Bear — alert", group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+bool al_eld_bull   = input.bool(true, "🔔 Elder Bull — alert",    group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+bool al_eld_bear   = input.bool(true, "🔔 Elder Bear — alert",    group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+bool al_birtha_bull = input.bool(true, "🔔 A-Birth Bull — alert",  group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+bool al_birtha_bear = input.bool(true, "🔔 A-Birth Bear — alert",  group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+bool al_ret_bull   = input.bool(true, "🔔 Return Bull — alert",   group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+bool al_ret_bear   = input.bool(true, "🔔 Return Bear — alert",   group = "🔔 ALERTS — iff checked → alert fires (display-independent)")
+
+bool  show_lines  = input.bool(true, "Draw living birth-level lines", group = "Zone Lines")
+color c_line_bull = input.color(color.new(#00E676, 40), "Bull birth-level line", group = "Zone Lines")
+color c_line_bear = input.color(color.new(#FF1744, 40), "Bear birth-level line", group = "Zone Lines")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UDT — one zone. bidx = LINEAGE birth bar (inherits on DEDUP); indx = own
+// anchor time (line drawing); srv/eld = fired flags (inherit with lineage).
+// ─────────────────────────────────────────────────────────────────────────────
+type level
+    int   indx
+    int   bidx
+    float upper
+    float lower
+    float mid
+    float vol
+    bool  srv
+    bool  eld
+    line  ln
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE SURVIVAL LAW
+// ─────────────────────────────────────────────────────────────────────────────
+bool tf_2dplus = (timeframe.isdaily and timeframe.multiplier >= 2) or timeframe.isweekly or timeframe.ismonthly
+
+f_astar(int len1) =>
+    if len1 <= 1
+        0
+    else
+        float r = math.max(0.6, 3.949 - 0.416 * math.log(len1))
+        int(math.round(len1 * r * (tf_2dplus ? 0.62 : 1.0) * astar_mult))
+
+int astar_a = f_astar(sens_a)
+int astar_b = f_astar(sens_b)
+int astar_c = f_astar(sens_c)
+int astar_d = f_astar(sens_d)
+int astar_e = f_astar(sens_e)
+int astar_f = f_astar(sens_f)
+int astar_g = f_astar(sens_g)
+
+float atr_v = ta.atr(atr_len)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ZONE ENGINE — EMA(len1) × EMA(len1+13) crossover births (VOB f_vob lineage);
+// deaths: BREACH (close beyond level) · DEDUP (adjacent living mids within
+// 1 ATR; lineage inheritance) · EVICT (>15/side/sens). Dead zones are REMOVED.
+// ─────────────────────────────────────────────────────────────────────────────
+var array<level> up_a = array.new<level>()
+var array<level> lo_a = array.new<level>()
+var array<level> up_b = array.new<level>()
+var array<level> lo_b = array.new<level>()
+var array<level> up_c = array.new<level>()
+var array<level> lo_c = array.new<level>()
+var array<level> up_d = array.new<level>()
+var array<level> lo_d = array.new<level>()
+var array<level> up_e = array.new<level>()
+var array<level> lo_e = array.new<level>()
+var array<level> up_f = array.new<level>()
+var array<level> lo_f = array.new<level>()
+var array<level> up_g = array.new<level>()
+var array<level> lo_g = array.new<level>()
+
+f_kill(array<level> arr, int i) =>
+    level l = arr.get(i)
+    if not na(l.ln)
+        line.delete(l.ln)
+    arr.remove(i)
+
+f_qrank(float x, float b1, float b2, float b3, float b4) =>
+    (x > b1 ? 1 : 0) + (x > b2 ? 1 : 0) + (x > b3 ? 1 : 0) + (x > b4 ? 1 : 0)
+
+f_vob(int len1, bool on, array<level> up_lvl, array<level> lo_lvl) =>
+    int   len2    = math.max(len1, 2) + 13
+    float ema1    = ta.ema(close, math.max(len1, 2))
+    float ema2    = ta.ema(close, len2)
+    bool  xup     = ta.crossover(ema1, ema2)
+    bool  xdn     = ta.crossunder(ema1, ema2)
+    bool  cup     = on and xup and barstate.isconfirmed
+    bool  cdn     = on and xdn and barstate.isconfirmed
+    float lowest  = ta.lowest(len2)
+    float highest = ta.highest(len2)
+    bool  born_bull = false
+    bool  born_bear = false
+    if cup
+        float vol = 0.0
+        for i = 1 to len2
+            if low[i] == lowest
+                int idx = time[i]
+                for k = 0 to i
+                    vol += volume[k]
+                float src = math.min(open[i], close[i])
+                src := (src - lowest) < atr_v ? lowest + atr_v : src
+                line zl = na
+                if show_lines
+                    zl := line.new(idx, lowest, time, lowest, xloc = xloc.bar_time, extend = extend.right, color = c_line_bull, width = 1)
+                lo_lvl.push(level.new(idx, bar_index, src, lowest, math.avg(src, lowest), vol, false, false, zl))
+                born_bull := true
+                break
+    if cdn
+        float vol = 0.0
+        for i = 1 to len2
+            if high[i] == highest
+                int idx = time[i]
+                for k = 0 to i
+                    vol += volume[k]
+                float src = math.max(open[i], close[i])
+                src := (highest - src) < atr_v ? highest - atr_v : src
+                line zl = na
+                if show_lines
+                    zl := line.new(idx, highest, time, highest, xloc = xloc.bar_time, extend = extend.right, color = c_line_bear, width = 1)
+                up_lvl.push(level.new(idx, bar_index, highest, src, math.avg(src, highest), vol, false, false, zl))
+                born_bear := true
+                break
+    // FORMATION GRADE (v1.1) — five features at the birth bar, corpus-calibrated
+    float low3  = ta.lowest(low, len2 * 3)
+    float high3 = ta.highest(high, len2 * 3)
+    var int last_cup = na
+    var int last_cdn = na
+    int sc_bull = -1
+    int sc_bear = -1
+    if born_bull
+        float fd = (close - lowest) / atr_v
+        float ft = (close - close[len2]) / (atr_v * math.sqrt(len2))
+        float fv = atr_v / close
+        float fp = (lowest - low3) / atr_v
+        float fc = na(last_cup) ? -1.0 : (bar_index - last_cup) / len2
+        sc_bull := f_qrank(fd, 5.386581, 6.957367, 8.649613, 11.223398) + f_qrank(ft, 0.051149, 0.234869, 0.400212, 0.608735) + f_qrank(fv, 0.000545, 0.001545, 0.003555, 0.008252) + (4 - f_qrank(fp, 0.0, 0.0, 1.411122, 4.561366)) + f_qrank(fc, 1.095238, 2.015873, 3.031746, 4.492754)
+        last_cup := bar_index
+    if born_bear
+        float fd = (highest - close) / atr_v
+        float ft = -(close - close[len2]) / (atr_v * math.sqrt(len2))
+        float fv = atr_v / close
+        float fp = (high3 - highest) / atr_v
+        float fc = na(last_cdn) ? -1.0 : (bar_index - last_cdn) / len2
+        sc_bear := f_qrank(fd, 5.386581, 6.957367, 8.649613, 11.223398) + f_qrank(ft, 0.051149, 0.234869, 0.400212, 0.608735) + f_qrank(fv, 0.000545, 0.001545, 0.003555, 0.008252) + (4 - f_qrank(fp, 0.0, 0.0, 1.411122, 4.561366)) + f_qrank(fc, 1.095238, 2.015873, 3.031746, 4.492754)
+        last_cdn := bar_index
+    // DEDUP (adjacent living mids within 1 ATR → elder dies, lineage inherits)
+    if lo_lvl.size() > 1
+        for i = lo_lvl.size() - 1 to 1
+            level l  = lo_lvl.get(i)
+            level l1 = lo_lvl.get(i - 1)
+            if math.abs(l.mid - l1.mid) < atr_v
+                if lineage_age
+                    l.bidx := math.min(l.bidx, l1.bidx)
+                    l.srv  := l.srv or l1.srv
+                    l.eld  := l.eld or l1.eld
+                f_kill(lo_lvl, i - 1)
+    if up_lvl.size() > 1
+        for i = up_lvl.size() - 1 to 1
+            level l  = up_lvl.get(i)
+            level l1 = up_lvl.get(i - 1)
+            if math.abs(l.mid - l1.mid) < atr_v
+                if lineage_age
+                    l.bidx := math.min(l.bidx, l1.bidx)
+                    l.srv  := l.srv or l1.srv
+                    l.eld  := l.eld or l1.eld
+                f_kill(up_lvl, i - 1)
+    // BREACH
+    if lo_lvl.size() > 0
+        for i = lo_lvl.size() - 1 to 0
+            if close < lo_lvl.get(i).lower
+                f_kill(lo_lvl, i)
+    if up_lvl.size() > 0
+        for i = up_lvl.size() - 1 to 0
+            if close > up_lvl.get(i).upper
+                f_kill(up_lvl, i)
+    // EVICT
+    while lo_lvl.size() > 15
+        f_kill(lo_lvl, 0)
+    while up_lvl.size() > 15
+        f_kill(up_lvl, 0)
+    [born_bull, born_bear, sc_bull, sc_bear]
+
+[ba, sa, xba, xsa] = f_vob(sens_a, on_a, up_a, lo_a)
+[bb, sb, xbb, xsb] = f_vob(sens_b, on_b, up_b, lo_b)
+[bc, sc, xbc, xsc] = f_vob(sens_c, on_c, up_c, lo_c)
+[bd, sd, xbd, xsd] = f_vob(sens_d, on_d, up_d, lo_d)
+[be, se, xbe, xse] = f_vob(sens_e, on_e, up_e, lo_e)
+[bf, sf, xbf, xsf] = f_vob(sens_f, on_f, up_f, lo_f)
+[bg, sg, xbg, xsg] = f_vob(sens_g, on_g, up_g, lo_g)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORIGIN LANES — SURVIVOR / ELDER age crossings (fired once per level lineage)
+// ─────────────────────────────────────────────────────────────────────────────
+f_scan(array<level> arr, int astar_i) =>
+    bool srv_f = false
+    bool eld_f = false
+    if barstate.isconfirmed and arr.size() > 0
+        for i = 0 to arr.size() - 1
+            level l = arr.get(i)
+            int age = bar_index - l.bidx
+            if not l.srv and age >= astar_i
+                l.srv := true
+                srv_f := true
+            if not l.eld and age >= 3 * astar_i
+                l.eld := true
+                eld_f := true
+    [srv_f, eld_f]
+
+[srvla, eldla] = f_scan(lo_a, astar_a)
+[srvua, eldua] = f_scan(up_a, astar_a)
+[srvlb, eldlb] = f_scan(lo_b, astar_b)
+[srvub, eldub] = f_scan(up_b, astar_b)
+[srvlc, eldlc] = f_scan(lo_c, astar_c)
+[srvuc, elduc] = f_scan(up_c, astar_c)
+[srvld, eldld] = f_scan(lo_d, astar_d)
+[srvud, eldud] = f_scan(up_d, astar_d)
+[srvle, eldle] = f_scan(lo_e, astar_e)
+[srvue, eldue] = f_scan(up_e, astar_e)
+[srvlf, eldlf] = f_scan(lo_f, astar_f)
+[srvuf, elduf] = f_scan(up_f, astar_f)
+[srvlg, eldlg] = f_scan(lo_g, astar_g)
+[srvug, eldug] = f_scan(up_g, astar_g)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RETURN LANE — nearest LIVING birth level per side across all six sens banks
+// ─────────────────────────────────────────────────────────────────────────────
+f_nearest(array<level> arr, bool is_bull) =>
+    float best = na
+    int   bage = na
+    if arr.size() > 0
+        for i = 0 to arr.size() - 1
+            level l = arr.get(i)
+            if not ret_srv_only or l.srv
+                float lvl = is_bull ? l.lower : l.upper
+                if na(best) or math.abs(close - lvl) < math.abs(close - best)
+                    best := lvl
+                    bage := bar_index - l.bidx
+    [best, bage]
+
+f_nearest7(array<level> x1, array<level> x2, array<level> x3, array<level> x4, array<level> x5, array<level> x6, array<level> x7, bool is_bull) =>
+    float best = na
+    int   bage = na
+    [c1, g1] = f_nearest(x1, is_bull)
+    if not na(c1) and (na(best) or math.abs(close - c1) < math.abs(close - best))
+        best := c1
+        bage := g1
+    [c2, g2] = f_nearest(x2, is_bull)
+    if not na(c2) and (na(best) or math.abs(close - c2) < math.abs(close - best))
+        best := c2
+        bage := g2
+    [c3, g3] = f_nearest(x3, is_bull)
+    if not na(c3) and (na(best) or math.abs(close - c3) < math.abs(close - best))
+        best := c3
+        bage := g3
+    [c4, g4] = f_nearest(x4, is_bull)
+    if not na(c4) and (na(best) or math.abs(close - c4) < math.abs(close - best))
+        best := c4
+        bage := g4
+    [c5, g5] = f_nearest(x5, is_bull)
+    if not na(c5) and (na(best) or math.abs(close - c5) < math.abs(close - best))
+        best := c5
+        bage := g5
+    [c6, g6] = f_nearest(x6, is_bull)
+    if not na(c6) and (na(best) or math.abs(close - c6) < math.abs(close - best))
+        best := c6
+        bage := g6
+    [c7, g7] = f_nearest(x7, is_bull)
+    if not na(c7) and (na(best) or math.abs(close - c7) < math.abs(close - best))
+        best := c7
+        bage := g7
+    [best, bage]
+
+[nbl, nag] = f_nearest7(lo_a, lo_b, lo_c, lo_d, lo_e, lo_f, lo_g, true)
+[nsl, mag] = f_nearest7(up_a, up_b, up_c, up_d, up_e, up_f, up_g, false)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIGNALS — cooldown (default 0 = earliest entry), confirmed-bar only
+// ─────────────────────────────────────────────────────────────────────────────
+var int last_birth_bull = na
+var int last_birth_bear = na
+var int last_srv_bull   = na
+var int last_srv_bear   = na
+var int last_eld_bull   = na
+var int last_eld_bear   = na
+var int last_ret_bull   = na
+var int last_ret_bear   = na
+
+f_cd_ok(int last_i) =>
+    na(last_i) or cooldown_bars <= 0 or (bar_index - last_i) > cooldown_bars
+
+bool sig_birth_bull = (ba or bb or bc or bd or be or bf or bg) and barstate.isconfirmed and f_cd_ok(last_birth_bull)
+bool sig_birth_bear = (sa or sb or sc or sd or se or sf or sg) and barstate.isconfirmed and f_cd_ok(last_birth_bear)
+int bsc = math.max(xba, xbb, xbc, xbd, xbe, xbf, xbg)
+int ssc = math.max(xsa, xsb, xsc, xsd, xse, xsf, xsg)
+string bgrade = bsc >= grade_a_min ? "A" : bsc >= grade_b_min ? "B" : "C"
+string sgrade = ssc >= grade_a_min ? "A" : ssc >= grade_b_min ? "B" : "C"
+bool sig_birtha_bull = sig_birth_bull and bsc >= grade_a_min
+bool sig_birtha_bear = sig_birth_bear and ssc >= grade_a_min
+bool sig_srv_bull = (srvla or srvlb or srvlc or srvld or srvle or srvlf or srvlg) and f_cd_ok(last_srv_bull)
+bool sig_srv_bear = (srvua or srvub or srvuc or srvud or srvue or srvuf or srvug) and f_cd_ok(last_srv_bear)
+bool sig_eld_bull = (eldla or eldlb or eldlc or eldld or eldle or eldlf or eldlg) and f_cd_ok(last_eld_bull)
+bool sig_eld_bear = (eldua or eldub or elduc or eldud or eldue or elduf or eldug) and f_cd_ok(last_eld_bear)
+bool sig_ret_bull = not na(nbl) and math.abs(close - nbl) <= ret_atr_mult * atr_v and not sig_birth_bull and barstate.isconfirmed and f_cd_ok(last_ret_bull)
+bool sig_ret_bear = not na(nsl) and math.abs(close - nsl) <= ret_atr_mult * atr_v and not sig_birth_bear and barstate.isconfirmed and f_cd_ok(last_ret_bear)
+
+if sig_birth_bull
+    last_birth_bull := bar_index
+if sig_birth_bear
+    last_birth_bear := bar_index
+if sig_srv_bull
+    last_srv_bull := bar_index
+if sig_srv_bear
+    last_srv_bear := bar_index
+if sig_eld_bull
+    last_eld_bull := bar_index
+if sig_eld_bear
+    last_eld_bear := bar_index
+if sig_ret_bull
+    last_ret_bull := bar_index
+if sig_ret_bear
+    last_ret_bear := bar_index
+
+bool fire_birth_bull = show_birth_bull and sig_birth_bull
+bool fire_birth_bear = show_birth_bear and sig_birth_bear
+bool fire_srv_bull = show_srv_bull   and sig_srv_bull
+bool fire_srv_bear = show_srv_bear   and sig_srv_bear
+bool fire_eld_bull = show_eld_bull   and sig_eld_bull
+bool fire_eld_bear = show_eld_bear   and sig_eld_bear
+bool fire_birtha_bull = show_birtha_bull and sig_birtha_bull
+bool fire_birtha_bear = show_birtha_bear and sig_birtha_bear
+bool fire_ret_bull = show_ret_bull   and sig_ret_bull
+bool fire_ret_bear = show_ret_bear   and sig_ret_bear
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VPs — 8 real plotshapes, side-typed, distinct shape×location per direction
+// family, bare const colors (P-017), white letter codes (LAW II).
+// B=Birth S=Survivor E=Elder R=Return
+// ─────────────────────────────────────────────────────────────────────────────
+plotshape(fire_birth_bull, "Birth Bull", shape.triangleup, location=location.belowbar, color=#00E676, size=size.small, text="B", textcolor=color.white)
+plotshape(fire_birth_bear, "Birth Bear", shape.triangledown, location=location.abovebar, color=#FF1744, size=size.small, text="B", textcolor=color.white)
+plotshape(fire_birtha_bull, "A-Birth Bull", shape.labelup, location=location.belowbar, color=#1DE9B6, size=size.normal, text="A", textcolor=color.white)
+plotshape(fire_birtha_bear, "A-Birth Bear", shape.labeldown, location=location.abovebar, color=#FF5252, size=size.normal, text="A", textcolor=color.white)
+plotshape(fire_srv_bull, "Survivor Bull", shape.circle, location=location.belowbar, color=#00B0FF, size=size.small, text="S", textcolor=color.white)
+plotshape(fire_srv_bear, "Survivor Bear", shape.circle, location=location.abovebar, color=#F50057, size=size.small, text="S", textcolor=color.white)
+plotshape(fire_eld_bull, "Elder Bull", shape.diamond, location=location.bottom, color=#18FFFF, size=size.small, text="E", textcolor=color.white)
+plotshape(fire_eld_bear, "Elder Bear", shape.diamond, location=location.top, color=#FF4081, size=size.small, text="E", textcolor=color.white)
+plotshape(fire_ret_bull, "Return Bull", shape.xcross, location=location.belowbar, color=#64DD17, size=size.small, text="R", textcolor=color.white)
+plotshape(fire_ret_bear, "Return Bear", shape.xcross, location=location.abovebar, color=#D500F9, size=size.small, text="R", textcolor=color.white)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ALERTS — 8 alertconditions + al_-gated slim emissions (1:1:1 law)
+// ─────────────────────────────────────────────────────────────────────────────
+alertcondition(sig_birth_bull, "Birth Bull",    "VOB BB1 — new bull zone confirmed (ORIGIN, earliest entry)")
+alertcondition(sig_birth_bear, "Birth Bear",    "VOB BB1 — new bear zone confirmed (ORIGIN, earliest entry)")
+alertcondition(sig_birtha_bull, "A-Birth Bull", "VOB BB1 — GRADE-A bull birth (calibrated ~77.5% hold)")
+alertcondition(sig_birtha_bear, "A-Birth Bear", "VOB BB1 — GRADE-A bear birth (calibrated ~77.5% hold)")
+alertcondition(sig_srv_bull,   "Survivor Bull", "VOB BB1 — bull birth level lineage age crossed A*")
+alertcondition(sig_srv_bear,   "Survivor Bear", "VOB BB1 — bear birth level lineage age crossed A*")
+alertcondition(sig_eld_bull,   "Elder Bull",    "VOB BB1 — bull birth level lineage age crossed 3·A*")
+alertcondition(sig_eld_bear,   "Elder Bear",    "VOB BB1 — bear birth level lineage age crossed 3·A*")
+alertcondition(sig_ret_bull,   "Return Bull",   "VOB BB1 — price revisited a living bull birth level (RETURN, not a birth)")
+alertcondition(sig_ret_bear,   "Return Bear",   "VOB BB1 — price revisited a living bear birth level (RETURN, not a birth)")
+
+f_tail() =>
+    "|TICKER:" + syminfo.ticker + "|TF:" + timeframe.period + "|CLOSE:" + str.tostring(math.round(close * 100) / 100)
+
+bool conf = barstate.isconfirmed
+bool alf_birth_bull = al_birth_bull and sig_birth_bull
+bool alf_birth_bear = al_birth_bear and sig_birth_bear
+bool alf_srv_bull = al_srv_bull and sig_srv_bull
+bool alf_srv_bear = al_srv_bear and sig_srv_bear
+bool alf_eld_bull = al_eld_bull and sig_eld_bull
+bool alf_eld_bear = al_eld_bear and sig_eld_bear
+bool alf_birtha_bull = al_birtha_bull and sig_birtha_bull
+bool alf_birtha_bear = al_birtha_bear and sig_birtha_bear
+bool alf_ret_bull = al_ret_bull and sig_ret_bull
+bool alf_ret_bear = al_ret_bear and sig_ret_bear
+
+if conf
+    if alf_birth_bull
+        alert("VOBBB_BIRTH|DIR:BULL" + f_tail() + "|SENS:" + (ba ? "A," : "") + (bb ? "B," : "") + (bc ? "C," : "") + (bd ? "D," : "") + (be ? "E," : "") + (bf ? "F," : "") + (bg ? "G" : "") + "|SCORE:" + str.tostring(bsc) + "|GRADE:" + bgrade, alert.freq_once_per_bar_close)
+    if alf_birth_bear
+        alert("VOBBB_BIRTH|DIR:BEAR" + f_tail() + "|SENS:" + (sa ? "A," : "") + (sb ? "B," : "") + (sc ? "C," : "") + (sd ? "D," : "") + (se ? "E," : "") + (sf ? "F," : "") + (sg ? "G" : "") + "|SCORE:" + str.tostring(ssc) + "|GRADE:" + sgrade, alert.freq_once_per_bar_close)
+    if alf_birtha_bull
+        alert("VOBBB_BIRTH_A|DIR:BULL" + f_tail() + "|SCORE:" + str.tostring(bsc) + "|GRADE:A", alert.freq_once_per_bar_close)
+    if alf_birtha_bear
+        alert("VOBBB_BIRTH_A|DIR:BEAR" + f_tail() + "|SCORE:" + str.tostring(ssc) + "|GRADE:A", alert.freq_once_per_bar_close)
+    if alf_srv_bull
+        alert("VOBBB_SURVIVOR|DIR:BULL" + f_tail() + "|ASTAR:" + str.tostring(astar_a) + "-" + str.tostring(astar_g), alert.freq_once_per_bar_close)
+    if alf_srv_bear
+        alert("VOBBB_SURVIVOR|DIR:BEAR" + f_tail() + "|ASTAR:" + str.tostring(astar_a) + "-" + str.tostring(astar_g), alert.freq_once_per_bar_close)
+    if alf_eld_bull
+        alert("VOBBB_ELDER|DIR:BULL" + f_tail(), alert.freq_once_per_bar_close)
+    if alf_eld_bear
+        alert("VOBBB_ELDER|DIR:BEAR" + f_tail(), alert.freq_once_per_bar_close)
+    if alf_ret_bull
+        alert("VOBBB_RETURN|DIR:BULL" + f_tail() + "|LVL:" + str.tostring(math.round(nbl * 100) / 100) + "|LVL_AGE:" + str.tostring(nag), alert.freq_once_per_bar_close)
+    if alf_ret_bear
+        alert("VOBBB_RETURN|DIR:BEAR" + f_tail() + "|LVL:" + str.tostring(math.round(nsl * 100) / 100) + "|LVL_AGE:" + str.tostring(mag), alert.freq_once_per_bar_close)
