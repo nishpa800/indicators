@@ -1,5 +1,25 @@
 # kc-combo CHANGELOG
 
+## v4.2 pair — 2026-07-26 (GATE CASCADE + LAW-RIGOR; supersedes v4.1 on UX refusal)
+- OPERATOR CHARGE (PROVED): 40 typed per-dp displacement floats = "maniacal". FIX =
+  GATE CASCADE: per-dp DROPDOWN -> GROUP (Pairs/Triples/Quads/Pentas/HTF/+ANY) ->
+  MASTER. Zero typing anywhere; defaults follow Group->Master so ONE master knob
+  moves every gate; out-of-box behavior byte-equivalent to v4.1 semantics (master
+  disp 3.0, master HV Not required, +ANY disp group Off). Same cascade for HV.
+- LAW-RIGOR (L-62) ENACTED: rigor spectrum R0-R4; new market-meaningful defaults
+  (R3) REQUIRE >=1k MC experiments per VP per variable (probability AND
+  meaningfulness) or a dated calibration debt. Enforced by indicator_study_gate
+  v1.6 axis A12 (anti T-NORIGOR; battery 24/24). Spec:
+  docs/2026-07-26_TV-TickBar-RE_W-VPCAL-DetectionCalibration-RigorSpectrum_v1.0.md.
+  Templates: T-CALIB v1.0 born; T-VP v1.4 (IPSF cascade law: >=10-lane gate
+  families MUST ship as cascades, flat typed floats REFUSED design).
+- v4.2 rigor: R3 with calibration debt due 2026-08-02 (W-VPCAL campaign; wave 1
+  base rates launched on lake Silver same session). Current defaults = R2
+  provenance (operator-dictated 3.0 / Not-required).
+- Gates: study v1.6 PROVED x2 D_bytes=0 (50/64) · visual_identity D_vis=0 ·
+  CS-1 D_cs1=0 x2 · 1:1:1 D_111=0 x2 · battery 24/24 (58/58 regression).
+
+
 ## v4.1 pair — 2026-07-25 (VISUAL-IDENTITY LAW II; supersedes v4, operator visual refusal)
 - OPERATOR CHARGES (all PROVED): bull yellows confusable with bear oranges; every
   bear marker piled abovebar / every bull marker belowbar (unreadable stacks); no
