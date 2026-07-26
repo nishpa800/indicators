@@ -1,5 +1,13 @@
 # kc-combo CHANGELOG
 
+## v4.3 pair — 2026-07-26 (context-line default visibility; operator order)
+- BULL default-visible context: KC Lower + BULL Combo Count ONLY. BEAR: KC Upper +
+  BEAR Combo Count ONLY. KC Basis, Supertrend, and the opposite band ship UNCHECKED
+  (display.none — re-checkable per row in the Style tab; hidden plots still count,
+  budget unchanged 50/64 x2). Everything else identical to v4.2.
+- Gates: study v1.6 PROVED x2 D_bytes=0 · D_vis=0 · D_cs1=0 x2 · D_111=0 x2.
+
+
 ## v4.2 pair — 2026-07-26 (GATE CASCADE + LAW-RIGOR; supersedes v4.1 on UX refusal)
 - OPERATOR CHARGE (PROVED): 40 typed per-dp displacement floats = "maniacal". FIX =
   GATE CASCADE: per-dp DROPDOWN -> GROUP (Pairs/Triples/Quads/Pentas/HTF/+ANY) ->
