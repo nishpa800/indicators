@@ -1,0 +1,1252 @@
+//@version=5
+// ╔════════════════════════════════════════════════════════════════════════╗
+// ║  KC COMBO BULL v4.2 — MAXED SIDE STUDY — 2026-07-26 — chart_domain=time
+// ║  Supersedes v4 (REFUTED on operator visual review: bull-yellow vs bear-
+// ║  orange confusable; all markers piled in one band; no on-chart language).
+// ║  VISUAL-IDENTITY LAW II (operator-dictated 2026-07-25) enacted:
+// ║  LEGEND (white code on every marker): B=PB J=PBJ C=RC S=RS U=PUP D=PPD
+// ║  X=Displacement · combos read as letter runs (BS=PB+RS, JCSUX=PBJ+RC+RS+
+// ║  PUP+D) · dotted = ported member coincident with ANY combo: H.A=HVD+ANY,
+// ║  UC.A, CS1.A, CS2.A, M.A, CC.A · A=ANY combo · 2+/3+=confluence · N=Naga.
+// ║  COLOR = SIDE (LAW II, 0% overlap): BULL cool (blues/greens/cyans) ·
+// ║  BEAR hot (reds/pinks/magentas) · YELLOW + ORANGE BANNED (confusable).
+// ║  BANDS: belowbar=BULL MAIN + BEAR agg · abovebar=BEAR MAIN + BULL agg ·
+// ║  bottom=BULL HTF + BEAR +ANY · top=BEAR HTF + BULL +ANY.
+// ║  CONTENTS: 23 MAIN (C01-C23) + 11 HTF (H01-H11) + 6 +ANY (A01-A06)
+// ║  + ANY/2PLUS/3PLUS/NAGASAKI + KC basis/upper/lower + Supertrend (neutral
+// ║  grays, shared context by declaration) + combo count (data window).
+// ║  UNIT LAW (P-019): 44 dp + 5 plot() + 1 ANY alertcondition = 50/64;
+// ║  text + white textcolor are FREE; every color a bare #hex const.
+// ║  PORTED ENGINES (verbatim asserted slices, v4 provenance unchanged):
+// ║  CCC v1 (CS1/CS2/MAT/UC/CC — chain = back-to-back pair law, as-is) ·
+// ║  HVD (BULLISH v1). IPSF: combos DISP 3.0 + HV dropdown; +ANY
+// ║  lanes DISP 0.0 + HV off (member engines carry own thresholds).
+// ║  GATE CASCADE (v4.2, operator order): per-dp dropdown → GROUP (Pairs/
+// ║  Triples/Quads/Pentas/HTF/+ANY) → MASTER. Defaults: everything follows
+// ║  Group→Master (disp 3.0, HV Not required; +ANY disp group: Off) — one
+// ║  MASTER knob moves every gate; zero typing (all dropdowns). Calibrated
+// ║  per-group defaults = W-VPCAL campaign output (R3 calibration debt).
+// ║  L-61 GRAPHIC-OBJECT INVENTORY: 0. OFFSET REGISTRY: all dp offset=0.
+// ╚════════════════════════════════════════════════════════════════════════╝
+import TradingView/ta/7 as tv_ta
+indicator("KC COMBO BULL (44 dp, maxed) v4.2", shorttitle="KCCB44 v4.2", overlay=true, max_bars_back=5000)
+// ============================================================================
+// SHARED — confirmed-bar gate
+// ============================================================================
+conf = barstate.isconfirmed
+
+// ============================================================================
+// INPUTS — OKEH Zoo Engine  (defaults preserved verbatim from PBJ PB CONSOL)
+// ============================================================================
+grp_eng = "OKEH — Zoo Engine"
+zoo_ma_type   = input.string("VWMA", "Base MA Type", options=["VWMA","EMA","SMA","WMA","HMA"], group=grp_eng)
+zoo_ma_len    = input.int(5, "Base MA Length", minval=1, group=grp_eng)
+zoo_price_src = input.source(close, "Price Source", group=grp_eng)
+
+grp_pbj_filter = "OKEH — PB&J Filter"
+zoo_pbj_ma_period   = input.int(20,   "MA Period",          minval=1,  group=grp_pbj_filter)
+zoo_pbj_atr_period  = input.int(14,   "ATR Period",         minval=1,  group=grp_pbj_filter)
+zoo_pbj_hh_ll       = input.int(25,   "HH/LL Lookback",     minval=1,  group=grp_pbj_filter)
+zoo_pbj_atr_mult    = input.float(3.0,"ATR Multiplier",     step=0.1,  group=grp_pbj_filter)
+zoo_pbj_vol_period  = input.int(20,   "Volume MA Period",   minval=1,  group=grp_pbj_filter)
+zoo_pbj_vol_mult    = input.float(0.1,"Volume Multiplier",  step=0.1,  group=grp_pbj_filter)
+
+grp_st = "OKEH — Supertrend"
+zoo_use_st    = input.bool(true,  "Apply ATR Supertrend", group=grp_st)
+zoo_st_period = input.int(10,     "ATR Period",           group=grp_st)
+zoo_st_mult   = input.float(2.0,  "Multiplier",           group=grp_st)
+
+group_kc_indicator  = "KC: Indicator Settings"
+string kc_maType     = input.string("EMA", "MA Type", options=["SMA", "EMA", "HMA", "VWMA", "LSMA"], group=group_kc_indicator)
+int    kc_length     = input.int(20, "MA Length", minval=1, group=group_kc_indicator)
+float  kc_mult       = input.float(2.0, "Multiplier", minval=0.001, group=group_kc_indicator)
+kc_src               = input.source(close, "Source", group=group_kc_indicator)
+string kc_bandsStyle = input.string("Average True Range", "Bands Style", options=["Average True Range", "True Range", "Range"], group=group_kc_indicator)
+int    kc_atrLength  = input.int(10, "ATR Length", minval=1, group=group_kc_indicator)
+
+group_kc_slope_calc = "KC: Slope Calculation Settings"
+int   kc_slopeLookbackBars     = input.int(3, "Slope Lookback Bars", minval=1, group=group_kc_slope_calc)
+float kc_bullishSlopeThreshold = input.float(title="Bullish Slope Threshold", defval=0.05, step=0.001, group=group_kc_slope_calc)
+float kc_bearishSlopeThreshold = input.float(title="Bearish Slope Threshold", defval=0.05, step=0.001, group=group_kc_slope_calc)
+
+grp_pp = "Pocket Pivot (PUP / PPD)"
+barSize    = input.float(3.0, "% Change (Barsize)", minval=0.1, step=0.1, group=grp_pp)
+ppLookback = input.int(10, "Lookback Days", minval=1, group=grp_pp)
+
+grp_disp = "Displacement MEMBER engine (the D in combo names; NOT the per-dp gate)"
+disp_type   = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp)
+disp_len    = input.int(100, "Std Dev Length", minval=1, group=grp_disp)
+disp_mult   = input.float(4.5, "Std Dev Multiplier (member D)", minval=0.1, step=0.1, group=grp_disp)
+
+// ============================================================================
+// ENGINE — Zoo Moving Average  (verbatim)
+// ============================================================================
+f_ma(src, len, t) =>
+    switch t
+        "EMA"  => ta.ema(src, len)
+        "SMA"  => ta.sma(src, len)
+        "WMA"  => ta.wma(src, len)
+        "HMA"  => ta.hma(src, len)
+        "VWMA" => ta.vwma(src, len)
+        => ta.sma(src, len)
+
+float base_ma = f_ma(zoo_price_src, zoo_ma_len, zoo_ma_type)
+
+// ============================================================================
+// ENGINE — Supertrend  (verbatim)
+// ============================================================================
+float st_atr     = zoo_st_mult * ta.atr(zoo_st_period)
+float dyn_long   = base_ma - st_atr
+float dyn_short  = base_ma + st_atr
+
+var int st_dir   = 1
+float sig_line   = 0.0
+float curr_long  = 0.0
+curr_long  := base_ma > nz(curr_long[1], dyn_long)   ? math.max(dyn_long, nz(curr_long[1]))   : dyn_long
+float curr_short = 0.0
+curr_short := base_ma < nz(curr_short[1], dyn_short) ? math.min(dyn_short, nz(curr_short[1])) : dyn_short
+
+if zoo_use_st
+    if nz(st_dir[1]) == -1 and zoo_price_src > nz(curr_short[1])
+        st_dir := 1
+    else if nz(st_dir[1]) == 1 and zoo_price_src < nz(curr_long[1])
+        st_dir := -1
+    sig_line := st_dir == 1 ? curr_long : curr_short
+else
+    sig_line := base_ma
+
+// ============================================================================
+// ENGINE — Crossovers & Re-acceleration  (verbatim)
+// ============================================================================
+bool buy_cross    = ta.crossover(zoo_price_src, sig_line)
+bool sell_cross   = ta.crossunder(zoo_price_src, sig_line)
+bool is_rising    = sig_line > nz(sig_line[1])
+bool is_falling   = sig_line < nz(sig_line[1])
+bool bull_reaccel = st_dir == 1  and is_rising  and nz(sig_line[1]) == nz(sig_line[2])
+bool bear_reaccel = st_dir == -1 and is_falling and nz(sig_line[1]) == nz(sig_line[2])
+
+// ============================================================================
+// ENGINE — PB&J Filter  (verbatim)
+// ============================================================================
+float pbj_ma  = ta.ema(close, zoo_pbj_ma_period)
+float pbj_atr = ta.atr(zoo_pbj_atr_period)
+float avg_vol = ta.sma(volume, zoo_pbj_vol_period)
+float thresh  = close == 0 ? 0 : (pbj_atr / close * zoo_pbj_atr_mult)
+
+bool pbj_buy  = low  < pbj_ma * (1 - thresh) and low  == ta.lowest(low, zoo_pbj_hh_ll)   and volume > avg_vol * zoo_pbj_vol_mult
+bool pbj_sell = high > pbj_ma * (1 + thresh) and high == ta.highest(high, zoo_pbj_hh_ll) and volume > avg_vol * zoo_pbj_vol_mult
+
+// ============================================================================
+// ENGINE — Level Management (PB zones)  (verbatim)
+// ============================================================================
+type lvl
+    float upper
+    float lower
+    float vol
+    bool  approached
+
+float atr_pb = ta.atr(14) * 2.0
+
+var bull_lvls = array.new<lvl>()
+var bear_lvls = array.new<lvl>()
+
+f_add_lvl(arr, up, lo, v) =>
+    if math.abs(up - lo) >= syminfo.mintick
+        array.push(arr, lvl.new(up, lo, v, false))
+
+f_add_lander(is_bull, cross, arr) =>
+    if cross
+        float up = 0.0
+        float lo = 0.0
+        if is_bull
+            up := math.max(open[1], close[1])
+            lo := low[1]
+            if up - lo < atr_pb * 0.5
+                up := lo + atr_pb * 0.5
+        else
+            up := high[1]
+            lo := math.min(open[1], close[1])
+            if up - lo < atr_pb * 0.5
+                lo := up - atr_pb * 0.5
+        f_add_lvl(arr, up, lo, volume[1])
+
+f_add_reaccel(is_bull, sig, arr) =>
+    if sig and not na(sig_line)
+        float p1 = sig_line
+        float p2 = is_bull ? math.min(open, close) : math.max(open, close)
+        f_add_lvl(arr, math.max(p1, p2), math.min(p1, p2), volume)
+
+f_check_approach(arr, is_bull) =>
+    bool approached = false
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0
+            if i >= array.size(arr)
+                continue
+            l = array.get(arr, i)
+            if is_bull and close < l.lower
+                array.remove(arr, i)
+                continue
+            if not is_bull and close > l.upper
+                array.remove(arr, i)
+                continue
+            float ap = is_bull ? l.upper * 1.005 : l.lower * 0.995
+            if is_bull
+                if not l.approached and low <= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and low > l.upper
+                    l.approached := false
+            else
+                if not l.approached and high >= ap
+                    approached := true
+                    l.approached := true
+                else if l.approached and high < l.lower
+                    l.approached := false
+    approached
+
+f_add_lander(true,  buy_cross,  bull_lvls)
+f_add_lander(false, sell_cross, bear_lvls)
+f_add_reaccel(true,  bull_reaccel, bull_lvls)
+f_add_reaccel(false, bear_reaccel, bear_lvls)
+
+var bool wait_buy      = false
+var bool wait_sell     = false
+var bool wait_pbj_buy  = false
+var bool wait_pbj_sell = false
+
+if barstate.isconfirmed
+    if f_check_approach(bull_lvls, true)
+        wait_buy := true
+    if f_check_approach(bear_lvls, false)
+        wait_sell := true
+
+if pbj_buy
+    wait_pbj_buy := true
+if pbj_sell
+    wait_pbj_sell := true
+
+while array.size(bull_lvls) > 30
+    array.shift(bull_lvls)
+while array.size(bear_lvls) > 30
+    array.shift(bear_lvls)
+
+bool pre_pb_buy   = buy_cross and wait_buy
+bool pre_pbj_buy  = buy_cross and wait_pbj_buy
+bool pre_pb_sell  = sell_cross and wait_sell
+bool pre_pbj_sell = sell_cross and wait_pbj_sell
+
+if pre_pb_buy
+    wait_buy     := false
+if pre_pbj_buy
+    wait_pbj_buy := false
+if pre_pb_sell
+    wait_sell     := false
+if pre_pbj_sell
+    wait_pbj_sell := false
+
+bool sigBullPB  = barstate.isconfirmed and pre_pb_buy and not pre_pbj_buy
+bool sigBullPBJ = barstate.isconfirmed and pre_pbj_buy
+bool sigBearPB  = barstate.isconfirmed and pre_pb_sell and not pre_pbj_sell
+bool sigBearPBJ = barstate.isconfirmed and pre_pbj_sell
+
+// ============================================================================
+// ENGINE — KC Basis and Bands  (KC Rev 8, verbatim)
+// ============================================================================
+kc_ma = switch kc_maType
+    "SMA"  => ta.sma(kc_src, kc_length)
+    "EMA"  => ta.ema(kc_src, kc_length)
+    "HMA"  => ta.hma(kc_src, kc_length)
+    "VWMA" => ta.vwma(kc_src, kc_length)
+    "LSMA" => ta.linreg(kc_src, kc_length, 0)
+
+kc_range_val = switch kc_bandsStyle
+    "True Range"         => ta.tr(true)
+    "Average True Range" => ta.atr(kc_atrLength)
+    => ta.rma(high - low, kc_length)
+
+kc_upper = kc_ma + kc_range_val * kc_mult
+kc_lower = kc_ma - kc_range_val * kc_mult
+
+kc_cross_above_basis      = ta.crossover(kc_src, kc_ma)
+kc_cross_below_basis      = ta.crossunder(kc_src, kc_ma)
+kc_reentry_from_above     = ta.crossunder(kc_src, kc_upper)
+kc_reentry_from_below     = ta.crossover(kc_src, kc_lower)
+
+kc_current_slope           = kc_ma - kc_ma[1]
+kc_prior_trend_change      = kc_ma[1] - kc_ma[kc_slopeLookbackBars]
+kc_midline_bullish_signal  = kc_current_slope > kc_bullishSlopeThreshold and kc_prior_trend_change < (kc_bullishSlopeThreshold / 2)
+kc_midline_bearish_signal  = kc_current_slope < (-kc_bearishSlopeThreshold) and kc_prior_trend_change > (-kc_bearishSlopeThreshold / 2)
+
+var waiting_for_bearish_cross = false
+var waiting_for_bullish_cross = false
+
+if kc_reentry_from_above
+    waiting_for_bearish_cross := true
+if kc_cross_above_basis
+    waiting_for_bearish_cross := false
+bearish_reentry_cross_signal = waiting_for_bearish_cross and kc_cross_below_basis
+if bearish_reentry_cross_signal
+    waiting_for_bearish_cross := false
+
+if kc_reentry_from_below
+    waiting_for_bullish_cross := true
+if kc_cross_below_basis
+    waiting_for_bullish_cross := false
+bullish_reentry_cross_signal = waiting_for_bullish_cross and kc_cross_above_basis
+if bullish_reentry_cross_signal
+    waiting_for_bullish_cross := false
+
+var waiting_for_slope_bearish = false
+var waiting_for_slope_bullish = false
+
+if kc_reentry_from_above
+    waiting_for_slope_bearish := true
+bearish_reentry_slope_signal = waiting_for_slope_bearish and kc_midline_bearish_signal
+if bearish_reentry_slope_signal
+    waiting_for_slope_bearish := false
+
+if kc_reentry_from_below
+    waiting_for_slope_bullish := true
+bullish_reentry_slope_signal = waiting_for_slope_bullish and kc_midline_bullish_signal
+if bullish_reentry_slope_signal
+    waiting_for_slope_bullish := false
+
+// DEVIATION-1 (disclosed): source master toggles showReentryCrosses/Slopes REMOVED —
+// per-dp VP checkboxes are the ONLY visibility control in this study.
+bool sigBullReCross = bullish_reentry_cross_signal
+bool sigBearReCross = bearish_reentry_cross_signal
+bool sigBullReSlope = bullish_reentry_slope_signal
+bool sigBearReSlope = bearish_reentry_slope_signal
+
+// ============================================================================
+// ENGINE — Pocket Pivot (PUP / PPD)  (verbatim; master toggles removed, DEVIATION-2)
+// ============================================================================
+float redVol = close < open ? volume : 0.0
+float greenVol = close > open ? volume : 0.0
+float hiRedVol = ta.highest(redVol[1], ppLookback)
+float hiGreenVol = ta.highest(greenVol[1], ppLookback)
+
+bool priceUp = ((close - open) / open) * 100 > barSize
+bool priceDn = ((open - close) / open) * 100 > barSize
+bool volBull = volume > hiRedVol
+bool volBear = volume > hiGreenVol
+
+bool sPPBull = priceUp and volBull
+bool sPPBear = priceDn and volBear
+
+bool sigPUP = conf and sPPBull
+bool sigPPD = conf and sPPBear
+
+// ============================================================================
+// ENGINE — Displacement MEMBER (the D in combo names; verbatim S11/S12 FVG form)
+// ============================================================================
+float disp_rng = disp_type == "Open to Close" ? math.abs(open - close) : high - low
+float disp_std = ta.stdev(disp_rng, disp_len)
+float disp_thresh = disp_std * disp_mult
+bool  disp_prevDisp = disp_rng[1] > disp_thresh[1]
+bool  disp_bullFVG  = low > high[2] and close[1] > open[1]
+bool  disp_bearFVG  = high < low[2] and close[1] < open[1]
+
+bool sigDispBull = conf and disp_prevDisp and disp_bullFVG
+bool sigDispBear = conf and disp_prevDisp and disp_bearFVG
+
+// ============================================================================
+// ENGINE — Nagasaki (all-time-high volume; HW SINGLE construction)
+// ============================================================================
+var float navMaxVolEver = 0.0
+bool isNaga = conf and volume > navMaxVolEver
+if conf
+    navMaxVolEver := math.max(navMaxVolEver, volume)
+
+// ============================================================================
+// GATES — per-dp IPSF gate functions
+//   Displacement gate: same-candle |range| > m × stdev(range, len); m=0 → not required.
+//   HV gate: rank-1-in-N (volume == highest of last N incl. self; >= form for float
+//   safety — mathematically identical). INCLUSIVE ≥ semantics: highest-of-4000 and
+//   Nagasaki automatically pass any smaller N. "Nagasaki" option = ATH volume only.
+// ============================================================================
+f_dispOK(float m) =>
+    m <= 0.0 ? true : disp_rng > disp_std * m
+
+f_hvOK(string c) =>
+    int n = (c == "Not required" or c == "Nagasaki") ? 50 : int(str.tonumber(c))
+    float th = ta.highest(volume, n)
+    c == "Not required" ? true : c == "Nagasaki" ? isNaga : conf and volume >= th
+
+
+// ═══ PORTED ENGINE — CCC v1 (verbatim slice) ═══
+grp_align = "Unified Combo — Alignment"
+grpRV = "── RVOL ──"
+int rv_avgLen = input.int(30, "RVOL Avg Length", group=grpRV)
+int rv_smaLen = input.int(20, "RVOL SMA Length", group=grpRV)
+groupReg = "RVOL - Reg @ Time"
+reg_anchorTimeframe = input.timeframe("", "Anchor Timeframe (blank = chart)", group=groupReg)
+reg_length = input.int(30, "Length", minval=1, group=groupReg)
+reg_adjustRealtime = input.bool(true, "Adjust Unconfirmed", group=groupReg)
+groupHybrid = "Hybrid LONG 1-5"
+hyb_autoDerive = input.bool(true, "★ Auto-derive ALL Long thresholds (RVOL 1x → 2x ladder)", group=groupHybrid, tooltip="When ON, the 15 Reg/Cum/Body inputs below are IGNORED and the Reg floors are auto-computed as a linear ladder from RVOL 1x (Long 5) up to 2× RVOL 1x (Long 1). When OFF, the manual values below are used.")
+hyb_addReg1 = input.float(5.0, "Long 1 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_addCum1 = input.float(3.0, "Long 1 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd1")
+hyb_bodyRat1 = input.float(0.74, "Long 1 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg2 = input.float(5.0, "Long 2 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_addCum2 = input.float(3.0, "Long 2 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd2")
+hyb_bodyRat2 = input.float(0.74, "Long 2 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg3 = input.float(5.0, "Long 3 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_addCum3 = input.float(3.0, "Long 3 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd3")
+hyb_bodyRat3 = input.float(0.74, "Long 3 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg4 = input.float(5.0, "Long 4 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_addCum4 = input.float(3.0, "Long 4 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd4")
+hyb_bodyRat4 = input.float(0.74, "Long 4 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+hyb_addReg5 = input.float(5.0, "Long 5 Reg Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_addCum5 = input.float(3.0, "Long 5 Cum Floor", minval=0.5, step=0.1, group=groupHybrid, inline="hadd5")
+hyb_bodyRat5 = input.float(0.74, "Long 5 Min Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=groupHybrid)
+i_req_fvg = input.bool(true, "Require FVG for Displacement", group=grp_align, tooltip="Fauna's master-offset switch. ON (fauna default): moff=1 — Musashi's PUP/Whale/PBJ legs and the Musashi first-bar check read bar[1]; plot offset -1. OFF: moff=0, all offset-0.")
+grp_hgz = "Unified Combo — GZ1 / HV FVG"
+hgz_auto = input.bool(true, "Auto FVG Threshold", group=grp_hgz)
+hgz_threshPct = input.float(2, "FVG Threshold %", minval=0, maxval=100, step=0.1, group=grp_hgz)
+hgz_dist = input.int(12, "GZ1 Max Bar Distance", minval=1, maxval=200, group=grp_hgz)
+grp_matrix = "Unified Combo — Matrix / Momentum"
+neo_len = input.int(67, "Matrix Number Lookback", minval=1, group=grp_matrix)
+float ls_reg1 = input.float(10.0, "Momentum 1 Reg Floor", minval=0.5, step=0.1, group=grp_matrix), float ls_cum1 = input.float(5.0, "Momentum 1 Cum Floor", minval=0.5, step=0.1, group=grp_matrix), float ls_body1 = input.float(0.69, "Momentum 1 Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=grp_matrix)
+float ls_reg2 = input.float(8.0, "Momentum 2 Reg Floor", minval=0.5, step=0.1, group=grp_matrix), float ls_cum2 = input.float(4.0, "Momentum 2 Cum Floor", minval=0.5, step=0.1, group=grp_matrix), float ls_body2 = input.float(0.69, "Momentum 2 Body Ratio", minval=0.0, maxval=1.0, step=0.01, group=grp_matrix)
+grp_cs = "Unified Combo — Combo Sets"
+cs_bodyPct_FVG = input.float(0.74, "Min Body% FVG", minval=0.0, maxval=1.0, step=0.05, group=grp_cs)
+cs_bodyPct_MAT = input.float(0.74, "Min Body% Matrix", minval=0.0, maxval=1.0, step=0.05, group=grp_cs)
+cs_inc_pentagon_FVG = input.bool(true, "Pentagon in FVG Sets", group=grp_cs)
+cs_inc_pentagon_MAT = input.bool(true, "Pentagon in Matrix Sets", group=grp_cs)
+int _tfSecRaw = timeframe.in_seconds(timeframe.period)
+bool _isTickChart = str.endswith(timeframe.period, "T") or na(_tfSecRaw) or _tfSecRaw <= 0
+int tfSec = _isTickChart ? 10 : _tfSecRaw
+
+bool is_new_day = ta.change(time("D")) != 0
+bool is_new_sess = is_new_day
+
+float _gapSize = math.abs(open - close[1])
+float _barRange = high - low
+string _FIRST = not is_new_sess ? "NOT !!!" : (_gapSize <= _barRange ? "FIRST !!!" : "FIRST XXX")
+
+f_add(string base, string part) => base == "" ? part : base + " + " + part
+
+// ENGINE: RVOL 0.56 (Pre-Mythos)
+float rv_spike = math.abs(close - open)
+float rv_avgSpike = ta.sma(rv_spike, rv_avgLen)[1]
+float rv_normPrice = rv_spike / nz(rv_avgSpike, 1.0)
+float rv_avgVol = ta.sma(volume, rv_avgLen)[1]
+float rv_normVol = volume / nz(rv_avgVol, 1.0)
+float rv_diff = rv_normPrice - rv_normVol
+float rv_posDiff = rv_diff > 0 ? rv_diff : na
+float rv_smaDiff = ta.sma(rv_posDiff, rv_smaLen)
+bool rv_baseBull = (close > open) and (rv_posDiff > rv_smaDiff) and conf
+bool rv_baseBear = (close < open) and (rv_posDiff > rv_smaDiff) and conf
+f_th_1x(int _s) => _s <= 10 ? 38.0 : _s <= 15 ? 33.0 : _s <= 30 ? 28.0 : _s <= 45 ? 23.0 : _s <= 60 ? 20.0 : _s <= 120 ? 18.0 : _s <= 300 ? 13.0 : _s <= 360 ? 13.0 : _s <= 540 ? 11.0 : _s <= 600 ? 10.0 : _s <= 660 ? 9.0 : _s <= 900 ? 7.5 : _s <= 1560 ? 6.5 : _s <= 2340 ? 6.0 : _s <= 3600 ? 4.5 : _s <= 9000 ? 4.0 : _s <= 11700 ? 3.5 : _s < 259200 ? 1.8 : 1.0
+f_th_gs(int _s) => _s < 60 ? f_th_1x(_s) * 3.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 1500 ? 20.0 : _s <= 3000 ? 20.0 : _s <= 7260 ? 10.0 : _s <= 11700 ? 8.0 : _s <= 86400 ? 7.5 : _s <= 259200 ? 3.5 : 3.0
+f_th_saab(int _s) => f_th_1x(_s) * 0.56
+f_th_wtc(int _s) => f_th_1x(_s) * 2.0
+f_th_hiro(int _s) => _s < 60 ? f_th_1x(_s) * 3.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 1500 ? 25.0 : _s <= 3060 ? 20.0 : _s <= 7260 ? 10.0 : _s <= 11700 ? 8.0 : _s <= 86400 ? 7.5 : _s <= 259200 ? 5 : 3.5
+float th_saab = f_th_saab(tfSec)
+float th_1x = f_th_1x(tfSec)
+float th_gs = f_th_gs(tfSec)
+float th_wtc = f_th_wtc(tfSec)
+float th_hiro = f_th_hiro(tfSec)
+bool det_SAAB = rv_baseBull and rv_normPrice >= th_saab and rv_normPrice < th_1x
+bool det_Kratos = rv_baseBear and rv_normPrice >= th_saab and rv_normPrice < th_1x
+bool det_RVOL1xB = rv_baseBull and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_RVOL1xR = rv_baseBear and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_GrandSlam = rv_baseBull and rv_normPrice >= th_gs
+bool det_MOAB = rv_baseBear and rv_normPrice >= th_gs
+
+// ENGINE: RVOL REG @ TIME — WTC / Hiroshima
+string reg_anchorSafe = ((reg_anchorTimeframe == "" and (str.endswith(timeframe.period, "T") or na(timeframe.in_seconds(timeframe.period)) or timeframe.in_seconds(timeframe.period) <= 0)) or str.endswith(reg_anchorTimeframe, "T")) ? "D" : reg_anchorTimeframe
+[rv_curVol_reg, rv_pastVol_reg, _rv_u] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, true, reg_adjustRealtime)
+float rv_relVolRatio = rv_curVol_reg / rv_pastVol_reg
+bool det_WTC = conf and (rv_relVolRatio > th_wtc) and (rv_relVolRatio <= th_hiro)
+bool det_Hiroshima = conf and (rv_relVolRatio > th_hiro)
+
+// ENGINE: HYBRID MOMENTUM LONG 1-5 (feeds ls_regRatio / ls_cumRatio used by matrix Long/Short)
+hybAutoReg5 = th_1x
+hybAutoReg1 = th_1x * 2.0
+hybAutoStep = (hybAutoReg1 - hybAutoReg5) / 4.0
+hybAutoReg2 = hybAutoReg1 - 1.0 * hybAutoStep
+hybAutoReg3 = hybAutoReg1 - 2.0 * hybAutoStep
+hybAutoReg4 = hybAutoReg1 - 3.0 * hybAutoStep
+float hybCumPhi = 1.398 * 1.33
+hybAutoCum1 = hybCumPhi * math.sqrt(math.log(hybAutoReg1))
+hybAutoCum2 = hybCumPhi * math.sqrt(math.log(hybAutoReg2))
+hybAutoCum3 = hybCumPhi * math.sqrt(math.log(hybAutoReg3))
+hybAutoCum4 = hybCumPhi * math.sqrt(math.log(hybAutoReg4))
+hybAutoCum5 = hybCumPhi * math.sqrt(math.log(hybAutoReg5))
+float hybAutoBody1 = 0.74
+float hybAutoBody2 = 0.74
+float hybAutoBody3 = 0.74
+float hybAutoBody4 = 0.74
+float hybAutoBody5 = 0.74
+hybReg1Eff = hyb_autoDerive ? hybAutoReg1 : hyb_addReg1
+hybReg2Eff = hyb_autoDerive ? hybAutoReg2 : hyb_addReg2
+hybReg3Eff = hyb_autoDerive ? hybAutoReg3 : hyb_addReg3
+hybReg4Eff = hyb_autoDerive ? hybAutoReg4 : hyb_addReg4
+hybReg5Eff = hyb_autoDerive ? hybAutoReg5 : hyb_addReg5
+hybCum1Eff = hyb_autoDerive ? hybAutoCum1 : hyb_addCum1
+hybCum2Eff = hyb_autoDerive ? hybAutoCum2 : hyb_addCum2
+hybCum3Eff = hyb_autoDerive ? hybAutoCum3 : hyb_addCum3
+hybCum4Eff = hyb_autoDerive ? hybAutoCum4 : hyb_addCum4
+hybCum5Eff = hyb_autoDerive ? hybAutoCum5 : hyb_addCum5
+hybBody1Eff = hyb_autoDerive ? hybAutoBody1 : hyb_bodyRat1
+hybBody2Eff = hyb_autoDerive ? hybAutoBody2 : hyb_bodyRat2
+hybBody3Eff = hyb_autoDerive ? hybAutoBody3 : hyb_bodyRat3
+hybBody4Eff = hyb_autoDerive ? hybAutoBody4 : hyb_bodyRat4
+hybBody5Eff = hyb_autoDerive ? hybAutoBody5 : hyb_bodyRat5
+[hybRegCur, hybRegPast, _hr] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, false, reg_adjustRealtime)
+[hybCumCur, hybCumPast, _hc] = tv_ta.relativeVolume(reg_length, reg_anchorSafe, true, reg_adjustRealtime)
+hybRegRatio = hybRegCur / hybRegPast
+hybCumRatio = hybCumCur / hybCumPast
+
+moff = i_req_fvg ? 1 : 0
+f_align(sig) => moff == 0 ? sig : sig[1]
+
+// ENGINE: u5 FAUNA (TNT OD variant)
+f_u5FaunaEngine() =>
+    float ATR14 = ta.atr(14)
+    float u5_f_atr = ATR14, float u5_f_avgVol = ta.sma(volume, 20), float u5_f_avgBody = ta.sma(math.abs(close - open), 20)
+    float u5_f_avgDelta = ta.sma(math.abs(close - close[1]), 10), float u5_f_trendMA = ta.sma(close, 50)
+    float u5_f_body = close - open, float u5_f_rng = high - low, float u5_f_bodySz = math.abs(u5_f_body)
+    float u5_f_bodyRat = u5_f_rng == 0 ? 0.0 : u5_f_bodySz / u5_f_rng
+    bool u5_f_up = u5_f_body > 0, bool u5_f_dn = u5_f_body < 0
+    float u5_f_prev_body = close[1] - open[1], float u5_f_prev_range = high[1] - low[1]
+    bool u5_MB_b = u5_f_up and u5_f_bodySz > 1.6 * u5_f_atr and u5_f_bodyRat > 0.70 and volume > 1.8 * u5_f_avgVol
+    bool u5_RE_b = u5_f_up and u5_f_rng > 2.2 * u5_f_atr and (high - close) < 0.15 * u5_f_rng and volume > 1.8 * u5_f_avgVol
+    bool u5_TA_b = u5_f_trendMA > u5_f_trendMA[1] and (close - close[1]) > 1.6 * u5_f_avgDelta and u5_f_up and volume > 1.8 * u5_f_avgVol
+    bool u5_GG_b = (open - close[1]) > 0.9 * u5_f_atr and u5_f_up and low > close[1] and volume > 1.8 * u5_f_avgVol
+    bool u5_StrongBear = close[1] < open[1] and math.abs(u5_f_prev_body) > 1.5 * u5_f_avgBody[1] and volume[1] > 1.5 * u5_f_avgVol[1]
+    bool u5_WeakBear = close[1] < open[1] and (u5_f_prev_range == 0 ? 0.0 : math.abs(u5_f_prev_body) / u5_f_prev_range) <= 0.2
+    bool u5_TR_b = u5_WeakBear and (u5_MB_b or u5_RE_b or u5_TA_b), bool u5_ES_b = u5_StrongBear and (u5_MB_b or u5_RE_b or u5_TA_b), bool u5_GDR_b = close[1] < open[1] and u5_GG_b
+    int u5_b_core = (u5_MB_b ? 1 : 0) + (u5_RE_b ? 1 : 0) + (u5_TA_b ? 1 : 0)
+    bool u5_b_gg_exc = u5_GG_b and not ((u5_b_core >= 2) and (u5_f_bodyRat >= 0.80))
+    bool u5_FAUNABull = barstate.isconfirmed and (u5_MB_b or u5_RE_b or u5_TA_b) and not (u5_TR_b or u5_ES_b or u5_GDR_b or u5_b_gg_exc)
+
+    bool u5_MB_r = u5_f_dn and u5_f_bodySz > 1.6 * u5_f_atr and u5_f_bodyRat > 0.70 and volume > 1.8 * u5_f_avgVol
+    bool u5_RE_r = u5_f_dn and u5_f_rng > 2.2 * u5_f_atr and (close - low) < 0.15 * u5_f_rng and volume > 1.8 * u5_f_avgVol
+    bool u5_TA_r = u5_f_trendMA < u5_f_trendMA[1] and (close[1] - close) > 1.6 * u5_f_avgDelta and u5_f_dn and volume > 1.8 * u5_f_avgVol
+    bool u5_GG_r = (close[1] - open) > 0.9 * u5_f_atr and u5_f_dn and high < close[1] and volume > 1.8 * u5_f_avgVol
+    bool u5_StrongBull = close[1] > open[1] and math.abs(u5_f_prev_body) > 1.5 * u5_f_avgBody[1] and volume[1] > 1.5 * u5_f_avgVol[1]
+    bool u5_WeakBull = close[1] > open[1] and (u5_f_prev_range == 0 ? 0.0 : math.abs(u5_f_prev_body) / u5_f_prev_range) <= 0.2
+    bool u5_TR_r = u5_WeakBull and (u5_MB_r or u5_RE_r or u5_TA_r), bool u5_ES_r = u5_StrongBull and (u5_MB_r or u5_RE_r or u5_TA_r), bool u5_GDR_r = close[1] > open[1] and u5_GG_r
+    int u5_s_core = (u5_MB_r ? 1 : 0) + (u5_RE_r ? 1 : 0) + (u5_TA_r ? 1 : 0)
+    bool u5_s_gg_exc = u5_GG_r and not ((u5_s_core >= 2) and (u5_f_bodyRat >= 0.80))
+    bool u5_FAUNABear = barstate.isconfirmed and (u5_MB_r or u5_RE_r or u5_TA_r) and not (u5_TR_r or u5_ES_r or u5_GDR_r or u5_s_gg_exc)
+    [u5_FAUNABull, u5_FAUNABear]
+
+[u5_FAUNABull, u5_FAUNABear] = f_u5FaunaEngine()
+
+// NAGASAKI — SQUARIFY v3 parity (all-time-high volume on bar[0])
+var float maxVol = 0.0
+bool isNagasaki = false
+if bar_index == 0
+    maxVol := volume
+else if volume > maxVol
+    isNagasaki := true
+    maxVol := volume
+sigNagasaki = isNagasaki
+
+// Pentagon (RVOL Reg@Time middle tier — needed by Unified Combo comboSets)
+bool det_Pentagon = conf and (rv_relVolRatio >= th_1x) and (rv_relVolRatio <= th_wtc)
+
+// GZ1 / HV FVG (HVD params: adds 63d HV tier, dist=12) — for Unified Combo comboSets
+type hgz_fvg
+    float mx
+    float mn
+    bool bull
+    int t
+    int idx
+    bool hv
+float hgz_v1 = volume[1]
+float _hgz5000 = ta.highest(volume, 5000)[1]
+float _hgz252 = ta.highest(volume, 252)[1]
+float _hgz63 = ta.highest(volume, 63)[1]
+bool hgz_isHV = (hgz_v1 == _hgz5000) or (hgz_v1 == _hgz252) or (hgz_v1 == _hgz63)
+float hgz_thresh = hgz_auto ? ta.cum((high - low) / low) / bar_index : hgz_threshPct / 100
+bool hgz_bFVG = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > hgz_thresh
+bool hgz_sFVG = high < low[2] and close[1] < low[2] and (low[2] - high) / high > hgz_thresh
+var hgz_fvgs = array.new<hgz_fvg>(0)
+var int hgz_lastT = 0
+bool hgz_bullGZI = false, bool hgz_bearGZI = false, bool hgz_bullHV = false, bool hgz_bearHV = false
+if conf and hgz_bFVG and time != hgz_lastT
+    float mx = low, float mn = high[2]
+    if hgz_isHV
+        hgz_bullHV := true
+    if hgz_fvgs.size() > 0
+        for i = 0 to hgz_fvgs.size() - 1
+            hgz_fvg e = hgz_fvgs.get(i)
+            if e.bull and bar_index - e.idx <= hgz_dist
+                if math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and hgz_isHV)
+                    hgz_bullGZI := true
+                    break
+    hgz_fvgs.unshift(hgz_fvg.new(mx, mn, true, time, bar_index, hgz_isHV))
+    hgz_lastT := time
+if conf and hgz_sFVG and time != hgz_lastT
+    float mx = low[2], float mn = high
+    if hgz_isHV
+        hgz_bearHV := true
+    if hgz_fvgs.size() > 0
+        for i = 0 to hgz_fvgs.size() - 1
+            hgz_fvg e = hgz_fvgs.get(i)
+            if not e.bull and bar_index - e.idx <= hgz_dist
+                if math.max(e.mn, mn) < math.min(e.mx, mx) or (math.max(e.mn, mn) <= math.min(e.mx, mx) and e.hv and hgz_isHV)
+                    hgz_bearGZI := true
+                    break
+    hgz_fvgs.unshift(hgz_fvg.new(mx, mn, false, time, bar_index, hgz_isHV))
+    hgz_lastT := time
+if hgz_fvgs.size() > 0
+    for i = hgz_fvgs.size() - 1 to 0
+        hgz_fvg g = hgz_fvgs.get(i)
+        if g.bull and close < g.mn
+            hgz_fvgs.remove(i)
+        else if not g.bull and close > g.mx
+            hgz_fvgs.remove(i)
+if hgz_fvgs.size() > 50
+    hgz_fvgs.pop()
+
+// Matrix Neo/Trinity + Long/Short momentum (reuses hybrid RVOL ratios)
+bool is_matrix_number = volume == ta.highest(volume, neo_len)
+bool sigNeoBull = conf and is_matrix_number and u5_FAUNABull
+bool sigNeoBear = conf and is_matrix_number and u5_FAUNABear
+bool sigTrinityBull = conf and is_matrix_number and not u5_FAUNABull and close > open
+bool sigTrinityBear = conf and is_matrix_number and not u5_FAUNABear and close < open
+float ls_regRatio = nz(hybRegRatio)
+float ls_cumRatio = nz(hybCumRatio)
+float ls_bodyRat = (high - low) == 0 ? 0.0 : math.abs(close - open) / (high - low)
+bool sigLong1 = conf and ls_regRatio > ls_reg1 and ls_cumRatio > ls_cum1 and close > open and ls_bodyRat >= ls_body1
+bool sigShort1 = conf and ls_regRatio > ls_reg1 and ls_cumRatio > ls_cum1 and close < open and ls_bodyRat >= ls_body1
+bool sigLong2 = conf and ls_regRatio > ls_reg2 and ls_cumRatio > ls_cum2 and close > open and ls_bodyRat >= ls_body2
+bool sigShort2 = conf and ls_regRatio > ls_reg2 and ls_cumRatio > ls_cum2 and close < open and ls_bodyRat >= ls_body2
+bool neo_bull_aligned = sigNeoBull and (sigLong1 or sigLong2)
+bool neo_bear_aligned = sigNeoBear and (sigShort1 or sigShort2)
+bool trinity_bull_aligned = sigTrinityBull and (sigLong1 or sigLong2)
+bool trinity_bear_aligned = sigTrinityBear and (sigShort1 or sigShort2)
+
+// Combo Sets → csNew3 (Unified Combo base + CMB momentum term)
+float cs_bp1 = high[1] - low[1] == 0 ? 0.0 : math.abs(close[1] - open[1]) / (high[1] - low[1])
+bool cs_vb = cs_bp1 >= cs_bodyPct_FVG
+bool comboSet1_Bull = conf and cs_vb and (hgz_bullHV or hgz_bullGZI) and (det_SAAB[1] or det_RVOL1xB[1] or det_GrandSlam[1])
+bool comboSet1_Bear = conf and cs_vb and (hgz_bearHV or hgz_bearGZI) and (det_Kratos[1] or det_RVOL1xR[1] or det_MOAB[1])
+bool comboSet2_Bull = conf and cs_vb and (hgz_bullHV or hgz_bullGZI) and ((cs_inc_pentagon_FVG and det_Pentagon[1]) or det_WTC[1] or det_Hiroshima[1] or sigNagasaki[1])
+bool comboSet2_Bear = conf and cs_vb and (hgz_bearHV or hgz_bearGZI) and ((cs_inc_pentagon_FVG and det_Pentagon[1]) or det_WTC[1] or det_Hiroshima[1] or sigNagasaki[1])
+bool cs_vm = ls_bodyRat >= cs_bodyPct_MAT
+bool matrix_any_bull = sigNeoBull or sigTrinityBull or neo_bull_aligned or trinity_bull_aligned
+bool matrix_any_bear = sigNeoBear or sigTrinityBear or neo_bear_aligned or trinity_bear_aligned
+bool comboSet3_Bull = cs_vm and matrix_any_bull and (det_SAAB or det_RVOL1xB or det_GrandSlam)
+bool comboSet3_Bear = cs_vm and matrix_any_bear and (det_Kratos or det_RVOL1xR or det_MOAB)
+bool comboSet4_Bull = cs_vm and matrix_any_bull and ((cs_inc_pentagon_MAT and det_Pentagon) or det_WTC or det_Hiroshima or sigNagasaki)
+bool comboSet4_Bear = cs_vm and matrix_any_bear and ((cs_inc_pentagon_MAT and det_Pentagon) or det_WTC or det_Hiroshima or sigNagasaki)
+bool csNew1_Bull = comboSet1_Bull or comboSet2_Bull
+bool csNew1_Bear = comboSet1_Bear or comboSet2_Bear
+bool csNew2_Bull = comboSet3_Bull or comboSet4_Bull
+bool csNew2_Bear = comboSet3_Bear or comboSet4_Bear
+bool csNew3_Bull = csNew1_Bull and nz(csNew2_Bull[1])
+bool csNew3_Bear = csNew1_Bear and nz(csNew2_Bear[1])
+
+// ══ CCC v1 — UC_core (NEW DEF) + back-to-back Combo Chain (specs v1.0-v1.3) ══
+bool uc_core_Bull = csNew3_Bull or (comboSet1_Bull and comboSet2_Bull)
+bool uc_core_Bear = csNew3_Bear or (comboSet1_Bear and comboSet2_Bear)
+bool cc_hit_bull = comboSet1_Bull or comboSet2_Bull or comboSet3_Bull or comboSet4_Bull or uc_core_Bull
+bool cc_hit_bear = comboSet1_Bear or comboSet2_Bear or comboSet3_Bear or comboSet4_Bear or uc_core_Bear
+bool det_CC_bull = conf and cc_hit_bull and nz(cc_hit_bull[1])
+bool det_CC_bear = conf and cc_hit_bear and nz(cc_hit_bear[1])
+bool det_MAT_bull = comboSet3_Bull or comboSet4_Bull
+bool det_MAT_bear = comboSet3_Bear or comboSet4_Bear
+
+// ═══ PORTED ENGINE — HVD BULL (verbatim slice) ═══
+grp_hvd1 = "── HV+D: DISP BASE ──"
+d1_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd1)
+d1_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd1)
+d1_mult = input.float(5.0, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd1)
+
+string grpHVBase = "── HV+D: BASE HV ──"
+bool ub50   = input.bool(true,  "50-Bar",   group=grpHVBase)
+bool ub75   = input.bool(true,  "75-Bar",   group=grpHVBase)
+bool ub100  = input.bool(true,  "100-Bar",  group=grpHVBase)
+bool ub150  = input.bool(true,  "150-Bar",  group=grpHVBase)
+bool ub200  = input.bool(true,  "200-Bar",  group=grpHVBase)
+bool ub250  = input.bool(true,  "250-Bar",  group=grpHVBase)
+bool ub300  = input.bool(true,  "300-Bar",  group=grpHVBase)
+bool ub350  = input.bool(true,  "350-Bar",  group=grpHVBase)
+bool ub400  = input.bool(true,  "400-Bar",  group=grpHVBase)
+bool ub450  = input.bool(true,  "450-Bar",  group=grpHVBase)
+bool ub500  = input.bool(true,  "500-Bar",  group=grpHVBase)
+bool ub550  = input.bool(true,  "550-Bar",  group=grpHVBase)
+bool ub600  = input.bool(true,  "600-Bar",  group=grpHVBase)
+bool ub650  = input.bool(true,  "650-Bar",  group=grpHVBase)
+bool ub700  = input.bool(true,  "700-Bar",  group=grpHVBase)
+bool ub750  = input.bool(true,  "750-Bar",  group=grpHVBase)
+bool ub1000 = input.bool(true,  "1000-Bar", group=grpHVBase)
+bool useHEV = input.bool(true,  "All-Time High Volume (HEV)", group=grpHVBase)
+
+float d1_rng = d1_type == "Open to Close" ? math.abs(open - close) : high - low
+float d1_std = ta.stdev(d1_rng, d1_len)
+float d1_thresh = d1_std * d1_mult
+bool  d1_prevDisp = d1_rng[1] > d1_thresh[1]
+bool  d1_bullFVG  = low > high[2] and close[1] > open[1]
+bool  d1_bearFVG  = high < low[2] and close[1] < open[1]
+bool  d1_bull = conf and d1_prevDisp and d1_bullFVG
+bool  d1_bear = conf and d1_prevDisp and d1_bearFVG
+
+bool is50   = volume[1] == ta.highest(volume, 50)[1]
+bool is75   = volume[1] == ta.highest(volume, 75)[1]
+bool is100  = volume[1] == ta.highest(volume, 100)[1]
+bool is150  = volume[1] == ta.highest(volume, 150)[1]
+bool is200  = volume[1] == ta.highest(volume, 200)[1]
+bool is250  = volume[1] == ta.highest(volume, 250)[1]
+bool is300  = volume[1] == ta.highest(volume, 300)[1]
+bool is350  = volume[1] == ta.highest(volume, 350)[1]
+bool is400  = volume[1] == ta.highest(volume, 400)[1]
+bool is450  = volume[1] == ta.highest(volume, 450)[1]
+bool is500  = volume[1] == ta.highest(volume, 500)[1]
+bool is550  = volume[1] == ta.highest(volume, 550)[1]
+bool is600  = volume[1] == ta.highest(volume, 600)[1]
+bool is650  = volume[1] == ta.highest(volume, 650)[1]
+bool is700  = volume[1] == ta.highest(volume, 700)[1]
+bool is750  = volume[1] == ta.highest(volume, 750)[1]
+bool is1000 = volume[1] == ta.highest(volume, 1000)[1]
+
+var float maxVolEver = 0.0
+bool isHEV = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    isHEV := true
+
+int baseRank = is1000 ? 1000 : is750 ? 750 : is700 ? 700 : is650 ? 650 : is600 ? 600 : is550 ? 550 : is500 ? 500 : is450 ? 450 : is400 ? 400 : is350 ? 350 : is300 ? 300 : is250 ? 250 : is200 ? 200 : is150 ? 150 : is100 ? 100 : is75 ? 75 : is50 ? 50 : 0
+
+bool base_enabled = (ub50 and baseRank == 50) or (ub75 and baseRank == 75) or (ub100 and baseRank == 100) or (ub150 and baseRank == 150) or (ub200 and baseRank == 200) or (ub250 and baseRank == 250) or (ub300 and baseRank == 300) or (ub350 and baseRank == 350) or (ub400 and baseRank == 400) or (ub450 and baseRank == 450) or (ub500 and baseRank == 500) or (ub550 and baseRank == 550) or (ub600 and baseRank == 600) or (ub650 and baseRank == 650) or (ub700 and baseRank == 700) or (ub750 and baseRank == 750) or (ub1000 and baseRank == 1000)
+bool hev_hit = useHEV and isHEV
+bool base_hv_hit = hev_hit or (base_enabled and not isHEV)
+bool base_combo_bull = base_hv_hit and d1_bull
+
+bool hvd_fire_bull = base_combo_bull
+grpVP = "★ VP Checkboxes — show/hide visual (independent of alerts) ★"
+v01 = input.bool(true, "VP C01 [BS]: BULL PB+RS", group=grpVP)
+v02 = input.bool(true, "VP C02 [JS]: BULL PBJ+RS", group=grpVP)
+v03 = input.bool(true, "VP C03 [CS]: BULL RC+RS", group=grpVP)
+v04 = input.bool(true, "VP C04 [SU]: BULL RS+PUP", group=grpVP)
+v05 = input.bool(true, "VP C05 [SX]: BULL RS+D", group=grpVP)
+v06 = input.bool(true, "VP C06 [BCS]: BULL PB+RC+RS", group=grpVP)
+v07 = input.bool(true, "VP C07 [BSU]: BULL PB+RS+PUP", group=grpVP)
+v08 = input.bool(true, "VP C08 [BSX]: BULL PB+RS+D", group=grpVP)
+v09 = input.bool(true, "VP C09 [JCS]: BULL PBJ+RC+RS", group=grpVP)
+v10 = input.bool(true, "VP C10 [JSU]: BULL PBJ+RS+PUP", group=grpVP)
+v11 = input.bool(true, "VP C11 [JSX]: BULL PBJ+RS+D", group=grpVP)
+v12 = input.bool(true, "VP C12 [CSU]: BULL RC+RS+PUP", group=grpVP)
+v13 = input.bool(true, "VP C13 [CSX]: BULL RC+RS+D", group=grpVP)
+v14 = input.bool(true, "VP C14 [SUX]: BULL RS+PUP+D", group=grpVP)
+v15 = input.bool(true, "VP C15 [BCSU]: BULL PB+RC+RS+PUP", group=grpVP)
+v16 = input.bool(true, "VP C16 [BCSX]: BULL PB+RC+RS+D", group=grpVP)
+v17 = input.bool(true, "VP C17 [BSUX]: BULL PB+RS+PUP+D", group=grpVP)
+v18 = input.bool(true, "VP C18 [JCSU]: BULL PBJ+RC+RS+PUP", group=grpVP)
+v19 = input.bool(true, "VP C19 [JCSX]: BULL PBJ+RC+RS+D", group=grpVP)
+v20 = input.bool(true, "VP C20 [JSUX]: BULL PBJ+RS+PUP+D", group=grpVP)
+v21 = input.bool(true, "VP C21 [CSUX]: BULL RC+RS+PUP+D", group=grpVP)
+v22 = input.bool(true, "VP C22 [BCSUX]: BULL PB+RC+RS+PUP+D", group=grpVP)
+v23 = input.bool(true, "VP C23 [JCSUX]: BULL PBJ+RC+RS+PUP+D", group=grpVP)
+vh01 = input.bool(true, "VP H01 [CB]: BULL RC+PB", group=grpVP)
+vh02 = input.bool(true, "VP H02 [CJ]: BULL RC+PBJ", group=grpVP)
+vh03 = input.bool(true, "VP H03 [CU]: BULL RC+PUP", group=grpVP)
+vh04 = input.bool(true, "VP H04 [CX]: BULL RC+D", group=grpVP)
+vh05 = input.bool(true, "VP H05 [CBU]: BULL RC+PB+PUP", group=grpVP)
+vh06 = input.bool(true, "VP H06 [CBX]: BULL RC+PB+D", group=grpVP)
+vh07 = input.bool(true, "VP H07 [CJU]: BULL RC+PBJ+PUP", group=grpVP)
+vh08 = input.bool(true, "VP H08 [CJX]: BULL RC+PBJ+D", group=grpVP)
+vh09 = input.bool(true, "VP H09 [CUX]: BULL RC+PUP+D", group=grpVP)
+vh10 = input.bool(true, "VP H10 [CBUX]: BULL RC+PB+PUP+D", group=grpVP)
+vh11 = input.bool(true, "VP H11 [CJUX]: BULL RC+PBJ+PUP+D", group=grpVP)
+va01 = input.bool(true, "VP A01 [H.A]: BULL HVD+ANY", group=grpVP)
+va02 = input.bool(true, "VP A02 [UC.A]: BULL UC+ANY", group=grpVP)
+va03 = input.bool(true, "VP A03 [CS1.A]: BULL CS1+ANY", group=grpVP)
+va04 = input.bool(true, "VP A04 [CS2.A]: BULL CS2+ANY", group=grpVP)
+va05 = input.bool(true, "VP A05 [M.A]: BULL MAT+ANY", group=grpVP)
+va06 = input.bool(true, "VP A06 [CC.A]: BULL CC+ANY", group=grpVP)
+vx01 = input.bool(true, "VP X01 [A]: ANY BULL", group=grpVP)
+vx02 = input.bool(true, "VP X02 [2+]: BULL 2PLUS", group=grpVP)
+vx03 = input.bool(true, "VP X03 [3+]: BULL 3PLUS", group=grpVP)
+vx04 = input.bool(true, "VP X04 [N]: NAGASAKI", group=grpVP)
+grpAL = "★ Alert Checkboxes — include in alerts (independent of visuals) ★"
+a01 = input.bool(true, "ALERT C01 [BS]: BULL PB+RS", group=grpAL)
+a02 = input.bool(true, "ALERT C02 [JS]: BULL PBJ+RS", group=grpAL)
+a03 = input.bool(true, "ALERT C03 [CS]: BULL RC+RS", group=grpAL)
+a04 = input.bool(true, "ALERT C04 [SU]: BULL RS+PUP", group=grpAL)
+a05 = input.bool(true, "ALERT C05 [SX]: BULL RS+D", group=grpAL)
+a06 = input.bool(true, "ALERT C06 [BCS]: BULL PB+RC+RS", group=grpAL)
+a07 = input.bool(true, "ALERT C07 [BSU]: BULL PB+RS+PUP", group=grpAL)
+a08 = input.bool(true, "ALERT C08 [BSX]: BULL PB+RS+D", group=grpAL)
+a09 = input.bool(true, "ALERT C09 [JCS]: BULL PBJ+RC+RS", group=grpAL)
+a10 = input.bool(true, "ALERT C10 [JSU]: BULL PBJ+RS+PUP", group=grpAL)
+a11 = input.bool(true, "ALERT C11 [JSX]: BULL PBJ+RS+D", group=grpAL)
+a12 = input.bool(true, "ALERT C12 [CSU]: BULL RC+RS+PUP", group=grpAL)
+a13 = input.bool(true, "ALERT C13 [CSX]: BULL RC+RS+D", group=grpAL)
+a14 = input.bool(true, "ALERT C14 [SUX]: BULL RS+PUP+D", group=grpAL)
+a15 = input.bool(true, "ALERT C15 [BCSU]: BULL PB+RC+RS+PUP", group=grpAL)
+a16 = input.bool(true, "ALERT C16 [BCSX]: BULL PB+RC+RS+D", group=grpAL)
+a17 = input.bool(true, "ALERT C17 [BSUX]: BULL PB+RS+PUP+D", group=grpAL)
+a18 = input.bool(true, "ALERT C18 [JCSU]: BULL PBJ+RC+RS+PUP", group=grpAL)
+a19 = input.bool(true, "ALERT C19 [JCSX]: BULL PBJ+RC+RS+D", group=grpAL)
+a20 = input.bool(true, "ALERT C20 [JSUX]: BULL PBJ+RS+PUP+D", group=grpAL)
+a21 = input.bool(true, "ALERT C21 [CSUX]: BULL RC+RS+PUP+D", group=grpAL)
+a22 = input.bool(true, "ALERT C22 [BCSUX]: BULL PB+RC+RS+PUP+D", group=grpAL)
+a23 = input.bool(true, "ALERT C23 [JCSUX]: BULL PBJ+RC+RS+PUP+D", group=grpAL)
+ah01 = input.bool(true, "ALERT H01 [CB]: BULL RC+PB", group=grpAL)
+ah02 = input.bool(true, "ALERT H02 [CJ]: BULL RC+PBJ", group=grpAL)
+ah03 = input.bool(true, "ALERT H03 [CU]: BULL RC+PUP", group=grpAL)
+ah04 = input.bool(true, "ALERT H04 [CX]: BULL RC+D", group=grpAL)
+ah05 = input.bool(true, "ALERT H05 [CBU]: BULL RC+PB+PUP", group=grpAL)
+ah06 = input.bool(true, "ALERT H06 [CBX]: BULL RC+PB+D", group=grpAL)
+ah07 = input.bool(true, "ALERT H07 [CJU]: BULL RC+PBJ+PUP", group=grpAL)
+ah08 = input.bool(true, "ALERT H08 [CJX]: BULL RC+PBJ+D", group=grpAL)
+ah09 = input.bool(true, "ALERT H09 [CUX]: BULL RC+PUP+D", group=grpAL)
+ah10 = input.bool(true, "ALERT H10 [CBUX]: BULL RC+PB+PUP+D", group=grpAL)
+ah11 = input.bool(true, "ALERT H11 [CJUX]: BULL RC+PBJ+PUP+D", group=grpAL)
+aa01 = input.bool(true, "ALERT A01 [H.A]: BULL HVD+ANY", group=grpAL)
+aa02 = input.bool(true, "ALERT A02 [UC.A]: BULL UC+ANY", group=grpAL)
+aa03 = input.bool(true, "ALERT A03 [CS1.A]: BULL CS1+ANY", group=grpAL)
+aa04 = input.bool(true, "ALERT A04 [CS2.A]: BULL CS2+ANY", group=grpAL)
+aa05 = input.bool(true, "ALERT A05 [M.A]: BULL MAT+ANY", group=grpAL)
+aa06 = input.bool(true, "ALERT A06 [CC.A]: BULL CC+ANY", group=grpAL)
+ax01 = input.bool(true, "ALERT X01 [A]: ANY BULL", group=grpAL)
+ax02 = input.bool(true, "ALERT X02 [2+]: BULL 2PLUS", group=grpAL)
+ax03 = input.bool(true, "ALERT X03 [3+]: BULL 3PLUS", group=grpAL)
+ax04 = input.bool(true, "ALERT X04 [N]: NAGASAKI", group=grpAL)
+grpGM = "★ GATE CASCADE — MASTER + GROUPS (per-dp → Group → Master) ★"
+master_disp = input.float(3.0, "MASTER Displacement σ (0 = off)", minval=0.0, step=0.1, group=grpGM)
+master_hv = input.string("Not required", "MASTER HV", options=["Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpGM)
+gd_T2 = input.string("Master", "GROUP DISP — Pairs (2-member)", options=["Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpGM)
+gh_T2 = input.string("Master", "GROUP HV — Pairs (2-member)", options=["Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpGM)
+gd_T3 = input.string("Master", "GROUP DISP — Triples (3-member)", options=["Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpGM)
+gh_T3 = input.string("Master", "GROUP HV — Triples (3-member)", options=["Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpGM)
+gd_T4 = input.string("Master", "GROUP DISP — Quads (4-member)", options=["Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpGM)
+gh_T4 = input.string("Master", "GROUP HV — Quads (4-member)", options=["Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpGM)
+gd_T5 = input.string("Master", "GROUP DISP — Pentas (potent)", options=["Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpGM)
+gh_T5 = input.string("Master", "GROUP HV — Pentas (potent)", options=["Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpGM)
+gd_HTF = input.string("Master", "GROUP DISP — HTF (R-C anchored)", options=["Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpGM)
+gh_HTF = input.string("Master", "GROUP HV — HTF (R-C anchored)", options=["Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpGM)
+gd_ANY = input.string("Off", "GROUP DISP — +ANY lanes", options=["Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpGM)
+gh_ANY = input.string("Master", "GROUP HV — +ANY lanes", options=["Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpGM)
+f_dnum(string s) => s == "Off" ? 0.0 : str.tonumber(s)
+f_dgrp(string s) => s == "Master" ? master_disp : f_dnum(s)
+f_deff(string sel, float grpv) => sel == "Group" ? grpv : sel == "Master" ? master_disp : f_dnum(sel)
+f_hgrp(string s) => s == "Master" ? master_hv : s
+f_heff(string sel, string grpv) => sel == "Group" ? grpv : sel == "Master" ? master_hv : sel
+float gdv_T2 = f_dgrp(gd_T2)
+float gdv_T3 = f_dgrp(gd_T3)
+float gdv_T4 = f_dgrp(gd_T4)
+float gdv_T5 = f_dgrp(gd_T5)
+float gdv_HTF = f_dgrp(gd_HTF)
+float gdv_ANY = f_dgrp(gd_ANY)
+string ghv_T2 = f_hgrp(gh_T2)
+string ghv_T3 = f_hgrp(gh_T3)
+string ghv_T4 = f_hgrp(gh_T4)
+string ghv_T5 = f_hgrp(gh_T5)
+string ghv_HTF = f_hgrp(gh_HTF)
+string ghv_ANY = f_hgrp(gh_ANY)
+grpDG = "★ IPSF — Displacement per dp (dropdown; default Group) ★"
+m01 = input.string("Group", "DISP C01 [BS]: BULL PB+RS", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m02 = input.string("Group", "DISP C02 [JS]: BULL PBJ+RS", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m03 = input.string("Group", "DISP C03 [CS]: BULL RC+RS", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m04 = input.string("Group", "DISP C04 [SU]: BULL RS+PUP", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m05 = input.string("Group", "DISP C05 [SX]: BULL RS+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m06 = input.string("Group", "DISP C06 [BCS]: BULL PB+RC+RS", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m07 = input.string("Group", "DISP C07 [BSU]: BULL PB+RS+PUP", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m08 = input.string("Group", "DISP C08 [BSX]: BULL PB+RS+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m09 = input.string("Group", "DISP C09 [JCS]: BULL PBJ+RC+RS", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m10 = input.string("Group", "DISP C10 [JSU]: BULL PBJ+RS+PUP", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m11 = input.string("Group", "DISP C11 [JSX]: BULL PBJ+RS+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m12 = input.string("Group", "DISP C12 [CSU]: BULL RC+RS+PUP", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m13 = input.string("Group", "DISP C13 [CSX]: BULL RC+RS+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m14 = input.string("Group", "DISP C14 [SUX]: BULL RS+PUP+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m15 = input.string("Group", "DISP C15 [BCSU]: BULL PB+RC+RS+PUP", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m16 = input.string("Group", "DISP C16 [BCSX]: BULL PB+RC+RS+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m17 = input.string("Group", "DISP C17 [BSUX]: BULL PB+RS+PUP+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m18 = input.string("Group", "DISP C18 [JCSU]: BULL PBJ+RC+RS+PUP", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m19 = input.string("Group", "DISP C19 [JCSX]: BULL PBJ+RC+RS+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m20 = input.string("Group", "DISP C20 [JSUX]: BULL PBJ+RS+PUP+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m21 = input.string("Group", "DISP C21 [CSUX]: BULL RC+RS+PUP+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m22 = input.string("Group", "DISP C22 [BCSUX]: BULL PB+RC+RS+PUP+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+m23 = input.string("Group", "DISP C23 [JCSUX]: BULL PBJ+RC+RS+PUP+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh01 = input.string("Group", "DISP H01 [CB]: BULL RC+PB", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh02 = input.string("Group", "DISP H02 [CJ]: BULL RC+PBJ", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh03 = input.string("Group", "DISP H03 [CU]: BULL RC+PUP", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh04 = input.string("Group", "DISP H04 [CX]: BULL RC+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh05 = input.string("Group", "DISP H05 [CBU]: BULL RC+PB+PUP", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh06 = input.string("Group", "DISP H06 [CBX]: BULL RC+PB+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh07 = input.string("Group", "DISP H07 [CJU]: BULL RC+PBJ+PUP", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh08 = input.string("Group", "DISP H08 [CJX]: BULL RC+PBJ+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh09 = input.string("Group", "DISP H09 [CUX]: BULL RC+PUP+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh10 = input.string("Group", "DISP H10 [CBUX]: BULL RC+PB+PUP+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+mh11 = input.string("Group", "DISP H11 [CJUX]: BULL RC+PBJ+PUP+D", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+ma01 = input.string("Group", "DISP A01 [H.A]: BULL HVD+ANY", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+ma02 = input.string("Group", "DISP A02 [UC.A]: BULL UC+ANY", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+ma03 = input.string("Group", "DISP A03 [CS1.A]: BULL CS1+ANY", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+ma04 = input.string("Group", "DISP A04 [CS2.A]: BULL CS2+ANY", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+ma05 = input.string("Group", "DISP A05 [M.A]: BULL MAT+ANY", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+ma06 = input.string("Group", "DISP A06 [CC.A]: BULL CC+ANY", options=["Group", "Master", "Off", "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0", "9.5", "10.0"], group=grpDG)
+grpHV = "★ IPSF — High-Volume per dp (dropdown; default Group) ★"
+h01 = input.string("Group", "HV C01 [BS]: BULL PB+RS", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h02 = input.string("Group", "HV C02 [JS]: BULL PBJ+RS", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h03 = input.string("Group", "HV C03 [CS]: BULL RC+RS", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h04 = input.string("Group", "HV C04 [SU]: BULL RS+PUP", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h05 = input.string("Group", "HV C05 [SX]: BULL RS+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h06 = input.string("Group", "HV C06 [BCS]: BULL PB+RC+RS", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h07 = input.string("Group", "HV C07 [BSU]: BULL PB+RS+PUP", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h08 = input.string("Group", "HV C08 [BSX]: BULL PB+RS+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h09 = input.string("Group", "HV C09 [JCS]: BULL PBJ+RC+RS", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h10 = input.string("Group", "HV C10 [JSU]: BULL PBJ+RS+PUP", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h11 = input.string("Group", "HV C11 [JSX]: BULL PBJ+RS+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h12 = input.string("Group", "HV C12 [CSU]: BULL RC+RS+PUP", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h13 = input.string("Group", "HV C13 [CSX]: BULL RC+RS+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h14 = input.string("Group", "HV C14 [SUX]: BULL RS+PUP+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h15 = input.string("Group", "HV C15 [BCSU]: BULL PB+RC+RS+PUP", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h16 = input.string("Group", "HV C16 [BCSX]: BULL PB+RC+RS+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h17 = input.string("Group", "HV C17 [BSUX]: BULL PB+RS+PUP+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h18 = input.string("Group", "HV C18 [JCSU]: BULL PBJ+RC+RS+PUP", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h19 = input.string("Group", "HV C19 [JCSX]: BULL PBJ+RC+RS+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h20 = input.string("Group", "HV C20 [JSUX]: BULL PBJ+RS+PUP+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h21 = input.string("Group", "HV C21 [CSUX]: BULL RC+RS+PUP+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h22 = input.string("Group", "HV C22 [BCSUX]: BULL PB+RC+RS+PUP+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+h23 = input.string("Group", "HV C23 [JCSUX]: BULL PBJ+RC+RS+PUP+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh01 = input.string("Group", "HV H01 [CB]: BULL RC+PB", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh02 = input.string("Group", "HV H02 [CJ]: BULL RC+PBJ", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh03 = input.string("Group", "HV H03 [CU]: BULL RC+PUP", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh04 = input.string("Group", "HV H04 [CX]: BULL RC+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh05 = input.string("Group", "HV H05 [CBU]: BULL RC+PB+PUP", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh06 = input.string("Group", "HV H06 [CBX]: BULL RC+PB+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh07 = input.string("Group", "HV H07 [CJU]: BULL RC+PBJ+PUP", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh08 = input.string("Group", "HV H08 [CJX]: BULL RC+PBJ+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh09 = input.string("Group", "HV H09 [CUX]: BULL RC+PUP+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh10 = input.string("Group", "HV H10 [CBUX]: BULL RC+PB+PUP+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+hh11 = input.string("Group", "HV H11 [CJUX]: BULL RC+PBJ+PUP+D", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+ha01 = input.string("Group", "HV A01 [H.A]: BULL HVD+ANY", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+ha02 = input.string("Group", "HV A02 [UC.A]: BULL UC+ANY", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+ha03 = input.string("Group", "HV A03 [CS1.A]: BULL CS1+ANY", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+ha04 = input.string("Group", "HV A04 [CS2.A]: BULL CS2+ANY", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+ha05 = input.string("Group", "HV A05 [M.A]: BULL MAT+ANY", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+ha06 = input.string("Group", "HV A06 [CC.A]: BULL CC+ANY", options=["Group", "Master", "Not required", "50", "100", "150", "200", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "800", "850", "900", "950", "1000", "1050", "1100", "1150", "1200", "1250", "1300", "1350", "1400", "1450", "1500", "1550", "1600", "1650", "1700", "1750", "1800", "1850", "1900", "1950", "2000", "2050", "2100", "2150", "2200", "2250", "2300", "2350", "2400", "2450", "2500", "2550", "2600", "2650", "2700", "2750", "2800", "2850", "2900", "2950", "3000", "3050", "3100", "3150", "3200", "3250", "3300", "3350", "3400", "3450", "3500", "3550", "3600", "3650", "3700", "3750", "3800", "3850", "3900", "3950", "4000", "Nagasaki"], group=grpHV)
+// ═══ DETECTION / FIRE / ALERT LANES — 44 × (sig, fire, alf) ═══
+bool sig_c01 = sigBullPB and sigBullReSlope and f_dispOK(f_deff(m01, gdv_T2)) and f_hvOK(f_heff(h01, ghv_T2))
+bool fire_c01 = v01 and sig_c01
+bool alf_c01 = a01 and sig_c01
+bool sig_c02 = sigBullPBJ and sigBullReSlope and f_dispOK(f_deff(m02, gdv_T2)) and f_hvOK(f_heff(h02, ghv_T2))
+bool fire_c02 = v02 and sig_c02
+bool alf_c02 = a02 and sig_c02
+bool sig_c03 = sigBullReCross and sigBullReSlope and f_dispOK(f_deff(m03, gdv_T2)) and f_hvOK(f_heff(h03, ghv_T2))
+bool fire_c03 = v03 and sig_c03
+bool alf_c03 = a03 and sig_c03
+bool sig_c04 = sigBullReSlope and sigPUP and f_dispOK(f_deff(m04, gdv_T2)) and f_hvOK(f_heff(h04, ghv_T2))
+bool fire_c04 = v04 and sig_c04
+bool alf_c04 = a04 and sig_c04
+bool sig_c05 = sigBullReSlope and sigDispBull and f_dispOK(f_deff(m05, gdv_T2)) and f_hvOK(f_heff(h05, ghv_T2))
+bool fire_c05 = v05 and sig_c05
+bool alf_c05 = a05 and sig_c05
+bool sig_c06 = sigBullPB and sigBullReCross and sigBullReSlope and f_dispOK(f_deff(m06, gdv_T3)) and f_hvOK(f_heff(h06, ghv_T3))
+bool fire_c06 = v06 and sig_c06
+bool alf_c06 = a06 and sig_c06
+bool sig_c07 = sigBullPB and sigBullReSlope and sigPUP and f_dispOK(f_deff(m07, gdv_T3)) and f_hvOK(f_heff(h07, ghv_T3))
+bool fire_c07 = v07 and sig_c07
+bool alf_c07 = a07 and sig_c07
+bool sig_c08 = sigBullPB and sigBullReSlope and sigDispBull and f_dispOK(f_deff(m08, gdv_T3)) and f_hvOK(f_heff(h08, ghv_T3))
+bool fire_c08 = v08 and sig_c08
+bool alf_c08 = a08 and sig_c08
+bool sig_c09 = sigBullPBJ and sigBullReCross and sigBullReSlope and f_dispOK(f_deff(m09, gdv_T3)) and f_hvOK(f_heff(h09, ghv_T3))
+bool fire_c09 = v09 and sig_c09
+bool alf_c09 = a09 and sig_c09
+bool sig_c10 = sigBullPBJ and sigBullReSlope and sigPUP and f_dispOK(f_deff(m10, gdv_T3)) and f_hvOK(f_heff(h10, ghv_T3))
+bool fire_c10 = v10 and sig_c10
+bool alf_c10 = a10 and sig_c10
+bool sig_c11 = sigBullPBJ and sigBullReSlope and sigDispBull and f_dispOK(f_deff(m11, gdv_T3)) and f_hvOK(f_heff(h11, ghv_T3))
+bool fire_c11 = v11 and sig_c11
+bool alf_c11 = a11 and sig_c11
+bool sig_c12 = sigBullReCross and sigBullReSlope and sigPUP and f_dispOK(f_deff(m12, gdv_T3)) and f_hvOK(f_heff(h12, ghv_T3))
+bool fire_c12 = v12 and sig_c12
+bool alf_c12 = a12 and sig_c12
+bool sig_c13 = sigBullReCross and sigBullReSlope and sigDispBull and f_dispOK(f_deff(m13, gdv_T3)) and f_hvOK(f_heff(h13, ghv_T3))
+bool fire_c13 = v13 and sig_c13
+bool alf_c13 = a13 and sig_c13
+bool sig_c14 = sigBullReSlope and sigPUP and sigDispBull and f_dispOK(f_deff(m14, gdv_T3)) and f_hvOK(f_heff(h14, ghv_T3))
+bool fire_c14 = v14 and sig_c14
+bool alf_c14 = a14 and sig_c14
+bool sig_c15 = sigBullPB and sigBullReCross and sigBullReSlope and sigPUP and f_dispOK(f_deff(m15, gdv_T4)) and f_hvOK(f_heff(h15, ghv_T4))
+bool fire_c15 = v15 and sig_c15
+bool alf_c15 = a15 and sig_c15
+bool sig_c16 = sigBullPB and sigBullReCross and sigBullReSlope and sigDispBull and f_dispOK(f_deff(m16, gdv_T4)) and f_hvOK(f_heff(h16, ghv_T4))
+bool fire_c16 = v16 and sig_c16
+bool alf_c16 = a16 and sig_c16
+bool sig_c17 = sigBullPB and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(f_deff(m17, gdv_T4)) and f_hvOK(f_heff(h17, ghv_T4))
+bool fire_c17 = v17 and sig_c17
+bool alf_c17 = a17 and sig_c17
+bool sig_c18 = sigBullPBJ and sigBullReCross and sigBullReSlope and sigPUP and f_dispOK(f_deff(m18, gdv_T4)) and f_hvOK(f_heff(h18, ghv_T4))
+bool fire_c18 = v18 and sig_c18
+bool alf_c18 = a18 and sig_c18
+bool sig_c19 = sigBullPBJ and sigBullReCross and sigBullReSlope and sigDispBull and f_dispOK(f_deff(m19, gdv_T4)) and f_hvOK(f_heff(h19, ghv_T4))
+bool fire_c19 = v19 and sig_c19
+bool alf_c19 = a19 and sig_c19
+bool sig_c20 = sigBullPBJ and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(f_deff(m20, gdv_T4)) and f_hvOK(f_heff(h20, ghv_T4))
+bool fire_c20 = v20 and sig_c20
+bool alf_c20 = a20 and sig_c20
+bool sig_c21 = sigBullReCross and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(f_deff(m21, gdv_T4)) and f_hvOK(f_heff(h21, ghv_T4))
+bool fire_c21 = v21 and sig_c21
+bool alf_c21 = a21 and sig_c21
+bool sig_c22 = sigBullPB and sigBullReCross and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(f_deff(m22, gdv_T5)) and f_hvOK(f_heff(h22, ghv_T5))
+bool fire_c22 = v22 and sig_c22
+bool alf_c22 = a22 and sig_c22
+bool sig_c23 = sigBullPBJ and sigBullReCross and sigBullReSlope and sigPUP and sigDispBull and f_dispOK(f_deff(m23, gdv_T5)) and f_hvOK(f_heff(h23, ghv_T5))
+bool fire_c23 = v23 and sig_c23
+bool alf_c23 = a23 and sig_c23
+bool sig_h01 = sigBullPB and sigBullReCross and f_dispOK(f_deff(mh01, gdv_HTF)) and f_hvOK(f_heff(hh01, ghv_HTF))
+bool fire_h01 = vh01 and sig_h01
+bool alf_h01 = ah01 and sig_h01
+bool sig_h02 = sigBullPBJ and sigBullReCross and f_dispOK(f_deff(mh02, gdv_HTF)) and f_hvOK(f_heff(hh02, ghv_HTF))
+bool fire_h02 = vh02 and sig_h02
+bool alf_h02 = ah02 and sig_h02
+bool sig_h03 = sigBullReCross and sigPUP and f_dispOK(f_deff(mh03, gdv_HTF)) and f_hvOK(f_heff(hh03, ghv_HTF))
+bool fire_h03 = vh03 and sig_h03
+bool alf_h03 = ah03 and sig_h03
+bool sig_h04 = sigBullReCross and sigDispBull and f_dispOK(f_deff(mh04, gdv_HTF)) and f_hvOK(f_heff(hh04, ghv_HTF))
+bool fire_h04 = vh04 and sig_h04
+bool alf_h04 = ah04 and sig_h04
+bool sig_h05 = sigBullPB and sigBullReCross and sigPUP and f_dispOK(f_deff(mh05, gdv_HTF)) and f_hvOK(f_heff(hh05, ghv_HTF))
+bool fire_h05 = vh05 and sig_h05
+bool alf_h05 = ah05 and sig_h05
+bool sig_h06 = sigBullPB and sigBullReCross and sigDispBull and f_dispOK(f_deff(mh06, gdv_HTF)) and f_hvOK(f_heff(hh06, ghv_HTF))
+bool fire_h06 = vh06 and sig_h06
+bool alf_h06 = ah06 and sig_h06
+bool sig_h07 = sigBullPBJ and sigBullReCross and sigPUP and f_dispOK(f_deff(mh07, gdv_HTF)) and f_hvOK(f_heff(hh07, ghv_HTF))
+bool fire_h07 = vh07 and sig_h07
+bool alf_h07 = ah07 and sig_h07
+bool sig_h08 = sigBullPBJ and sigBullReCross and sigDispBull and f_dispOK(f_deff(mh08, gdv_HTF)) and f_hvOK(f_heff(hh08, ghv_HTF))
+bool fire_h08 = vh08 and sig_h08
+bool alf_h08 = ah08 and sig_h08
+bool sig_h09 = sigBullReCross and sigPUP and sigDispBull and f_dispOK(f_deff(mh09, gdv_HTF)) and f_hvOK(f_heff(hh09, ghv_HTF))
+bool fire_h09 = vh09 and sig_h09
+bool alf_h09 = ah09 and sig_h09
+bool sig_h10 = sigBullPB and sigBullReCross and sigPUP and sigDispBull and f_dispOK(f_deff(mh10, gdv_HTF)) and f_hvOK(f_heff(hh10, ghv_HTF))
+bool fire_h10 = vh10 and sig_h10
+bool alf_h10 = ah10 and sig_h10
+bool sig_h11 = sigBullPBJ and sigBullReCross and sigPUP and sigDispBull and f_dispOK(f_deff(mh11, gdv_HTF)) and f_hvOK(f_heff(hh11, ghv_HTF))
+bool fire_h11 = vh11 and sig_h11
+bool alf_h11 = ah11 and sig_h11
+int cntBULL = (sig_c01 ? 1 : 0) + (sig_c02 ? 1 : 0) + (sig_c03 ? 1 : 0) + (sig_c04 ? 1 : 0) + (sig_c05 ? 1 : 0) + (sig_c06 ? 1 : 0) + (sig_c07 ? 1 : 0) + (sig_c08 ? 1 : 0) + (sig_c09 ? 1 : 0) + (sig_c10 ? 1 : 0) + (sig_c11 ? 1 : 0) + (sig_c12 ? 1 : 0) + (sig_c13 ? 1 : 0) + (sig_c14 ? 1 : 0) + (sig_c15 ? 1 : 0) + (sig_c16 ? 1 : 0) + (sig_c17 ? 1 : 0) + (sig_c18 ? 1 : 0) + (sig_c19 ? 1 : 0) + (sig_c20 ? 1 : 0) + (sig_c21 ? 1 : 0) + (sig_c22 ? 1 : 0) + (sig_c23 ? 1 : 0) + (sig_h01 ? 1 : 0) + (sig_h02 ? 1 : 0) + (sig_h03 ? 1 : 0) + (sig_h04 ? 1 : 0) + (sig_h05 ? 1 : 0) + (sig_h06 ? 1 : 0) + (sig_h07 ? 1 : 0) + (sig_h08 ? 1 : 0) + (sig_h09 ? 1 : 0) + (sig_h10 ? 1 : 0) + (sig_h11 ? 1 : 0)
+bool anyComboBULL = cntBULL >= 1
+bool sig_a01 = hvd_fire_bull and anyComboBULL and f_dispOK(f_deff(ma01, gdv_ANY)) and f_hvOK(f_heff(ha01, ghv_ANY))
+bool fire_a01 = va01 and sig_a01
+bool alf_a01 = aa01 and sig_a01
+bool sig_a02 = uc_core_Bull and anyComboBULL and f_dispOK(f_deff(ma02, gdv_ANY)) and f_hvOK(f_heff(ha02, ghv_ANY))
+bool fire_a02 = va02 and sig_a02
+bool alf_a02 = aa02 and sig_a02
+bool sig_a03 = comboSet1_Bull and anyComboBULL and f_dispOK(f_deff(ma03, gdv_ANY)) and f_hvOK(f_heff(ha03, ghv_ANY))
+bool fire_a03 = va03 and sig_a03
+bool alf_a03 = aa03 and sig_a03
+bool sig_a04 = comboSet2_Bull and anyComboBULL and f_dispOK(f_deff(ma04, gdv_ANY)) and f_hvOK(f_heff(ha04, ghv_ANY))
+bool fire_a04 = va04 and sig_a04
+bool alf_a04 = aa04 and sig_a04
+bool sig_a05 = det_MAT_bull and anyComboBULL and f_dispOK(f_deff(ma05, gdv_ANY)) and f_hvOK(f_heff(ha05, ghv_ANY))
+bool fire_a05 = va05 and sig_a05
+bool alf_a05 = aa05 and sig_a05
+bool sig_a06 = det_CC_bull and anyComboBULL and f_dispOK(f_deff(ma06, gdv_ANY)) and f_hvOK(f_heff(ha06, ghv_ANY))
+bool fire_a06 = va06 and sig_a06
+bool alf_a06 = aa06 and sig_a06
+bool sig_x01 = cntBULL >= 1
+bool fire_x01 = vx01 and sig_x01
+bool alf_x01 = ax01 and sig_x01
+bool sig_x02 = cntBULL >= 2
+bool fire_x02 = vx02 and sig_x02
+bool alf_x02 = ax02 and sig_x02
+bool sig_x03 = cntBULL >= 3
+bool fire_x03 = vx03 and sig_x03
+bool alf_x03 = ax03 and sig_x03
+bool sig_x04 = isNaga
+bool fire_x04 = vx04 and sig_x04
+bool alf_x04 = ax04 and sig_x04
+// ═══ VISUAL PLOTS — 44 dp (white letter codes) + 5 context plots = 50/64 ═══
+plotshape(fire_c01, title="C01 [BS]: BULL PB+RS", style=shape.circle, location=location.belowbar, color=#006EEB, size=size.small, text="BS", textcolor=color.white, offset=0)
+plotshape(fire_c02, title="C02 [JS]: BULL PBJ+RS", style=shape.circle, location=location.belowbar, color=#0074E4, size=size.small, text="JS", textcolor=color.white, offset=0)
+plotshape(fire_c03, title="C03 [CS]: BULL RC+RS", style=shape.circle, location=location.belowbar, color=#007ADD, size=size.small, text="CS", textcolor=color.white, offset=0)
+plotshape(fire_c04, title="C04 [SU]: BULL RS+PUP", style=shape.circle, location=location.belowbar, color=#0080D6, size=size.small, text="SU", textcolor=color.white, offset=0)
+plotshape(fire_c05, title="C05 [SX]: BULL RS+D", style=shape.circle, location=location.belowbar, color=#0086CF, size=size.small, text="SX", textcolor=color.white, offset=0)
+plotshape(fire_c06, title="C06 [BCS]: BULL PB+RC+RS", style=shape.triangleup, location=location.belowbar, color=#008CC8, size=size.small, text="BCS", textcolor=color.white, offset=0)
+plotshape(fire_c07, title="C07 [BSU]: BULL PB+RS+PUP", style=shape.triangleup, location=location.belowbar, color=#0092C1, size=size.small, text="BSU", textcolor=color.white, offset=0)
+plotshape(fire_c08, title="C08 [BSX]: BULL PB+RS+D", style=shape.triangleup, location=location.belowbar, color=#0098BA, size=size.small, text="BSX", textcolor=color.white, offset=0)
+plotshape(fire_c09, title="C09 [JCS]: BULL PBJ+RC+RS", style=shape.triangleup, location=location.belowbar, color=#009EB3, size=size.small, text="JCS", textcolor=color.white, offset=0)
+plotshape(fire_c10, title="C10 [JSU]: BULL PBJ+RS+PUP", style=shape.triangleup, location=location.belowbar, color=#00A4AC, size=size.small, text="JSU", textcolor=color.white, offset=0)
+plotshape(fire_c11, title="C11 [JSX]: BULL PBJ+RS+D", style=shape.triangleup, location=location.belowbar, color=#00AAA5, size=size.small, text="JSX", textcolor=color.white, offset=0)
+plotshape(fire_c12, title="C12 [CSU]: BULL RC+RS+PUP", style=shape.triangleup, location=location.belowbar, color=#00B09E, size=size.small, text="CSU", textcolor=color.white, offset=0)
+plotshape(fire_c13, title="C13 [CSX]: BULL RC+RS+D", style=shape.triangleup, location=location.belowbar, color=#00B697, size=size.small, text="CSX", textcolor=color.white, offset=0)
+plotshape(fire_c14, title="C14 [SUX]: BULL RS+PUP+D", style=shape.triangleup, location=location.belowbar, color=#00BC90, size=size.small, text="SUX", textcolor=color.white, offset=0)
+plotshape(fire_c15, title="C15 [BCSU]: BULL PB+RC+RS+PUP", style=shape.diamond, location=location.belowbar, color=#00C289, size=size.small, text="BCSU", textcolor=color.white, offset=0)
+plotshape(fire_c16, title="C16 [BCSX]: BULL PB+RC+RS+D", style=shape.diamond, location=location.belowbar, color=#00C882, size=size.small, text="BCSX", textcolor=color.white, offset=0)
+plotshape(fire_c17, title="C17 [BSUX]: BULL PB+RS+PUP+D", style=shape.diamond, location=location.belowbar, color=#00CE7B, size=size.small, text="BSUX", textcolor=color.white, offset=0)
+plotshape(fire_c18, title="C18 [JCSU]: BULL PBJ+RC+RS+PUP", style=shape.diamond, location=location.belowbar, color=#00D474, size=size.small, text="JCSU", textcolor=color.white, offset=0)
+plotshape(fire_c19, title="C19 [JCSX]: BULL PBJ+RC+RS+D", style=shape.diamond, location=location.belowbar, color=#00DA6D, size=size.small, text="JCSX", textcolor=color.white, offset=0)
+plotshape(fire_c20, title="C20 [JSUX]: BULL PBJ+RS+PUP+D", style=shape.diamond, location=location.belowbar, color=#00E066, size=size.small, text="JSUX", textcolor=color.white, offset=0)
+plotshape(fire_c21, title="C21 [CSUX]: BULL RC+RS+PUP+D", style=shape.diamond, location=location.belowbar, color=#00E65F, size=size.small, text="CSUX", textcolor=color.white, offset=0)
+plotshape(fire_c22, title="C22 [BCSUX]: BULL PB+RC+RS+PUP+D", style=shape.labelup, location=location.belowbar, color=#00EC58, size=size.normal, text="BCSUX", textcolor=color.white, offset=0)
+plotshape(fire_c23, title="C23 [JCSUX]: BULL PBJ+RC+RS+PUP+D", style=shape.labelup, location=location.belowbar, color=#00F251, size=size.normal, text="JCSUX", textcolor=color.white, offset=0)
+plotshape(fire_h01, title="H01 [CB]: BULL RC+PB", style=shape.square, location=location.bottom, color=#66F7FF, size=size.small, text="CB", textcolor=color.white, offset=0)
+plotshape(fire_h02, title="H02 [CJ]: BULL RC+PBJ", style=shape.square, location=location.bottom, color=#5CEDF5, size=size.small, text="CJ", textcolor=color.white, offset=0)
+plotshape(fire_h03, title="H03 [CU]: BULL RC+PUP", style=shape.square, location=location.bottom, color=#52E3EC, size=size.small, text="CU", textcolor=color.white, offset=0)
+plotshape(fire_h04, title="H04 [CX]: BULL RC+D", style=shape.square, location=location.bottom, color=#47D9E2, size=size.small, text="CX", textcolor=color.white, offset=0)
+plotshape(fire_h05, title="H05 [CBU]: BULL RC+PB+PUP", style=shape.cross, location=location.bottom, color=#3DCFD8, size=size.small, text="CBU", textcolor=color.white, offset=0)
+plotshape(fire_h06, title="H06 [CBX]: BULL RC+PB+D", style=shape.cross, location=location.bottom, color=#33C5CE, size=size.small, text="CBX", textcolor=color.white, offset=0)
+plotshape(fire_h07, title="H07 [CJU]: BULL RC+PBJ+PUP", style=shape.cross, location=location.bottom, color=#29BBC5, size=size.small, text="CJU", textcolor=color.white, offset=0)
+plotshape(fire_h08, title="H08 [CJX]: BULL RC+PBJ+D", style=shape.cross, location=location.bottom, color=#1FB1BB, size=size.small, text="CJX", textcolor=color.white, offset=0)
+plotshape(fire_h09, title="H09 [CUX]: BULL RC+PUP+D", style=shape.cross, location=location.bottom, color=#14A7B1, size=size.small, text="CUX", textcolor=color.white, offset=0)
+plotshape(fire_h10, title="H10 [CBUX]: BULL RC+PB+PUP+D", style=shape.xcross, location=location.bottom, color=#0A9DA8, size=size.small, text="CBUX", textcolor=color.white, offset=0)
+plotshape(fire_h11, title="H11 [CJUX]: BULL RC+PBJ+PUP+D", style=shape.xcross, location=location.bottom, color=#00939E, size=size.small, text="CJUX", textcolor=color.white, offset=0)
+plotshape(fire_a01, title="A01 [H.A]: BULL HVD+ANY", style=shape.arrowup, location=location.top, color=#66A3FF, size=size.small, text="H.A", textcolor=color.white, offset=0)
+plotshape(fire_a02, title="A02 [UC.A]: BULL UC+ANY", style=shape.arrowup, location=location.top, color=#528FEB, size=size.small, text="UC.A", textcolor=color.white, offset=0)
+plotshape(fire_a03, title="A03 [CS1.A]: BULL CS1+ANY", style=shape.arrowup, location=location.top, color=#3D7AD6, size=size.small, text="CS1.A", textcolor=color.white, offset=0)
+plotshape(fire_a04, title="A04 [CS2.A]: BULL CS2+ANY", style=shape.arrowup, location=location.top, color=#2966C2, size=size.small, text="CS2.A", textcolor=color.white, offset=0)
+plotshape(fire_a05, title="A05 [M.A]: BULL MAT+ANY", style=shape.arrowup, location=location.top, color=#1451AD, size=size.small, text="M.A", textcolor=color.white, offset=0)
+plotshape(fire_a06, title="A06 [CC.A]: BULL CC+ANY", style=shape.arrowup, location=location.top, color=#003D99, size=size.small, text="CC.A", textcolor=color.white, offset=0)
+plotshape(fire_x01, title="X01 [A]: ANY BULL", style=shape.circle, location=location.abovebar, color=#33FF99, size=size.small, text="A", textcolor=color.white, offset=0)
+plotshape(fire_x02, title="X02 [2+]: BULL 2PLUS", style=shape.square, location=location.abovebar, color=#00E676, size=size.small, text="2+", textcolor=color.white, offset=0)
+plotshape(fire_x03, title="X03 [3+]: BULL 3PLUS", style=shape.xcross, location=location.abovebar, color=#00B25C, size=size.small, text="3+", textcolor=color.white, offset=0)
+plotshape(fire_x04, title="X04 [N]: NAGASAKI", style=shape.flag, location=location.abovebar, color=#CCFFEE, size=size.small, text="N", textcolor=color.white, offset=0)
+plot(kc_ma, title="KC Basis", color=#808080)
+plot(kc_upper, title="KC Upper", color=#A0A0A0)
+plot(kc_lower, title="KC Lower", color=#606060)
+plot(sig_line, title="Supertrend", color=#E0E0E0)
+plot(cntBULL, title="BULL Combo Count", color=#00FFAA, display=display.data_window)
+// ═══ ALERTS — 1 ANY alertcondition (+1 unit) + consolidated alert() (0 units) ═══
+bool anyIncludedBULL = alf_c01 or alf_c02 or alf_c03 or alf_c04 or alf_c05 or alf_c06 or alf_c07 or alf_c08 or alf_c09 or alf_c10 or alf_c11 or alf_c12 or alf_c13 or alf_c14 or alf_c15 or alf_c16 or alf_c17 or alf_c18 or alf_c19 or alf_c20 or alf_c21 or alf_c22 or alf_c23 or alf_h01 or alf_h02 or alf_h03 or alf_h04 or alf_h05 or alf_h06 or alf_h07 or alf_h08 or alf_h09 or alf_h10 or alf_h11 or alf_a01 or alf_a02 or alf_a03 or alf_a04 or alf_a05 or alf_a06 or alf_x01 or alf_x02 or alf_x03 or alf_x04
+alertcondition(anyIncludedBULL, title="ANY BULL KC", message="ANY BULL KC (KC COMBO BULL (44 dp, maxed) v4.2) fired on {{ticker}}")
+if conf
+    int   _n = 0
+    string _m = ""
+    if alf_c01
+        _n += 1
+        _m += "C01 BS | "
+    if alf_c02
+        _n += 1
+        _m += "C02 JS | "
+    if alf_c03
+        _n += 1
+        _m += "C03 CS | "
+    if alf_c04
+        _n += 1
+        _m += "C04 SU | "
+    if alf_c05
+        _n += 1
+        _m += "C05 SX | "
+    if alf_c06
+        _n += 1
+        _m += "C06 BCS | "
+    if alf_c07
+        _n += 1
+        _m += "C07 BSU | "
+    if alf_c08
+        _n += 1
+        _m += "C08 BSX | "
+    if alf_c09
+        _n += 1
+        _m += "C09 JCS | "
+    if alf_c10
+        _n += 1
+        _m += "C10 JSU | "
+    if alf_c11
+        _n += 1
+        _m += "C11 JSX | "
+    if alf_c12
+        _n += 1
+        _m += "C12 CSU | "
+    if alf_c13
+        _n += 1
+        _m += "C13 CSX | "
+    if alf_c14
+        _n += 1
+        _m += "C14 SUX | "
+    if alf_c15
+        _n += 1
+        _m += "C15 BCSU | "
+    if alf_c16
+        _n += 1
+        _m += "C16 BCSX | "
+    if alf_c17
+        _n += 1
+        _m += "C17 BSUX | "
+    if alf_c18
+        _n += 1
+        _m += "C18 JCSU | "
+    if alf_c19
+        _n += 1
+        _m += "C19 JCSX | "
+    if alf_c20
+        _n += 1
+        _m += "C20 JSUX | "
+    if alf_c21
+        _n += 1
+        _m += "C21 CSUX | "
+    if alf_c22
+        _n += 1
+        _m += "C22 BCSUX | "
+    if alf_c23
+        _n += 1
+        _m += "C23 JCSUX | "
+    if alf_h01
+        _n += 1
+        _m += "H01 CB | "
+    if alf_h02
+        _n += 1
+        _m += "H02 CJ | "
+    if alf_h03
+        _n += 1
+        _m += "H03 CU | "
+    if alf_h04
+        _n += 1
+        _m += "H04 CX | "
+    if alf_h05
+        _n += 1
+        _m += "H05 CBU | "
+    if alf_h06
+        _n += 1
+        _m += "H06 CBX | "
+    if alf_h07
+        _n += 1
+        _m += "H07 CJU | "
+    if alf_h08
+        _n += 1
+        _m += "H08 CJX | "
+    if alf_h09
+        _n += 1
+        _m += "H09 CUX | "
+    if alf_h10
+        _n += 1
+        _m += "H10 CBUX | "
+    if alf_h11
+        _n += 1
+        _m += "H11 CJUX | "
+    if alf_a01
+        _n += 1
+        _m += "A01 H.A | "
+    if alf_a02
+        _n += 1
+        _m += "A02 UC.A | "
+    if alf_a03
+        _n += 1
+        _m += "A03 CS1.A | "
+    if alf_a04
+        _n += 1
+        _m += "A04 CS2.A | "
+    if alf_a05
+        _n += 1
+        _m += "A05 M.A | "
+    if alf_a06
+        _n += 1
+        _m += "A06 CC.A | "
+    if alf_x01
+        _n += 1
+        _m += "X01 A | "
+    if alf_x02
+        _n += 1
+        _m += "X02 2+ | "
+    if alf_x03
+        _n += 1
+        _m += "X03 3+ | "
+    if alf_x04
+        _n += 1
+        _m += "X04 N | "
+    if _n > 0
+        alert("KCCB44 v4.2 [" + str.tostring(_n) + "] → " + _m, alert.freq_once_per_bar_close)
