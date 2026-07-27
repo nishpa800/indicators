@@ -1,5 +1,12 @@
 # VOB BB — Birth Bar Study CHANGELOG
 
+## v1.3 (2026-07-27) — ECHO WAVE (triple-measured law; default-forward, no trigger)
+- ECHO GRADE: Echo Birth Bull/Bear lanes fire when a birth's level is echoed by
+  pre-existing living same-side levels from >= echo_min other slots (1 ATR band).
+  Evidence: in-study proxy solo 59.0% vs echo2+ 64.3% (434k births); cross-scale
+  solo 55.8-56.1% vs echo3+ 65.0-71.1% (89.4M births, estate campaign 2026-07-27).
+- |ECHO:n on every birth alert. 24/64 units. Twins same wave.
+
 ## v1.2 (2026-07-26) — TV-COMPILE FIX (operator paste found 9 problems in v1.1)
 - CE10123 x7: user-function bank resolution returned series int into ta.ema's simple
   length. Root law learned: Pine user-function returns are ALWAYS series — never route
