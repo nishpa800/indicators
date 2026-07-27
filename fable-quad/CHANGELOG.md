@@ -1,5 +1,43 @@
 # FABLE QUAD — CHANGELOG
 
+## v1.2 (2026-07-26) — Fable Bull LTF v1.2 · Fable Bull HTF v1.2 · Fable Bear LTF v1.2 · Fable Bear HTF v1.2
+IPSF RECALIBRATION — two declared edits on a sha256-pinned v1.1 base, 23 diff lines per file,
+nothing else touched. Both values are MEASURED, not chosen: 162-cell census over 210,686 bars /
+9,957 sessions / 11 symbols × 6 intervals (docs/2026-07-26_TV-TickBar-RE_FableQuadBearRSRC-
+DisplacementIPSFAudit_v1.0.md). Instrument = scripts/ind/ports/fable_quad_audit_engine.py,
+accepted only at D_parity=0 byte-identity vs the proven port with 2 anti-fixtures CAUGHT.
+
+**E1 — displacement σ 9.0 → 5.0 on ALL THREE dedicated engines** (i_d9_mult, hq_dmult, and
+ltf_dmult on the LTF builds). At σ=9 a displacement event fired **2.13 times per 10,000 bars**,
+which structurally disabled ten Disp9-gated lanes (S1/S2, S9/S10, S18/S19, S22/S23, S24/S25);
+the dedicated LTF engine fired **0 times on 1h and 15m in 10 of 12 measured cells**, meaning
+Typhoon / Musashi / Whale **could not fire at all in any LTF build** — that was the entire
+LTF-vs-HTF gap the operator reported. Measured ladder, events per 10k bars:
+σ9=2.13 · σ8=7.20 · σ7=20.54 · σ6=43.92 · σ5=88.20 (41.5× across the range). The ladder now
+ships inside each tooltip so every intermediate σ is reachable with its known rate.
+
+**E2 — KC slope threshold made SCALE-FREE** (new `KC Slope Threshold Unit` dropdown; default
+"ATR ×" with thresholds 0.05 → 0.02; "Absolute $" retained so v1.1 behaviour is never removed).
+The v1.1 threshold was denominated in absolute dollars per bar, so the R-S lane was dead on
+every low-priced symbol while looking healthy on megacaps: Ford R-S 2/1 and PBJ+RS+RC **0/0**.
+Calibrated by a 5-symbol × 6-multiplier sweep at 1h — 0.02 × ATR holds megacap counts within one
+event (AAPL 7/4→7/4, TSLA 5/5→5/5, NVDA 3/3→4/3) and revives the low-priced names
+(F 0/0→**5/3**, SOFI 0/0→**3/1**). Inputs cost zero plot units (P-019), so budgets are unchanged.
+
+**NOT changed, deliberately:** FIRST BAR MASTER stays ON — it discards 52% of PBJ+RS+RC events
+and asymmetrically (bull −44% / bear −60%), but it is a declared operator semantic, not a defect,
+and it is one checkbox. **Bear RS/RC was investigated and is NOT broken**: plotted PBJ+RS+RC
+measured bear 198 vs bull 195 (1.02×) — the apparent silence is a base rate of ~1 print per
+50–100 sessions, not a logic fault.
+
+**DEFECTS CARRIED FORWARD, recorded not hidden (L-63):** (a) `fbf_111_gate` D_111=**8** on all
+four — IDENTICAL to v1.1, inherited, on lanes rcNTBull/rcNTBear (the RC NPM+TNT suppressor
+toggles, which have no plot of their own); v1.2 introduces zero new 1:1:1 defects but does not
+close these. (b) residual 10 (shape, location) plot collisions from v1.1 are untouched.
+(c) dedicated tick_friendly siblings for the QUAD family are still owed (L-49.1), debt due
+2026-07-29. Gates green this wave: pane_label_gate D_cs1=0 ×4.
+
+
 ## v1 (2026-07-24) — Fable Bull LTF v1 · Fable Bull HTF v1 · Fable Bear LTF v1 · Fable Bear HTF v1
 Operator GO ("build all 4"). Single-side studies from the FIRST_BAR_FABLE_v5 engine base
 (sha 5635be9b, commit 19cbab4): bull 42 rows / bear 41 rows, ALL real plotshapes (CS-1/L-61),
