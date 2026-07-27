@@ -1,5 +1,22 @@
 # FABLE QUAD — CHANGELOG
 
+## v1.4 (2026-07-26) — Fable Bull LTF v1.4 · Fable Bull HTF v1.4 · Fable Bear LTF v1.4 · Fable Bear HTF v1.4
+COMPILE-RISK REMOVAL. The v1.2 KC scale fix introduced a dropdown whose option value contained a
+non-ASCII character ("ATR ×"). A repo-wide scan of every pre-existing .pine found **ZERO** studies
+using non-ASCII inside an `options=[]` list — no precedent anywhere in this estate. Non-ASCII string
+LITERALS are proven safe (70 of them sit in v1.1 input labels and compile today), but `options=[]`
+specifically was unwitnessed, and the lake's gates are static text checks that cannot type-check
+Pine — only a TV paste settles it. Rather than let an unproven construct be the thing that breaks
+the operator's chart, it is now ASCII **"ATR x"** at every site including the tooltip prose.
+
+Builder asserts, per file: the `options=[]` list contains no non-ASCII; the input DEFAULT, the
+options VALUE and BOTH ternary comparison literals are byte-equal. That last one matters — if the
+comparison literal ever drifts from the option value, `kc_slopeUnit == "..."` is simply always false
+and ATR mode silently does nothing while appearing selected. Asserted, not assumed.
+
+No behaviour change from v1.3. Displacement σ=5.0 and the bear 1X/MOAB label fix carry through.
+
+
 ## v1.3 (2026-07-26) — Fable Bull LTF v1.3 · Fable Bull HTF v1.3 · Fable Bear LTF v1.3 · Fable Bear HTF v1.3
 BEAR LABEL FIX — pays the dated quarantine debt due 2026-07-27 (DOORMAN founding exhibit of
 LAW-ZERO-DEFECT L-63, operator-witnessed on his own chart). The Bear S2 lane fires the BEAR
