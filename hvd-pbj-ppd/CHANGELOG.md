@@ -1,5 +1,22 @@
 # HVD-PBJ-PPD — CHANGELOG
 
+## 2026-06-28 — Bear-mirror audit + bull combo-chain backfix + tfSec hardening
+
+- **Bearish split confirmed canonical & tick-friendly.** `tick_friendly/HVD_PBJ_PPD_BEARISH_v1_tick_friendly.pine`
+  audited as a complete, faithful, byte-identical-engine mirror of the bull (36 bear
+  plotshapes; the 2 bull-only plots — Omega-A, NAG+ — are bull-only by design). Tick-safe,
+  carries the binary combo fix. **This is the bear to use.**
+- **Bull combo-chain backfix.** `june7-conversion/tick_friendly_pine/hvd_pbj_pup_bull_tickfriendly.pine`
+  was the LAST file still carrying the retired `comboSet1/2_*[i-1]` cross-bar combo chain
+  (fired a 2-hit chain off ONE mixed Matrix+FVG candle). Replaced with the canonical
+  same-bar OR-collapse on both bull and bear loops.
+- **tfSec tick-guard hardened** on the canonical bull + bear tick-friendly files: the
+  threshold-table fallback now detects a `"T"`-suffixed period (was `na`/`<=0` only),
+  matching the bull's NINE-NINES guard. RE10023 anchor path was already safe.
+- **New docs:** repo-root `DETECTION_PLOT_VS_VISUAL_PLOT_FRAMEWORK.md` (the offset &
+  rolling-window law as a skill) + `hvd-pbj-ppd/AUDIT_combos_and_offsets_2026-06-28.md`
+  (CC / CS1 / CS2 / CS3 rules + full displacement/FVG offset audit; no blockers).
+
 ## 2026-06-04 — Combo Chain BINARY-LAW fix (CANONICAL)
 
 **This is now the real version. The prior combo-chain logic is retired as incorrect.**
