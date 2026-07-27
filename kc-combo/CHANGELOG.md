@@ -1,5 +1,26 @@
 # kc-combo CHANGELOG
 
+## v4.4 — 2026-07-27 (BULL + BEAR)
+- OPERATOR ORDER 2026-07-27: "no more HV and displacement — remove the dropdowns."
+  The per-dp HV/DISP gate machinery is REMOVED IN TOTALITY from both side studies:
+  40 per-dp DISP dropdowns + 40 per-dp HV dropdowns (Not required|50..4000|Nagasaki)
+  + 14 GATE CASCADE knobs (MASTER disp σ / MASTER HV / 6 GROUP DISP / 6 GROUP HV)
+  = 94 inputs per study, plus the 7 gate/resolver functions (f_dispOK, f_hvOK,
+  f_deff, f_heff, f_dnum, f_dgrp, f_hgrp) and the two gate conjuncts on all 40
+  gated sig lanes. Every lane now fires on raw combo membership alone.
+- KEPT (members are not gates): Displacement MEMBER engine (the D/X in combo
+  names, S11/S12 FVG), HVD ported engine + Base-HV toggles (H.A lane), isNaga
+  ATH-volume atom (NAGASAKI dp), all 44 VP + 44 ALERT checkboxes, all plots,
+  consolidated alert() emission. Unit count unchanged: 50/64 (inputs are free).
+- Behavior delta (declared, LAW-CANDOR): v4.3 defaults (MASTER disp σ=3.0)
+  suppressed every MAIN/HTF lane on any bar lacking a 3σ range candle; v4.4
+  fire counts are strictly ≥ v4.3 per lane on any chart.
+- Consequence: the W-VPCAL calibrated-gate-defaults debt (v4.3 rigor row, due
+  2026-08-02) is VOID for kc-combo — the machinery it calibrated no longer exists.
+- Ship: transform manifests (base = v4.3 @ origin/main 09c44d8, 48 declared
+  edits/side, D_bytes=0), pane_label D_cs1=0 x2, fbf_111 D_111=0 x2, graphic
+  objects: 0. Tick pair_debt carried (owner fable, due 2026-07-28).
+
 ## v4.3 pair — 2026-07-26 (context-line default visibility; operator order)
 - BULL default-visible context: KC Lower + BULL Combo Count ONLY. BEAR: KC Upper +
   BEAR Combo Count ONLY. KC Basis, Supertrend, and the opposite band ship UNCHECKED
