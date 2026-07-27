@@ -1,5 +1,25 @@
 # FABLE QUAD — CHANGELOG
 
+## v1.3 (2026-07-26) — Fable Bull LTF v1.3 · Fable Bull HTF v1.3 · Fable Bear LTF v1.3 · Fable Bear HTF v1.3
+BEAR LABEL FIX — pays the dated quarantine debt due 2026-07-27 (DOORMAN founding exhibit of
+LAW-ZERO-DEFECT L-63, operator-witnessed on his own chart). The Bear S2 lane fires the BEAR
+boolean `(det_RVOL1xR or det_MOAB) and d9_bear and sigBearPBJ` but rendered the BULL text
+literal **"1X/GS"** — GS = Grand Slam, a bull RVOL tier; the bear-side tier is MOAB. The plot
+TITLE was always correct ("S2: Bear RVOL 1X/MOAB + Disp9 + PBJ"); only the on-chart glyph lied,
+which is exactly why it survived every static check and had to be caught by the operator's eye.
+Now renders **"1X/MOAB"**. Blast radius exactly 2 sites (BEAR LTF + BEAR HTF); the BULL files
+legitimately use 1X/GS on their S1 lane and are asserted UNTOUCHED by the builder.
+
+**Why v1.3 and not a v1.2 amendment:** this defect was carried FORWARD into v1.2 earlier the same
+session, because v1.2 was built from the v1.1 base without re-checking the open debt list. A
+shipped version is immutable (L-60 ES-0), so the fix takes its own number. BULL members are
+version-stamp-only — byte-identical to v1.2 otherwise — purely to keep the QUAD in lockstep, since
+P-021 proved that mixed version numbers inside one family are themselves an operator-facing defect.
+
+Diff vs v1.2: 3 lines per bear file (2 stamp + 1 literal), 2 lines per bull file (stamp only).
+IPSF values inherited unchanged from v1.2; its calibration cert remains valid.
+
+
 ## v1.2 (2026-07-26) — Fable Bull LTF v1.2 · Fable Bull HTF v1.2 · Fable Bear LTF v1.2 · Fable Bear HTF v1.2
 IPSF RECALIBRATION — two declared edits on a sha256-pinned v1.1 base, 23 diff lines per file,
 nothing else touched. Both values are MEASURED, not chosen: 162-cell census over 210,686 bars /
