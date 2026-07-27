@@ -1,4 +1,10 @@
 //@version=5
+// Reconstructed non-tick (time-chart) original from
+// june7-conversion/tick_friendly_pine/pbj_only_4_signals_tickfriendly.pine on 2026-07-13
+// - the tick build was the only committed source. Logic identical; tick guards removed.
+// - No tick guards existed in code (its own conversion notes said "ALREADY TICK-SAFE, no transformation needed").
+// - Reverted: title "[tickfriendly]" suffix stripped; shorttitle "PBJ TF" -> "PBJ".
+// - Removed: tick-conversion header block and the conversion-appended fire-matrix comment block (comments only).
 // ╔════════════════════════════════════════════════════════════════════════════╗
 // ║  PB & PBJ — 4 Dedicated Signals                                         ║
 // ║  Extracted from: Yin Yang + Displacement + PBJ (YY+D+PBJ)               ║
@@ -30,23 +36,7 @@
 // ║  • 1:1 parity: plotted signal ↔ alert log. Indivisible.                  ║
 // ╚════════════════════════════════════════════════════════════════════════════╝
 
-// ============================================================================
-// Pine is a Pine Editor tick-friendly   (NINE NINES three-output standard)
-// Source: "pbj only 4 signals.txt"   (June 7 batch)
-// ----------------------------------------------------------------------------
-// TICK-SAFE STATUS: ALREADY TICK-SAFE (no transformation needed).
-//   - No `import TradingView/...`, no `tv_ta.relativeVolume` -> no RE10023.
-//   - No `timeframe.in_seconds(...)`, no per-TF threshold table.
-//   - Engines are bar-grain agnostic: Zoo MA, ATR supertrend, PB&J filter,
-//     level/approach state machine all run identically on N-tick bars.
-//   - Detection plots already use plotshape (no label.new graphic objects);
-//     zones are tracked via `type lvl`, never drawn. Offsets are all 0.
-// CHANGES vs source: header note + numeric data-window fire matrix appended.
-//   Logic is BYTE-IDENTICAL to the source.
-// Detection plots preserved: Sig#1 Bull PB, Sig#2 Bull PBJ, Sig#3 Bear PB,
-//   Sig#4 Bear PBJ (4 plotshapes).
-// ============================================================================
-indicator("PB & PBJ 4 Signals [tickfriendly]", shorttitle="PBJ TF", overlay=true, max_labels_count=500, max_bars_back=3000)
+indicator("PB & PBJ 4 Signals", shorttitle="PBJ", overlay=true, max_labels_count=500, max_bars_back=3000)
 
 
 // ============================================================================
@@ -321,11 +311,6 @@ bool sigBearPBJ = barstate.isconfirmed and sig_pbj_sell
 // ============================================================================
 bool sigAny = sigBullPB or sigBullPBJ or sigBearPB or sigBearPBJ
 
-
-// ============================================================================
-// NINE NINES NUMERIC FIRE MATRIX (display.data_window) — 0/1 per detection
-// Machine-readable fire matrix. No graphic objects.
-// ============================================================================
 
 // ============================================================================
 // PLOTS — SOVEREIGN SHAPES  (offset = 0 on all four)
