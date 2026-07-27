@@ -1,5 +1,29 @@
 # kc-combo CHANGELOG
 
+## v4.5 — 2026-07-27 (BULL + BEAR; same-day follow-on to v4.4)
+- OPERATOR ORDER: +5 ANY-coincidence lanes per side (fires when the named
+  detection lands on the same confirmed candle as >=1 of the study's combos):
+  BULL A13 SA.A SAAB · A14 1X.A RVOL 1X · A15 GS.A GRAND SLAM · A16 N.A NAGA ·
+  A17 HW.A (Typhoon OR Musashi OR Whale) — BEAR A18 KR.A KRATOS · A19 1X.A ·
+  A20 MB.A MOAB · A21 N.A · A22 HW.A. NAGA lane side-assigned by its study.
+- ENGINES: SAAB/KRATOS/1X/GS/MOAB/NAGA atoms were ALREADY in-study (RVOL 0.56
+  engine, byte-parity with FABLE QUAD v1.4 proven line-for-line). Whale + FAUNA +
+  GZ1 + Yin-Yang ported VERBATIM from FABLE QUAD v1.4 (inherits the v1.2
+  displacement/KC-slope recalibration). Declared deviations: GZ1 mitigation
+  render+prune block + its show-toggle removed (= FQ default false; graphic
+  objects stay 0); both-side engines consumed one side per study.
+- LOCATION REMAP (operator rage-order same day: "everything below bar and bottom,
+  no way to see any of them"): pane-bottom ELIMINATED both studies. New BANDS:
+  belowbar = BULL MAIN + BEAR HTF + BEAR agg · abovebar = BEAR MAIN + BULL HTF +
+  BULL agg · top = ALL +ANY echoes · bottom = UNUSED. Every real detection at-bar.
+- NAME: KCCB44/KCCR44 -> KCCB49/KCCR49 (L-63: a 44-dp name on a 49-dp study is an
+  on-chart lie; title/shorttitle/alert stamps all restamped).
+- Budget: 49 dp + 5 plot() + 1 ANY ac = 55/64 per side (9 spare).
+- Ship: transform manifests base = v4.4 @ main 76d4f79 (29 edits BULL / 35 BEAR,
+  D_bytes=0), pane_label D_cs1=0 x2, fbf_111 D_111=0 x2, visual gate, sweep.
+  Tick pair_debt carried (owner fable, due 2026-07-28). Haiku worker census
+  cross-checks the shipped bytes (L-45/L-50 manual-labor delegation).
+
 ## v4.4 — 2026-07-27 (BULL + BEAR)
 - OPERATOR ORDER 2026-07-27: "no more HV and displacement — remove the dropdowns."
   The per-dp HV/DISP gate machinery is REMOVED IN TOTALITY from both side studies:
