@@ -41,6 +41,13 @@ string pocket_mode = input.string("Either PB or PBJ", "Pocket requirement (S1,S3
      options = ["Either PB or PBJ", "PBJ only", "PB only"], group = GC,
      tooltip = "S2 ignores this and is ALWAYS PBJ-strict. S6/S7 (Nagasaki) ignore it entirely — they are the stated exceptions.")
 
+// FIRST-BAR LAW (operator 2026-07-28: "all of this is on the first bar. There's
+// nothing allowed to even go beyond the first bar"). Applies to EVERY lane.
+bool  first_bar_only = input.bool(true, "FIRST BAR ONLY (whole study)", group = GC,
+     tooltip = "ON = a lane can only fire on the session's first bar(s). This is the operator's standing law for SECONDS. Turning it OFF lets lanes fire all session — that is NOT the specified behaviour.")
+int   first_bar_n    = input.int(1, "How many opening bars qualify", minval = 1, maxval = 5, group = GC,
+     tooltip = "1 = first bar only (the spec). 2 = first two bars, which is what the S8 back-to-back rule needs when it lands in v1.1.")
+
 var string GS = "SENSITIVITIES"
 int sens_1 = input.int(100, "Sensitivity 1", minval = 1, group = GS)
 int sens_2 = input.int(200, "Sensitivity 2", minval = 1, group = GS)
@@ -332,6 +339,14 @@ if sigKcRS_r
     wait_slope_bear := false
 
 // =============================================================================
+// FIRST-BAR GATE — the session-bar counter
+// =============================================================================
+bool sess_new = ta.change(time("D")) != 0
+var int sess_bar = 0
+sess_bar := sess_new ? 1 : nz(sess_bar[1]) + 1
+bool gFirstBar = not first_bar_only or sess_bar <= first_bar_n
+
+// =============================================================================
 // GATES
 // =============================================================================
 bool gFaunaB = not req_fauna or sigFAUNABull
@@ -342,20 +357,20 @@ bool gPocketR = pocket_mode == "PBJ only" ? sigBearPBJ : pocket_mode == "PB only
 // =============================================================================
 // THE 14 DETECTIONS
 // =============================================================================
-bool det_s1b = sig_HV and sigDISPBull and gFaunaB and gPocketB
-bool det_s1r = sig_HV and sigDISPBear and gFaunaR and gPocketR
-bool det_s2b = sig_HV and sigDISPBull and gFaunaB and sigBullPBJ
-bool det_s2r = sig_HV and sigDISPBear and gFaunaR and sigBearPBJ
-bool det_s3b = sig_HV and sigDISPBull and sigBullRVOL1x and gFaunaB and gPocketB
-bool det_s3r = sig_HV and sigDISPBear and sigBearRVOL1x and gFaunaR and gPocketR
-bool det_s4b = sig_HV and sigGrandSlam and sigDISPBull and gFaunaB and gPocketB
-bool det_s4r = sig_HV and sigMOAB      and sigDISPBear and gFaunaR and gPocketR
-bool det_s5b = sigKcRS_b and sigKcRC_b and sig_HV and sigDISPBull and (sigBullRVOL1x or sigGrandSlam) and gFaunaB and gPocketB
-bool det_s5r = sigKcRS_r and sigKcRC_r and sig_HV and sigDISPBear and (sigBearRVOL1x or sigMOAB)      and gFaunaR and gPocketR
-bool det_s6b = sigNagasaki and sigDISPBull and dirBull and gFaunaB
-bool det_s6r = sigNagasaki and sigDISPBear and dirBear and gFaunaR
-bool det_s7b = sigNagasaki and anyLong  and gFaunaB
-bool det_s7r = sigNagasaki and anyShort and gFaunaR
+bool det_s1b = gFirstBar and sig_HV and sigDISPBull and gFaunaB and gPocketB
+bool det_s1r = gFirstBar and sig_HV and sigDISPBear and gFaunaR and gPocketR
+bool det_s2b = gFirstBar and sig_HV and sigDISPBull and gFaunaB and sigBullPBJ
+bool det_s2r = gFirstBar and sig_HV and sigDISPBear and gFaunaR and sigBearPBJ
+bool det_s3b = gFirstBar and sig_HV and sigDISPBull and sigBullRVOL1x and gFaunaB and gPocketB
+bool det_s3r = gFirstBar and sig_HV and sigDISPBear and sigBearRVOL1x and gFaunaR and gPocketR
+bool det_s4b = gFirstBar and sig_HV and sigGrandSlam and sigDISPBull and gFaunaB and gPocketB
+bool det_s4r = gFirstBar and sig_HV and sigMOAB      and sigDISPBear and gFaunaR and gPocketR
+bool det_s5b = gFirstBar and sigKcRS_b and sigKcRC_b and sig_HV and sigDISPBull and (sigBullRVOL1x or sigGrandSlam) and gFaunaB and gPocketB
+bool det_s5r = gFirstBar and sigKcRS_r and sigKcRC_r and sig_HV and sigDISPBear and (sigBearRVOL1x or sigMOAB)      and gFaunaR and gPocketR
+bool det_s6b = gFirstBar and sigNagasaki and sigDISPBull and dirBull and gFaunaB
+bool det_s6r = gFirstBar and sigNagasaki and sigDISPBear and dirBear and gFaunaR
+bool det_s7b = gFirstBar and sigNagasaki and anyLong  and gFaunaB
+bool det_s7r = gFirstBar and sigNagasaki and anyShort and gFaunaR
 
 // =============================================================================
 // VISUAL PLOTS — real plot outputs only (CARDINAL SIN #1). No two lanes share
