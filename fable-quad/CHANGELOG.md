@@ -1,5 +1,50 @@
 # FABLE QUAD — CHANGELOG
 
+## v1.5 (2026-07-27) — Fable Bull LTF v1.5 · Fable Bull HTF v1.5 · Fable Bear LTF v1.5 · Fable Bear HTF v1.5
+ROOF / PENTHOUSE / FLOOR / 2nd FLOOR TAKEN FROM HVD PBJ PPD. Operator goal: *"take roof and floor
+from hvd pbj ppd bear and bull, then add them to fbear/bull ltf/htf v1.4. create 2 new dp/vp for
+each bull/bear indicator study. ROOF + any fable (bear), PH + any fable (bear); Floor + any fable
+(bull), 2F + any fable (bull)."* Two new dp/vp/alert rows per study, 8 rows across the QUAD.
+
+**New rows (1:1:1 — real-plot VP + 🔔 checkbox + alert emission, CS-1 clean):**
+
+- `ROOF + ANY FABLE Bear` — circle / abovebar / `#FF1744` / "ROOF\n+ANY" — the HVD *Rooftop* identity
+- `PH + ANY FABLE Bear` — cross / belowbar / `#D50000` / "PH\n+ANY" — the HVD *Penthouse* identity
+- `FLOOR + ANY FABLE Bull` — circle / top / `#00E5FF` / "FLOOR\n+ANY" — the HVD *Floor* identity
+- `2F + ANY FABLE Bull` — cross / abovebar / `#80DEEA` / "2F\n+ANY" — the HVD *2nd Floor* identity
+
+**Engine ported: "ENGINE 7: PING PONG SR"** (HVD_PBJ_PPD_{BEARISH,BULLISH}_v1.pine L558-693) under the
+`rf_` prefix — flat-body + swing-pivot S/R level array, break / reject / bounce / pivot-bounce state
+machine, regime latch, and the 6-member structural gravity count (`rf_bull_pp` / `rf_bear_pp`,
+min count 3). Every constant is the source's own default, exposed as an input, rolling-window only.
+
+**ONE DECLARED DEVIATION (T-INERT).** The source's `srLevel` carries a `line` field and 7 `line.*`
+call sites that draw 100%-transparent bookkeeping lines. Those are REMOVED. No detection boolean
+reads `lnID` — it is only ever the receiver of `line.set_*` / `line.delete` — so every ported
+boolean is bit-identical to the source, while the study adds **ZERO graphic objects** (CARDINAL
+SIN #1 / L-61) and cannot exhaust TradingView's line-object cap.
+
+**Root atoms are the source's own side-symmetric 4-term definitions** (HVD L742-745):
+`conf ∧ <side>_pp ∧ <side>PBJ ∧ <side>_hw_slot` for ROOF/FLOOR, with `PB` in place of `PBJ` for
+PH/2F. The HVD bull side additionally ran `floor_gated = anyBullFloor ∧ oneOfThese ∧ cb1_pass_floor`;
+those two extra gates are **deliberately not ported**. Their job was to demand a co-occurring
+qualifier — which the `+ ANY FABLE` conjunct does natively here — and porting them would have broken
+bull/bear symmetry (the HVD bear plots use the raw atom, the bull plots use the gated one) and pulled
+in ~15 bull-only engines with no bear mirror. Deviation is declared, not silent.
+
+**Plot budget:** 41 → 43 / 64 (bear), 42 → 44 / 64 (bull). No `display.data_window` plots,
+no alertconditions, no dynamic-color args. Detection counter `qn` extended by both new lanes.
+
+**Shape+location collision disclosure (honest, not clean):** the QUAD's 9 bear shapes × 4 locations
+= 36 slots were already fully consumed at 41 plots in v1.4, so no free pair exists. The operator's
+own HVD identity was preserved instead of inventing a new one: ROOF collides with S8 Whale+PPD
+(circle/abovebar), PH with S31 NAG+ANY (cross/belowbar), FLOOR with S7 (circle/top), 2F with S32
+(cross/abovebar). Colour, text and size differ in every case. The 5 (bear) / 6 (bull) PRE-EXISTING
+v1.4 collisions are recorded as a dated debt row, not silently inherited.
+
+Build + declared edits: `lake/scripts/ind/build_fable_quad_v15.py` (9 edits per study, E7 double-run
+byte-identical). Manifests: `validation/indstudy/manifest_fable-quad-fable_*_v1.5_v1.json`.
+
 ## v1.4 (2026-07-26) — Fable Bull LTF v1.4 · Fable Bull HTF v1.4 · Fable Bear LTF v1.4 · Fable Bear HTF v1.4
 COMPILE-RISK REMOVAL. The v1.2 KC scale fix introduced a dropdown whose option value contained a
 non-ASCII character ("ATR ×"). A repo-wide scan of every pre-existing .pine found **ZERO** studies
