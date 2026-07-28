@@ -1148,6 +1148,19 @@ plotshape(fire_PAFBear,"PAF-",shape.flag,location.top,color.new(#E040FB,25),text
 plotshape(fire_CS1R,"CS1 FVG Bear",shape.labeldown,location.top,color.new(#FF1744,0),text="FVG",textcolor=color.white,size=size.tiny,offset=-1)
 plotshape(fire_CS2R,"CS2 MAT Bear",shape.labeldown,location.belowbar,color.new(#D50000,0),text="MAT",textcolor=color.white,size=size.tiny)
 plotshape(fire_CS3R,"Combo Bear",shape.labeldown,location.belowbar,color.new(#9C27B0,0),text="COMBO",textcolor=color.white,size=size.small,offset=-1)
+// ── CC OFFSET NOTE — KNOWN, MEASURED, ACCEPTED (operator ruling, 2026-07-28) ──────────
+// A back-to-back MATRIX+MATRIX pair IS a Combo Chain by definition. It is also the ONLY
+// constituent permutation with no FVG in it: matrix combos are measured on the candle they
+// describe (lag 0), so a matrix-matrix pair sits on candles (t-1, t) and its newest candle
+// is t. EVERY other permutation contains an FVG combo, whose event is the big displacement
+// candle t-1 (the FVG is only confirmable on the candle after it), so those chains have
+// t-1 as their newest fully-known candle.
+// DECISION: ALL CC marks render at a SINGLE uniform offset -1. We are aware that for the
+// pure matrix-matrix case this places the mark on the OLDER candle of the pair, one bar to
+// the left of where that chain completed. That is accepted deliberately: one constant
+// offset for every CC is simpler and safer than a conditional offset that would have to
+// switch per permutation at render time, and the matrix-matrix case is the lone exception
+// in an otherwise FVG-bearing set. Do NOT "fix" this into a conditional offset.
 plotshape(fire_CCBear,"CC Bear",shape.square,location.top,color.new(#E91E63,0),text="CC",textcolor=color.white,size=size.large,offset=-1)
 plotshape(fire_LSCBear,"LSC Bear",shape.square,location.belowbar,color.new(#9C27B0,0),text="LSC",textcolor=color.white,size=size.small)
 plotshape(fire_BearRooftop,"Rooftop",shape.circle,location.abovebar,color.new(#FF1744,0),text="ROOF",textcolor=color.white,size=size.large)

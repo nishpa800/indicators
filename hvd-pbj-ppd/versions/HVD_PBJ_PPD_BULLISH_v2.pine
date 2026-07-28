@@ -1154,6 +1154,19 @@ plotshape(fire_PAFBull,"PAF+",shape.flag,location.belowbar,color.new(#E040FB,25)
 plotshape(fire_CS1B,"CS1 FVG",shape.labelup,location.top,color.new(#00BCD4,0),text="FVG",textcolor=color.white,size=size.tiny,offset=-1)
 plotshape(fire_CS2B,"CS2 MAT",shape.labelup,location.bottom,color.new(#00897B,0),text="MAT",textcolor=color.white,size=size.tiny)
 plotshape(fire_CS3B,"Combo Bull",shape.labelup,location.belowbar,color.new(#43A047,0),text="COMBO",textcolor=color.white,size=size.small,offset=-1)
+// ── CC OFFSET NOTE — KNOWN, MEASURED, ACCEPTED (operator ruling, 2026-07-28) ──────────
+// A back-to-back MATRIX+MATRIX pair IS a Combo Chain by definition. It is also the ONLY
+// constituent permutation with no FVG in it: matrix combos are measured on the candle they
+// describe (lag 0), so a matrix-matrix pair sits on candles (t-1, t) and its newest candle
+// is t. EVERY other permutation contains an FVG combo, whose event is the big displacement
+// candle t-1 (the FVG is only confirmable on the candle after it), so those chains have
+// t-1 as their newest fully-known candle.
+// DECISION: ALL CC marks render at a SINGLE uniform offset -1. We are aware that for the
+// pure matrix-matrix case this places the mark on the OLDER candle of the pair, one bar to
+// the left of where that chain completed. That is accepted deliberately: one constant
+// offset for every CC is simpler and safer than a conditional offset that would have to
+// switch per permutation at render time, and the matrix-matrix case is the lone exception
+// in an otherwise FVG-bearing set. Do NOT "fix" this into a conditional offset.
 plotshape(fire_CCBull,"CC Bull",shape.square,location.bottom,color.new(#00BFA5,0),text="CC",textcolor=color.white,size=size.huge,offset=-1)
 plotshape(fire_LSCBull,"LSC Bull",shape.square,location.top,color.new(#651FFF,0),text="LSC",textcolor=color.white,size=size.small)
 plotshape(fire_BullFloor,"Floor",shape.circle,location.top,color.new(#00E5FF,0),text="FLOOR",textcolor=color.white,size=size.large)

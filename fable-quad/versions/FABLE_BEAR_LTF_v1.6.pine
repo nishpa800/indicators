@@ -2847,6 +2847,19 @@ plotshape(fire_qM23J, "HV+D+PBJ 2of3 Bear", shape.triangledown, location.belowba
 plotshape(fire_qM33J, "HV+D+PBJ 3of3 Bear", shape.labeldown, location.belowbar, #FF6D00B3, -1, "HVD+PBJ\n3of3", color.white, size=size.huge)
 plotshape(fire_qM23N, "HV+D 2of3 Bear (no PBJ)", shape.diamond, location.belowbar, #FF4081, -1, "HVD\n2of3", color.white, size=size.large)
 plotshape(fire_qM33N, "HV+D 3of3 Bear (no PBJ)", shape.circle, location.belowbar, #AA00FFB3, -1, "HVD\n3of3", color.white, size=size.huge)
+// ── CC OFFSET NOTE — KNOWN, MEASURED, ACCEPTED (operator ruling, 2026-07-28) ──────────
+// A back-to-back MATRIX+MATRIX pair IS a Combo Chain by definition. It is also the ONLY
+// constituent permutation with no FVG in it: matrix combos are measured on the candle they
+// describe (lag 0), so a matrix-matrix pair sits on candles (t-1, t) and its newest candle
+// is t. EVERY other permutation contains an FVG combo, whose event is the big displacement
+// candle t-1 (the FVG is only confirmable on the candle after it), so those chains have
+// t-1 as their newest fully-known candle.
+// DECISION: ALL CC marks render at a SINGLE uniform offset -1. We are aware that for the
+// pure matrix-matrix case this places the mark on the OLDER candle of the pair, one bar to
+// the left of where that chain completed. That is accepted deliberately: one constant
+// offset for every CC is simpler and safer than a conditional offset that would have to
+// switch per permutation at render time, and the matrix-matrix case is the lone exception
+// in an otherwise FVG-bearing set. Do NOT "fix" this into a conditional offset.
 plotshape(fire_qCC, "CC: Combo Chain Bear", shape.labeldown, location.top, #E5393566, -1, "CC", color.white, size=size.normal)
 plotshape(fire_qS29, "S29: 4K + ANY FABLE Bear", shape.square, location.belowbar, #C62828, 0, "4K\n+ANY", color.white, size=size.large)
 plotshape(fire_qS31, "S31: NAG + ANY FABLE Bear", shape.cross, location.belowbar, #FF1744B3, 0, "NAG\n+ANY", color.white, size=size.large)
