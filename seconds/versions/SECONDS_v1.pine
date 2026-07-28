@@ -1,0 +1,395 @@
+// © nishpa800
+//@version=6
+// =============================================================================
+// SECONDS v1  —  high-volume + displacement detection suite
+// =============================================================================
+// Built 2026-07-28 from operator dictation. Design spec:
+//   lake/docs/2026-07-28_TV-TickBar-RE_SECONDS-v1-StudyDesignSpec_v1.0.md
+//
+// 14 detection plots (7 families x 2 sides). Every engine below is copied from
+// the operator's own Pine (SQUARIFY v3 2026-06-04) at the cited line, never
+// paraphrased or re-derived.
+//
+// WHAT THIS STUDY DOES NOT DO (operator instruction 2026-07-28, verbatim intent:
+// "we dont want the zones. we dont want anything. we cannot have clutter"):
+//   * NO zones, NO boxes, NO lines, NO tables, NO labels, NO background fills.
+//   * NO graphic objects of ANY kind. CARDINAL SIN #1 (L-61) clean by construction:
+//     zero label.new / line.new / box.new / table.* in this file.
+//   * The ONLY chart output is the 14 detection plotshapes.
+//
+// TWO INDEPENDENT CHECKBOX GROUPS (operator instruction):
+//   "VISUAL PLOTS"  — controls what draws.   Does NOT affect alerts.
+//   "ALERTS"        — controls what alerts.  Does NOT affect drawing.
+//   A lane can alert while invisible, or draw while silent. They never interact.
+//
+// S8 (VOB v11.8 two-of-three, first-two-bars) is NOT in v1 — deferred to v1.1.
+// Its dependency chain (sig_t3_buy_a..f + sig_zb_a..f across 7 sensitivities,
+// plus the whole hws_any Heavy-Weapons-Single engine) is a VOB-engine port and
+// was too large to ship in this pass. Declared, not silently dropped.
+// =============================================================================
+indicator("SECONDS v1", "SECONDS v1", overlay = true, max_bars_back = 5000)
+
+// ---------------------------------------------------------------- CORE INPUTS
+var string GC = "CORE"
+int   hv_n        = input.int(4000, "HV window N (bars)", minval = 5, group = GC,
+     tooltip = "HV(N) = this bar's volume is the highest of the last N bars. NOTE: needs N bars of history before it can EVER be true. At 1D, N=4000 is ~16 years — the HV lanes self-disable rather than silently never fire.")
+float disp_sigma  = input.float(9.0, "Displacement sigma", minval = 0.1, step = 0.1, group = GC,
+     tooltip = "Body must exceed sigma x stdev(body). At sigma=9 the measured base rate is ~2 fires per 10,000 bars, so the HV+D lanes are RARE by construction.")
+int   disp_len    = input.int(100, "Displacement stdev length", minval = 5, group = GC)
+bool  req_fauna   = input.bool(true, "Require FAUNA on the bar (all lanes)", group = GC)
+string pocket_mode = input.string("Either PB or PBJ", "Pocket requirement (S1,S3,S4,S5)",
+     options = ["Either PB or PBJ", "PBJ only", "PB only"], group = GC,
+     tooltip = "S2 ignores this and is ALWAYS PBJ-strict. S6/S7 (Nagasaki) ignore it entirely — they are the stated exceptions.")
+
+var string GS = "SENSITIVITIES"
+int sens_1 = input.int(100, "Sensitivity 1", minval = 1, group = GS)
+int sens_2 = input.int(200, "Sensitivity 2", minval = 1, group = GS)
+int sens_3 = input.int(300, "Sensitivity 3", minval = 1, group = GS)
+int sens_4 = input.int(400, "Sensitivity 4", minval = 1, group = GS)
+int sens_5 = input.int(500, "Sensitivity 5", minval = 1, group = GS)
+int sens_6 = input.int(600, "Sensitivity 6", minval = 1, group = GS)
+int sens_7 = input.int(700, "Sensitivity 7", minval = 1, group = GS)
+int sens_active = input.int(5, "Active sensitivity tier (1-7)", minval = 1, maxval = 7, group = GS,
+     tooltip = "Seven tiers per operator spec. v1 consumes the ACTIVE tier as the HV-confirmation window; the full 7-tier zone engine arrives with S8 in v1.1.")
+int sens_val = sens_active == 1 ? sens_1 : sens_active == 2 ? sens_2 : sens_active == 3 ? sens_3 : sens_active == 4 ? sens_4 : sens_active == 5 ? sens_5 : sens_active == 6 ? sens_6 : sens_7
+
+// ------------------------------------------------------- VISUAL PLOT CHECKBOXES
+var string GV = "VISUAL PLOTS — iff checked the shape draws (alert-independent)"
+bool v_s1b = input.bool(true, "S1 HV+D Bull",              group = GV)
+bool v_s1r = input.bool(true, "S1 HV+D Bear",              group = GV)
+bool v_s2b = input.bool(true, "S2 HV+D+PBJ Bull",          group = GV)
+bool v_s2r = input.bool(true, "S2 HV+D+PBJ Bear",          group = GV)
+bool v_s3b = input.bool(true, "S3 HV+D+RVOL1x Bull",       group = GV)
+bool v_s3r = input.bool(true, "S3 HV+D+RVOL1x Bear",       group = GV)
+bool v_s4b = input.bool(true, "S4 HV+GS+D Bull",           group = GV)
+bool v_s4r = input.bool(true, "S4 HV+MOAB+D Bear",         group = GV)
+bool v_s5b = input.bool(true, "S5 HV+D+RS+RC+RVOL Bull",   group = GV)
+bool v_s5r = input.bool(true, "S5 HV+D+RS+RC+RVOL Bear",   group = GV)
+bool v_s6b = input.bool(true, "S6 NAGA+D+DIR Bull",        group = GV)
+bool v_s6r = input.bool(true, "S6 NAGA+D+DIR Bear",        group = GV)
+bool v_s7b = input.bool(true, "S7 NAGA+LONG1-5 Bull",      group = GV)
+bool v_s7r = input.bool(true, "S7 NAGA+SHORT1-5 Bear",     group = GV)
+
+// ------------------------------------------------------------ ALERT CHECKBOXES
+var string GA = "ALERTS — iff checked the alert fires (display-independent)"
+bool a_s1b = input.bool(true, "S1 HV+D Bull — alert",            group = GA)
+bool a_s1r = input.bool(true, "S1 HV+D Bear — alert",            group = GA)
+bool a_s2b = input.bool(true, "S2 HV+D+PBJ Bull — alert",        group = GA)
+bool a_s2r = input.bool(true, "S2 HV+D+PBJ Bear — alert",        group = GA)
+bool a_s3b = input.bool(true, "S3 HV+D+RVOL1x Bull — alert",     group = GA)
+bool a_s3r = input.bool(true, "S3 HV+D+RVOL1x Bear — alert",     group = GA)
+bool a_s4b = input.bool(true, "S4 HV+GS+D Bull — alert",         group = GA)
+bool a_s4r = input.bool(true, "S4 HV+MOAB+D Bear — alert",       group = GA)
+bool a_s5b = input.bool(true, "S5 HV+D+RS+RC+RVOL Bull — alert", group = GA)
+bool a_s5r = input.bool(true, "S5 HV+D+RS+RC+RVOL Bear — alert", group = GA)
+bool a_s6b = input.bool(true, "S6 NAGA+D+DIR Bull — alert",      group = GA)
+bool a_s6r = input.bool(true, "S6 NAGA+D+DIR Bear — alert",      group = GA)
+bool a_s7b = input.bool(true, "S7 NAGA+LONG1-5 Bull — alert",    group = GA)
+bool a_s7r = input.bool(true, "S7 NAGA+SHORT1-5 Bear — alert",   group = GA)
+
+// ------------------------------------------------------------------- COLOURS
+var string GCol = "COLOURS (VOB visual-identity law: every plot gets its own colour)"
+color c_s1b = input.color(color.lime,    "S1 Bull", group = GCol, inline = "1")
+color c_s1r = input.color(color.red,     "S1 Bear", group = GCol, inline = "1")
+color c_s2b = input.color(color.aqua,    "S2 Bull", group = GCol, inline = "2")
+color c_s2r = input.color(color.orange,  "S2 Bear", group = GCol, inline = "2")
+color c_s3b = input.color(color.blue,    "S3 Bull", group = GCol, inline = "3")
+color c_s3r = input.color(color.fuchsia, "S3 Bear", group = GCol, inline = "3")
+color c_s4b = input.color(color.teal,    "S4 Bull", group = GCol, inline = "4")
+color c_s4r = input.color(color.maroon,  "S4 Bear", group = GCol, inline = "4")
+color c_s5b = input.color(color.yellow,  "S5 Bull", group = GCol, inline = "5")
+color c_s5r = input.color(color.purple,  "S5 Bear", group = GCol, inline = "5")
+color c_s6b = input.color(color.white,   "S6 Bull", group = GCol, inline = "6")
+color c_s6r = input.color(color.gray,    "S6 Bear", group = GCol, inline = "6")
+color c_s7b = input.color(color.green,   "S7 Bull", group = GCol, inline = "7")
+color c_s7r = input.color(color.navy,    "S7 Bear", group = GCol, inline = "7")
+
+// =============================================================================
+// ENGINES — verbatim from SQUARIFY v3 2026-06-04 at the cited lines
+// =============================================================================
+bool conf = barstate.isconfirmed
+int tfSec = timeframe.in_seconds(timeframe.period)
+float atr14 = ta.atr(14)
+
+// --- HV(N): SAME-BAR (declared deviation, spec 1.1) --------------------------
+// SQUARIFY uses volume[1]==highest(volume,N)[1]; operator asked for high volume
+// "plus displacement on the SAME bar", so this is offset 0.
+bool hv_ready = bar_index >= hv_n
+bool sig_HV   = hv_ready and volume == ta.highest(volume, hv_n)
+
+// --- ENGINE 3: USE DISPLACEMENT  (SQUARIFY L578-586) -------------------------
+float disp_rng   = math.abs(open - close)
+float disp_std   = ta.stdev(disp_rng, disp_len)
+float disp_thr   = disp_std * disp_sigma
+bool  disp_curr  = disp_std > 0 and disp_rng > disp_thr
+bool  sigDISPBull = conf and disp_curr and close > open
+bool  sigDISPBear = conf and disp_curr and close < open
+
+// --- FAUNA  (SQUARIFY L545-577) ---------------------------------------------
+float fa_avgVol   = ta.sma(volume, 20)
+float fa_avgBody  = ta.sma(math.abs(close - open), 20)
+float fa_avgDelta = ta.sma(math.abs(close - close[1]), 10)
+float fa_trendMA  = ta.sma(close, 50)
+float fa_body = close - open, float fa_rng = high - low
+float fa_bodySz = math.abs(fa_body)
+float fa_bodyRat = fa_rng == 0 ? 0.0 : fa_bodySz / fa_rng
+bool  fa_up = fa_body > 0, bool fa_dn = fa_body < 0
+float fa_pbody = close[1] - open[1], float fa_prng = high[1] - low[1]
+
+bool MB_b = fa_up and fa_bodySz > 1.6 * atr14 and fa_bodyRat > 0.70 and volume > 1.8 * fa_avgVol
+bool RE_b = fa_up and fa_rng > 2.2 * atr14 and (high - close) < 0.15 * fa_rng and volume > 1.8 * fa_avgVol
+bool TA_b = fa_trendMA > fa_trendMA[1] and (close - close[1]) > 1.6 * fa_avgDelta and fa_up and volume > 1.8 * fa_avgVol
+bool GG_b = (open - close[1]) > 0.9 * atr14 and fa_up and low > close[1] and volume > 1.8 * fa_avgVol
+bool StrongBear = close[1] < open[1] and math.abs(fa_pbody) > 1.5 * fa_avgBody[1] and volume[1] > 1.5 * fa_avgVol[1]
+bool WeakBear   = close[1] < open[1] and (fa_prng == 0 ? 0.0 : math.abs(fa_pbody) / fa_prng) <= 0.2
+bool TR_b = WeakBear and (MB_b or RE_b or TA_b)
+bool ES_b = StrongBear and (MB_b or RE_b or TA_b)
+bool GDR_b = close[1] < open[1] and GG_b
+int  b_core = (MB_b ? 1 : 0) + (RE_b ? 1 : 0) + (TA_b ? 1 : 0)
+bool b_gg_exc = GG_b and not (b_core >= 2 and fa_bodyRat >= 0.80)
+bool sigFAUNABull = conf and (MB_b or RE_b or TA_b) and not (TR_b or ES_b or GDR_b or b_gg_exc)
+
+bool MB_r = fa_dn and fa_bodySz > 1.6 * atr14 and fa_bodyRat > 0.70 and volume > 1.8 * fa_avgVol
+bool RE_r = fa_dn and fa_rng > 2.2 * atr14 and (close - low) < 0.15 * fa_rng and volume > 1.8 * fa_avgVol
+bool TA_r = fa_trendMA < fa_trendMA[1] and (close[1] - close) > 1.6 * fa_avgDelta and fa_dn and volume > 1.8 * fa_avgVol
+bool GG_r = (close[1] - open) > 0.9 * atr14 and fa_dn and high < close[1] and volume > 1.8 * fa_avgVol
+bool StrongBull = close[1] > open[1] and math.abs(fa_pbody) > 1.5 * fa_avgBody[1] and volume[1] > 1.5 * fa_avgVol[1]
+bool WeakBull   = close[1] > open[1] and (fa_prng == 0 ? 0.0 : math.abs(fa_pbody) / fa_prng) <= 0.2
+bool TR_r = WeakBull and (MB_r or RE_r or TA_r)
+bool ES_r = StrongBull and (MB_r or RE_r or TA_r)
+bool GDR_r = close[1] > open[1] and GG_r
+int  s_core = (MB_r ? 1 : 0) + (RE_r ? 1 : 0) + (TA_r ? 1 : 0)
+bool s_gg_exc = GG_r and not (s_core >= 2 and fa_bodyRat >= 0.80)
+bool sigFAUNABear = conf and (MB_r or RE_r or TA_r) and not (TR_r or ES_r or GDR_r or s_gg_exc)
+
+// --- ENGINE 1: RVOL  (SQUARIFY L503-518) ------------------------------------
+f_rvol_1x(_s) => _s <= 10 ? 38.0 : _s <= 15 ? 33.0 : _s <= 30 ? 28.0 : _s <= 45 ? 23.0 : _s <= 60 ? 20.0 : _s <= 120 ? 18.0 : _s <= 300 ? 13.0 : _s <= 360 ? 13.0 : _s <= 540 ? 11.0 : _s <= 600 ? 10.0 : _s <= 660 ? 9.0 : _s <= 900 ? 7.5 : _s <= 1560 ? 6.5 : _s <= 2340 ? 6.0 : _s <= 3600 ? 4.5 : _s <= 9000 ? 4.0 : _s <= 11700 ? 3.5 : _s < 259200 ? 1.8 : 1.0
+f_gs_moab(_s) => _s < 60 ? f_rvol_1x(_s) * 3.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 1500 ? 20.0 : _s <= 3000 ? 20.0 : _s <= 7260 ? 10.0 : _s <= 11700 ? 8.0 : _s <= 86400 ? 7.5 : _s <= 259200 ? 3.5 : 3.0
+f_saab(_s) => f_rvol_1x(_s) * 0.56
+
+float th_saab = f_saab(tfSec), float th_1x = f_rvol_1x(tfSec), float th_gs = f_gs_moab(tfSec)
+
+float bb_spike   = math.abs(close - open)
+float bb_avgSpk  = ta.sma(bb_spike, 30)
+float bb_avgVol  = ta.sma(volume, 30)
+float bb_npr     = nz(bb_avgSpk[1]) == 0 ? bb_spike : bb_spike / bb_avgSpk[1]
+float bb_nvo     = nz(bb_avgVol[1]) == 0 ? volume   : volume / bb_avgVol[1]
+float bb_diff    = bb_npr - bb_nvo
+float bb_posDiff = bb_diff > 0 ? bb_diff : na
+float bb_smaDiff = ta.sma(bb_posDiff, 20)
+bool  bb_baseBull = close > open and bb_posDiff > bb_smaDiff
+bool  bb_baseBear = close < open and bb_posDiff > bb_smaDiff
+
+bool sigSAAB       = conf and bb_baseBull and bb_npr >= th_saab and bb_npr < th_1x
+bool sigKratos     = conf and bb_baseBear and bb_npr >= th_saab and bb_npr < th_1x
+bool sigGrandSlam  = conf and bb_baseBull and bb_npr >= th_gs
+bool sigMOAB       = conf and bb_baseBear and bb_npr >= th_gs
+bool sigBullRVOL1x = conf and bb_baseBull and bb_npr >= th_1x and bb_npr < th_gs and not sigGrandSlam
+bool sigBearRVOL1x = conf and bb_baseBear and bb_npr >= th_1x and bb_npr < th_gs and not sigMOAB
+
+// S6's "directional but NOT required to reach the SAAB/Kratos floor" (spec 3.1)
+bool dirBull = conf and bb_baseBull
+bool dirBear = conf and bb_baseBear
+
+// --- NAGASAKI: running all-time-high volume  (SQUARIFY L525-532) -------------
+var float maxVol = 0.0
+bool isNagasaki = false
+if bar_index == 0
+    maxVol := volume
+else if volume > maxVol
+    isNagasaki := true
+    maxVol := volume
+bool sigNagasaki = conf and isNagasaki
+
+// --- ENGINE 11: LONG/SHORT 1-5  (SQUARIFY L1304-1312, ladder extended) ------
+var string GL = "LONG / SHORT TIERS (S7)"
+float ls_reg1 = input.float(10.0, "Tier1 reg ratio >", group = GL), float ls_cum1 = input.float(5.0, "Tier1 cum ratio >", group = GL)
+float ls_reg2 = input.float(8.0,  "Tier2 reg ratio >", group = GL), float ls_cum2 = input.float(4.0, "Tier2 cum ratio >", group = GL)
+float ls_reg3 = input.float(6.0,  "Tier3 reg ratio >", group = GL), float ls_cum3 = input.float(3.0, "Tier3 cum ratio >", group = GL)
+float ls_reg4 = input.float(4.0,  "Tier4 reg ratio >", group = GL), float ls_cum4 = input.float(2.0, "Tier4 cum ratio >", group = GL)
+float ls_reg5 = input.float(3.0,  "Tier5 reg ratio >", group = GL), float ls_cum5 = input.float(1.5, "Tier5 cum ratio >", group = GL)
+float ls_body = input.float(0.69, "All tiers: body ratio >=", group = GL)
+
+float rv_reg = nz(volume / ta.sma(volume, 30))
+var float cumVol = 0.0
+var float cumBase = 0.0
+bool newDay = ta.change(time("D")) != 0
+if newDay
+    cumVol := volume
+    cumBase := ta.sma(volume, 30)
+else
+    cumVol := nz(cumVol[1]) + volume
+    cumBase := nz(cumBase[1]) + ta.sma(volume, 30)
+float rv_cum = cumBase == 0 ? 0.0 : cumVol / cumBase
+float ls_bodyRat = (high - low) == 0 ? 0.0 : math.abs(close - open) / (high - low)
+
+bool anyLong  = conf and ls_bodyRat >= ls_body and close > open and ((rv_reg > ls_reg1 and rv_cum > ls_cum1) or (rv_reg > ls_reg2 and rv_cum > ls_cum2) or (rv_reg > ls_reg3 and rv_cum > ls_cum3) or (rv_reg > ls_reg4 and rv_cum > ls_cum4) or (rv_reg > ls_reg5 and rv_cum > ls_cum5))
+bool anyShort = conf and ls_bodyRat >= ls_body and close < open and ((rv_reg > ls_reg1 and rv_cum > ls_cum1) or (rv_reg > ls_reg2 and rv_cum > ls_cum2) or (rv_reg > ls_reg3 and rv_cum > ls_cum3) or (rv_reg > ls_reg4 and rv_cum > ls_cum4) or (rv_reg > ls_reg5 and rv_cum > ls_cum5))
+
+// --- PBJ / PB "Zoo" engine  (SQUARIFY L700-816) -----------------------------
+var string GZ = "PBJ / PB ENGINE"
+int   zoo_ma_len    = input.int(5,    "VWMA length",        group = GZ)
+float zoo_st_mult   = input.float(2.0,"Supertrend x ATR",   group = GZ)
+int   zoo_st_period = input.int(10,   "Supertrend ATR len", group = GZ)
+int   zoo_pbj_ma    = input.int(20,   "PBJ EMA length",     group = GZ)
+int   zoo_pbj_atr   = input.int(14,   "PBJ ATR length",     group = GZ)
+float zoo_pbj_mult  = input.float(3.0,"PBJ ATR mult",       group = GZ)
+int   zoo_pbj_hhll  = input.int(25,   "PBJ lookback",       group = GZ)
+int   zoo_pbj_volp  = input.int(20,   "PBJ vol SMA",        group = GZ)
+float zoo_pbj_volm  = input.float(0.1,"PBJ vol mult",       group = GZ)
+
+float base_ma = ta.vwma(close, zoo_ma_len)
+float zoo_atr = zoo_st_mult * ta.atr(zoo_st_period)
+var int st_dir = 1
+float curr_long = 0.0
+curr_long := base_ma > nz(curr_long[1], base_ma - zoo_atr) ? math.max(base_ma - zoo_atr, nz(curr_long[1])) : base_ma - zoo_atr
+float curr_short = 0.0
+curr_short := base_ma < nz(curr_short[1], base_ma + zoo_atr) ? math.min(base_ma + zoo_atr, nz(curr_short[1])) : base_ma + zoo_atr
+float sig_line = 0.0
+if nz(st_dir[1]) == -1 and close > nz(curr_short[1])
+    st_dir := 1
+else if nz(st_dir[1]) == 1 and close < nz(curr_long[1])
+    st_dir := -1
+sig_line := st_dir == 1 ? curr_long : curr_short
+
+bool buy_cross  = ta.crossover(close, sig_line)
+bool sell_cross = ta.crossunder(close, sig_line)
+
+float pbj_ma  = ta.ema(close, zoo_pbj_ma)
+float pbj_atr = ta.atr(zoo_pbj_atr)
+float zoo_avgv = ta.sma(volume, zoo_pbj_volp)
+float zoo_thr = close == 0 ? 0 : (pbj_atr / close * zoo_pbj_mult)
+bool pbj_buy  = low  < pbj_ma * (1 - zoo_thr) and low  == ta.lowest(low,  zoo_pbj_hhll) and volume > zoo_avgv * zoo_pbj_volm
+bool pbj_sell = high > pbj_ma * (1 + zoo_thr) and high == ta.highest(high, zoo_pbj_hhll) and volume > zoo_avgv * zoo_pbj_volm
+
+var bool wait_pbj_buy = false, var bool wait_pbj_sell = false
+var bool wait_buy = false, var bool wait_sell = false
+if pbj_buy
+    wait_pbj_buy := true
+if pbj_sell
+    wait_pbj_sell := true
+if conf and low <= nz(sig_line) * 1.005
+    wait_buy := true
+if conf and high >= nz(sig_line) * 0.995
+    wait_sell := true
+
+bool sig_pbj_buy  = buy_cross  and wait_pbj_buy
+bool sig_pb_buy   = buy_cross  and wait_buy
+bool sig_pbj_sell = sell_cross and wait_pbj_sell
+bool sig_pb_sell  = sell_cross and wait_sell
+if sig_pbj_buy
+    wait_pbj_buy := false
+if sig_pb_buy
+    wait_buy := false
+if sig_pbj_sell
+    wait_pbj_sell := false
+if sig_pb_sell
+    wait_sell := false
+
+bool sigBullPBJ = conf and sig_pbj_buy
+bool sigBullPB  = conf and sig_pb_buy and not sig_pbj_buy
+bool sigBearPBJ = conf and sig_pbj_sell
+bool sigBearPB  = conf and sig_pb_sell and not sig_pbj_sell
+
+// --- KC RE-ENTRY: RS (slope latch) and RC (cross latch) ---------------------
+var string GK = "KC RE-ENTRY (S5)"
+int   kc_len   = input.int(20,   "KC EMA length",     group = GK)
+float kc_mult  = input.float(2.0,"KC ATR mult",       group = GK)
+float kc_slope = input.float(0.02,"KC slope threshold (x ATR)", group = GK,
+     tooltip = "Scale-free: threshold = this x ATR. An absolute-dollar slope kills the lane on low-priced names.")
+
+float kc_mid = ta.ema(close, kc_len)
+float kc_atr = ta.atr(kc_len)
+float kc_up  = kc_mid + kc_mult * kc_atr
+float kc_dn  = kc_mid - kc_mult * kc_atr
+float kc_thr = kc_slope * kc_atr
+
+var bool wait_bull_cross = false, var bool wait_bear_cross = false
+var bool wait_slope_bull = false, var bool wait_slope_bear = false
+if close < kc_dn
+    wait_bull_cross := true
+    wait_slope_bull := true
+if close > kc_up
+    wait_bear_cross := true
+    wait_slope_bear := true
+
+bool cab       = ta.crossover(close, kc_mid)
+bool cbb       = ta.crossunder(close, kc_mid)
+bool mid_bull  = (kc_mid - kc_mid[1]) > kc_thr
+bool mid_bear  = (kc_mid[1] - kc_mid) > kc_thr
+
+bool sigKcRC_b = conf and wait_bull_cross and cab
+bool sigKcRC_r = conf and wait_bear_cross and cbb
+bool sigKcRS_b = conf and wait_slope_bull and mid_bull
+bool sigKcRS_r = conf and wait_slope_bear and mid_bear
+if sigKcRC_b
+    wait_bull_cross := false
+if sigKcRC_r
+    wait_bear_cross := false
+if sigKcRS_b
+    wait_slope_bull := false
+if sigKcRS_r
+    wait_slope_bear := false
+
+// =============================================================================
+// GATES
+// =============================================================================
+bool gFaunaB = not req_fauna or sigFAUNABull
+bool gFaunaR = not req_fauna or sigFAUNABear
+bool gPocketB = pocket_mode == "PBJ only" ? sigBullPBJ : pocket_mode == "PB only" ? sigBullPB : (sigBullPBJ or sigBullPB)
+bool gPocketR = pocket_mode == "PBJ only" ? sigBearPBJ : pocket_mode == "PB only" ? sigBearPB : (sigBearPBJ or sigBearPB)
+
+// =============================================================================
+// THE 14 DETECTIONS
+// =============================================================================
+bool det_s1b = sig_HV and sigDISPBull and gFaunaB and gPocketB
+bool det_s1r = sig_HV and sigDISPBear and gFaunaR and gPocketR
+bool det_s2b = sig_HV and sigDISPBull and gFaunaB and sigBullPBJ
+bool det_s2r = sig_HV and sigDISPBear and gFaunaR and sigBearPBJ
+bool det_s3b = sig_HV and sigDISPBull and sigBullRVOL1x and gFaunaB and gPocketB
+bool det_s3r = sig_HV and sigDISPBear and sigBearRVOL1x and gFaunaR and gPocketR
+bool det_s4b = sig_HV and sigGrandSlam and sigDISPBull and gFaunaB and gPocketB
+bool det_s4r = sig_HV and sigMOAB      and sigDISPBear and gFaunaR and gPocketR
+bool det_s5b = sigKcRS_b and sigKcRC_b and sig_HV and sigDISPBull and (sigBullRVOL1x or sigGrandSlam) and gFaunaB and gPocketB
+bool det_s5r = sigKcRS_r and sigKcRC_r and sig_HV and sigDISPBear and (sigBearRVOL1x or sigMOAB)      and gFaunaR and gPocketR
+bool det_s6b = sigNagasaki and sigDISPBull and dirBull and gFaunaB
+bool det_s6r = sigNagasaki and sigDISPBear and dirBear and gFaunaR
+bool det_s7b = sigNagasaki and anyLong  and gFaunaB
+bool det_s7r = sigNagasaki and anyShort and gFaunaR
+
+// =============================================================================
+// VISUAL PLOTS — real plot outputs only (CARDINAL SIN #1). No two lanes share
+// (shape, location). Display gated ONLY by the VISUAL PLOTS checkboxes.
+// =============================================================================
+plotshape(v_s1b and det_s1b, "S1 HV+D Bull",            shape.triangleup,   location.belowbar, c_s1b, size = size.small)
+plotshape(v_s1r and det_s1r, "S1 HV+D Bear",            shape.triangledown, location.abovebar, c_s1r, size = size.small)
+plotshape(v_s2b and det_s2b, "S2 HV+D+PBJ Bull",        shape.circle,       location.belowbar, c_s2b, size = size.small)
+plotshape(v_s2r and det_s2r, "S2 HV+D+PBJ Bear",        shape.circle,       location.abovebar, c_s2r, size = size.small)
+plotshape(v_s3b and det_s3b, "S3 HV+D+RVOL1x Bull",     shape.square,       location.belowbar, c_s3b, size = size.small)
+plotshape(v_s3r and det_s3r, "S3 HV+D+RVOL1x Bear",     shape.square,       location.abovebar, c_s3r, size = size.small)
+plotshape(v_s4b and det_s4b, "S4 HV+GS+D Bull",         shape.diamond,      location.belowbar, c_s4b, size = size.small)
+plotshape(v_s4r and det_s4r, "S4 HV+MOAB+D Bear",       shape.diamond,      location.abovebar, c_s4r, size = size.small)
+plotshape(v_s5b and det_s5b, "S5 HV+D+RS+RC+RVOL Bull", shape.flag,         location.belowbar, c_s5b, size = size.small)
+plotshape(v_s5r and det_s5r, "S5 HV+D+RS+RC+RVOL Bear", shape.flag,         location.abovebar, c_s5r, size = size.small)
+plotshape(v_s6b and det_s6b, "S6 NAGA+D+DIR Bull",      shape.arrowup,      location.belowbar, c_s6b, size = size.small)
+plotshape(v_s6r and det_s6r, "S6 NAGA+D+DIR Bear",      shape.arrowdown,    location.abovebar, c_s6r, size = size.small)
+plotshape(v_s7b and det_s7b, "S7 NAGA+LONG1-5 Bull",    shape.xcross,       location.belowbar, c_s7b, size = size.small)
+plotshape(v_s7r and det_s7r, "S7 NAGA+SHORT1-5 Bear",   shape.xcross,       location.abovebar, c_s7r, size = size.small)
+
+// =============================================================================
+// ALERTS — gated ONLY by the ALERT checkboxes, independent of display
+// =============================================================================
+alertcondition(a_s1b and det_s1b, "S1 HV+D Bull",            "SECONDS S1 HV+D Bull")
+alertcondition(a_s1r and det_s1r, "S1 HV+D Bear",            "SECONDS S1 HV+D Bear")
+alertcondition(a_s2b and det_s2b, "S2 HV+D+PBJ Bull",        "SECONDS S2 HV+D+PBJ Bull")
+alertcondition(a_s2r and det_s2r, "S2 HV+D+PBJ Bear",        "SECONDS S2 HV+D+PBJ Bear")
+alertcondition(a_s3b and det_s3b, "S3 HV+D+RVOL1x Bull",     "SECONDS S3 HV+D+RVOL1x Bull")
+alertcondition(a_s3r and det_s3r, "S3 HV+D+RVOL1x Bear",     "SECONDS S3 HV+D+RVOL1x Bear")
+alertcondition(a_s4b and det_s4b, "S4 HV+GS+D Bull",         "SECONDS S4 HV+GS+D Bull")
+alertcondition(a_s4r and det_s4r, "S4 HV+MOAB+D Bear",       "SECONDS S4 HV+MOAB+D Bear")
+alertcondition(a_s5b and det_s5b, "S5 HV+D+RS+RC+RVOL Bull", "SECONDS S5 HV+D+RS+RC+RVOL Bull")
+alertcondition(a_s5r and det_s5r, "S5 HV+D+RS+RC+RVOL Bear", "SECONDS S5 HV+D+RS+RC+RVOL Bear")
+alertcondition(a_s6b and det_s6b, "S6 NAGA+D+DIR Bull",      "SECONDS S6 NAGA+D+DIR Bull")
+alertcondition(a_s6r and det_s6r, "S6 NAGA+D+DIR Bear",      "SECONDS S6 NAGA+D+DIR Bear")
+alertcondition(a_s7b and det_s7b, "S7 NAGA+LONG1-5 Bull",    "SECONDS S7 NAGA+LONG1-5 Bull")
+alertcondition(a_s7r and det_s7r, "S7 NAGA+SHORT1-5 Bear",   "SECONDS S7 NAGA+SHORT1-5 Bear")
