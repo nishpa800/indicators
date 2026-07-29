@@ -6,6 +6,60 @@ Two separate studies, always (operator order 2026-07-27): **BEDROCK BULL** (BDRB
 VP spec: `contracts/bedrock_vp_spec.json`. Decisions ledger (CLOSED items are law):
 `contracts/bedrock_build_decisions.json`.
 
+## v1.2 — 2026-07-29 — FIRST BAR MASTER BECOMES AN ALERT GATE (BEDROCK BULL v1.2 + BEDROCK BEAR v1.2)
+
+Operator law: *"we need to see the visual plots but if we check the first bar checkbox,
+then and only then we ONLY want the alert if the definition of first bar criteria is met
+and there will be no other alert fired beyond that first bar definition. its important bc
+low time intervals would fire crazily if we dont have this ability."*
+
+**The defect v1.2 closes.** BEDROCK v1.1 *did* carry `★ FIRST BAR MASTER ★` (inherited
+from FIRST BAR FABLE), but it gated the **detection** layer — `sig_L = D_L and c(L)` — and
+`sig_L` feeds both `fire_L` (the plot) and `alf_L` (the alert). ON therefore erased the
+visual plots off the first bar as well as the alerts. There was no way to keep the chart
+fully drawn while quieting the alerts, which is exactly what low intervals need.
+
+**The transform** (per lane L, `c(L)` = its reference-bar class ∈ {fb0, fb1, fb01, fbs,
+fbm, fb12}; 55 BULL lanes, 54 BEAR lanes):
+
+| | v1.1 | v1.2 |
+|---|---|---|
+| detection | `sig_L = D_L and c(L)` | `sig_L = D_L` |
+| **plot** | `fire_L = en_L and sig_L` | `fire_L = en_L and sig_L` — **ungated** |
+| gate | — | `aok_L = sig_L and c(L)` |
+| **alert** | `alf_L = al_L and sig_L` | `alf_L = al_L and aok_L` — **gated** |
+| alert count | `qn` term `fire_L` | `((en_L and aok_L) ? 1 : 0)` ≡ old `fire_L` |
+
+- **T-A alert invariance** — `alf_new = al ∧ (D ∧ hc) ∧ c = al ∧ (D ∧ c ∧ hc) = alf_old`.
+  Alert firing and alert text are bit-identical to v1.1 with the master ON.
+- **T-B qn invariance** — `en ∧ aok = en ∧ sig_old = fire_old`, so the `SIDE n` count in
+  every alert string is unchanged.
+- **T-C plot unconditionality** — `fire_L` carries no `c(L)` term ⇒ ∂fire/∂master = 0.
+- **T-D master-OFF identity** — OFF ⇒ `c ≡ true` ⇒ the study is identical to v1.1.
+- **T-E alert totality** — every `alf_L` carries a `c(L)` factor. **Closures:** v1.1 left
+  four lanes alert-ungated — `qS20`/`qS21` (b2bFC, a two-bar back-to-back → assigned
+  `fb01`, the FBF law "the pair touches the first bar") and `qS32`/`qS33` (OPEN1 →
+  assigned `fb0`, a provable no-op since `det_open1*` already requires `is_new_sess`).
+  With the master ON, no alert of any kind now fires outside the first-bar definition.
+
+**First-bar definition — unchanged, and NOT redefined here.** BEDROCK keeps the
+estate-canonical `bool is_new_day = ta.change(time("D")) != 0` / `is_new_sess =
+is_new_day`, byte-identical to FIRST BAR FABLE v3 / EXT v6 and SECONDS v1 (B2B PUP's
+`session.isfirstbar` is the same boundary).
+
+**Master input** retitled `★ FIRST BAR MASTER — ALERTS ONLY ★`, default **ON** (unchanged
+default: alert behaviour matches today; the plots are what newly appear on every bar).
+
+**Plot budget unchanged** — not one `plotshape` line was touched; each already read
+`fire_L`, which is now first-bar-independent. Graphic-object disclosure (L-61): **zero**
+`label.new`/`line.new`/`box.new`/`table.*`/`polyline.new` sites added; every VP remains a
+real plot.
+
+Gates: `validation/wrappers/bedrock_firstbar_alert_gate.py` → **D_bdrfb = 0 PROVED**,
+anti-fixture battery **5/5 CAUGHT**; W-INDSTUDY manifests
+`validation/indstudy/manifest_bedrock-{bull,bear}_v1.2.json` (declared-edits-only,
+rebuild byte-compare D=0).
+
 ## v1.1 — 2026-07-28 — THE ERROR-WAVE FIX (BEDROCK BEAR v1.1 + BEDROCK BULL v1.1)
 
 Operator witnessed ~20 TradingView errors per study on v1.0 ("I cannot take all the
