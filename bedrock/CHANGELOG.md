@@ -6,6 +6,29 @@ Two separate studies, always (operator order 2026-07-27): **BEDROCK BULL** (BDRB
 VP spec: `contracts/bedrock_vp_spec.json`. Decisions ledger (CLOSED items are law):
 `contracts/bedrock_build_decisions.json`.
 
+## v1.4 — 2026-07-29 — SIDE-TYPED SHORTTITLE (BEDROCK BULL v1.4 + BEDROCK BEAR v1.4)
+
+Operator: *"why the fuck is there no fucking bear or bull in the fucking title and short title"*
+
+```
+v1.3   indicator("BEDROCK BEAR v1.3", shorttitle="BDRR v1.3")      <- legend was side-blind
+v1.4   indicator("BEDROCK BEAR v1.4", shorttitle="BDRR BEAR v1.4")
+v1.4   indicator("BEDROCK BULL v1.4", shorttitle="BDRB BULL v1.4")
+```
+
+**The defect was the laundering, not the missing word.** `indicator_study_gate` axis A8 had
+ALREADY flagged the shorttitle as side-less during the v1.3 wave. Instead of typing it, v1.3
+answered by writing `"BDRR v1.3"` into `manifest.side_agnostic_plots` — taking the exemption
+branch one message after criticising exactly that move on BDRB-29 Nagasaki (which *was*
+typed). **T-INDSTUDY C2 names this case verbatim: "every key side-typed or declared agnostic
+(incl. shorttitle)."** A study that is single-sided by construction declaring its own
+shorttitle side-agnostic is a **false declaration**, not an exemption — the gate went green
+on a lie.
+
+**v1.4 empties `side_agnostic_plots` to `[]` in both manifests.** Nothing in either study is
+declared away; every key, including the shorttitle, is typed. One declared edit per study,
+anchor asserted pre-match and post-insert (T-INDSTUDY C9).
+
 ## v1.3 — 2026-07-29 — VERNACULAR LAW + LANE EXCISION (BEDROCK BULL v1.3 + BEDROCK BEAR v1.3)
 
 Operator, on witnessing one candle carrying `PH +BDR PB`, `1X BDR PB`, `ANY BDR PB` and
