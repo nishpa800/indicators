@@ -6,6 +6,74 @@ Two separate studies, always (operator order 2026-07-27): **BEDROCK BULL** (BDRB
 VP spec: `contracts/bedrock_vp_spec.json`. Decisions ledger (CLOSED items are law):
 `contracts/bedrock_build_decisions.json`.
 
+## v1.3 — 2026-07-29 — VERNACULAR LAW + LANE EXCISION (BEDROCK BULL v1.3 + BEDROCK BEAR v1.3)
+
+Operator, on witnessing one candle carrying `PH +BDR PB`, `1X BDR PB`, `ANY BDR PB` and
+`NAKED PB` at once: *"how the fuck is it naked if there is penthouse and rvol 1x... why
+are you not suppressing naked pb and any bdr pb when the other conditions are met?????
+you are not permitted ever, never never to use vernacular inconsistent on the chart, the
+style tab, the visual plot checkbox and the alert checkbox and the source code. all 5
+locations must have consistent naming... a long spelled out name and then one and only
+one short hand version that strives for clarity not brevity. naked is a fail because it
+can mean many things."*
+
+### R1 — EXCISED BDRB/BDRR-09, -10, -11, -12. Proven redundant, not merely noisy.
+
+```
+BDR_NAKED_J = PBJ ∧ RC ∧ RS ∧ DIR ∧ FD        (:2445)
+BDR_CORE    =       RC ∧ RS ∧ DIR ∧ FD        (:2440)
+BDR_HC_J    = PBJ ∧ BDR_CORE                  (:2441)
+BDR_ANY_J   = BDR_HC_J                        (:2447, a bare assignment)
+⟹ BDR_NAKED_J ≡ BDR_HC_J ≡ BDR_ANY_J — ONE boolean, THREE names.
+```
+
+`BDR_HC_*` already contains `DIR = rv_base*`, and the four tiers partition that same axis
+on `rv_normPrice`, so **exactly one of lanes 01–04 fires on every bar where 09/11 fired**.
+Lanes 09–12 therefore carried **zero information** beyond 01–08. This is *why* the
+operator's candle wore four marks — not a suppression bug, a lane shipped alongside its
+own partition. Confirmed on his own TradingView export (SHC 5m, 7,473 bars): **09 and 11
+fired the IDENTICAL 3 bars, 0 XOR disagreements; 01(1) + 02(2) = 3 = 09(3) = 11(3), both-fire 0,
+neither-fire 0.** Suppression logic was unnecessary: excision is lossless by theorem.
+`BDR_NAKED_*` deleted; `BDR_ANY_*` renamed `BDR_BASE_*` (it never meant "any of a set" —
+"ANY" is now reserved for genuine disjunctions like `+ ANY FABLE`).
+
+### R2 — RESIDUALISED lanes 01/05
+
+`NO-TIER = base ∧ ¬KRATOS/SAAB ∧ ¬RVOL-1X ∧ ¬MOAB/GS` (was `rv_norm < th_saab`), making
+the partition exhaustive **by construction** so R1's proof survives any future threshold edit.
+
+### R3 — VERNACULAR: one typed record per lane, both names DERIVED
+
+```
+LONG  = "{id} · {side} · {pocket}+KC-RC+KC-RS · {kind} {qualifier}"
+SHORT = "{qualifier}\n{pocket}"
+```
+
+LONG on the Style-tab title, the visual-plot checkbox and the alert checkbox. SHORT on the
+chart and in the alert. **5-surface agreement measured: 0 mismatches, both studies.**
+
+Killed the unmarked-default defect: lanes 01–04 printed `… / BDR` with **no pocket token**
+while 05–08 printed `… / BDR PB` — so `KRAT / BDR` was indistinguishable from a PB event by
+reading it. **8 lanes across the pair were unreadable.** Clarity over brevity throughout:
+`KRATOS` not `KRAT`, `PENTHOUSE` not `PH`, `GRAND-SLAM` not `GS`, `UNIFIED-COMBO` not `UC`.
+The one genuinely side-less inherited key (BDRB-29 Nagasaki) was **typed**, not declared away.
+
+### R4 — ALERT GRAMMAR v2 (`OP-ALERTGRAMMAR-V2-DP-FIRST`)
+
+`KRATOS PBJ | BDRR-02 | FIRST | DISP 4.2 | RVOL 412 BEAR | HV 250`
+
+The DP leads, leftmost. Then the lane id, the session marker, and the qualifiers in the
+operator's stated order: DISP → RVOL-with-direction → HV. No ticker, no interval, no
+exchange — TradingView already carries them.
+
+### Budget + gates
+
+Plot budget **55→51/64 (BULL)**, **54→50/64 (BEAR)**. Graphic objects added: **zero**.
+`indicator_study_gate` PROVED ×2 (`D_bytes=0`, declared-edits-only rebuild) · `pane_label_gate`
+`D_cs1=0` ×2 · `bedrock_firstbar_alert_gate` `D_bdrfb=0` ×2. Manifests
+`validation/indstudy/manifest_bedrock-{bull,bear}_v1.3.json`. Spec:
+`docs/2026-07-29_TV-TickBar-RE_BEDROCK-VernacularLaw-LaneRedundancy-StructuredFieldSpec_v1.0.md`.
+
 ## v1.2 — 2026-07-29 — FIRST BAR MASTER BECOMES AN ALERT GATE (BEDROCK BULL v1.2 + BEDROCK BEAR v1.2)
 
 Operator law: *"we need to see the visual plots but if we check the first bar checkbox,
