@@ -59,8 +59,8 @@ hvd_tf2sec(string t) =>
         => 0
 
 // === PIPELINE A: DISPLACEMENT 1 (BASE) ===
-grp_hvd1 = "── HV+D: DISP BASE ──"
-d1_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd1)
+grp_hvd1 = "── HV+D DISP · BASE [1/3 of HVD] ──"
+d1_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd1, tooltip="DISPLACEMENT ENGINE HVD — BASE tier (1 of 3). BASE + HTF1 + HTF2 are OR'd into ONE 'HV+D' trigger, each paired with a volume rank; changing any of the three moves ALL HVD plots at once. HVD drives — REQUIRED: 27 HVD+PBJ+B2B, 44 CO, 45 HVD+PBJ, 46 B2BHVD+PBJ, 47 B2BHVD, 53 UU+HVD (plus the '+D' in 14 B2B+F+D and 16 B2B+D). OPTIONAL cosignal: 6/7/8 UU-family, 9 A★, 11 FOX, 19, 22, 48, 55.")
 d1_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd1)
 d1_mult = input.float(5.0, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd1)
 float d1_rng = d1_type == "Open to Close" ? math.abs(open - close) : high - low
@@ -73,8 +73,8 @@ bool  d1_bull = conf and d1_prevDisp and d1_bullFVG
 bool  d1_bear = conf and d1_prevDisp and d1_bearFVG
 
 // === PIPELINE A: DISPLACEMENT 2 (HTF1) ===
-grp_hvd2 = "── HV+D: DISP HTF1 ──"
-d2_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd2)
+grp_hvd2 = "── HV+D DISP · HTF1 [2/3 of HVD] ──"
+d2_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd2, tooltip="DISPLACEMENT ENGINE HVD — HTF1 tier (2 of 3). Combined with BASE + HTF2 into the single 'HV+D' trigger — see the 'HV+D DISP · BASE' group for the full list of plots this drives. Active only when the chart timeframe falls inside HTF Profile 1's range.")
 d2_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd2)
 d2_mult = input.float(2.5, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd2)
 float d2_rng = d2_type == "Open to Close" ? math.abs(open - close) : high - low
@@ -87,8 +87,8 @@ bool  d2_bull = conf and d2_prevDisp and d2_bullFVG
 bool  d2_bear = conf and d2_prevDisp and d2_bearFVG
 
 // === PIPELINE A: DISPLACEMENT 3 (HTF2) ===
-grp_hvd3 = "── HV+D: DISP HTF2 ──"
-d3_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd3)
+grp_hvd3 = "── HV+D DISP · HTF2 [3/3 of HVD] ──"
+d3_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_hvd3, tooltip="DISPLACEMENT ENGINE HVD — HTF2 tier (3 of 3). Combined with BASE + HTF1 into the single 'HV+D' trigger — see the 'HV+D DISP · BASE' group for the full list of plots this drives. Active only when the chart timeframe falls inside HTF Profile 2's range.")
 d3_len  = input.int(100, "Std Dev Length", minval=1, group=grp_hvd3)
 d3_mult = input.float(1.5, "Std Dev Multiplier", minval=0.1, step=0.1, group=grp_hvd3)
 float d3_rng = d3_type == "Open to Close" ? math.abs(open - close) : high - low
@@ -102,70 +102,70 @@ bool  d3_bear = conf and d3_prevDisp and d3_bearFVG
 
 // === PIPELINE A: BASE HV INPUTS ===
 grpSIG = "★ SIGNAL TOGGLES ★"
-bool en_1 = input.bool(true, "1. SD!", group=grpSIG, tooltip="SD! (Super Duper): Platform + PBJ + directional RVOL + Uni.Combo + PUP + Displacement + (FAUNA or Long1). ALL required simultaneously. No gate. Apex signal. Offset=-1.")
-bool en_2 = input.bool(true, "2. SUPER", group=grpSIG, tooltip="SUPER: PBJ + Displacement + (FAUNA or Long1) + directional RVOL + ((Uni.Combo + PUP) or Platform). GATE: one-of-these required (UUUU/UUU/UU/Omega-A/Napalm/B2B Napalm/Uni.Combo/FVG Combo/WMD). Does NOT require Platform if Uni.Combo+PUP path. Offset=-1.")
-bool en_3 = input.bool(true, "3. HW", group=grpSIG, tooltip="HW (Heavy Weapon): Green bar + 5x displacement (std dev, NO FVG) + PBJ + (GrandSlam or WTC or Hiroshima or directional Nagasaki) + Platform. ALL required. No gate. Offset=0.")
-bool en_4 = input.bool(true, "4. FLOOR", group=grpSIG, tooltip="FLOOR: Ping Pong bull (structural support) + PBJ + directional RVOL (1x/GS/WTC/Hiro/dirNag). GATE: one-of-these + checkbox qualifiers Set 1 (PBJ EXCLUDED from checkbox since Floor already requires it). Offset=0.")
-bool en_5 = input.bool(true, "5. 2F", group=grpSIG, tooltip="2F (2nd Floor): Ping Pong bull (structural support) + PB (not PBJ) + directional RVOL. GATE: one-of-these + checkbox qualifiers Set 1. Offset=0.")
-bool en_6 = input.bool(true, "6. UUUU", group=grpSIG, tooltip="UUUU: 4+ consecutive qualified U bars. Paths: A=Day1+PBJ, B=AllDisp, C=AllSAAB+DF, D=HV+D, E=DF+PBJ(diff bar), F=(FAUNA/Disp)+PBJ. SUB-2MIN RULE applies. Offset=0.")
-bool en_7 = input.bool(true, "7. UUU", group=grpSIG, tooltip="UUU: 3 consecutive qualified U bars. Paths: A-E. SUB-2MIN RULE applies. Offset=0.")
-bool en_8 = input.bool(true, "8. UU", group=grpSIG, tooltip="UU: 2 consecutive qualified U bars. Paths: A-E. GATE: one-of-these-for-UU. SUB-2MIN RULE applies. Offset=0.")
-bool en_9 = input.bool(true, "9. A★", group=grpSIG, tooltip="A★ (Alpha Strike): First signal of session + Ping Pong bull + (GrandSlam or RVOL1x) + PBJ ONLY + expanded FAUNA slot (FAUNA/Disp/Napalm/Disp9). PB does NOT qualify. Offset=0.")
-bool en_10 = input.bool(true, "10. ΩA", group=grpSIG, tooltip="ΩA (Omega-A): Boom Hunter omega event + high-confidence cosignal ONLY. Requires NOT MOAB and NOT bear displacement. Offset=0.")
-bool en_11 = input.bool(true, "11. FOX", group=grpSIG, tooltip="FOX (Foxtrot): 4 consecutive FAUNA-confirmed bullish bars. GATE: (HV+D + PBJ) OR one-of-these. Offset=0.")
-bool en_12 = input.bool(true, "12. OD", group=grpSIG, tooltip="OD (Opening Drive): Session bar ≤ max bars into session + FVG + displacement from bar[1] + PUP + PBJ on displacement candle. ALL required. No gate. Offset=-1.")
-bool en_13 = input.bool(true, "13. GOLF", group=grpSIG, tooltip="GOLF: 3-bar sequence: bar[2]=FAUNA+PUP, bar[1]=FAUNA+PUP+DISP, bar[0]=DISP confirmation. Offset=-1.")
-bool en_14 = input.bool(true, "14. B2B+F+D", group=grpSIG, tooltip="B2B+F+D: Back-to-back PUP + FAUNA on both bars + Displacement on both bars. Offset=-1.")
-bool en_15 = input.bool(true, "15. B2B+F", group=grpSIG, tooltip="B2B+F: Back-to-back PUP + FAUNA confirmed on both bars. No displacement required. Offset=0.")
-bool en_16 = input.bool(true, "16. B2B+D", group=grpSIG, tooltip="B2B+D: Back-to-back PUP + Displacement on both bars. No FAUNA required. Offset=-1.")
-bool en_17 = input.bool(true, "17. B2B+SAAB", group=grpSIG, tooltip="B2B+SAAB: Back-to-back PUP + directional RVOL on both bars. Offset=0.")
-bool en_18 = input.bool(true, "18. B2B", group=grpSIG, tooltip="B2B: Back-to-back PUP standalone. Fires only when no higher B2B combo fires. Offset=0.")
-bool en_19 = input.bool(true, "19. B2B+PBJ", group=grpSIG, tooltip="B2B+PBJ: Any B2B PUP window + PBJ on either bar. Offset=0.")
-bool en_20 = input.bool(true, "20. UC+B2B", group=grpSIG, tooltip="UC+B2B: Uni.Combo firing on a B2B PUP window. Offset=0.")
-bool en_21 = input.bool(true, "21. CC+B2B", group=grpSIG, tooltip="CC+B2B: Combo Chain on a B2B PUP window. Offset=0.")
-bool en_22 = input.bool(true, "22. UU+B2B", group=grpSIG, tooltip="UU+B2B: Any UU family firing on a B2B PUP window. Offset=0.")
-bool en_23 = input.bool(true, "23. NPM²+B2B", group=grpSIG, tooltip="NPM²+B2B: B2B Napalm + B2B PUP on same window. Offset=-1.")
-bool en_24 = input.bool(true, "24. B2B+TNT/NPM", group=grpSIG, tooltip="B2B+TNT/NPM: Heavy propulsion event on B2B PUP window. Offset=-1.")
-bool en_25 = input.bool(true, "25. [RESERVED]", group=grpSIG, tooltip="Reserved slot.")
-bool en_26 = input.bool(true, "26. CONT+B2B", group=grpSIG, tooltip="CONT+B2B: Continuous Bull Change on B2B PUP window. Offset=0.")
-bool en_27 = input.bool(true, "27. HVD+PBJ+B2B", group=grpSIG, tooltip="HVD+PBJ+B2B: HV+D + PBJ on consecutive PUP bars. Offset=-1.")
-bool en_28 = input.bool(true, "28. PBJ+F2/E3", group=grpSIG, tooltip="PBJ+F2/E3: PBJ + Foster Pair or Exhaustion Triple. Offset=0.")
-bool en_29 = input.bool(true, "29. PBJ+CL", group=grpSIG, tooltip="PBJ+CL: PBJ + full FAUNA Cluster. Offset=0.")
-bool en_30 = input.bool(true, "30. F2CL→E3", group=grpSIG, tooltip="F2CL→E3: Sequential Foster Pair + Cluster then Exhaustion Triple. Offset=0.")
-bool en_31 = input.bool(true, "31. F2CL+B2B", group=grpSIG, tooltip="F2CL+B2B: Foster Pair + FAUNA Cluster + B2B PUP. Offset=0.")
-bool en_32 = input.bool(true, "32. B2B+F2", group=grpSIG, tooltip="B2B+F2: B2B PUP with Foster Pair. Offset=0.")
-bool en_33 = input.bool(true, "33. E3⅔PP", group=grpSIG, tooltip="E3⅔PP: Exhaustion Triple where 2 of 3 bars are PUP. Offset=0.")
-bool en_34 = input.bool(true, "34. F2×2D", group=grpSIG, tooltip="F2×2D: Foster Pair on consecutive trading sessions. Offset=0.")
-bool en_35 = input.bool(true, "35. E3×2D", group=grpSIG, tooltip="E3×2D: Exhaustion Triple on consecutive sessions. Offset=0.")
-bool en_36 = input.bool(true, "36. F2E3seq", group=grpSIG, tooltip="F2E3seq: Foster Pair one session then Exhaustion Triple next. Offset=0.")
-bool en_37 = input.bool(true, "37. CL×2D", group=grpSIG, tooltip="CL×2D: FAUNA Cluster on consecutive sessions. Offset=0.")
-bool en_38 = input.bool(true, "38. NPM+", group=grpSIG, tooltip="NPM+: Napalm + ((PBJ + (UC or HW or WMD)) OR WMD alone). Offset=-1.")
-bool en_39 = input.bool(true, "39. NPM12", group=grpSIG, tooltip="NPM12: Napalm + checkbox qualifier Set 1 OR Set 2. Offset=-1.")
-bool en_40 = input.bool(true, "40. [RESERVED]", group=grpSIG, tooltip="Reserved slot.")
-bool en_41 = input.bool(true, "41. NPM3", group=grpSIG, tooltip="NPM3: Napalm + checkbox qualifier Set 3. Fires only when NPM12 does NOT fire. Offset=-1.")
-bool en_42 = input.bool(true, "42. B2BNPM", group=grpSIG, tooltip="B2BNPM: Back-to-back Napalm. Offset=-1.")
-bool en_43 = input.bool(true, "43. NPM+TNT", group=grpSIG, tooltip="NPM+TNT: Napalm + TNT on same visual candle. Offset=-1.")
-bool en_44 = input.bool(true, "44. CO", group=grpSIG, tooltip="CO: Pipeline D Triple Co-occurrence. HV+D + PBJ + any USE signal all on bar[1]. Offset=-1.")
-bool en_45 = input.bool(true, "45. HVD+PBJ", group=grpSIG, tooltip="HVD+PBJ: HV+D + PBJ on same candle. Sub-3min requires checkbox. Excludes CO. Offset=-1.")
-bool en_46 = input.bool(true, "46. B2BHVD+PBJ", group=grpSIG, tooltip="B2BHVD+PBJ: Consecutive HV+D + PBJ on either bar. Offset=-1.")
-bool en_47 = input.bool(true, "47. B2BHVD", group=grpSIG, tooltip="B2BHVD: Consecutive HV+D without PBJ. Offset=-1.")
-bool en_48 = input.bool(true, "48. UU+UC", group=grpSIG, tooltip="UU+UC: Any UU family + Uni.Combo on same candle. Offset=-1.")
-bool en_49 = input.bool(true, "49. GRAIL", group=grpSIG, tooltip="GRAIL: Napalm + PBJ + PUP + Uni.Combo ALL on same visual candle. Offset=-1.")
-bool en_50 = input.bool(true, "50. FLR+NPM", group=grpSIG, tooltip="FLR+NPM: Floor + Napalm on same candle. Offset=-1.")
-bool en_51 = input.bool(true, "51. NPM+PBJ+PUP", group=grpSIG, tooltip="NPM+PBJ+PUP: Napalm + PBJ + PUP without Uni.Combo. Offset=-1.")
-bool en_52 = input.bool(true, "52. NAG+", group=grpSIG, tooltip="NAG+: Nagasaki + any bullish signal. Offset=0.")
-bool en_53 = input.bool(true, "53. UU+HVD", group=grpSIG, tooltip="UU+HVD: Any UU family + HV+D + PBJ on same candle. Offset=-1.")
-bool en_54 = input.bool(true, "54. UU+NPM", group=grpSIG, tooltip="UU+NPM: Any UU family + Napalm on same window. Offset=-1.")
-bool en_55 = input.bool(true, "55. FLR+UU", group=grpSIG, tooltip="FLR+UU: Floor or 2F + any UU family. Offset=0.")
-bool en_56 = input.bool(true, "56. FOS+PUP+1x", group=grpSIG, tooltip="FOS+PUP+1x: Foster + PUP + (RVOL1x or Napalm). Offset=0.")
-bool en_57 = input.bool(true, "57. B2B+NPM+PBJ", group=grpSIG, tooltip="B2B+NPM+PBJ: B2B PUP + Napalm + PBJ on same window. Offset=-1.")
-bool en_58 = input.bool(true, "58. B2B+F2E3", group=grpSIG, tooltip="B2B+F2E3: B2B PUP + Foster Pair or Exhaustion Triple. Offset=0.")
-bool en_59 = input.bool(true, "59. CONT", group=grpSIG, tooltip="CONT: Continuous Bull Change. Same-direction TNT reinforcement. Offset=0.")
-bool en_60 = input.bool(true, "60. NPM+UC", group=grpSIG, tooltip="NPM+UC: Napalm + Uni.Combo WITHOUT PBJ. Offset=-1.")
-bool en_61 = input.bool(true, "61. WMD", group=grpSIG, tooltip="WMD: 2+ independent heavy weapon axes (Dir+Neutral/NAG combos). BULLISH-ONLY. Offset=0.")
-bool en_62 = input.bool(true, "62. L1²+B2B", group=grpSIG, tooltip="L1²+B2B: Back-to-back Long1 + B2B PUP. Offset=0.")
-bool en_63 = input.bool(true, "63. NPM+UC+PBJ", group=grpSIG, tooltip="NPM+UC+PBJ: Napalm + Uni.Combo + PBJ. Offset=-1.")
-bool en_64 = input.bool(true, "64. WMD+BULL", group=grpSIG, tooltip="WMD+BULL: WMD + any bullish signal. Offset=0.")
+bool en_1 = input.bool(true, "1. SD!", group=grpSIG, tooltip="SD! (Super Duper): Platform + PBJ + directional RVOL + Uni.Combo + PUP + Displacement + (FAUNA or Long1). ALL required simultaneously. No gate. Apex signal. Offset=-1. ⟶ DISP: REQUIRED · engine D1 ('Displacement' group).")
+bool en_2 = input.bool(true, "2. SUPER", group=grpSIG, tooltip="SUPER: PBJ + Displacement + (FAUNA or Long1) + directional RVOL + ((Uni.Combo + PUP) or Platform). GATE: one-of-these required (UUUU/UUU/UU/Omega-A/Napalm/B2B Napalm/Uni.Combo/FVG Combo/WMD). Does NOT require Platform if Uni.Combo+PUP path. Offset=-1. ⟶ DISP: REQUIRED · engine D1 ('Displacement' group).")
+bool en_3 = input.bool(true, "3. HW", group=grpSIG, tooltip="HW (Heavy Weapon): Green bar + 5x displacement (std dev, NO FVG) + PBJ + (GrandSlam or WTC or Hiroshima or directional Nagasaki) + Platform. ALL required. No gate. Offset=0. ⟶ DISP: REQUIRED · D1 STRENGTH only — uses 'Displacement' Std Dev Length + Range Type at a fixed 5x with NO FVG; the 'Displacement' Min/Max Mult and Require FVG do NOT affect this plot.")
+bool en_4 = input.bool(true, "4. FLOOR", group=grpSIG, tooltip="FLOOR: Ping Pong bull (structural support) + PBJ + directional RVOL (1x/GS/WTC/Hiro/dirNag). GATE: one-of-these + checkbox qualifiers Set 1 (PBJ EXCLUDED from checkbox since Floor already requires it). Offset=0. ⟶ DISP: OPTIONAL · can fire with none. If used: D1·9x (the 'Disp (9 strength)' Checkbox Qualifier) or TNT napalm.")
+bool en_5 = input.bool(true, "5. 2F", group=grpSIG, tooltip="2F (2nd Floor): Ping Pong bull (structural support) + PB (not PBJ) + directional RVOL. GATE: one-of-these + checkbox qualifiers Set 1. Offset=0. ⟶ DISP: OPTIONAL · same as FLOOR — D1·9x checkbox or TNT napalm, or none.")
+bool en_6 = input.bool(true, "6. UUUU", group=grpSIG, tooltip="UUUU: 4+ consecutive qualified U bars. Paths: A=Day1+PBJ, B=AllDisp, C=AllSAAB+DF, D=HV+D, E=DF+PBJ(diff bar), F=(FAUNA/Disp)+PBJ. SUB-2MIN RULE applies. Offset=0. ⟶ DISP: OPTIONAL · can fire with none; displacement paths use D1 ('Displacement') and/or HVD (HV+D group).")
+bool en_7 = input.bool(true, "7. UUU", group=grpSIG, tooltip="UUU: 3 consecutive qualified U bars. Paths: A-E. SUB-2MIN RULE applies. Offset=0. ⟶ DISP: OPTIONAL · same as UUUU — D1 and/or HVD, or none.")
+bool en_8 = input.bool(true, "8. UU", group=grpSIG, tooltip="UU: 2 consecutive qualified U bars. Paths: A-E. GATE: one-of-these-for-UU. SUB-2MIN RULE applies. Offset=0. ⟶ DISP: OPTIONAL · same as UUUU — D1 and/or HVD, or none.")
+bool en_9 = input.bool(true, "9. A★", group=grpSIG, tooltip="A★ (Alpha Strike): First signal of session + Ping Pong bull + (GrandSlam or RVOL1x) + PBJ ONLY + expanded FAUNA slot (FAUNA/Disp/Napalm/Disp9). PB does NOT qualify. Offset=0. ⟶ DISP: OPTIONAL · FAUNA slot may use D1/HVD or TNT napalm; can fire with none.")
+bool en_10 = input.bool(true, "10. ΩA", group=grpSIG, tooltip="ΩA (Omega-A): Boom Hunter omega event + high-confidence cosignal ONLY. Requires NOT MOAB and NOT bear displacement. Offset=0. ⟶ DISP: OPTIONAL · cosignals can include D3 ('Displacement 3+') plus D1/HVD/TNT via HW/SUPER/SD!/OD. NOTE: a bearish D1 candle on the same bar BLOCKS this plot.")
+bool en_11 = input.bool(true, "11. FOX", group=grpSIG, tooltip="FOX (Foxtrot): 4 consecutive FAUNA-confirmed bullish bars. GATE: (HV+D + PBJ) OR one-of-these. Offset=0. ⟶ DISP: OPTIONAL · HVD (via HVD+PBJ) or TNT napalm (one-of-these), or none.")
+bool en_12 = input.bool(true, "12. OD", group=grpSIG, tooltip="OD (Opening Drive): Session bar ≤ max bars into session + FVG + displacement from bar[1] + PUP + PBJ on displacement candle. ALL required. No gate. Offset=-1. ⟶ DISP: REQUIRED · engine D1 ('Displacement' group — the std-breach band).")
+bool en_13 = input.bool(true, "13. GOLF", group=grpSIG, tooltip="GOLF: 3-bar sequence: bar[2]=FAUNA+PUP, bar[1]=FAUNA+PUP+DISP, bar[0]=DISP confirmation. Offset=-1. ⟶ DISP: REQUIRED · engine D1 ('Displacement') on this bar AND the prior bar.")
+bool en_14 = input.bool(true, "14. B2B+F+D", group=grpSIG, tooltip="B2B+F+D: Back-to-back PUP + FAUNA on both bars + Displacement on both bars. Offset=-1. ⟶ DISP: REQUIRED · engine D1 or HVD (this is the '+D').")
+bool en_15 = input.bool(true, "15. B2B+F", group=grpSIG, tooltip="B2B+F: Back-to-back PUP + FAUNA confirmed on both bars. No displacement required. Offset=0. ⟶ DISP: NONE · the no-displacement twin of #14 B2B+F+D.")
+bool en_16 = input.bool(true, "16. B2B+D", group=grpSIG, tooltip="B2B+D: Back-to-back PUP + Displacement on both bars. No FAUNA required. Offset=-1. ⟶ DISP: REQUIRED · engine D1 or HVD (the '+D').")
+bool en_17 = input.bool(true, "17. B2B+SAAB", group=grpSIG, tooltip="B2B+SAAB: Back-to-back PUP + directional RVOL on both bars. Offset=0. ⟶ DISP: NONE · RVOL family only.")
+bool en_18 = input.bool(true, "18. B2B", group=grpSIG, tooltip="B2B: Back-to-back PUP standalone. Fires only when no higher B2B combo fires. Offset=0. ⟶ DISP: NONE · pure back-to-back PUP.")
+bool en_19 = input.bool(true, "19. B2B+PBJ", group=grpSIG, tooltip="B2B+PBJ: Any B2B PUP window + PBJ on either bar. Offset=0. ⟶ DISP: OPTIONAL · fires on plain B2B PUP with none; may pull D1/HVD via the B2B+D member.")
+bool en_20 = input.bool(true, "20. UC+B2B", group=grpSIG, tooltip="UC+B2B: Uni.Combo firing on a B2B PUP window. Offset=0. ⟶ DISP: NONE · Combo Sets use GZ-FVG + RVOL/Matrix, not the displacement engine.")
+bool en_21 = input.bool(true, "21. CC+B2B", group=grpSIG, tooltip="CC+B2B: Combo Chain on a B2B PUP window. Offset=0. ⟶ DISP: NONE · Combo Chain, no displacement.")
+bool en_22 = input.bool(true, "22. UU+B2B", group=grpSIG, tooltip="UU+B2B: Any UU family firing on a B2B PUP window. Offset=0. ⟶ DISP: OPTIONAL · via UU (D1/HVD), or none.")
+bool en_23 = input.bool(true, "23. NPM²+B2B", group=grpSIG, tooltip="NPM²+B2B: B2B Napalm + B2B PUP on same window. Offset=-1. ⟶ DISP: REQUIRED · engine TNT ('TNT Engine' group).")
+bool en_24 = input.bool(true, "24. B2B+TNT/NPM", group=grpSIG, tooltip="B2B+TNT/NPM: Heavy propulsion event on B2B PUP window. Offset=-1. ⟶ DISP: OPTIONAL · the NPM path uses TNT; the plain TNT path uses NO displacement.")
+bool en_25 = input.bool(true, "25. [RESERVED]", group=grpSIG, tooltip="Reserved slot. ⟶ DISP: n/a (reserved slot).")
+bool en_26 = input.bool(true, "26. CONT+B2B", group=grpSIG, tooltip="CONT+B2B: Continuous Bull Change on B2B PUP window. Offset=0. ⟶ DISP: REQUIRED · engine TNT (via the charge mechanism).")
+bool en_27 = input.bool(true, "27. HVD+PBJ+B2B", group=grpSIG, tooltip="HVD+PBJ+B2B: HV+D + PBJ on consecutive PUP bars. Offset=-1. ⟶ DISP: REQUIRED · engine HVD (HV+D group).")
+bool en_28 = input.bool(true, "28. PBJ+F2/E3", group=grpSIG, tooltip="PBJ+F2/E3: PBJ + Foster Pair or Exhaustion Triple. Offset=0. ⟶ DISP: NONE · FAUNA momentum only.")
+bool en_29 = input.bool(true, "29. PBJ+CL", group=grpSIG, tooltip="PBJ+CL: PBJ + full FAUNA Cluster. Offset=0. ⟶ DISP: NONE · FAUNA cluster only.")
+bool en_30 = input.bool(true, "30. F2CL→E3", group=grpSIG, tooltip="F2CL→E3: Sequential Foster Pair + Cluster then Exhaustion Triple. Offset=0. ⟶ DISP: NONE · FAUNA only.")
+bool en_31 = input.bool(true, "31. F2CL+B2B", group=grpSIG, tooltip="F2CL+B2B: Foster Pair + FAUNA Cluster + B2B PUP. Offset=0. ⟶ DISP: NONE · FAUNA + PUP only.")
+bool en_32 = input.bool(true, "32. B2B+F2", group=grpSIG, tooltip="B2B+F2: B2B PUP with Foster Pair. Offset=0. ⟶ DISP: NONE · FAUNA + PUP only.")
+bool en_33 = input.bool(true, "33. E3⅔PP", group=grpSIG, tooltip="E3⅔PP: Exhaustion Triple where 2 of 3 bars are PUP. Offset=0. ⟶ DISP: NONE · FAUNA + PUP only.")
+bool en_34 = input.bool(true, "34. F2×2D", group=grpSIG, tooltip="F2×2D: Foster Pair on consecutive trading sessions. Offset=0. ⟶ DISP: NONE · FAUNA (2-day) only.")
+bool en_35 = input.bool(true, "35. E3×2D", group=grpSIG, tooltip="E3×2D: Exhaustion Triple on consecutive sessions. Offset=0. ⟶ DISP: NONE · FAUNA (2-day) only.")
+bool en_36 = input.bool(true, "36. F2E3seq", group=grpSIG, tooltip="F2E3seq: Foster Pair one session then Exhaustion Triple next. Offset=0. ⟶ DISP: NONE · FAUNA (2-day) only.")
+bool en_37 = input.bool(true, "37. CL×2D", group=grpSIG, tooltip="CL×2D: FAUNA Cluster on consecutive sessions. Offset=0. ⟶ DISP: NONE · FAUNA (2-day) only.")
+bool en_38 = input.bool(true, "38. NPM+", group=grpSIG, tooltip="NPM+: Napalm + ((PBJ + (UC or HW or WMD)) OR WMD alone). Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_39 = input.bool(true, "39. NPM12", group=grpSIG, tooltip="NPM12: Napalm + checkbox qualifier Set 1 OR Set 2. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_40 = input.bool(true, "40. [RESERVED]", group=grpSIG, tooltip="Reserved slot. ⟶ DISP: n/a (reserved slot).")
+bool en_41 = input.bool(true, "41. NPM3", group=grpSIG, tooltip="NPM3: Napalm + checkbox qualifier Set 3. Fires only when NPM12 does NOT fire. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_42 = input.bool(true, "42. B2BNPM", group=grpSIG, tooltip="B2BNPM: Back-to-back Napalm. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_43 = input.bool(true, "43. NPM+TNT", group=grpSIG, tooltip="NPM+TNT: Napalm + TNT on same visual candle. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_44 = input.bool(true, "44. CO", group=grpSIG, tooltip="CO: Pipeline D Triple Co-occurrence. HV+D + PBJ + any USE signal all on bar[1]. Offset=-1. ⟶ DISP: REQUIRED · engine HVD (hard); its 'any USE signal' gate can also pull in D1/D2/D3 as minor terms.")
+bool en_45 = input.bool(true, "45. HVD+PBJ", group=grpSIG, tooltip="HVD+PBJ: HV+D + PBJ on same candle. Sub-3min requires checkbox. Excludes CO. Offset=-1. ⟶ DISP: REQUIRED · engine HVD (HV+D group).")
+bool en_46 = input.bool(true, "46. B2BHVD+PBJ", group=grpSIG, tooltip="B2BHVD+PBJ: Consecutive HV+D + PBJ on either bar. Offset=-1. ⟶ DISP: REQUIRED · engine HVD (HV+D group).")
+bool en_47 = input.bool(true, "47. B2BHVD", group=grpSIG, tooltip="B2BHVD: Consecutive HV+D without PBJ. Offset=-1. ⟶ DISP: REQUIRED · engine HVD (HV+D group).")
+bool en_48 = input.bool(true, "48. UU+UC", group=grpSIG, tooltip="UU+UC: Any UU family + Uni.Combo on same candle. Offset=-1. ⟶ DISP: OPTIONAL · via UU (D1/HVD), or none.")
+bool en_49 = input.bool(true, "49. GRAIL", group=grpSIG, tooltip="GRAIL: Napalm + PBJ + PUP + Uni.Combo ALL on same visual candle. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_50 = input.bool(true, "50. FLR+NPM", group=grpSIG, tooltip="FLR+NPM: Floor + Napalm on same candle. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_51 = input.bool(true, "51. NPM+PBJ+PUP", group=grpSIG, tooltip="NPM+PBJ+PUP: Napalm + PBJ + PUP without Uni.Combo. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_52 = input.bool(true, "52. NAG+", group=grpSIG, tooltip="NAG+: Nagasaki + any bullish signal. Offset=0. ⟶ DISP: OPTIONAL · D1 is one cosignal; can fire with none.")
+bool en_53 = input.bool(true, "53. UU+HVD", group=grpSIG, tooltip="UU+HVD: Any UU family + HV+D + PBJ on same candle. Offset=-1. ⟶ DISP: REQUIRED · engine HVD (HV+D group).")
+bool en_54 = input.bool(true, "54. UU+NPM", group=grpSIG, tooltip="UU+NPM: Any UU family + Napalm on same window. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_55 = input.bool(true, "55. FLR+UU", group=grpSIG, tooltip="FLR+UU: Floor or 2F + any UU family. Offset=0. ⟶ DISP: OPTIONAL · via UU (D1/HVD), or none.")
+bool en_56 = input.bool(true, "56. FOS+PUP+1x", group=grpSIG, tooltip="FOS+PUP+1x: Foster + PUP + (RVOL1x or Napalm). Offset=0. ⟶ DISP: OPTIONAL · the Napalm path uses TNT; the RVOL1x path uses NO displacement.")
+bool en_57 = input.bool(true, "57. B2B+NPM+PBJ", group=grpSIG, tooltip="B2B+NPM+PBJ: B2B PUP + Napalm + PBJ on same window. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_58 = input.bool(true, "58. B2B+F2E3", group=grpSIG, tooltip="B2B+F2E3: B2B PUP + Foster Pair or Exhaustion Triple. Offset=0. ⟶ DISP: NONE · B2B PUP + FAUNA only.")
+bool en_59 = input.bool(true, "59. CONT", group=grpSIG, tooltip="CONT: Continuous Bull Change. Same-direction TNT reinforcement. Offset=0. ⟶ DISP: REQUIRED · engine TNT (via the charge mechanism).")
+bool en_60 = input.bool(true, "60. NPM+UC", group=grpSIG, tooltip="NPM+UC: Napalm + Uni.Combo WITHOUT PBJ. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_61 = input.bool(true, "61. WMD", group=grpSIG, tooltip="WMD: 2+ independent heavy weapon axes (Dir+Neutral/NAG combos). BULLISH-ONLY. Offset=0. ⟶ DISP: NONE · RVOL family only.")
+bool en_62 = input.bool(true, "62. L1²+B2B", group=grpSIG, tooltip="L1²+B2B: Back-to-back Long1 + B2B PUP. Offset=0. ⟶ DISP: NONE · Long1 RVOL + PUP only.")
+bool en_63 = input.bool(true, "63. NPM+UC+PBJ", group=grpSIG, tooltip="NPM+UC+PBJ: Napalm + Uni.Combo + PBJ. Offset=-1. ⟶ DISP: REQUIRED · engine TNT (Napalm).")
+bool en_64 = input.bool(true, "64. WMD+BULL", group=grpSIG, tooltip="WMD+BULL: WMD + any bullish signal. Offset=0. ⟶ DISP: OPTIONAL · D1 or TNT among cosignals; can fire with none.")
 
 string grpHVBase = "── HV+D: BASE HV ──"
 bool ub50   = input.bool(false, "50-Bar",   group=grpHVBase)
@@ -332,22 +332,22 @@ bool show_SuperBull = true, bool show_SuperBear = false
 bool show_SDuperBull = true, bool show_SDuperBear = false
 
 // === INPUTS — USE DISPLACEMENT ===
-grp_disp = "Displacement"
-i_disp_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp)
+grp_disp = "Displacement (D1)"
+i_disp_type = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp, tooltip="DISPLACEMENT ENGINE D1 (std-dev breach + FVG). DRIVES — REQUIRED: 1 SD!, 2 SUPER, 12 OD, 13 GOLF (plus the '+D' in 14 B2B+F+D and 16 B2B+D). OPTIONAL cosignal: 6/7/8 UU-family, 9 A★, 19 B2B+PBJ, 22 UU+B2B, 48 UU+UC, 52 NAG+, 55 FLR+UU, 64 WMD+BULL. NOTE 1: plot 3 HW and the 'Disp (9 strength)' checkbox borrow ONLY this group's Std Dev Length + Range Type (fixed 5x / 9x, NO FVG) — Min Mult, Max Mult and Require FVG do NOT affect them. NOTE 2: a bearish reading here BLOCKS plot 10 ΩA.")
 i_std_len   = input.int(100, "Std Dev Length", minval=1, group=grp_disp)
 i_std_min   = input.float(3.0, "Min Mult", minval=0, step=0.5, group=grp_disp)
 i_std_max   = input.float(100.0, "Max Mult", minval=0, step=0.5, group=grp_disp)
 i_req_fvg   = input.bool(true, "Require FVG", group=grp_disp)
 
-grp_disp2 = "Displacement 2+"
-i_disp2_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp2)
+grp_disp2 = "Displacement 2+ (D2) — DORMANT in SQ64"
+i_disp2_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp2, tooltip="DISPLACEMENT ENGINE D2. STATUS: effectively DORMANT in SQUARIFY 64 — it has NO dedicated plot. It only appears as one minor OR-term inside plot 44 CO's gate (and the disabled OmegaLong cosignal). Tuning it changes almost nothing on this indicator. Retained only for parity with the older 46-plot build.")
 i_disp2_std_len = input.int(100, "Std Dev Length", minval=1, group=grp_disp2)
 i_disp2_std_min = input.float(3.0, "Min Mult", minval=0, step=0.5, group=grp_disp2)
 i_disp2_std_max = input.float(100.0, "Max Mult", minval=0, step=0.5, group=grp_disp2)
 i_disp2_req_fvg = input.bool(true, "Require FVG", group=grp_disp2)
 
-grp_disp3 = "Displacement 3+"
-i_disp3_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp3)
+grp_disp3 = "Displacement 3+ (D3) — near-dormant in SQ64"
+i_disp3_type    = input.string("Open to Close", "Range Type", options=["Open to Close","High to Low"], group=grp_disp3, tooltip="DISPLACEMENT ENGINE D3. STATUS: near-dormant in SQUARIFY 64 — NO dedicated plot. It only nudges plot 10 ΩA (one of ~15 cosignals) and plot 44 CO's gate. Tuning it barely moves anything. Retained only for parity with the older 46-plot build.")
 i_disp3_std_len = input.int(100, "Std Dev Length", minval=1, group=grp_disp3)
 i_disp3_std_min = input.float(3.0, "Min Mult", minval=0, step=0.5, group=grp_disp3)
 i_disp3_std_max = input.float(100.0, "Max Mult", minval=0, step=0.5, group=grp_disp3)
@@ -1454,12 +1454,12 @@ bool b2b_bear_nopb = b2b_bear_raw and not b2b_bear_pbj and not b2b_bear_pb
 // ════════════════════════════════════════════════════════════════════════════
 // TNT PROPULSION BLOCK ENGINE
 // ════════════════════════════════════════════════════════════════════════════
-grpTNT = "TNT Engine"
+grpTNT = "TNT Engine  ·  = Displacement #7 (hidden — NPM/CONT family)"
 int SENS = input.int(100, "TNT Sensitivity", minval=1, group=grpTNT)
 int SWING_LEN = input.int(10, "TNT Swing Length", minval=3, group=grpTNT)
 string DISP_TYPE_T = input.string("Open to Close", "TNT Range Type", options=["Open to Close","High to Low"], group=grpTNT)
 int DISP_STD_LEN_T = input.int(100, "TNT Std Dev Len", minval=1, group=grpTNT)
-int DISP_STD_X_T = input.int(5, "TNT Std Dev Mult", minval=0, group=grpTNT)
+int DISP_STD_X_T = input.int(5, "TNT Std Dev Mult", minval=0, group=grpTNT, tooltip="DISPLACEMENT ENGINE #7 (the hidden one). Together with 'TNT Range Type' + 'TNT Std Dev Len' this is a FULL displacement engine — it just lives in the TNT section instead of a 'Displacement' group. It powers the entire Napalm/Charge family — REQUIRED: 23 NPM²+B2B, 26 CONT+B2B, 38 NPM+, 39 NPM12, 41 NPM3, 42 B2BNPM, 43 NPM+TNT, 49 GRAIL, 50 FLR+NPM, 51 NPM+PBJ+PUP, 54 UU+NPM, 57 B2B+NPM+PBJ, 59 CONT, 60 NPM+UC, 63 NPM+UC+PBJ. OPTIONAL: 4/5 FLOOR/2F, 9 A★, 11 FOX, 24 B2B+TNT/NPM, 56 FOS+PUP+1x, 64 WMD+BULL.")
 float RET_TNT_PCT = input.float(100.0, "Return to TNT %", minval=-10, step=0.1, group=grpTNT)
 int SUDDEN_PROX = input.int(10, "Sudden Change Max Bars", minval=1, group=grpTNT)
 int maxZones_t = 15, int maxSuperZones_t = 8
