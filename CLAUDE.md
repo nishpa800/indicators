@@ -100,7 +100,13 @@ indicators/
   session eval on tick; time charts keep `timeframe.period` for parity). `tools/check_plot_budget.sh`
   now hard-fails on `time(timeframe.period,` and on any blank `relativeVolume(..., "")` anchor.
 - **Never label "canonical" prematurely.** Ingest all variants verbatim. "Which is canonical?" is the OUTPUT of root extraction + TV verification, never the input.
-- **Always commit + push every change in the same turn.** Paste the GitHub URL.
+- **Always commit + push every change in the same turn.** Then ALWAYS paste, without being asked:
+  1. The **direct RAW URL** to every changed/generated code file, for immediate copy-paste into TradingView:
+     `https://raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>`
+     (this form resolves even when the branch name contains slashes — verified). This is the
+     PRIMARY deliverable — the user pastes code from it, so it must be front-and-center, not buried.
+  2. The PR/commit URL second, for context.
+  Never make the user ask for the direct code link.
 
 ## Verification
 

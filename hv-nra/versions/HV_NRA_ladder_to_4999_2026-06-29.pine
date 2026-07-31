@@ -1,0 +1,229 @@
+//@version=5
+indicator("HV(50-1000 step50 + 2k/3k/4k/4999 / HEV) NRA", overlay=true)
+
+// ============================================
+// === NON-REPAINTING ARCHITECTURE ===
+// ============================================
+// PROBLEM 1 - LIVE BAR REPAINTING:
+//   `volume == ta.highest(volume, N)` evaluates on every tick.
+//   Volume accumulates intra-bar, so the condition can flip true->false
+//   or false->true dozens of times before bar close. Signals appear,
+//   disappear, and move to different bars after the fact.
+//
+// PROBLEM 2 - ALERT / PLOT DESYNC:
+//   Original plotshapes used priority filtering (e.g. `not isHEV`)
+//   but alertcondition() did NOT use the same filters.
+//
+// FIX - ALL signals now:
+//   1. Use [1] (prior confirmed bar) for ALL volume comparisons
+//      so values can NEVER change once printed.
+//   2. Plot and alert conditions use IDENTICAL boolean expressions
+//      stored in named variables - one source of truth, zero drift.
+//   3. Every plotshape and every alertcondition references the SAME
+//      `plot_*` variable so a plot can never exist without its alert.
+//
+// LADDER (this version): the 50-step ladder (50,100,...,1000) plus four
+//   coarse tiers on top - 2000, 3000, 4000, 4999 (24 tiers total).
+//   Tiers are NESTED (a 4999-bar high is also a 50-bar high), so exactly
+//   ONE marker prints per bar: the highest tier reached.
+// ============================================
+
+
+// ============================================
+// === INPUTS ===
+// ============================================
+use50    = input.bool(true, "Show 50-Bar High Vol")
+use100   = input.bool(true, "Show 100-Bar High Vol")
+use150   = input.bool(true, "Show 150-Bar High Vol")
+use200   = input.bool(true, "Show 200-Bar High Vol")
+use250   = input.bool(true, "Show 250-Bar High Vol")
+use300   = input.bool(true, "Show 300-Bar High Vol")
+use350   = input.bool(true, "Show 350-Bar High Vol")
+use400   = input.bool(true, "Show 400-Bar High Vol")
+use450   = input.bool(true, "Show 450-Bar High Vol")
+use500   = input.bool(true, "Show 500-Bar High Vol")
+use550   = input.bool(true, "Show 550-Bar High Vol")
+use600   = input.bool(true, "Show 600-Bar High Vol")
+use650   = input.bool(true, "Show 650-Bar High Vol")
+use700   = input.bool(true, "Show 700-Bar High Vol")
+use750   = input.bool(true, "Show 750-Bar High Vol")
+use800   = input.bool(true, "Show 800-Bar High Vol")
+use850   = input.bool(true, "Show 850-Bar High Vol")
+use900   = input.bool(true, "Show 900-Bar High Vol")
+use950   = input.bool(true, "Show 950-Bar High Vol")
+use1000  = input.bool(true, "Show 1000-Bar High Vol")
+use2000  = input.bool(true, "Show 2000-Bar High Vol")
+use3000  = input.bool(true, "Show 3000-Bar High Vol")
+use4000  = input.bool(true, "Show 4000-Bar High Vol")
+use4999  = input.bool(true, "Show 4999-Bar High Vol")
+useHEV   = input.bool(true, "Show All-Time High Vol (HEV)")
+
+// ============================================
+// === VOLUME HIGH CALCULATIONS (CONFIRMED BARS ONLY) ===
+// ============================================
+// All comparisons use [1] (prior CLOSED bar). volume[1] == ta.highest(volume,N)[1]
+// can never change once the bar closes. Markers land on the [1] bar via offset=-1.
+
+bool is50Bar = volume[1] == ta.highest(volume, 50)[1]
+bool is100Bar = volume[1] == ta.highest(volume, 100)[1]
+bool is150Bar = volume[1] == ta.highest(volume, 150)[1]
+bool is200Bar = volume[1] == ta.highest(volume, 200)[1]
+bool is250Bar = volume[1] == ta.highest(volume, 250)[1]
+bool is300Bar = volume[1] == ta.highest(volume, 300)[1]
+bool is350Bar = volume[1] == ta.highest(volume, 350)[1]
+bool is400Bar = volume[1] == ta.highest(volume, 400)[1]
+bool is450Bar = volume[1] == ta.highest(volume, 450)[1]
+bool is500Bar = volume[1] == ta.highest(volume, 500)[1]
+bool is550Bar = volume[1] == ta.highest(volume, 550)[1]
+bool is600Bar = volume[1] == ta.highest(volume, 600)[1]
+bool is650Bar = volume[1] == ta.highest(volume, 650)[1]
+bool is700Bar = volume[1] == ta.highest(volume, 700)[1]
+bool is750Bar = volume[1] == ta.highest(volume, 750)[1]
+bool is800Bar = volume[1] == ta.highest(volume, 800)[1]
+bool is850Bar = volume[1] == ta.highest(volume, 850)[1]
+bool is900Bar = volume[1] == ta.highest(volume, 900)[1]
+bool is950Bar = volume[1] == ta.highest(volume, 950)[1]
+bool is1000Bar = volume[1] == ta.highest(volume, 1000)[1]
+bool is2000Bar = volume[1] == ta.highest(volume, 2000)[1]
+bool is3000Bar = volume[1] == ta.highest(volume, 3000)[1]
+bool is4000Bar = volume[1] == ta.highest(volume, 4000)[1]
+bool is4999Bar = volume[1] == ta.highest(volume, 4999)[1]
+
+// All-Time High Volume (HEV) - running max over CONFIRMED bars only.
+var float maxVolEver = 0.0
+bool isHEV = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    isHEV := true
+
+// ============================================
+// === UNIFIED PLOT+ALERT CONDITIONS ===
+// ============================================
+// Tiers are nested -> show ONLY the highest tier reached per bar:
+//   plot_N fires only if is{N}Bar AND the next tier up did NOT fire.
+//   Priority: HEV > 4999 > 4000 > 3000 > 2000 > 1000 > 950 > ... > 50.
+
+bool plot_HEV   = useHEV  and isHEV
+bool plot_4999  = use4999  and is4999Bar and not isHEV
+bool plot_4000  = use4000  and is4000Bar and not is4999Bar
+bool plot_3000  = use3000  and is3000Bar and not is4000Bar
+bool plot_2000  = use2000  and is2000Bar and not is3000Bar
+bool plot_1000  = use1000  and is1000Bar and not is2000Bar
+bool plot_950   = use950   and is950Bar and not is1000Bar
+bool plot_900   = use900   and is900Bar and not is950Bar
+bool plot_850   = use850   and is850Bar and not is900Bar
+bool plot_800   = use800   and is800Bar and not is850Bar
+bool plot_750   = use750   and is750Bar and not is800Bar
+bool plot_700   = use700   and is700Bar and not is750Bar
+bool plot_650   = use650   and is650Bar and not is700Bar
+bool plot_600   = use600   and is600Bar and not is650Bar
+bool plot_550   = use550   and is550Bar and not is600Bar
+bool plot_500   = use500   and is500Bar and not is550Bar
+bool plot_450   = use450   and is450Bar and not is500Bar
+bool plot_400   = use400   and is400Bar and not is450Bar
+bool plot_350   = use350   and is350Bar and not is400Bar
+bool plot_300   = use300   and is300Bar and not is350Bar
+bool plot_250   = use250   and is250Bar and not is300Bar
+bool plot_200   = use200   and is200Bar and not is250Bar
+bool plot_150   = use150   and is150Bar and not is200Bar
+bool plot_100   = use100   and is100Bar and not is150Bar
+bool plot_50    = use50    and is50Bar and not is100Bar
+
+// ============================================
+// === PLOTTING (offset=-1 to land on confirmed bar) ===
+// ============================================
+plotshape(plot_HEV, "HEV", shape.diamond, location.top, color.new(color.purple, 0), size=size.normal, text="HEV", textcolor=color.purple, offset=-1)
+plotshape(plot_50, "50-Bar High", shape.circle, location.top, color.rgb(40, 45, 255, 0), size=size.tiny, text="50", textcolor=color.white, offset=-1)
+plotshape(plot_100, "100-Bar High", shape.circle, location.top, color.rgb(49, 45, 246, 0), size=size.tiny, text="100", textcolor=color.white, offset=-1)
+plotshape(plot_150, "150-Bar High", shape.circle, location.top, color.rgb(59, 45, 236, 0), size=size.tiny, text="150", textcolor=color.white, offset=-1)
+plotshape(plot_200, "200-Bar High", shape.circle, location.top, color.rgb(68, 45, 227, 0), size=size.tiny, text="200", textcolor=color.white, offset=-1)
+plotshape(plot_250, "250-Bar High", shape.circle, location.top, color.rgb(77, 45, 218, 0), size=size.small, text="250", textcolor=color.white, offset=-1)
+plotshape(plot_300, "300-Bar High", shape.circle, location.top, color.rgb(87, 45, 208, 0), size=size.small, text="300", textcolor=color.white, offset=-1)
+plotshape(plot_350, "350-Bar High", shape.circle, location.top, color.rgb(96, 45, 199, 0), size=size.small, text="350", textcolor=color.white, offset=-1)
+plotshape(plot_400, "400-Bar High", shape.circle, location.top, color.rgb(105, 45, 190, 0), size=size.small, text="400", textcolor=color.white, offset=-1)
+plotshape(plot_450, "450-Bar High", shape.circle, location.top, color.rgb(115, 45, 180, 0), size=size.small, text="450", textcolor=color.white, offset=-1)
+plotshape(plot_500, "500-Bar High", shape.circle, location.top, color.rgb(124, 45, 171, 0), size=size.small, text="500", textcolor=color.white, offset=-1)
+plotshape(plot_550, "550-Bar High", shape.circle, location.top, color.rgb(133, 45, 162, 0), size=size.small, text="550", textcolor=color.white, offset=-1)
+plotshape(plot_600, "600-Bar High", shape.circle, location.top, color.rgb(143, 45, 152, 0), size=size.normal, text="600", textcolor=color.white, offset=-1)
+plotshape(plot_650, "650-Bar High", shape.circle, location.top, color.rgb(152, 45, 143, 0), size=size.normal, text="650", textcolor=color.white, offset=-1)
+plotshape(plot_700, "700-Bar High", shape.circle, location.top, color.rgb(162, 45, 133, 0), size=size.normal, text="700", textcolor=color.white, offset=-1)
+plotshape(plot_750, "750-Bar High", shape.circle, location.top, color.rgb(171, 45, 124, 0), size=size.normal, text="750", textcolor=color.white, offset=-1)
+plotshape(plot_800, "800-Bar High", shape.circle, location.top, color.rgb(180, 45, 115, 0), size=size.normal, text="800", textcolor=color.white, offset=-1)
+plotshape(plot_850, "850-Bar High", shape.circle, location.top, color.rgb(190, 45, 105, 0), size=size.normal, text="850", textcolor=color.white, offset=-1)
+plotshape(plot_900, "900-Bar High", shape.circle, location.top, color.rgb(199, 45, 96, 0), size=size.normal, text="900", textcolor=color.white, offset=-1)
+plotshape(plot_950, "950-Bar High", shape.circle, location.top, color.rgb(208, 45, 87, 0), size=size.normal, text="950", textcolor=color.white, offset=-1)
+plotshape(plot_1000, "1000-Bar High", shape.circle, location.top, color.rgb(218, 45, 77, 0), size=size.normal, text="1000", textcolor=color.white, offset=-1)
+plotshape(plot_2000, "2000-Bar High", shape.circle, location.top, color.rgb(227, 45, 68, 0), size=size.normal, text="2000", textcolor=color.white, offset=-1)
+plotshape(plot_3000, "3000-Bar High", shape.circle, location.top, color.rgb(236, 45, 59, 0), size=size.normal, text="3000", textcolor=color.white, offset=-1)
+plotshape(plot_4000, "4000-Bar High", shape.circle, location.top, color.rgb(246, 45, 49, 0), size=size.normal, text="4000", textcolor=color.white, offset=-1)
+plotshape(plot_4999, "4999-Bar High", shape.circle, location.top, color.rgb(255, 45, 40, 0), size=size.normal, text="4999", textcolor=color.white, offset=-1)
+
+// ============================================
+// === ALERTS (same variables as plots - guaranteed 1:1) ===
+// ============================================
+alertcondition(plot_HEV, "Vol: HEV", "All-Time High Volume Detected (confirmed)")
+alertcondition(plot_50, "Vol: 50-Bar", "50-Bar High Volume Detected (confirmed)")
+alertcondition(plot_100, "Vol: 100-Bar", "100-Bar High Volume Detected (confirmed)")
+alertcondition(plot_150, "Vol: 150-Bar", "150-Bar High Volume Detected (confirmed)")
+alertcondition(plot_200, "Vol: 200-Bar", "200-Bar High Volume Detected (confirmed)")
+alertcondition(plot_250, "Vol: 250-Bar", "250-Bar High Volume Detected (confirmed)")
+alertcondition(plot_300, "Vol: 300-Bar", "300-Bar High Volume Detected (confirmed)")
+alertcondition(plot_350, "Vol: 350-Bar", "350-Bar High Volume Detected (confirmed)")
+alertcondition(plot_400, "Vol: 400-Bar", "400-Bar High Volume Detected (confirmed)")
+alertcondition(plot_450, "Vol: 450-Bar", "450-Bar High Volume Detected (confirmed)")
+alertcondition(plot_500, "Vol: 500-Bar", "500-Bar High Volume Detected (confirmed)")
+alertcondition(plot_550, "Vol: 550-Bar", "550-Bar High Volume Detected (confirmed)")
+alertcondition(plot_600, "Vol: 600-Bar", "600-Bar High Volume Detected (confirmed)")
+alertcondition(plot_650, "Vol: 650-Bar", "650-Bar High Volume Detected (confirmed)")
+alertcondition(plot_700, "Vol: 700-Bar", "700-Bar High Volume Detected (confirmed)")
+alertcondition(plot_750, "Vol: 750-Bar", "750-Bar High Volume Detected (confirmed)")
+alertcondition(plot_800, "Vol: 800-Bar", "800-Bar High Volume Detected (confirmed)")
+alertcondition(plot_850, "Vol: 850-Bar", "850-Bar High Volume Detected (confirmed)")
+alertcondition(plot_900, "Vol: 900-Bar", "900-Bar High Volume Detected (confirmed)")
+alertcondition(plot_950, "Vol: 950-Bar", "950-Bar High Volume Detected (confirmed)")
+alertcondition(plot_1000, "Vol: 1000-Bar", "1000-Bar High Volume Detected (confirmed)")
+alertcondition(plot_2000, "Vol: 2000-Bar", "2000-Bar High Volume Detected (confirmed)")
+alertcondition(plot_3000, "Vol: 3000-Bar", "3000-Bar High Volume Detected (confirmed)")
+alertcondition(plot_4000, "Vol: 4000-Bar", "4000-Bar High Volume Detected (confirmed)")
+alertcondition(plot_4999, "Vol: 4999-Bar", "4999-Bar High Volume Detected (confirmed)")
+
+// ============================================
+// === SIGNAL AGGREGATION (For Combination Studies) ===
+// ============================================
+// activeVolSignals = how deep into the ladder this bar fired (0..24), + HEV.
+int activeVolSignals = (is50Bar ? 1 : 0) + (is100Bar ? 1 : 0) + (is150Bar ? 1 : 0) + (is200Bar ? 1 : 0) + (is250Bar ? 1 : 0) + (is300Bar ? 1 : 0) + (is350Bar ? 1 : 0) + (is400Bar ? 1 : 0) + (is450Bar ? 1 : 0) + (is500Bar ? 1 : 0) + (is550Bar ? 1 : 0) + (is600Bar ? 1 : 0) + (is650Bar ? 1 : 0) + (is700Bar ? 1 : 0) + (is750Bar ? 1 : 0) + (is800Bar ? 1 : 0) + (is850Bar ? 1 : 0) + (is900Bar ? 1 : 0) + (is950Bar ? 1 : 0) + (is1000Bar ? 1 : 0) + (is2000Bar ? 1 : 0) + (is3000Bar ? 1 : 0) + (is4000Bar ? 1 : 0) + (is4999Bar ? 1 : 0) + (isHEV ? 1 : 0)
+
+var array<bool> signalStates = array.new_bool(25, false)
+array.set(signalStates, 0, is50Bar)
+array.set(signalStates, 1, is100Bar)
+array.set(signalStates, 2, is150Bar)
+array.set(signalStates, 3, is200Bar)
+array.set(signalStates, 4, is250Bar)
+array.set(signalStates, 5, is300Bar)
+array.set(signalStates, 6, is350Bar)
+array.set(signalStates, 7, is400Bar)
+array.set(signalStates, 8, is450Bar)
+array.set(signalStates, 9, is500Bar)
+array.set(signalStates, 10, is550Bar)
+array.set(signalStates, 11, is600Bar)
+array.set(signalStates, 12, is650Bar)
+array.set(signalStates, 13, is700Bar)
+array.set(signalStates, 14, is750Bar)
+array.set(signalStates, 15, is800Bar)
+array.set(signalStates, 16, is850Bar)
+array.set(signalStates, 17, is900Bar)
+array.set(signalStates, 18, is950Bar)
+array.set(signalStates, 19, is1000Bar)
+array.set(signalStates, 20, is2000Bar)
+array.set(signalStates, 21, is3000Bar)
+array.set(signalStates, 22, is4000Bar)
+array.set(signalStates, 23, is4999Bar)
+array.set(signalStates, 24, isHEV)
+
+// ============================================
+// === EXPORTS (For Combination Indicator Studies) ===
+// ============================================
+// Individual tiers (bool):  is50Bar .. is1000Bar (step 50), is2000/is3000/is4000/is4999, isHEV
+// Plot/alert conditions:    plot_HEV, plot_4999 .. plot_50
+// Aggregations (int):       activeVolSignals (0..25)
+// Collections (array<bool>): signalStates[25]  // [0..23]=tiers, [24]=HEV
