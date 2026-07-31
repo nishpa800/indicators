@@ -13,10 +13,17 @@
 // (plotshape / label / alert) is removed. The 8 former bear labels in the
 // HV+D MOMENTUM CO-OCC block are now plotshapes (offset=-1, static text;
 // the dynamic 2of3/3of3 component list remains in the alert payload).
+// ----------------------------------------------------------------------------
+// TICK-FRIENDLY BUILD of versions/HVD_PBJ_PPD_BEARISH_v1.pine. Detection logic
+// and ALL 36 plotshape offsets are byte-identical to the source; the ONLY delta
+// is the RE10023 tick guard (reg_anchorSafe + tfSec fallback — see inline notes).
+// Time charts keep the "" anchor and raw tfSec → bit-for-bit parity; only tick
+// charts coerce the anchor to "D" and tfSec to 10s so relativeVolume() and the
+// per-TF threshold tables stop crashing / silently dying.
 // ============================================================================
 
 //@version=5
-indicator("BASE HV+D ↔ PBJ v1 — BEARISH (36) [Tick-Friendly]", shorttitle="HVD PBJ BEAR TF", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
+indicator("BASE HV+D ↔ PBJ v1 — BEARISH (36) [Tick-Friendly]", shorttitle="HVD PBJ PPD BEAR TF", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=500, max_bars_back=1100)
 
 import TradingView/ta/7 as tv_ta
 
