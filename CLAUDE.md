@@ -101,6 +101,14 @@ indicators/
   now hard-fails on `time(timeframe.period,` and on any blank `relativeVolume(..., "")` anchor.
 - **Never label "canonical" prematurely.** Ingest all variants verbatim. "Which is canonical?" is the OUTPUT of root extraction + TV verification, never the input.
 - **Always commit + push every change in the same turn.** Paste the GitHub URL.
+- **🚨 CODE DELIVERY = CLICKABLE GITHUB BLOB URL. ALWAYS.** When handing back any
+  edited/generated indicator (or any file), the deliverable is a clickable GitHub
+  **blob** URL to that exact file on the branch I pushed — one click opens it on
+  GitHub where the user copies the code (use the "Copy raw contents" button).
+  Format: `https://github.com/nishpa800/indicators/blob/<branch>/<path-to-file>`.
+  Do NOT deliver code as a file attachment, do NOT paste the whole file into chat,
+  do NOT make the user hunt for it. URL first, every time. This is a standing
+  preference — do not forget it again.
 
 ## Verification
 

@@ -5,8 +5,12 @@ HV NRA — densify the volume-high lookback ladder to a full 50-bar step:
 replacing the original sparse 50/150/250/500/1000.
 
 Repetitive tier blocks are GENERATED (one source of truth, no hand-typing drift).
-HEV running-max, Hot-Spot calendar, and the non-repainting architecture
+HEV running-max and the non-repainting architecture
 (volume[1] + ta.highest(...)[1] + offset=-1, plot==alert 1:1) are kept VERBATIM.
+
+The Hot-Spot (HS) calendar-detection feature has been REMOVED in this build —
+no useHS input, no isHotSpot calendar block, no plot_HS plot/alert, and no
+signalStates HotSpot slot. The study is now pure volume-high ladder + HEV.
 
 Tiers are NESTED: a 1000-bar high is automatically a high at every shorter tier,
 so exactly ONE marker prints per bar (the highest tier reached) via the
@@ -15,7 +19,7 @@ so exactly ONE marker prints per bar (the highest tier reached) via the
 import pathlib
 
 HERE = pathlib.Path(__file__).resolve().parent
-OUT = HERE / "versions" / "HV_NRA_50step_ladder_v2_2026-06-13.pine"
+OUT = HERE / "versions" / "HV_NRA_50step_ladder_v3_noHS_2026-06-29.pine"
 OUT.parent.mkdir(parents=True, exist_ok=True)
 
 TIERS = list(range(50, 1001, 50))          # [50,100,...,1000] -> 20 tiers
@@ -34,7 +38,7 @@ def size(n):
 
 
 HEADER = '''//@version=5
-indicator("HV(50-1000 step50 / HEV / HS) NRA", overlay=true)
+indicator("HV(50-1000 step50 / HEV) NRA", overlay=true)
 
 // ============================================
 // === NON-REPAINTING ARCHITECTURE ===
@@ -71,7 +75,6 @@ inputs = ["", "// ============================================",
 for n in TIERS:
     inputs.append(f'use{n:<4} = input.bool(true, "Show {n}-Bar High Vol")')
 inputs.append('useHEV  = input.bool(true, "Show All-Time High Vol (HEV)")')
-inputs.append('useHS   = input.bool(true, "Show Hot Spot Signals")')
 
 # ----- VOLUME CALCS (verbatim architecture comment) + 20 tiers + HEV verbatim -----
 calcs = ["", "// ============================================",
@@ -89,29 +92,7 @@ calcs += ["",
           "    maxVolEver := volume[1]",
           "    isHEV := true"]
 
-# ----- HOT SPOT calendar (verbatim) -----
-hotspot = '''
-// ============================================
-// === HOT SPOT — CALENDAR-BASED SIGNALS ===
-// ============================================
-// Fires 3-5 trading days BEFORE ~20 known recurring high-volume events/year.
-// Calendar flags use [1] bar's date so the flag matches the drawn bar.
-
-// --- A) Monthly OpEx (3rd Friday = dayofmonth 15-21) ---
-opExWindow = dayofmonth[1] >= 10 and dayofmonth[1] <= 17 and dayofweek[1] >= dayofweek.monday and dayofweek[1] <= dayofweek.wednesday
-// --- B) Quarter-End Rebalancing ---
-qtrEndWindow = (month[1] == 3 or month[1] == 6 or month[1] == 9 or month[1] == 12) and dayofmonth[1] >= 23 and dayofmonth[1] <= 27
-// --- C) Russell Reconstitution (last Friday of June) ---
-russellWindow = month[1] == 6 and dayofmonth[1] >= 19 and dayofmonth[1] <= 24
-// --- D) Tax-Loss Selling (peaks last days of Dec) ---
-taxLossWindow = month[1] == 12 and dayofmonth[1] >= 21 and dayofmonth[1] <= 26
-// --- E) January Effect (early-Jan buying surge) ---
-janEffectWindow = month[1] == 12 and dayofmonth[1] >= 27 and dayofmonth[1] <= 30
-// --- F) Hedge Fund Redemption Notices (~May 15 & Nov 15) ---
-hfRedemptionWindow = (month[1] == 5 or month[1] == 11) and dayofmonth[1] >= 10 and dayofmonth[1] <= 13
-
-bool isHotSpot = opExWindow or qtrEndWindow or russellWindow or taxLossWindow or janEffectWindow or hfRedemptionWindow
-'''
+# ----- HOT SPOT calendar REMOVED (no HS detection in this build) -----
 
 # ----- UNIFIED plot_* (nesting priority: show only the highest tier) -----
 plotvars = ["", "// ============================================",
@@ -119,13 +100,12 @@ plotvars = ["", "// ============================================",
             "// ============================================",
             "// Tiers are nested -> show ONLY the highest tier reached per bar:",
             "//   plot_N fires only if is{N}Bar AND the next tier up (N+50) did NOT fire.",
-            "//   Priority: HEV > 1000 > 950 > ... > 100 > 50.   Hot Spot is independent.", ""]
+            "//   Priority: HEV > 1000 > 950 > ... > 100 > 50.", ""]
 plotvars.append("bool plot_HEV  = useHEV  and isHEV")
 plotvars.append("bool plot_1000 = use1000 and is1000Bar and not isHEV")
 for i in range(len(TIERS) - 2, -1, -1):           # 950 down to 50
     n = TIERS[i]; up = TIERS[i + 1]
     plotvars.append(f"bool plot_{n:<4} = use{n:<4} and is{n}Bar and not is{up}Bar")
-plotvars.append("bool plot_HS   = useHS   and isHotSpot")
 
 # ----- PLOTTING -----
 plots = ["", "// ============================================",
@@ -136,7 +116,6 @@ for i, n in enumerate(TIERS):
     plots.append(
         f'plotshape(plot_{n}, "{n}-Bar High", shape.circle, location.top, {ramp(i)}, '
         f'size={size(n)}, text="{n}", textcolor=color.white, offset=-1)')
-plots.append('plotshape(plot_HS, "Hot Spot", shape.cross, location.bottom, color.new(color.red, 0), size=size.tiny, offset=-1)')
 
 # ----- ALERTS (1:1 with plot_*) -----
 alerts = ["", "// ============================================",
@@ -145,7 +124,6 @@ alerts = ["", "// ============================================",
           'alertcondition(plot_HEV, "Vol: HEV", "All-Time High Volume Detected (confirmed)")']
 for n in TIERS:
     alerts.append(f'alertcondition(plot_{n}, "Vol: {n}-Bar", "{n}-Bar High Volume Detected (confirmed)")')
-alerts.append('alertcondition(plot_HS, "Hot Spot", "Approaching Known High-Volume Date (confirmed)")')
 
 # ----- AGGREGATION / EXPORTS -----
 agg = ["", "// ============================================",
@@ -154,21 +132,20 @@ agg = ["", "// ============================================",
        "// activeVolSignals = how deep into the ladder this bar fired (0..20), + HEV.",
        "int activeVolSignals = " + " + ".join(f"(is{n}Bar ? 1 : 0)" for n in TIERS) + " + (isHEV ? 1 : 0)",
        "",
-       f"var array<bool> signalStates = array.new_bool({len(TIERS) + 2}, false)"]
+       f"var array<bool> signalStates = array.new_bool({len(TIERS) + 1}, false)"]
 for i, n in enumerate(TIERS):
     agg.append(f"array.set(signalStates, {i}, is{n}Bar)")
 agg.append(f"array.set(signalStates, {len(TIERS)}, isHEV)")
-agg.append(f"array.set(signalStates, {len(TIERS) + 1}, isHotSpot)")
 agg += ["",
         "// ============================================",
         "// === EXPORTS (For Combination Indicator Studies) ===",
         "// ============================================",
-        "// Individual tiers (bool):  is50Bar .. is1000Bar (step 50), isHEV, isHotSpot",
-        "// Plot/alert conditions:    plot_HEV, plot_1000 .. plot_50, plot_HS",
+        "// Individual tiers (bool):  is50Bar .. is1000Bar (step 50), isHEV",
+        "// Plot/alert conditions:    plot_HEV, plot_1000 .. plot_50",
         "// Aggregations (int):       activeVolSignals (0..21)",
-        "// Collections (array<bool>): signalStates[22]  // [0..19]=tiers, [20]=HEV, [21]=HotSpot"]
+        "// Collections (array<bool>): signalStates[21]  // [0..19]=tiers, [20]=HEV"]
 
-doc = "\n".join([HEADER] + inputs + calcs + [hotspot] + plotvars + plots + alerts + agg) + "\n"
+doc = "\n".join([HEADER] + inputs + calcs + plotvars + plots + alerts + agg) + "\n"
 
 # ASCII-ONLY guard: TradingView's Pine lexer rejects non-ASCII punctuation pasted
 # into source (em-dash U+2014 -> "Syntax error at input 'use50'"). Normalize, then assert.
