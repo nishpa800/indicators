@@ -3,21 +3,23 @@
 // ║  COMBO CHAIN — BINARY-CORRECT (tick-friendly)                      ║
 // ║  Source: BASE HV+D ↔ PBJ ↔ PPD v1 (no HTF)                         ║
 // ║                                                                    ║
-// ║  THE LAW (Anish, 2026-06-04):                                      ║
-// ║   • Matrix combo counts.  Offset 0  (belongs to its own bar).      ║
-// ║   • FVG combo counts.     Offset -1 (belongs to the bar before).   ║
-// ║   • One physical bar = 1 or 0. NEVER more.                         ║
-// ║   • Matrix AND FVG on the SAME physical bar = ONE hit, not two.    ║
-// ║   • A 2-hit chain therefore requires TWO different bars.           ║
+// ║  THE LAW (Anish, corrected 2026-07-17):                            ║
+// ║   • An EVENT is a VISUAL plot (post-offset), never a raw detection.║
+// ║   • Matrix combo (CS2)  offset  0  -> visual bar = det bar   [i]   ║
+// ║   • FVG combo    (CS1)  offset -1  -> visual bar = det bar-1 [i-1] ║
+// ║   • Unified combo(CS3)  offset -1  -> visual bar = det bar-1 [i-1] ║
+// ║   • One VISUAL bar = 1 or 0. NEVER more. Matrix+FVG+Unified on the ║
+// ║     SAME visual bar OR-collapse to ONE hit.                        ║
+// ║   • A 2-hit chain therefore requires TWO DISTINCT visual bars.     ║
 // ║                                                                    ║
-// ║  ORIGINAL DEFECT (fixed here):                                     ║
-// ║   Original loop: hv2 = comboMatrix[i] OR comboFVG[i-1]             ║
-// ║   The [i-1] cross-bar shift let a single firing bar fill TWO       ║
-// ║   slots (matrix(N) in slot 0, fvg(N) in slot 1) → count = 2 off    ║
-// ║   ONE bar. That breaks the binary law.                            ║
+// ║  DEFECT THAT WAS HERE (2026-06-04, now reversed):                  ║
+// ║   hv2 = matrix[i] OR fvg[i]  read FVG on the DETECTION bar and     ║
+// ║   discarded its -1 offset. A "Unified combo" (Matrix@N-1, FVG@N =  ║
+// ║   all three visual plots on bar N-1) then scored 2 off ONE visual  ║
+// ║   bar and fired the chain off a single candle. Wrong.             ║
 // ║                                                                    ║
-// ║  FIX: per_bar_hit[t] = comboMatrix[t] OR comboFVG[t]  (same bar,   ║
-// ║       OR-collapsed to a single boolean) → count distinct bars.     ║
+// ║  FIX: per VISUAL bar N-i, hit = matrix[i] OR fvg[i-1]  (offset     ║
+// ║       applied), OR-collapsed to one boolean -> count distinct bars.║
 // ║                                                                    ║
 // ║  TICK-FRIENDLY:                                                    ║
 // ║   • No time-based session math required for the chain.            ║
@@ -56,19 +58,22 @@ bool pbj_bear    = f_b(src_pbj_bear)
 
 bool conf = barstate.isconfirmed
 
-// ── BINARY-CORRECT CHAIN COUNTER ──
-// per_bar_hit[t] is ONE boolean for physical bar (N-t): Matrix OR FVG on
-// that SAME bar. matrix=offset0, fvg=offset-1 are both anchored to the
-// physical bar they fired on for COUNTING. Same bar with both = 1.
+// ── BINARY-CORRECT CHAIN COUNTER (VISUAL timeline, offset applied) ──
+// Per VISUAL bar (N-i): Matrix at offset 0 -> [i]; FVG at offset -1 -> [i-1].
+// OR-collapsed to ONE boolean per visual bar, so Matrix+FVG (and a Unified
+// combo, which is exactly both on one visual bar) count as ONE hit, never two.
 f_chain_count(bool _isBull) =>
     int _cnt = 0
     bool _pbj = false
     for i = 0 to cc_window - 1
-        bool _m  = _isBull ? bool(matrix_bull[i]) : bool(matrix_bear[i])
-        bool _f  = _isBull ? bool(fvg_bull[i])    : bool(fvg_bear[i])
-        bool _hit = _m or _f                 // <-- SAME bar OR-collapse → max 1
+        bool _m  = _isBull ? bool(matrix_bull[i]) : bool(matrix_bear[i])   // Matrix offset 0 -> [i]
+        bool _hit = _m
+        if i >= 1
+            bool _f = _isBull ? bool(fvg_bull[i-1]) : bool(fvg_bear[i-1])  // FVG offset -1 -> [i-1]
+            if _f
+                _hit := true
         if _hit
-            _cnt += 1                         // each i is a distinct bar
+            _cnt += 1                         // one binary hit per distinct VISUAL bar
         bool _p  = _isBull ? bool(pbj_bull[i]) : bool(pbj_bear[i])
         if _p
             _pbj := true

@@ -1,6 +1,16 @@
 # Combo Chain Fix — Conversion Manifest
 
-**Date:** 2026-06-04
+> ⚠️ **CORRECTED 2026-07-17.** The 2026-06-04 diagnosis below was WRONG and has been
+> reversed. It treated FVG's **−1 offset** as a bug and collapsed the chain count onto
+> the *detection* bar (`matrix[i] OR fvg[i]`). But an EVENT is a **VISUAL plot
+> (post-offset)**: Matrix offset 0 → `[i]`, FVG offset −1 → `[i-1]`, Unified offset −1
+> → `[i-1]`, OR-collapsed to one binary hit per **visual** bar. The detection-collapse
+> actually *created* the single-bar mis-fire on a "Unified combo" bar (Matrix@N−1 +
+> FVG@N, all three visual plots on bar N−1 → it scored 2). The corrected loop restores
+> the offset-aware `[i-1]` mapping and adds the Unified term explicitly. See the
+> 2026-07-17 entry in `../CHANGELOG.md`. The section below is retained for history.
+
+**Date:** 2026-06-04 (superseded 2026-07-17)
 **Source indicator:** `BASE HV+D ↔ PBJ ↔ PPD v1 (no HTF)` (shorttitle `BASE HVD PBJ`)
 **Trigger:** Anish reported combo chain compromised; demanded binary-law fix across three outputs.
 
