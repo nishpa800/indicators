@@ -1,7 +1,11 @@
 # TNT Opening Drive (OD)
 
-**Current version:** `v2` → `versions/TNT_OD_v2.pine`
-**Source pasted by Anish:** 2026-05-04 (v1 baseline). v2 produced same session — see CHANGELOG.
+**Current version:** `v3` → `versions/TNT_OD_v3.pine` (tick build: `tick_friendly/TNT_OD_v3_tick_friendly.pine`)
+**Source pasted by Anish:** 2026-05-04 (v1 baseline). v2/v3 produced later — see CHANGELOG.
+
+> **📐 Definitions & unit building blocks:** [`DEFINITIONS_BUILDING_BLOCKS.md`](DEFINITIONS_BUILDING_BLOCKS.md)
+> — every plot decomposed into its atoms (e.g. RC NPM+TNT = Napalm + TNT), the real offset rule + audit,
+> and RELAY / STACK de-vagued. Read this when a plot's definition is unclear.
 
 ## What it is
 
