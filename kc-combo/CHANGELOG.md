@@ -1,5 +1,42 @@
 # kc-combo CHANGELOG
 
+## v4.7 — 2026-08-03 (BULL + BEAR; RS+RC SAME-CANDLE LAW — operator order, confirmed)
+- PURGE: removed every VP/dp lacking BOTH R-S and R-C on the same candle —
+  11 MAIN (BULL C01/C02/C04/C05/C07/C08/C10/C11/C14/C17/C20; BEAR C24/C25/C27/
+  C28/C30/C31/C33/C34/C37/C40/C43) + all 11 HTF (H01–H11 / H12–H22) + the
+  standalone NAGASAKI lane (X04/X05-bear-X08) per side = 23 lanes/side.
+  Machine partition: keep_predicate checker D=0 both sides (plan doc §0).
+- +ANY REDEFINED: cnt/anyCombo re-enumerate over the 12 RS+RC survivors ONLY;
+  every +ANY coincidence lane (H.A UC.A CS1.A CS2.A M.A CC.A SA.A/KR.A 1X.A
+  GS.A/MB.A N.A HW.A) now carries RS+RC on the candle by construction.
+- STRUCTURE+ANY LANES ADDED: BULL FLR+A (FLOOR+ANY) + 2F+A (2ND FLOOR+ANY);
+  BEAR ROOF+A (ROOF+ANY) + PH+A (PENTHOUSE+ANY). Engine = HVD-PBJ-PPD rf_
+  Ping Pong SR, ported VERBATIM from FABLE QUAD v1.6 (+ 9-line d9 slice;
+  dependency closure machine-proven D_missing=0). ONE substitution declared:
+  any_BULL/any_BEAR -> the redefined anyComboBULL/BEAR.
+- TEXT LAW: lane codes (C15/H07/A01/X02 style) dropped everywhere — plain
+  letter runs with PB/PBJ spelled out (PBCSU / PBJCSUX; bear PBCSD…), titles
+  "SIDE RUN: members", dispatch payload rows likewise code-free.
+- NUMERIC READOUTS (operator rounding law, absolute values, on fired candles):
+  DISP sigma 1 decimal (|disp_rng[1]/disp_std[1]|) · HV deepest-lookback-N
+  0 decimals (baseRank) · RVOL integer (|rv_normPrice| rounded) — 3 real
+  plot() lanes per side (data-window; operator-confirmed deviation from the
+  repo data-window ban, 2026-08-03) + appended to the consolidated alert()
+  payload with na-guards ("if they exist").
+- BUDGET: 61/64 -> 43/64 per side (31 markers + 8 plots + 4 alertconditions);
+  dp count 52 -> 31. Titles: KCCB31 v4.7 / KCCR31 v4.7.
+- Builder: lake scripts/ind/build_kc_v47_rsrc.py (deterministic, fail-closed
+  asserts A1–A9, E7 double-run byte-identical). Gates: pane_label D_cs1=0 ·
+  visual_identity D_vis=0 · fbf_111 D_111=0, both sides.
+- Plan+proof: lake docs/2026-08-03_TV-TickBar-RE_KCCombo-RSRCSameCandlePurgePlan_v1.0.md
+- Tick twins: NOT shipped this wave — pair_debt in manifests (due 2026-08-06).
+
+## v4.6 — 2026-07-27 (BULL + BEAR; RETRO ROW, recorded 2026-08-03 — v4.6 shipped without its CHANGELOG entry; defect logged)
+- R-LANES ADDED (operator Recipe A): R1–R3 = PBJ+RS+RC × {SAAB|RVOL1X|GS}
+  (bull) / {KRATOS|RVOL1X|MOAB} (bear); coalescence-window law (rWin input,
+  default 5 bars, 1 = strict same-candle); hoisted ta.barssince engines
+  (CW10002-safe). 52 dp; units 55 -> 61/64.
+
 ## v4.5 — 2026-07-27 (BULL + BEAR; same-day follow-on to v4.4)
 - OPERATOR ORDER: +5 ANY-coincidence lanes per side (fires when the named
   detection lands on the same confirmed candle as >=1 of the study's combos):
