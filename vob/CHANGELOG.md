@@ -141,3 +141,7 @@ depth ≥3 with PBJ/RVOL confirmation = consider entry.
 - COMBO-ONLY wave (operator order): individual T3/Nagasaki/zone-marker plots and individual alerts REMOVED; combination dp+vp only.
 - ADDED: `4K + ANY Bull/Bear (same candle)` (volume == ta.highest(volume, N), N≥4000) and `Nagasaki + ANY Bull/Bear (same candle)` (live-bar all-time-high volume), member-naming alert() payloads; VLB alertcondition split per side.
 - Census: 10 plots + 10 alertconditions = 20/64. Files: VOB_ASYM_COMBO_v10.1.pine (TIME), VOB_ASYM_COMBO_TICKFRIENDLY_v10.1.pine (TICK).
+
+## VOB Asym COMBO v10.2 — 2026-08-05
+- TIER/LEVEL/DIAGONAL wave (operator dictation; supersedes v10.1 same day). T1 Asymmetric / T2 Pure / T3 Super now LIVE per sensitivity (operator live-study predicates, exclusivity ladder). NEW: Tiers 3+/4+ per candle per side; Level 2/3+/4+ on the EXACT same price (zero buffer); Institutional Diagonal contrarian lanes (diag buy => SELL, diag sell => BUY). ANY now includes tier events. asym_threshold activated (99->50, live-study default).
+- Census: 22 plots + 22 alertconditions = 44/64. Files: VOB_ASYM_COMBO_v10.2.pine (TIME), VOB_ASYM_COMBO_TICKFRIENDLY_v10.2.pine (TICK).
