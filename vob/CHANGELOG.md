@@ -145,3 +145,9 @@ depth ≥3 with PBJ/RVOL confirmation = consider entry.
 ## VOB Asym COMBO v10.2 — 2026-08-05
 - TIER/LEVEL/DIAGONAL wave (operator dictation; supersedes v10.1 same day). T1 Asymmetric / T2 Pure / T3 Super now LIVE per sensitivity (operator live-study predicates, exclusivity ladder). NEW: Tiers 3+/4+ per candle per side; Level 2/3+/4+ on the EXACT same price (zero buffer); Institutional Diagonal contrarian lanes (diag buy => SELL, diag sell => BUY). ANY now includes tier events. asym_threshold activated (99->50, live-study default).
 - Census: 22 plots + 22 alertconditions = 44/64. Files: VOB_ASYM_COMBO_v10.2.pine (TIME), VOB_ASYM_COMBO_TICKFRIENDLY_v10.2.pine (TICK).
+
+## VOB Asym COMBO v10.3 — 2026-08-05
+- DEDICATED-ALERT-BOX wave (operator order; supersedes v10.2 same day). Three-lane law on all
+  22 lanes incl. VLB + Multi-Zone: sig (detection, owns cooldown) / plot (show box only) /
+  alf (dedicated 🔔 box only). A lane alerts IFF its 🔔 box is checked. Machine zone payload
+  got its own box. Files: VOB_ASYM_COMBO_v10.3.pine (TIME), VOB_ASYM_COMBO_TICKFRIENDLY_v10.3.pine (TICK).
