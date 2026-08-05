@@ -136,3 +136,8 @@ Rationale: per Anish's screenshot review of DDOG run from $110 on
 Apr 14, the staged ladder formation is itself the trend confirmation;
 question is entry timing. Watch state at depth 2 is "put it on radar";
 depth ≥3 with PBJ/RVOL confirmation = consider entry.
+
+## VOB Asym COMBO v10.1 — 2026-08-05
+- COMBO-ONLY wave (operator order): individual T3/Nagasaki/zone-marker plots and individual alerts REMOVED; combination dp+vp only.
+- ADDED: `4K + ANY Bull/Bear (same candle)` (volume == ta.highest(volume, N), N≥4000) and `Nagasaki + ANY Bull/Bear (same candle)` (live-bar all-time-high volume), member-naming alert() payloads; VLB alertcondition split per side.
+- Census: 10 plots + 10 alertconditions = 20/64. Files: VOB_ASYM_COMBO_v10.1.pine (TIME), VOB_ASYM_COMBO_TICKFRIENDLY_v10.1.pine (TICK).
