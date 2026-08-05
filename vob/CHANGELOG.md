@@ -151,3 +151,11 @@ depth ≥3 with PBJ/RVOL confirmation = consider entry.
   22 lanes incl. VLB + Multi-Zone: sig (detection, owns cooldown) / plot (show box only) /
   alf (dedicated 🔔 box only). A lane alerts IFF its 🔔 box is checked. Machine zone payload
   got its own box. Files: VOB_ASYM_COMBO_v10.3.pine (TIME), VOB_ASYM_COMBO_TICKFRIENDLY_v10.3.pine (TICK).
+
+## VOB Asym COMBO v10.4 — 2026-08-05
+- LEVEL-DISTINCTNESS wave (operator catch; supersedes v10.3 same day). A LEVEL counts only DISTINCT
+  (tier-class, sensitivity) pairs at the EXACT price — a repeating tier adds nothing; zones never
+  counted in levels. Carries the v10.3 dedicated-🔔-box three-lane law in full on all
+  22 lanes incl. VLB + Multi-Zone: sig (detection, owns cooldown) / plot (show box only) /
+  alf (dedicated 🔔 box only). A lane alerts IFF its 🔔 box is checked. Machine zone payload
+  got its own box. Files: VOB_ASYM_COMBO_v10.4.pine (TIME), VOB_ASYM_COMBO_TICKFRIENDLY_v10.4.pine (TICK).
