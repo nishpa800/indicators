@@ -1445,12 +1445,12 @@ if plot_vlb_bear
 
 // ─── VISUAL PLOTSHAPES (one bar only — exact zone-A completion bar) ─────────
 // Bull: green up-triangle below the bar.  Bear: red down-triangle above the bar.
-plotshape(plot_vlb_bull, "VLB Bull (strict F→A)", shape.triangleup,   location.belowbar, color.new(color.lime, 0), size = size.normal, text = "VLB↑", textcolor = color.lime)
-plotshape(plot_vlb_bear, "VLB Bear (strict F→A)", shape.triangledown, location.abovebar, color.new(color.red,  0), size = size.normal, text = "VLB↓", textcolor = color.red)
+plotshape(plot_vlb_bull, "VLB Bull (strict F→A)", shape.triangleup,   location.belowbar, color.new(color.lime, 0), size = size.normal, text = "VLB\nBULL", textcolor = color.lime)
+plotshape(plot_vlb_bear, "VLB Bear (strict F→A)", shape.triangledown, location.abovebar, color.new(color.red,  0), size = size.normal, text = "VLB\nBEAR", textcolor = color.red)
 
 // ─── ALERTCONDITION — single VLB consolidated channel ───────────────────────
-alertcondition(plot_vlb_bull, "VLB Bull (strict F→A)", "VOB Asym COMBO — bullish strict-chronological-ladder (F→A) completed; alert() payload carries per-tier OHLCV and context")
-alertcondition(plot_vlb_bear, "VLB Bear (strict F→A)", "VOB Asym COMBO — bearish strict-chronological-ladder (F→A) completed; alert() payload carries per-tier OHLCV and context")
+alertcondition(plot_vlb_bull, "VLB Bull (strict F→A)", "BULLISH — strict F→A chronological zone ladder completed on this candle (all six sensitivities, price-overlapping). alert() payload carries per-tier OHLCV.")
+alertcondition(plot_vlb_bear, "VLB Bear (strict F→A)", "BEARISH — strict F→A chronological zone ladder completed on this candle (all six sensitivities, price-overlapping). alert() payload carries per-tier OHLCV.")
 
 // ─── BLOOMBERG-FORMAT ALERTS — 1:1 parity with plotshapes above ─────────────
 // Schema: EVENT|TICKER|EXCHANGE|TF|DIR|CLOSE|SENS_A..F|
@@ -1529,10 +1529,10 @@ if plot_mz_s3
 // ─── VISUAL PLOTSHAPES — 1:1 parity with detection bools ────────────────────
 // Bull markers below bar, bear markers above bar. Square = 2-zone (lighter
 // confluence), flag = 3+-zone (heavier confluence).
-plotshape(plot_mz_b2, "Multi-Zone Bull 2 (same candle)",  shape.square, location.belowbar, color.new(color.lime, 0), size = size.small,  text = "MZ2↑", textcolor = color.lime)
-plotshape(plot_mz_b3, "Multi-Zone Bull 3+ (same candle)", shape.flag,   location.belowbar, color.new(color.lime, 0), size = size.normal, text = "MZ3↑", textcolor = color.lime)
-plotshape(plot_mz_s2, "Multi-Zone Bear 2 (same candle)",  shape.square, location.abovebar, color.new(color.red,  0), size = size.small,  text = "MZ2↓", textcolor = color.red)
-plotshape(plot_mz_s3, "Multi-Zone Bear 3+ (same candle)", shape.flag,   location.abovebar, color.new(color.red,  0), size = size.normal, text = "MZ3↓", textcolor = color.red)
+plotshape(plot_mz_b2, "Multi-Zone Bull 2 (same candle)",  shape.square, location.belowbar, color.new(color.lime, 0), size = size.small,  text = "MZ2\nBULL", textcolor = color.lime)
+plotshape(plot_mz_b3, "Multi-Zone Bull 3+ (same candle)", shape.flag,   location.belowbar, color.new(color.lime, 0), size = size.normal, text = "MZ3+\nBULL", textcolor = color.lime)
+plotshape(plot_mz_s2, "Multi-Zone Bear 2 (same candle)",  shape.square, location.abovebar, color.new(color.red,  0), size = size.small,  text = "MZ2\nBEAR", textcolor = color.red)
+plotshape(plot_mz_s3, "Multi-Zone Bear 3+ (same candle)", shape.flag,   location.abovebar, color.new(color.red,  0), size = size.normal, text = "MZ3+\nBEAR", textcolor = color.red)
 
 // ─── ALERTCONDITIONS — one per detection so each can be subscribed ──────────
 alertcondition(plot_mz_b2, "Multi-Zone Bull 2 (same candle)",  "VOB v10 — exactly 2 bullish zone-formation visual plots on the same candle")
@@ -1626,80 +1626,78 @@ if plot_cnag_b
 if plot_cnag_s
     last_cnag_s := bar_index
 
-plotshape(plot_c4k_b,  "4K + ANY Bull (same candle)",       shape.diamond, location.belowbar, #00e5ff, size = size.large, text = "4K\n+ANY", textcolor = #00e5ff)
-plotshape(plot_c4k_s,  "4K + ANY Bear (same candle)",       shape.diamond, location.abovebar, #ff9100, size = size.large, text = "4K\n+ANY", textcolor = #ff9100)
-plotshape(plot_cnag_b, "Nagasaki + ANY Bull (same candle)", shape.xcross,  location.belowbar, #76ff03, size = size.large, text = "NAG\n+ANY", textcolor = #76ff03)
-plotshape(plot_cnag_s, "Nagasaki + ANY Bear (same candle)", shape.xcross,  location.abovebar, #ff00e5, size = size.large, text = "NAG\n+ANY", textcolor = #ff00e5)
+plotshape(plot_c4k_b,  "4K + ANY Bull (same candle)",       shape.diamond, location.belowbar, #00e5ff, size = size.large, text = "4K+ANY\nBULL", textcolor = #00e5ff)
+plotshape(plot_c4k_s,  "4K + ANY Bear (same candle)",       shape.diamond, location.abovebar, #ff9100, size = size.large, text = "4K+ANY\nBEAR", textcolor = #ff9100)
+plotshape(plot_cnag_b, "Nagasaki + ANY Bull (same candle)", shape.xcross,  location.belowbar, #76ff03, size = size.large, text = "NAG+ANY\nBULL", textcolor = #76ff03)
+plotshape(plot_cnag_s, "Nagasaki + ANY Bear (same candle)", shape.xcross,  location.abovebar, #ff00e5, size = size.large, text = "NAG+ANY\nBEAR", textcolor = #ff00e5)
 
-alertcondition(plot_c4k_b,  "4K + ANY Bull (same candle)",       "4K high-volume bar with a bullish VOB Asym constituent on the same candle — alert() payload names the members")
-alertcondition(plot_c4k_s,  "4K + ANY Bear (same candle)",       "4K high-volume bar with a bearish VOB Asym constituent on the same candle — alert() payload names the members")
-alertcondition(plot_cnag_b, "Nagasaki + ANY Bull (same candle)", "All-time-high volume with a bullish VOB Asym constituent on the same candle — alert() payload names the members")
-alertcondition(plot_cnag_s, "Nagasaki + ANY Bear (same candle)", "All-time-high volume with a bearish VOB Asym constituent on the same candle — alert() payload names the members")
+alertcondition(plot_c4k_b,  "4K + ANY Bull (same candle)",       "BULLISH — 4K high-volume candle plus at least one bullish VOB Asym signal on this same candle. The alert() text names every member on the candle.")
+alertcondition(plot_c4k_s,  "4K + ANY Bear (same candle)",       "BEARISH — 4K high-volume candle plus at least one bearish VOB Asym signal on this same candle. The alert() text names every member on the candle.")
+alertcondition(plot_cnag_b, "Nagasaki + ANY Bull (same candle)", "BULLISH — Nagasaki all-time-high volume plus at least one bullish VOB Asym signal on this same candle. The alert() text names every member on the candle.")
+alertcondition(plot_cnag_s, "Nagasaki + ANY Bear (same candle)", "BEARISH — Nagasaki all-time-high volume plus at least one bearish VOB Asym signal on this same candle. The alert() text names every member on the candle.")
 
+// Member naming — PLAIN NAMES, one phrase per signal actually on this candle
 f_combo_members_bull() =>
     string m = ""
     if t3_buy_a
-        m += "T3-A(" + str.tostring(sens_a) + "),"
+        m += " + T3 Super Buy A (" + str.tostring(sens_a) + ")"
     if t3_buy_b
-        m += "T3-B(" + str.tostring(sens_b) + "),"
+        m += " + T3 Super Buy B (" + str.tostring(sens_b) + ")"
     if t3_buy_c
-        m += "T3-C(" + str.tostring(sens_c) + "),"
+        m += " + T3 Super Buy C (" + str.tostring(sens_c) + ")"
     if t3_buy_d
-        m += "T3-D(" + str.tostring(sens_d) + "),"
+        m += " + T3 Super Buy D (" + str.tostring(sens_d) + ")"
     if t3_buy_e
-        m += "T3-E(" + str.tostring(sens_e) + "),"
+        m += " + T3 Super Buy E (" + str.tostring(sens_e) + ")"
     if t3_buy_f
-        m += "T3-F(" + str.tostring(sens_f) + "),"
+        m += " + T3 Super Buy F (" + str.tostring(sens_f) + ")"
     if nzb_a
-        m += "ZONE-A(" + str.tostring(sens_a) + "),"
+        m += " + Bull Zone Birth A (" + str.tostring(sens_a) + ")"
     if nzb_b
-        m += "ZONE-B(" + str.tostring(sens_b) + "),"
+        m += " + Bull Zone Birth B (" + str.tostring(sens_b) + ")"
     if nzb_c
-        m += "ZONE-C(" + str.tostring(sens_c) + "),"
+        m += " + Bull Zone Birth C (" + str.tostring(sens_c) + ")"
     if nzb_d
-        m += "ZONE-D(" + str.tostring(sens_d) + "),"
+        m += " + Bull Zone Birth D (" + str.tostring(sens_d) + ")"
     if nzb_e
-        m += "ZONE-E(" + str.tostring(sens_e) + "),"
+        m += " + Bull Zone Birth E (" + str.tostring(sens_e) + ")"
     if nzb_f
-        m += "ZONE-F(" + str.tostring(sens_f) + "),"
+        m += " + Bull Zone Birth F (" + str.tostring(sens_f) + ")"
     m
 
 f_combo_members_bear() =>
     string m = ""
     if t3_sell_a
-        m += "T3-A(" + str.tostring(sens_a) + "),"
+        m += " + T3 Super Sell A (" + str.tostring(sens_a) + ")"
     if t3_sell_b
-        m += "T3-B(" + str.tostring(sens_b) + "),"
+        m += " + T3 Super Sell B (" + str.tostring(sens_b) + ")"
     if t3_sell_c
-        m += "T3-C(" + str.tostring(sens_c) + "),"
+        m += " + T3 Super Sell C (" + str.tostring(sens_c) + ")"
     if t3_sell_d
-        m += "T3-D(" + str.tostring(sens_d) + "),"
+        m += " + T3 Super Sell D (" + str.tostring(sens_d) + ")"
     if t3_sell_e
-        m += "T3-E(" + str.tostring(sens_e) + "),"
+        m += " + T3 Super Sell E (" + str.tostring(sens_e) + ")"
     if t3_sell_f
-        m += "T3-F(" + str.tostring(sens_f) + "),"
+        m += " + T3 Super Sell F (" + str.tostring(sens_f) + ")"
     if nzs_a
-        m += "ZONE-A(" + str.tostring(sens_a) + "),"
+        m += " + Bear Zone Birth A (" + str.tostring(sens_a) + ")"
     if nzs_b
-        m += "ZONE-B(" + str.tostring(sens_b) + "),"
+        m += " + Bear Zone Birth B (" + str.tostring(sens_b) + ")"
     if nzs_c
-        m += "ZONE-C(" + str.tostring(sens_c) + "),"
+        m += " + Bear Zone Birth C (" + str.tostring(sens_c) + ")"
     if nzs_d
-        m += "ZONE-D(" + str.tostring(sens_d) + "),"
+        m += " + Bear Zone Birth D (" + str.tostring(sens_d) + ")"
     if nzs_e
-        m += "ZONE-E(" + str.tostring(sens_e) + "),"
+        m += " + Bear Zone Birth E (" + str.tostring(sens_e) + ")"
     if nzs_f
-        m += "ZONE-F(" + str.tostring(sens_f) + "),"
+        m += " + Bear Zone Birth F (" + str.tostring(sens_f) + ")"
     m
 
-f_combo_ctx() =>
-    "|CLOSE:" + str.tostring(math.round(close * 100) / 100) + "|VOL:" + str.tostring(math.round(volume)) + "|VOLRANK:" + str.tostring(math.round(vol_rank)) + "|RSI:" + str.tostring(math.round(rsi_14 * 100) / 100) + "|SESS:" + str.tostring(sess_bar_count) + "|BULLZONES:" + str.tostring(cnt_bull_all) + "|BEARZONES:" + str.tostring(cnt_bear_all)
-
 if plot_c4k_b
-    alert("FOURK_ANY_BULL|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|DIR:BULL|N4K:" + str.tostring(n_4k) + f_combo_ctx() + "|MEMBERS:" + f_combo_members_bull(), alert.freq_once_per_bar_close)
+    alert("BULLISH — 4K + ANY. On this candle: 4K High Volume (highest of " + str.tostring(n_4k) + " bars, vol " + str.tostring(math.round(volume)) + ")" + f_combo_members_bull(), alert.freq_once_per_bar_close)
 if plot_c4k_s
-    alert("FOURK_ANY_BEAR|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|DIR:BEAR|N4K:" + str.tostring(n_4k) + f_combo_ctx() + "|MEMBERS:" + f_combo_members_bear(), alert.freq_once_per_bar_close)
+    alert("BEARISH — 4K + ANY. On this candle: 4K High Volume (highest of " + str.tostring(n_4k) + " bars, vol " + str.tostring(math.round(volume)) + ")" + f_combo_members_bear(), alert.freq_once_per_bar_close)
 if plot_cnag_b
-    alert("NAG_ANY_BULL|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|DIR:BULL|ATHVOL:" + str.tostring(math.round(maxVolEver)) + f_combo_ctx() + "|MEMBERS:" + f_combo_members_bull(), alert.freq_once_per_bar_close)
+    alert("BULLISH — Nagasaki + ANY. On this candle: Nagasaki all-time-high volume (vol " + str.tostring(math.round(volume)) + ", prior record " + str.tostring(math.round(maxVolEver)) + ")" + f_combo_members_bull(), alert.freq_once_per_bar_close)
 if plot_cnag_s
-    alert("NAG_ANY_BEAR|TICKER:" + syminfo.ticker + "|EXCHANGE:" + syminfo.prefix + "|TF:" + timeframe.period + "|DIR:BEAR|ATHVOL:" + str.tostring(math.round(maxVolEver)) + f_combo_ctx() + "|MEMBERS:" + f_combo_members_bear(), alert.freq_once_per_bar_close)
+    alert("BEARISH — Nagasaki + ANY. On this candle: Nagasaki all-time-high volume (vol " + str.tostring(math.round(volume)) + ", prior record " + str.tostring(math.round(maxVolEver)) + ")" + f_combo_members_bear(), alert.freq_once_per_bar_close)
