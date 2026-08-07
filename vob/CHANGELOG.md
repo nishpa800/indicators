@@ -1,5 +1,30 @@
 # VOB Indicator Suite — Changelog
 
+## VOB Asym COMBO v10.6 — Birth Confluence + BB1 Continuation — 2026-08-07
+
+`versions/VOB_ASYM_COMBO_v10.6.pine` — TIME chart original. Supersedes v10.5
+(same day). Operator dictation #2: births were never deleted (per-birth markers
+went in v10.1 combo-only; v10.5 removed births from TIER alert member lists per
+the tiers-are-not-zones order) — v10.6 adds the lanes the operator wants ON TOP:
+
+- **WILD Confluence Bull/Bear**: ≥1 zone birth AND (Tiers 3+ OR exact-price
+  Level count ≥2) on the SAME candle. The one lane family where births and
+  tiers meet on purpose; the alert names BOTH classes.
+- **Continuation Bull/Bear (VOB BB1 line doctrine, native port)**: BB1's
+  "line drawn" event IS a zone birth (birth = line at EMA-crossover confirm).
+  Bull: most recent BEAR birth ≤ cont_window (500) bars ago is the reference
+  (newer bear birth resets it; A→F processing → F kept on multi-birth candles);
+  firing close ABOVE that bear zone's top AND above the birth bar's close;
+  THIS candle a BULL birth draws its green line. Bear mirror. Alert reports
+  level distance in ATR units; ≤1 ATR = SAME-LEVEL (the BB echo band).
+  Same-candle opposite births never fire (sequence ≥1 bar).
+- Census: 32 lanes = 24 plotshapes (text) + 6 plotchars (text) + 2 plotchars
+  (no text) = 62/64 units; 32 alertconditions; 72 input.bools, 0 dead;
+  checkbox law maintained (32 Plot + 32 Alert rows). Census gate D=0
+  (12 axes, anti-fixture pass; WILD family exempted by operator order from
+  the tier-purity member rule — both classes lawfully named there).
+  NOT TV-compiled (TV ban) — paste settles. Tick twin owed (dated debt).
+
 ## VOB Asym COMBO v10.5 — Checkbox Law · Tier Purity · Stepwise HV — 2026-08-07
 
 `versions/VOB_ASYM_COMBO_v10.5.pine` — TIME chart original. Supersedes v10.4.
