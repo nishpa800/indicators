@@ -1,5 +1,34 @@
 # VOB Indicator Suite — Changelog
 
+## VOB Asym COMBO v10.5 — Checkbox Law · Tier Purity · Stepwise HV — 2026-08-07
+
+`versions/VOB_ASYM_COMBO_v10.5.pine` — TIME chart original. Supersedes v10.4.
+Repairs the operator's v10.2 Desktop working file per dictation 2026-08-07.
+
+- **CHECKBOX LAW**: every detection lane has TWO checkboxes in two mirrored
+  groups — "VISUAL PLOTS (chart markers only)" and "ALERTS (inbox only)".
+  A Plot box never touches alerts; an Alert box never touches the chart.
+  The 13 dead v10.1 toggles (12 T3x Buy/Sell + Nagasaki) are deleted.
+  Zone Lines boxes gate line drawing ONLY (were silently gating Multi-Zone
+  counts / ANY unions / histories). Detection booleans are checkbox-free;
+  cooldown stamps on the detection itself.
+- **TIER PURITY**: zone births removed from every tier surface. TIERS and
+  LEVEL alerts name tier members only (new f_tier_members_bull/bear, zero
+  zone terms). Zone births count ONLY in 4K + ANY and Nagasaki + ANY, whose
+  labels say "(tier OR zone birth)".
+- **STEPWISE HV (6 new lanes, bull + bear)**: three consecutive stepwise
+  closes; strict 2K→3K→4K high-volume-record ladder / any-depth ×3 /
+  +Nagasaki (≥1 of the three candles is the all-time-high volume event).
+  New windows n_2k (2000) / n_3k (3000); plotchar glyphs L / Y / N.
+- **v10.4 LEVEL-DISTINCTNESS ported**: level entries are DISTINCT
+  (tier-class, sensitivity) pairs at an exact price (f_push_lvl verbatim).
+- Census: 28 lanes = 22 plotshapes + 6 plotchars (all with text) = 56/64
+  units; 28 alertconditions; 64 input.bools, 0 dead. Gates: census D=0
+  (12 axes, anti-fixture 5/5) + pane-label D_cs1=0; 168 examples
+  adversarially verified. NOT TV-compiled (TV ban) — paste settles.
+- DEBT (dated 2026-08-07): tick_friendly twin owed (L-49.1). Latent lineage:
+  zone-birth size-delta misses a birth on a full 15-zone array (all v10.x).
+
 ## VOB v11 — HW-Single Coincidence + T3 Cluster — 2026-06-04
 
 Two new files (NOT replacing v10). Built on the v10 body. **Host bumped to
