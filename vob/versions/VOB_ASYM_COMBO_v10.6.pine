@@ -1859,9 +1859,10 @@ alertcondition(det_diag_b and al_diag_b, "Inst Diagonal Fade Bull",            "
 alertcondition(det_diag_s and al_diag_s, "Inst Diagonal Fade Bear",            "SELL SIGNAL (contrarian) — institutional diagonal BUY pattern: ascending bull tier levels kept stepping up and blew by the tiers. Operator law: fade it.")
 
 // Member naming — PLAIN NAMES, one phrase per signal actually on this candle.
-// v10.3 TIER PURITY: f_combo_members_* (tiers + zone births) feed ONLY the two
-// ANY lane families (4K + ANY, Nagasaki + ANY) — the lanes whose labels say
-// zone births count. TIERS and LEVEL alerts use f_tier_members_* (tiers only).
+// TIER PURITY (v10.6 scope): f_combo_members_* (tiers + zone births) feed the
+// two ANY lane families (4K + ANY, Nagasaki + ANY) AND the v10.6 WILD
+// Confluence lanes — every lane whose label says births count. TIERS and
+// LEVEL alerts use f_tier_members_* (tiers only).
 f_combo_members_bull() =>
     string m = ""
     if xt1_buy_a
