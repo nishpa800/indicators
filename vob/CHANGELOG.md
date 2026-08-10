@@ -213,3 +213,17 @@ depth ≥3 with PBJ/RVOL confirmation = consider entry.
   22 lanes incl. VLB + Multi-Zone: sig (detection, owns cooldown) / plot (show box only) /
   alf (dedicated 🔔 box only). A lane alerts IFF its 🔔 box is checked. Machine zone payload
   got its own box. Files: VOB_ASYM_COMBO_v10.4.pine (TIME), VOB_ASYM_COMBO_TICKFRIENDLY_v10.4.pine (TICK).
+## v10.7 — 2026-08-10 (machine-feed checkbox wave; operator defect report, W-INDSTUDY transform)
+
+**VOB Asym COMBO v10.7** (time; base = v10.5 @ 3228671, the build the operator runs).
+
+- **DEFECT (operator screenshots 2026-08-10):** v10.5 carried exactly ONE alert() emitter
+  with no checkbox — the aggregate Bloomberg-format **ZONE_FORMATION** machine alert
+  (`if any_zone`). An operator alert armed on **"Any alert() function call"** received every
+  zone birth (tiers A-F, both sides, post-cooldown) regardless of every ALERTS checkbox —
+  the checkboxes were never wrong; the emitter had no checkbox.
+- **FIX:** new ALERTS-group row `al_zone_machine` — "Alert: Machine Zone Feed (ZONE_FORMATION)",
+  **DEFAULT OFF** — gating that emitter. The checkbox law now covers 21/21 alert() emitters.
+- v10.6 (parallel WILD wave) carries the same orphan emitter — same fix owed on that line.
+- Reminder shipped with delivery: TV alerts are frozen snapshots — delete the old alert and
+  re-create it on v10.7 or the old spam keeps firing.
