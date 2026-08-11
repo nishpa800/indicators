@@ -204,3 +204,10 @@
 - IPSF now 184 in one panel: 46 VP ⊥ 46 ALERT checkboxes · 46 disp strengths (3.0/0=off) ·
   46 HV dropdowns (Not required | 50..4000 | Nagasaki).
 - v1 pair moved to superseded/ (history preserved; ledger lists v2 only).
+
+## v5.0 — 2026-08-11 (KC COMBO SR — BULL+BEAR MERGED SINGLE STUDY; operator order 2026-08-11)
+- ONE study, both sides: `versions/KC_COMBO_SR_v5.0.pine` (KCCSR24 v5.0). 24 dp (12/side keep-list from operator checkbox screenshots) + 12 plot() + 8 alertcondition = 44/64 units.
+- KEEPS per side: H.A, UC.A, SA.A/KR.A, 1X.A, GS.A/MB.A, N.A, HW.A (+ANY SR lanes), R1/R2/R3 (shared coalescence window, default 1 = same candle), FLR+A & 2F+A / ROOF+A & PH+A.
+- CUT (VP+alert removed, ALL calculations kept): 12 MAIN RS+RC combos, CS1.A, CS2.A, M.A, CC.A, A, 2+, 3+ — 52 sig_ lanes intact; ANY SR union unchanged.
+- ANY-SCOPING LAW: every ANY name token is study-scoped "+ANY SR" (never RS). Also shipped v4.7.1 of BULL/BEAR side studies carrying the same rename (53 sites each, zero logic change).
+- Built by deterministic assembler (shared engine base byte-asserted identical; side slices verbatim; double-run byte-identical). pane_label_gate D_cs1=0; graphic objects 0; offsets all 0.
