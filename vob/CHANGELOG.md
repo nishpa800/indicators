@@ -1,5 +1,32 @@
 # VOB Indicator Suite — Changelog
 
+## VOB v11.9 — KEEPER CUT + v11.9 PACK — 2026-08-11
+
+Base: operator Desktop live copy `vob v11.8.txt`
+(sha256 `a68809d1a5d986b07c8f9213fa153cf8495d386ca968e3f9c4c5cae6e99b4ae0`).
+Operator .rtfd order 2026-08-11.
+
+- **KEEPERS (only lanes with checkbox + vp + alert; all 26 🔔 default ON):**
+  Nagasaki · VLB Bull/Bear · Multi-Zone Bull2/Bull3+/Bear2/Bear3+ · T3 Cluster
+  Bull/Bear · VOB × HW-Single Bull/Bear · Nagasaki + ANY vob v11.9 (renamed) ·
+  Tier Level X3 Bull/Bear · X3 Failed Overlap Bull/Bear · Birth Bar Proximity Bull/Bear.
+- **CALCULATORS (compute-only; checkbox/vp/alert REMOVED):** T3 a–f Buy/Sell ×12,
+  zone-formation alerts ×12 + aggregate, Zone Lines toggles ×6 (zone LINES now
+  always-on), "Any T3"/"Any Zone Formation" alertconditions. Calculators still
+  compute and count as companions in every +ANY lane.
+- **NEW (8):** Pack Co-Fire Bull/Bear (exactly 2 of TC/X3/FO/BBP; X3⊥FO ⇒ 4-of-4
+  impossible) · Pack 3-of-4 Bull/Bear (the max) · 4K/3K/2K/1K HV + ANY vob v11.9
+  (rolling highest-vol windows, NAG+ANY construction, REFBAR:-1, exclusivity
+  ladder NAG > 4K > 3K > 2K > 1K).
+- **DEFAULTS BAKED (operator screenshots):** sens 1900/1800/1700/1600/1500/1400 ·
+  asym 50 · super 0.5 · cooldown 30 · X3 buffer $0 · fill 75 · midline 1 · tag
+  col 100 · stacking 1% · history 30 · HWS floors 62/62, body 80, seq lowers
+  2/2/2, standalone σ7, HCT σ5.
+- **CENSUS:** 26 lanes = 26 plotshapes (52/64 TV units) + 24 alertconditions +
+  26 show + 26 🔔 checkboxes; alert-iff law intact. Acceptance gate D=0
+  (census/banned-surface/iff/defaults/twin-parity axes).
+- Files: `versions/VOB_v11.9.pine` (TIME) + `tick_friendly/VOB_TICKFRIENDLY_v11.9.pine` (TICK twin).
+
 ## VOB Asym COMBO v10.6 — Birth Confluence + BB1 Continuation — 2026-08-07
 
 `versions/VOB_ASYM_COMBO_v10.6.pine` — TIME chart original. Supersedes v10.5
