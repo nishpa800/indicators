@@ -1,5 +1,15 @@
 # VOB Indicator Suite — Changelog
 
+## VOB ASYM HVPROX v1.1 — 2026-08-18 (Volume Order Blocks + Asymmetric Signals + HV Proximity v1.1)
+- **NEW STUDY PAIR (create lane) on the operator's `vob asymmetric signals.txt` base (sha256 `5a1f0ced07dd…`).** `versions/VOB_ASYM_HVPROX_v1.1.pine` (TIME, shorttitle `VOB HVP1.1`) + `tick_friendly/VOB_ASYM_HVPROX_TICKFRIENDLY_v1.1.pine` (TICK, `HVP1.1TICK`) — byte-identical below the indicator() line except the shorttitle tag inside the 12 log.info metadata lines.
+- Operator goal 2026-08-18: HV proximity VPs, adjustable rolling windows + adjustable bar distances; **IFF** an HV candle sits within K bars of a T1/T2/T3 fire (either tier), then and only then the VP fires. Defaults **500/1000/1500/3000/4000/Nagasaki** with **3/5/5/5/5/15 bars**.
+- 12 lanes = {HV 500, HV 1000, HV 1500, HV 3000, HV 4000, NAGASAKI} × {Bull (T1/T2/T3 BUY), Bear (T1/T2/T3 SELL)}; each a sig_/fire_/alf_ chain: real plotshape VP + plot checkbox + 🔔 alert checkbox + alert() (grammar v1.3 plain names) + log.info metadata. Print-highest-tier rule default ON (toggle).
+- HV(N) = `volume >= ta.highest(volume, N)` (rolling; ties count); NAGASAKI = running all-time max over confirmed candles, strict >; proximity = later-of-the-two candle, distance ≤ K (0 = same candle); everything evaluated on the confirmed bar (non-repainting, same as the base engine).
+- Base edits (behavior of T1/T2/T3 unchanged at defaults): E1 indicator title/shorttitle stamped; E2 tier plot keys side-typed "(Bull)/(Bear)", bare const colors, white text, T3 SUPER Buy yellow→green #64DD17 (yellow banned); E3 math.min clamps on the OB scan-loop offsets; E4 tier lanes get plot + 🔔 alert checkboxes (default ON).
+- Budget: 21/64 TV units (6 base tier + 2 fill-anchor plot() + 1 series-color fill + 12 new, plot colors all bare const); 0 alertcondition; graphic objects = the base's order-block lines/labels only.
+- Base hosted verbatim in `vob/sources/VOB_ASYM_SIGNALS_operator-base_2026-08-18.txt` (sha256 `5a1f0ced07dd…`, T-INDSTUDY C12).
+- Rigor R2: every numeric default is operator-dictated; base carried verbatim (sha-pinned).
+
 ## v10.5 + v11.8 — 2026-07-24 — RE10140 FIX (input colors on plots = runtime series; the plot budget truth)
 
 W-INDSTUDY lane (manifests `manifest_vob-v10.5-*` / `manifest_vob-v11.8-*`). Bases:

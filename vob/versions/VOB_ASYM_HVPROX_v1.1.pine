@@ -1,0 +1,733 @@
+//@version=6
+// =============================================================================
+// VOB ASYMMETRIC SIGNALS + HV PROXIMITY v1.1 — 2026-08-18  (W-INDSTUDY create lane, L-49)
+// TIME-CHART build (twin: vob/tick_friendly/VOB_ASYM_HVPROX_TICKFRIENDLY_v1.1.pine).
+// -----------------------------------------------------------------------------
+// BASE (operator file, sha256-pinned, carried VERBATIM except the DECLARED edits below):
+//   ~/Desktop/Mathematical Proof Wrapper/studies/vob asymmetric signals.txt
+//   sha256 5a1f0ced07dd783dddf60345c5bdc8ada206c98db1f27e25392e47a80f12ff70
+//   -> Volume Order Blocks + Asymmetric Signals: T1 Asymmetric / T2 Pure 100% / T3 SUPER,
+//      Buy + Sell, cooldown, alert() per tier, order-block lines. UNCHANGED engine.
+//   DECLARED EDITS to base lines (behavior of T1/T2/T3 is unchanged):
+//     E1 indicator(): title + shorttitle stamped with the version (one line).
+//     E2 the six tier plotshapes: rewritten one-per-line, keyword form; plot keys carry
+//        their side type "(Bull)"/"(Bear)" (L-49.3 side-typing law); marker colors are the
+//        SAME hex values written as bare literals (Style-tab picker, P-017); marker TEXT is
+//        white (visual-identity law II V3, operator 2026-07-25); T3 SUPER Buy yellow #ffff00
+//        -> green #64DD17 (yellow/orange banned on both sides, law II V2). T3 SUPER Sell
+//        keeps #ff4400. The two adjacent section-comment lines ("Tier 1 —", "Tier 3 —") carry
+//        an appended annotation (comment-only).
+//     E4 the six tier alert() emissions gain a 🔔 checkbox gate (default ON) and the six tier
+//        markers a plot checkbox (default ON) — checkbox law, one checkbox = one job; identical
+//        behavior at defaults (an ungated alert() emitter was the VOBA v10.5 inbox-spam defect).
+//     E3 order-block scan loops: every series offset in the two loops (low/high/time/open/
+//        close[i] and volume[k]) reads through int ii = math.min(i, 4999) / kk = math.min(k, 4999)
+//        — identical values whenever length2 <= 4999 (Sensitivity Detection <= 4986; the base
+//        never bounds it), so the loops can no longer request an offset beyond the 5000-bar
+//        history buffer (pine_ship offset-creep law). The src read (open/close of the pivot
+//        bar) sits directly under the index read, above the volume sum — the two are
+//        independent, so the value is unchanged.
+// -----------------------------------------------------------------------------
+// OPERATOR DICTATION (goal, 2026-08-18, verbatim intent):
+//   "add 5 adjustable new vp to this indicator study. all of them are adjustable rolling
+//    windows and adjustable input parameters. if and only if xyz high value number is
+//    within xyzabc number of bars within EITHER t1, t2 OR t3, then and only then will the
+//    vp fire. make the defaults greater than or equal to 500/1000/1500/3000/4000/nagasaki
+//    and make the number of bars from the other vp be 3, 5, 5, 5, 5 and 15 bars,
+//    respectively."
+// -----------------------------------------------------------------------------
+// LANE DEFINITIONS (gate language; every term is a boolean in the code below):
+//   HV(N) on candle C   : volume(C) >= highest volume of the last N candles ending at C
+//                         (rolling window; N adjustable per tier; ties count — ">=" as dictated).
+//                         Nested by construction: an HV(4000) candle is also HV(500..3000).
+//   NAGASAKI on C       : volume(C) > every prior CONFIRMED candle's volume (all-time high,
+//                         strict >, running max — estate-canonical construction).
+//   TIER BUY on C       : T1 Buy or T2 Buy or T3 Buy PRINTED on C (post-cooldown — the very
+//                         booleans that draw the T1/T2/T3 markers). TIER SELL likewise.
+//   HV(N) BULL lane     : fires on candle t IFF an HV(N) candle and a TIER BUY candle lie
+//                         within K bars of each other (K adjustable per tier; 0 = same
+//                         candle) and t is the LATER of the two. The marker sits on t.
+//                         Formally fire(t) = [HV(t) AND EXISTS s in [t-K, t]: TIERBUY(s)]
+//                                         OR [TIERBUY(t) AND EXISTS s in [t-K, t]: HV(s)].
+//   HV(N) BEAR lane     : identical with TIER SELL (bilateral by default).
+//   NAGASAKI lanes      : identical with NAGASAKI in place of HV(N), K default 15.
+//   PRINT HIGHEST ONLY  : default ON — per side per candle, only the HIGHEST tier whose
+//                         proximity holds prints (Nagasaki > 4000 > 3000 > 1500 > 1000 > 500),
+//                         one marker + one alert line per side per candle. Ranked by TIER,
+//                         not by distance (a Nagasaki 10 bars back outranks a same-candle
+//                         4000); the ranking reads the pure proximity booleans, so an
+//                         UNCHECKED higher tier still suppresses lower tiers while ON (chart
+//                         and inbox can never disagree — sig_ is checkbox-free). OFF — every
+//                         tier whose proximity holds prints. Either way: a lane can NEVER
+//                         fire without its proximity condition (the IFF).
+//   WINDOW FLOORS       : each rolling window is adjustable UPWARD from its lane name
+//                         (minval 500/1000/1500/3000/4000, ceiling 5000 = max_bars_back) so
+//                         the const marker text (500/1K/1.5K/3K/4K) can never lie; the alert
+//                         line prints the live window number.
+//   Non-repainting      : every HV / Nagasaki / tier / distance term is evaluated on the
+//                         CONFIRMED bar only (barstate.isconfirmed), like the base engine.
+// -----------------------------------------------------------------------------
+// OUTPUT BUDGET (TV unit law, proven 2026-08-12: const-color plot = 1, alertcondition = 1;
+//   a fill() with a SERIES color also counts one):
+//   6 base tier plotshapes (bare #hex) + 2 base fill-anchor plot() (original trend shadow,
+//   display.none) + 1 base fill(p1,p2,gradient) + 12 new plotshapes (bare #hex) = 21 / 64.
+//   0 alertcondition.
+//   Graphic objects: the base's order-block line/label/linefill sites only (the OB drawing
+//   itself, not VPs) — every VP is a REAL plotshape (CS-1, L-61).
+// ALERTS: alert() per lane (0 units), grammar v1.3 plain names —
+//   "<BULL|BEAR> | <N>-BAR HIGH VOL + <T1 ASYMMETRIC|T2 PURE 100%|T3 SUPER BUY|SELL> | <gap>"
+//   (metadata — firing-candle close/vol/bar — rides the log.info lane only, Pine Logs).
+//   Arm ONE TradingView alert on this study: Alt+A -> condition "VOB HVP1.1" ->
+//   "Any alert() function call" — it catches every checked lane (tiers + HV proximity).
+// CHECKBOX LAW: two mirrored groups — VISUAL PLOTS (chart) and ALERTS (inbox); one job each.
+// =============================================================================
+indicator("Volume Order Blocks + Asymmetric Signals + HV Proximity v1.1", shorttitle="VOB HVP1.1", overlay = true, max_lines_count = 500, max_labels_count = 500, max_bars_back = 5000)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UDT
+// ─────────────────────────────────────────────────────────────────────────────
+
+type level 
+    int   indx
+    float upper
+    float lower 
+    float mid 
+    float vol
+
+type draw 
+    line     upper 
+    line     lower 
+    line     mid 
+    linefill fill 
+    label    vol
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+int   length1        = input.int(5,     "Sensitivity Detection")
+int   length2        = length1 + 13
+bool  mid_l          = input.bool(true, "Mid Line")
+bool  trend_shadow   = input.bool(true, "Trend Shadow")
+color col1           = input.color(#26ba9f, "", inline = "col")
+color col2           = input.color(#6626ba, "", inline = "col")
+
+// Signal inputs
+float asym_threshold = input.float(50.0, "Tier 1 — Asymmetric % Threshold", minval = 1, step = 5,
+     tooltip = "Dominant OB must hold at least this % of its pool to trigger Tier 1")
+float super_mult     = input.float(1.0,  "Tier 3 — Super Volume Multiplier", step = 0.1,
+     tooltip = "Dominant OB raw volume must exceed opposing pool total × this multiplier")
+int   cooldown_bars  = input.int(20,    "Signal Cooldown (Bars)", minval = 0,
+     tooltip = "Minimum number of bars to wait after any signal before allowing a new one")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HV PROXIMITY INPUTS (v1.1, operator 2026-08-18) — rolling windows + bar distances
+// ─────────────────────────────────────────────────────────────────────────────
+string grpH = "HV PROXIMITY — rolling windows (bars) + max distance from a T1/T2/T3 fire (bars)"
+int  hvp_w500 = input.int(500, "HV 500 — rolling window (bars)", minval = 500, maxval = 5000, group = grpH, tooltip = "HV 500 candle = its volume is >= the highest volume of the last N bars (N default 500; adjustable upward — the floor is the lane name so the 500 marker never lies). Nested: a deeper high-volume candle also qualifies. Ceiling 5000 = max_bars_back.")
+int  hvp_k500 = input.int(3, "HV 500 — max bars from T1/T2/T3", minval = 0, maxval = 500, group = grpH, tooltip = "The HV 500 candle and a T1/T2/T3 fire of the same side must lie within this many bars of each other (0 = same candle). Default 3.")
+int  hvp_w1000 = input.int(1000, "HV 1000 — rolling window (bars)", minval = 1000, maxval = 5000, group = grpH, tooltip = "HV 1000 candle = its volume is >= the highest volume of the last N bars (N default 1000; adjustable upward — the floor is the lane name so the 1000 marker never lies). Nested: a deeper high-volume candle also qualifies. Ceiling 5000 = max_bars_back.")
+int  hvp_k1000 = input.int(5, "HV 1000 — max bars from T1/T2/T3", minval = 0, maxval = 500, group = grpH, tooltip = "The HV 1000 candle and a T1/T2/T3 fire of the same side must lie within this many bars of each other (0 = same candle). Default 5.")
+int  hvp_w1500 = input.int(1500, "HV 1500 — rolling window (bars)", minval = 1500, maxval = 5000, group = grpH, tooltip = "HV 1500 candle = its volume is >= the highest volume of the last N bars (N default 1500; adjustable upward — the floor is the lane name so the 1500 marker never lies). Nested: a deeper high-volume candle also qualifies. Ceiling 5000 = max_bars_back.")
+int  hvp_k1500 = input.int(5, "HV 1500 — max bars from T1/T2/T3", minval = 0, maxval = 500, group = grpH, tooltip = "The HV 1500 candle and a T1/T2/T3 fire of the same side must lie within this many bars of each other (0 = same candle). Default 5.")
+int  hvp_w3000 = input.int(3000, "HV 3000 — rolling window (bars)", minval = 3000, maxval = 5000, group = grpH, tooltip = "HV 3000 candle = its volume is >= the highest volume of the last N bars (N default 3000; adjustable upward — the floor is the lane name so the 3000 marker never lies). Nested: a deeper high-volume candle also qualifies. Ceiling 5000 = max_bars_back.")
+int  hvp_k3000 = input.int(5, "HV 3000 — max bars from T1/T2/T3", minval = 0, maxval = 500, group = grpH, tooltip = "The HV 3000 candle and a T1/T2/T3 fire of the same side must lie within this many bars of each other (0 = same candle). Default 5.")
+int  hvp_w4000 = input.int(4000, "HV 4000 — rolling window (bars)", minval = 4000, maxval = 5000, group = grpH, tooltip = "HV 4000 candle = its volume is >= the highest volume of the last N bars (N default 4000; adjustable upward — the floor is the lane name so the 4000 marker never lies). Nested: a deeper high-volume candle also qualifies. Ceiling 5000 = max_bars_back.")
+int  hvp_k4000 = input.int(5, "HV 4000 — max bars from T1/T2/T3", minval = 0, maxval = 500, group = grpH, tooltip = "The HV 4000 candle and a T1/T2/T3 fire of the same side must lie within this many bars of each other (0 = same candle). Default 5.")
+int  hvp_kNaga = input.int(15, "NAGASAKI — max bars from T1/T2/T3", minval = 0, maxval = 500, group = grpH, tooltip = "NAGASAKI candle = all-time-high volume (its volume is strictly above every prior confirmed candle on the chart; no window). Must lie within this many bars of a T1/T2/T3 fire of the same side (0 = same candle). Default 15.")
+bool hvp_excl  = input.bool(true, "Print highest HV tier only (one marker per side per candle)", group = grpH, tooltip = "ON (default): per side per candle only the HIGHEST tier whose proximity holds prints — Nagasaki > 4000 > 3000 > 1500 > 1000 > 500 — one marker, one alert line. Ranking is by tier, not by distance: a Nagasaki 10 bars back still outranks a same-candle 4000. The ranking ignores your checkboxes: an unchecked higher tier still suppresses the lower tiers while ON — turn this OFF to see a lower lane on its own. OFF: every tier whose proximity holds prints. Either way a lane never fires without its own proximity condition.")
+
+// ── VISUAL PLOTS (chart markers only) — one checkbox per lane (tiers + HV proximity) ──
+string grpP = "VISUAL PLOTS (chart markers only)"
+bool en_t1_buy  = input.bool(true, "T1 Buy (Bull)", group = grpP, inline = "t1")
+bool en_t1_sell = input.bool(true, "T1 Sell (Bear)", group = grpP, inline = "t1")
+bool en_t2_buy  = input.bool(true, "T2 Buy (Bull)", group = grpP, inline = "t2")
+bool en_t2_sell = input.bool(true, "T2 Sell (Bear)", group = grpP, inline = "t2")
+bool en_t3_buy  = input.bool(true, "T3 SUPER Buy (Bull)", group = grpP, inline = "t3")
+bool en_t3_sell = input.bool(true, "T3 SUPER Sell (Bear)", group = grpP, inline = "t3")
+bool en_hv500Bull = input.bool(true, "HV 500 Bull", group = grpP, inline = "p1")
+bool en_hv500Bear = input.bool(true, "HV 500 Bear", group = grpP, inline = "p1")
+bool en_hv1000Bull = input.bool(true, "HV 1000 Bull", group = grpP, inline = "p2")
+bool en_hv1000Bear = input.bool(true, "HV 1000 Bear", group = grpP, inline = "p2")
+bool en_hv1500Bull = input.bool(true, "HV 1500 Bull", group = grpP, inline = "p3")
+bool en_hv1500Bear = input.bool(true, "HV 1500 Bear", group = grpP, inline = "p3")
+bool en_hv3000Bull = input.bool(true, "HV 3000 Bull", group = grpP, inline = "p4")
+bool en_hv3000Bear = input.bool(true, "HV 3000 Bear", group = grpP, inline = "p4")
+bool en_hv4000Bull = input.bool(true, "HV 4000 Bull", group = grpP, inline = "p5")
+bool en_hv4000Bear = input.bool(true, "HV 4000 Bear", group = grpP, inline = "p5")
+bool en_hvNagaBull = input.bool(true, "NAGASAKI Bull", group = grpP, inline = "p6")
+bool en_hvNagaBear = input.bool(true, "NAGASAKI Bear", group = grpP, inline = "p6")
+
+// ── ALERTS (inbox only) — one checkbox per lane; arm ONE alert: Any alert() function call ──
+string grpA = "ALERTS (inbox only) — arm ONE alert on this study: Any alert() function call"
+bool al_t1_buy  = input.bool(true, "🔔 T1 Buy (Bull)", group = grpA, inline = "at1")
+bool al_t1_sell = input.bool(true, "🔔 T1 Sell (Bear)", group = grpA, inline = "at1")
+bool al_t2_buy  = input.bool(true, "🔔 T2 Buy (Bull)", group = grpA, inline = "at2")
+bool al_t2_sell = input.bool(true, "🔔 T2 Sell (Bear)", group = grpA, inline = "at2")
+bool al_t3_buy  = input.bool(true, "🔔 T3 SUPER Buy (Bull)", group = grpA, inline = "at3")
+bool al_t3_sell = input.bool(true, "🔔 T3 SUPER Sell (Bear)", group = grpA, inline = "at3")
+bool al_hv500Bull = input.bool(true, "🔔 HV 500 Bull", group = grpA, inline = "a1")
+bool al_hv500Bear = input.bool(true, "🔔 HV 500 Bear", group = grpA, inline = "a1")
+bool al_hv1000Bull = input.bool(true, "🔔 HV 1000 Bull", group = grpA, inline = "a2")
+bool al_hv1000Bear = input.bool(true, "🔔 HV 1000 Bear", group = grpA, inline = "a2")
+bool al_hv1500Bull = input.bool(true, "🔔 HV 1500 Bull", group = grpA, inline = "a3")
+bool al_hv1500Bear = input.bool(true, "🔔 HV 1500 Bear", group = grpA, inline = "a3")
+bool al_hv3000Bull = input.bool(true, "🔔 HV 3000 Bull", group = grpA, inline = "a4")
+bool al_hv3000Bear = input.bool(true, "🔔 HV 3000 Bear", group = grpA, inline = "a4")
+bool al_hv4000Bull = input.bool(true, "🔔 HV 4000 Bull", group = grpA, inline = "a5")
+bool al_hv4000Bear = input.bool(true, "🔔 HV 4000 Bear", group = grpA, inline = "a5")
+bool al_hvNagaBull = input.bool(true, "🔔 NAGASAKI Bull", group = grpA, inline = "a6")
+bool al_hvNagaBear = input.bool(true, "🔔 NAGASAKI Bear", group = grpA, inline = "a6")
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CALCULATIONS (original — untouched)
+// ─────────────────────────────────────────────────────────────────────────────
+
+float ema1     = ta.ema(close, length1)
+float ema2     = ta.ema(close, length2)
+
+bool  cross_up = ta.crossover(ema1, ema2)  and barstate.isconfirmed
+bool  cross_dn = ta.crossunder(ema1, ema2) and barstate.isconfirmed
+float lowest   = ta.lowest(length2) 
+float highest  = ta.highest(length2)
+
+var upper_draw = array.new<draw>()
+var lower_draw = array.new<draw>()
+
+var upper_lvl  = array.new<level>()
+var lower_lvl  = array.new<level>()
+
+array_vol_upper = array.new<float>()
+array_vol_lower = array.new<float>()
+
+difff       = ema2 - ema1
+color_trend = trend_shadow ? difff > 0 ? color.from_gradient(difff, 0, ta.highest(difff,100), color(na), col2) : color.from_gradient(difff, ta.lowest(difff,100), 0, col1, color(na)) : color(na)
+
+p1 = plot(ema1, "", display = display.none, editable = false)
+p2 = plot(ema2, "", display = display.none, editable = false)
+fill(p1, p2, color_trend)
+
+atr  = ta.highest(ta.atr(200), 200) * 3
+atr1 = ta.highest(ta.atr(200), 200) * 2
+
+f_clear_previous_lines(draw__) =>
+    if draw__.size() > 0
+        for l in draw__
+            line.delete(l.upper)
+            line.delete(l.lower)
+            line.delete(l.mid)
+            linefill.delete(l.fill)
+            label.delete(l.vol)
+        array.clear(draw__)
+
+if cross_up
+    var vol = 0.0
+    vol := 0
+    for i = 1 to length2
+        int ii = math.min(i, 4999)  // explicit clamp: offset can never exceed the history buffer
+        if low[ii] == lowest
+            index = time[ii]
+            src = math.min(open[ii], close[ii])
+            for k = 0 to i
+                int kk = math.min(k, 4999)  // explicit clamp: offset can never exceed the history buffer
+                vol += volume[kk]
+            src := (src - lowest) < atr1 * 0.5 ? lowest + atr1 * 0.5 : src
+            mid = math.avg(src, lowest)    
+            l = level.new(index, src, lowest, mid, vol)
+            lower_lvl.push(l)
+
+if cross_dn
+    var vol = 0.0
+    vol := 0
+    for i = 1 to length2
+        int ii = math.min(i, 4999)  // explicit clamp: offset can never exceed the history buffer
+        if high[ii] == highest
+            index = time[ii]
+            src = math.max(open[ii], close[ii])
+            for k = 0 to i
+                int kk = math.min(k, 4999)  // explicit clamp: offset can never exceed the history buffer
+                vol += volume[kk]
+            src := (highest - src) < atr1 * 0.5 ? highest - atr1 * 0.5 : src
+            mid = math.avg(src, highest) 
+            l = level.new(index, highest, src, mid, vol)
+            upper_lvl.push(l)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INVALIDATION (original — untouched)
+// ─────────────────────────────────────────────────────────────────────────────
+
+if lower_lvl.size() > 0
+    for i = 0 to lower_lvl.size() - 1
+        l  = lower_lvl.get(i)
+        l1 = lower_lvl.get(i - 1)
+        mid  = l.mid
+        mid1 = l1.mid
+        if math.abs(mid - mid1) < atr 
+            l_ = level.new(na, na, na, na, na)
+            lower_lvl.set(i - 1, l_)
+        if close < l.lower
+            l_ = level.new(na, na, na, na, na)
+            lower_lvl.set(i, l_)
+    if lower_lvl.size() > 15 
+        lower_lvl.shift()
+
+if upper_lvl.size() > 0
+    for i = 0 to upper_lvl.size() - 1
+        l     = upper_lvl.get(i)
+        l1    = upper_lvl.get(i - 1)
+        upper = l.upper
+        mid   = l.mid
+        mid1  = l1.mid
+        if math.abs(mid - mid1) < atr 
+            l_ = level.new(na, na, na, na, na)
+            upper_lvl.set(i - 1, l_)
+        if close > upper
+            l_ = level.new(na, na, na, na, na)
+            upper_lvl.set(i, l_)
+    if upper_lvl.size() > 15 
+        upper_lvl.shift()
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ASYMMETRIC SIGNAL ENGINE
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Pre-declare signal variables at GLOBAL scope (plotshape cannot be in local scope)
+var bool sig_t1_buy  = false
+var bool sig_t1_sell = false
+var bool sig_t2_buy  = false
+var bool sig_t2_sell = false
+var bool sig_t3_buy  = false
+var bool sig_t3_sell = false
+var int  last_signal_bar = na
+
+// Reset each bar
+sig_t1_buy  := false
+sig_t1_sell := false
+sig_t2_buy  := false
+sig_t2_sell := false
+sig_t3_buy  := false
+sig_t3_sell := false
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HV PROXIMITY ENGINE (v1.1) — rolling-window high-volume tests + memory
+// ta.* calls at GLOBAL scope (evaluated every bar); consumed on the CONFIRMED bar only.
+// ─────────────────────────────────────────────────────────────────────────────
+float hvp_h500  = ta.highest(volume, hvp_w500)
+bool  hvp_is500 = not na(hvp_h500) and volume >= hvp_h500
+float hvp_h1000  = ta.highest(volume, hvp_w1000)
+bool  hvp_is1000 = not na(hvp_h1000) and volume >= hvp_h1000
+float hvp_h1500  = ta.highest(volume, hvp_w1500)
+bool  hvp_is1500 = not na(hvp_h1500) and volume >= hvp_h1500
+float hvp_h3000  = ta.highest(volume, hvp_w3000)
+bool  hvp_is3000 = not na(hvp_h3000) and volume >= hvp_h3000
+float hvp_h4000  = ta.highest(volume, hvp_w4000)
+bool  hvp_is4000 = not na(hvp_h4000) and volume >= hvp_h4000
+
+bool conf = barstate.isconfirmed
+// same-bar event flags (assigned inside the confirmed block; read by the emission block below it)
+bool hvp_tierBullNow = false
+bool hvp_tierBearNow = false
+bool hvp_isNaga      = false
+
+// memory — written on CONFIRMED bars only (var state rolls back on the forming bar, commits at close)
+var float  hvp_nagaMax      = 0.0
+var int    hvp_lastTierBull = na
+var int    hvp_lastTierBear = na
+var string hvp_tierBullName = ""
+var string hvp_tierBearName = ""
+var int    hvp_last500 = na
+var int    hvp_last1000 = na
+var int    hvp_last1500 = na
+var int    hvp_last3000 = na
+var int    hvp_last4000 = na
+var int    hvp_lastNaga = na
+
+// lane signals: sig_ = pure detection (proximity IFF + print-highest rule); fire_ = plot checkbox; alf_ = alert checkbox
+bool sig_hv500Bull = false
+bool sig_hv1000Bull = false
+bool sig_hv1500Bull = false
+bool sig_hv3000Bull = false
+bool sig_hv4000Bull = false
+bool sig_hvNagaBull = false
+bool sig_hv500Bear = false
+bool sig_hv1000Bear = false
+bool sig_hv1500Bear = false
+bool sig_hv3000Bear = false
+bool sig_hv4000Bear = false
+bool sig_hvNagaBear = false
+
+// distance helpers (bars since the last event; a never-seen event is infinitely far)
+f_hvp_dist(int lastBar) =>
+    na(lastBar) ? 1000000 : bar_index - lastBar
+f_hvp_prox(bool aNow, int lastA, bool bNow, int lastB, int k) =>
+    (aNow and f_hvp_dist(lastB) <= k) or (bNow and f_hvp_dist(lastA) <= k)
+f_hvp_gap(bool aNow, int lastA, bool bNow, int lastB) =>
+    aNow and bNow ? 0 : aNow ? f_hvp_dist(lastB) : f_hvp_dist(lastA)
+f_hvp_msg(string side, string hvName, string tierName, int gap, bool hvNow) =>
+    string gapTxt = gap == 0 ? "same candle" : str.tostring(gap) + " bars apart, " + (hvNow ? tierName + " first" : "HV first")
+    side + " | " + hvName + " + " + tierName + " | " + gapTxt
+
+// Only run on confirmed bar close — guarantees non-repainting
+if barstate.isconfirmed
+
+    // ── Collect valid bullish OB volumes ──────────────────────────────────────
+    valid_bull_vol  = array.new<float>()
+    valid_bull_low  = array.new<float>()
+    valid_bull_high = array.new<float>()
+
+    if lower_lvl.size() > 0
+        for i = 0 to lower_lvl.size() - 1
+            l = lower_lvl.get(i)
+            if not na(l.vol)
+                valid_bull_vol.push(l.vol)
+                valid_bull_low.push(l.lower)
+                valid_bull_high.push(l.upper)
+
+    // ── Collect valid bearish OB volumes ─────────────────────────────────────
+    valid_bear_vol  = array.new<float>()
+    valid_bear_low  = array.new<float>()
+    valid_bear_high = array.new<float>()
+
+    if upper_lvl.size() > 0
+        for i = 0 to upper_lvl.size() - 1
+            l = upper_lvl.get(i)
+            if not na(l.vol)
+                valid_bear_vol.push(l.vol)
+                valid_bear_low.push(l.lower)
+                valid_bear_high.push(l.upper)
+
+    bull_pool_total = valid_bull_vol.size() > 0 ? valid_bull_vol.sum() : 0.0
+    bear_pool_total = valid_bear_vol.size() > 0 ? valid_bear_vol.sum() : 0.0
+
+    // ── Find dominant bullish OB (highest vol) ────────────────────────────────
+    dom_bull_vol   = 0.0
+    dom_bull_low   = 0.0
+    dom_bull_high  = 0.0
+    dom_bull_pct   = 0.0
+    bull_count     = valid_bull_vol.size()
+
+    if bull_count > 0
+        for i = 0 to bull_count - 1
+            v = valid_bull_vol.get(i)
+            if v > dom_bull_vol
+                dom_bull_vol  := v
+                dom_bull_low  := valid_bull_low.get(i)
+                dom_bull_high := valid_bull_high.get(i)
+        dom_bull_pct := bull_pool_total > 0 ? dom_bull_vol / bull_pool_total * 100 : 0.0
+
+    // ── Find dominant bearish OB (highest vol) ────────────────────────────────
+    dom_bear_vol   = 0.0
+    dom_bear_low   = 0.0
+    dom_bear_high  = 0.0
+    dom_bear_pct   = 0.0
+    bear_count     = valid_bear_vol.size()
+
+    if bear_count > 0
+        for i = 0 to bear_count - 1
+            v = valid_bear_vol.get(i)
+            if v > dom_bear_vol
+                dom_bear_vol  := v
+                dom_bear_low  := valid_bear_low.get(i)
+                dom_bear_high := valid_bear_high.get(i)
+        dom_bear_pct := bear_pool_total > 0 ? dom_bear_vol / bear_pool_total * 100 : 0.0
+
+    // ── Price at zone checks ──────────────────────────────────────────────────
+    price_at_bull = close >= dom_bull_low  and close <= dom_bull_high
+    price_at_bear = close >= dom_bear_low  and close <= dom_bear_high
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 1 — ASYMMETRIC BUY
+    // ─────────────────────────────────────────────────────────────────────────
+    tier1_buy = dom_bull_pct >= asym_threshold
+         and dom_bull_vol > dom_bear_vol
+         and price_at_bull
+         and bull_count > 0
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 1 — ASYMMETRIC SELL
+    // ─────────────────────────────────────────────────────────────────────────
+    tier1_sell = dom_bear_pct >= asym_threshold
+         and dom_bear_vol > dom_bull_vol
+         and price_at_bear
+         and bear_count > 0
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 2 — PURE 100% BUY
+    // ─────────────────────────────────────────────────────────────────────────
+    tier2_buy  = bull_count == 1 and price_at_bull
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 2 — PURE 100% SELL
+    // ─────────────────────────────────────────────────────────────────────────
+    tier2_sell = bear_count == 1 and price_at_bear
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 3 — SUPER 100% BUY
+    // ─────────────────────────────────────────────────────────────────────────
+    tier3_buy  = bull_count == 1
+         and bear_pool_total > 0
+         and dom_bull_vol > bear_pool_total * super_mult
+         and price_at_bull
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // TIER 3 — SUPER 100% SELL
+    // ─────────────────────────────────────────────────────────────────────────
+    tier3_sell = bear_count == 1
+         and bull_pool_total > 0
+         and dom_bear_vol > bull_pool_total * super_mult
+         and price_at_bear
+
+    // ── Assign to global signal variables ────────────────────────────────────
+    cooldown_ready = na(last_signal_bar) or (bar_index - last_signal_bar > cooldown_bars)
+
+    raw_t1_buy  = tier1_buy  and not tier2_buy  and not tier3_buy
+    raw_t1_sell = tier1_sell and not tier2_sell and not tier3_sell
+    raw_t2_buy  = tier2_buy  and not tier3_buy
+    raw_t2_sell = tier2_sell and not tier3_sell
+    raw_t3_buy  = tier3_buy
+    raw_t3_sell = tier3_sell
+
+    sig_t1_buy  := cooldown_ready and raw_t1_buy
+    sig_t1_sell := cooldown_ready and raw_t1_sell
+    sig_t2_buy  := cooldown_ready and raw_t2_buy
+    sig_t2_sell := cooldown_ready and raw_t2_sell
+    sig_t3_buy  := cooldown_ready and raw_t3_buy
+    sig_t3_sell := cooldown_ready and raw_t3_sell
+
+    if sig_t1_buy or sig_t1_sell or sig_t2_buy or sig_t2_sell or sig_t3_buy or sig_t3_sell
+        last_signal_bar := bar_index
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ALERTS — 1:1 parity with plots, all on bar close
+    // ─────────────────────────────────────────────────────────────────────────
+
+    if al_t1_buy and sig_t1_buy
+        alert("T1 Asymmetric BUY — dom bull vol: " + str.tostring(dom_bull_vol, format.volume) + " vs bear: " + str.tostring(dom_bear_vol, format.volume), alert.freq_once_per_bar_close)
+
+    if al_t1_sell and sig_t1_sell
+        alert("T1 Asymmetric SELL — dom bear vol: " + str.tostring(dom_bear_vol, format.volume) + " vs bull: " + str.tostring(dom_bull_vol, format.volume), alert.freq_once_per_bar_close)
+
+    if al_t2_buy and sig_t2_buy
+        alert("T2 Pure 100% BUY — single bull block: " + str.tostring(dom_bull_vol, format.volume), alert.freq_once_per_bar_close)
+
+    if al_t2_sell and sig_t2_sell
+        alert("T2 Pure 100% SELL — single bear block: " + str.tostring(dom_bear_vol, format.volume), alert.freq_once_per_bar_close)
+
+    if al_t3_buy and sig_t3_buy
+        alert("T3 SUPER BUY — bull: " + str.tostring(dom_bull_vol, format.volume) + " vs entire bear pool: " + str.tostring(bear_pool_total, format.volume), alert.freq_once_per_bar_close)
+
+    if al_t3_sell and sig_t3_sell
+        alert("T3 SUPER SELL — bear: " + str.tostring(dom_bear_vol, format.volume) + " vs entire bull pool: " + str.tostring(bull_pool_total, format.volume), alert.freq_once_per_bar_close)
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HV PROXIMITY LANES (v1.1) — HV(N) / NAGASAKI within K bars of a T1/T2/T3 fire
+    // ─────────────────────────────────────────────────────────────────────────
+    hvp_tierBullNow := sig_t1_buy or sig_t2_buy or sig_t3_buy
+    hvp_tierBearNow := sig_t1_sell or sig_t2_sell or sig_t3_sell
+    if hvp_tierBullNow
+        hvp_lastTierBull := bar_index
+        hvp_tierBullName := sig_t1_buy ? "T1 ASYMMETRIC BUY" : sig_t2_buy ? "T2 PURE 100% BUY" : "T3 SUPER BUY"
+    if hvp_tierBearNow
+        hvp_lastTierBear := bar_index
+        hvp_tierBearName := sig_t1_sell ? "T1 ASYMMETRIC SELL" : sig_t2_sell ? "T2 PURE 100% SELL" : "T3 SUPER SELL"
+    // Nagasaki: all-time-high volume over CONFIRMED candles, strict > (canonical construction)
+    hvp_isNaga := volume > hvp_nagaMax
+    if hvp_isNaga
+        hvp_nagaMax := volume
+    if hvp_is500
+        hvp_last500 := bar_index
+    if hvp_is1000
+        hvp_last1000 := bar_index
+    if hvp_is1500
+        hvp_last1500 := bar_index
+    if hvp_is3000
+        hvp_last3000 := bar_index
+    if hvp_is4000
+        hvp_last4000 := bar_index
+    if hvp_isNaga
+        hvp_lastNaga := bar_index
+    // proximity per tier per side (nested membership: an HV 4000 candle is also HV 500..3000)
+    bool hvp_p500Bull = f_hvp_prox(hvp_is500, hvp_last500, hvp_tierBullNow, hvp_lastTierBull, hvp_k500)
+    bool hvp_p500Bear = f_hvp_prox(hvp_is500, hvp_last500, hvp_tierBearNow, hvp_lastTierBear, hvp_k500)
+    bool hvp_p1000Bull = f_hvp_prox(hvp_is1000, hvp_last1000, hvp_tierBullNow, hvp_lastTierBull, hvp_k1000)
+    bool hvp_p1000Bear = f_hvp_prox(hvp_is1000, hvp_last1000, hvp_tierBearNow, hvp_lastTierBear, hvp_k1000)
+    bool hvp_p1500Bull = f_hvp_prox(hvp_is1500, hvp_last1500, hvp_tierBullNow, hvp_lastTierBull, hvp_k1500)
+    bool hvp_p1500Bear = f_hvp_prox(hvp_is1500, hvp_last1500, hvp_tierBearNow, hvp_lastTierBear, hvp_k1500)
+    bool hvp_p3000Bull = f_hvp_prox(hvp_is3000, hvp_last3000, hvp_tierBullNow, hvp_lastTierBull, hvp_k3000)
+    bool hvp_p3000Bear = f_hvp_prox(hvp_is3000, hvp_last3000, hvp_tierBearNow, hvp_lastTierBear, hvp_k3000)
+    bool hvp_p4000Bull = f_hvp_prox(hvp_is4000, hvp_last4000, hvp_tierBullNow, hvp_lastTierBull, hvp_k4000)
+    bool hvp_p4000Bear = f_hvp_prox(hvp_is4000, hvp_last4000, hvp_tierBearNow, hvp_lastTierBear, hvp_k4000)
+    bool hvp_pNagaBull = f_hvp_prox(hvp_isNaga, hvp_lastNaga, hvp_tierBullNow, hvp_lastTierBull, hvp_kNaga)
+    bool hvp_pNagaBear = f_hvp_prox(hvp_isNaga, hvp_lastNaga, hvp_tierBearNow, hvp_lastTierBear, hvp_kNaga)
+    // print-highest rule (default ON): the highest tier whose proximity holds prints; OFF: every tier prints
+    sig_hvNagaBull := hvp_pNagaBull
+    sig_hv4000Bull := hvp_p4000Bull and not (hvp_excl and (hvp_pNagaBull))
+    sig_hv3000Bull := hvp_p3000Bull and not (hvp_excl and (hvp_pNagaBull or hvp_p4000Bull))
+    sig_hv1500Bull := hvp_p1500Bull and not (hvp_excl and (hvp_pNagaBull or hvp_p4000Bull or hvp_p3000Bull))
+    sig_hv1000Bull := hvp_p1000Bull and not (hvp_excl and (hvp_pNagaBull or hvp_p4000Bull or hvp_p3000Bull or hvp_p1500Bull))
+    sig_hv500Bull := hvp_p500Bull and not (hvp_excl and (hvp_pNagaBull or hvp_p4000Bull or hvp_p3000Bull or hvp_p1500Bull or hvp_p1000Bull))
+    sig_hvNagaBear := hvp_pNagaBear
+    sig_hv4000Bear := hvp_p4000Bear and not (hvp_excl and (hvp_pNagaBear))
+    sig_hv3000Bear := hvp_p3000Bear and not (hvp_excl and (hvp_pNagaBear or hvp_p4000Bear))
+    sig_hv1500Bear := hvp_p1500Bear and not (hvp_excl and (hvp_pNagaBear or hvp_p4000Bear or hvp_p3000Bear))
+    sig_hv1000Bear := hvp_p1000Bear and not (hvp_excl and (hvp_pNagaBear or hvp_p4000Bear or hvp_p3000Bear or hvp_p1500Bear))
+    sig_hv500Bear := hvp_p500Bear and not (hvp_excl and (hvp_pNagaBear or hvp_p4000Bear or hvp_p3000Bear or hvp_p1500Bear or hvp_p1000Bear))
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLOTS — at GLOBAL scope (FIX: moved out of if block)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LANE CHAIN (v1.1) — fire_ = plot checkbox AND signal · alf_ = alert checkbox AND signal
+// (checkbox law: one checkbox = one job; sig_ stays pure so chart and inbox can never disagree)
+// ─────────────────────────────────────────────────────────────────────────────
+bool fire_t1_buy  = en_t1_buy and sig_t1_buy
+bool fire_t1_sell = en_t1_sell and sig_t1_sell
+bool fire_t2_buy  = en_t2_buy and sig_t2_buy
+bool fire_t2_sell = en_t2_sell and sig_t2_sell
+bool fire_t3_buy  = en_t3_buy and sig_t3_buy
+bool fire_t3_sell = en_t3_sell and sig_t3_sell
+bool fire_hv500Bull = en_hv500Bull and sig_hv500Bull
+bool fire_hv1000Bull = en_hv1000Bull and sig_hv1000Bull
+bool fire_hv1500Bull = en_hv1500Bull and sig_hv1500Bull
+bool fire_hv3000Bull = en_hv3000Bull and sig_hv3000Bull
+bool fire_hv4000Bull = en_hv4000Bull and sig_hv4000Bull
+bool fire_hvNagaBull = en_hvNagaBull and sig_hvNagaBull
+bool fire_hv500Bear = en_hv500Bear and sig_hv500Bear
+bool fire_hv1000Bear = en_hv1000Bear and sig_hv1000Bear
+bool fire_hv1500Bear = en_hv1500Bear and sig_hv1500Bear
+bool fire_hv3000Bear = en_hv3000Bear and sig_hv3000Bear
+bool fire_hv4000Bear = en_hv4000Bear and sig_hv4000Bear
+bool fire_hvNagaBear = en_hvNagaBear and sig_hvNagaBear
+bool alf_hv500Bull = al_hv500Bull and sig_hv500Bull
+bool alf_hv1000Bull = al_hv1000Bull and sig_hv1000Bull
+bool alf_hv1500Bull = al_hv1500Bull and sig_hv1500Bull
+bool alf_hv3000Bull = al_hv3000Bull and sig_hv3000Bull
+bool alf_hv4000Bull = al_hv4000Bull and sig_hv4000Bull
+bool alf_hvNagaBull = al_hvNagaBull and sig_hvNagaBull
+bool alf_hv500Bear = al_hv500Bear and sig_hv500Bear
+bool alf_hv1000Bear = al_hv1000Bear and sig_hv1000Bear
+bool alf_hv1500Bear = al_hv1500Bear and sig_hv1500Bear
+bool alf_hv3000Bear = al_hv3000Bear and sig_hv3000Bear
+bool alf_hv4000Bear = al_hv4000Bear and sig_hv4000Bear
+bool alf_hvNagaBear = al_hvNagaBear and sig_hvNagaBear
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HV PROXIMITY ALERTS (v1.1) — one alert() line per firing lane (0 units), grammar v1.3 plain
+// names: <SIDE> | <N>-BAR HIGH VOL + <TIER> | <gap>. Metadata (close/vol/bar) rides log.info only.
+// ─────────────────────────────────────────────────────────────────────────────
+if conf
+    if alf_hv500Bull
+        string msg_hv500Bull = f_hvp_msg("BULL", str.tostring(hvp_w500) + "-BAR HIGH VOL", hvp_tierBullName, f_hvp_gap(hvp_is500, hvp_last500, hvp_tierBullNow, hvp_lastTierBull), hvp_is500)
+        alert(msg_hv500Bull, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv500Bull + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hv1000Bull
+        string msg_hv1000Bull = f_hvp_msg("BULL", str.tostring(hvp_w1000) + "-BAR HIGH VOL", hvp_tierBullName, f_hvp_gap(hvp_is1000, hvp_last1000, hvp_tierBullNow, hvp_lastTierBull), hvp_is1000)
+        alert(msg_hv1000Bull, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv1000Bull + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hv1500Bull
+        string msg_hv1500Bull = f_hvp_msg("BULL", str.tostring(hvp_w1500) + "-BAR HIGH VOL", hvp_tierBullName, f_hvp_gap(hvp_is1500, hvp_last1500, hvp_tierBullNow, hvp_lastTierBull), hvp_is1500)
+        alert(msg_hv1500Bull, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv1500Bull + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hv3000Bull
+        string msg_hv3000Bull = f_hvp_msg("BULL", str.tostring(hvp_w3000) + "-BAR HIGH VOL", hvp_tierBullName, f_hvp_gap(hvp_is3000, hvp_last3000, hvp_tierBullNow, hvp_lastTierBull), hvp_is3000)
+        alert(msg_hv3000Bull, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv3000Bull + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hv4000Bull
+        string msg_hv4000Bull = f_hvp_msg("BULL", str.tostring(hvp_w4000) + "-BAR HIGH VOL", hvp_tierBullName, f_hvp_gap(hvp_is4000, hvp_last4000, hvp_tierBullNow, hvp_lastTierBull), hvp_is4000)
+        alert(msg_hv4000Bull, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv4000Bull + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hvNagaBull
+        string msg_hvNagaBull = f_hvp_msg("BULL", "NAGASAKI ALL-TIME HIGH VOL", hvp_tierBullName, f_hvp_gap(hvp_isNaga, hvp_lastNaga, hvp_tierBullNow, hvp_lastTierBull), hvp_isNaga)
+        alert(msg_hvNagaBull, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hvNagaBull + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hv500Bear
+        string msg_hv500Bear = f_hvp_msg("BEAR", str.tostring(hvp_w500) + "-BAR HIGH VOL", hvp_tierBearName, f_hvp_gap(hvp_is500, hvp_last500, hvp_tierBearNow, hvp_lastTierBear), hvp_is500)
+        alert(msg_hv500Bear, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv500Bear + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hv1000Bear
+        string msg_hv1000Bear = f_hvp_msg("BEAR", str.tostring(hvp_w1000) + "-BAR HIGH VOL", hvp_tierBearName, f_hvp_gap(hvp_is1000, hvp_last1000, hvp_tierBearNow, hvp_lastTierBear), hvp_is1000)
+        alert(msg_hv1000Bear, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv1000Bear + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hv1500Bear
+        string msg_hv1500Bear = f_hvp_msg("BEAR", str.tostring(hvp_w1500) + "-BAR HIGH VOL", hvp_tierBearName, f_hvp_gap(hvp_is1500, hvp_last1500, hvp_tierBearNow, hvp_lastTierBear), hvp_is1500)
+        alert(msg_hv1500Bear, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv1500Bear + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hv3000Bear
+        string msg_hv3000Bear = f_hvp_msg("BEAR", str.tostring(hvp_w3000) + "-BAR HIGH VOL", hvp_tierBearName, f_hvp_gap(hvp_is3000, hvp_last3000, hvp_tierBearNow, hvp_lastTierBear), hvp_is3000)
+        alert(msg_hv3000Bear, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv3000Bear + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hv4000Bear
+        string msg_hv4000Bear = f_hvp_msg("BEAR", str.tostring(hvp_w4000) + "-BAR HIGH VOL", hvp_tierBearName, f_hvp_gap(hvp_is4000, hvp_last4000, hvp_tierBearNow, hvp_lastTierBear), hvp_is4000)
+        alert(msg_hv4000Bear, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hv4000Bear + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+    if alf_hvNagaBear
+        string msg_hvNagaBear = f_hvp_msg("BEAR", "NAGASAKI ALL-TIME HIGH VOL", hvp_tierBearName, f_hvp_gap(hvp_isNaga, hvp_lastNaga, hvp_tierBearNow, hvp_lastTierBear), hvp_isNaga)
+        alert(msg_hvNagaBear, alert.freq_once_per_bar_close)
+        log.info("VOB HVP1.1 " + syminfo.ticker + " " + timeframe.period + " | " + msg_hvNagaBear + " | firing candle close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
+
+// Tier 1 — small diamonds (E2: side-typed keys, bare const colors, white letter-codes)
+plotshape(fire_t1_buy, title="T1 Buy (Bull)", style=shape.diamond, location=location.belowbar, color=#26ba9f, size=size.small, text="T1", textcolor=color.white)
+plotshape(fire_t1_sell, title="T1 Sell (Bear)", style=shape.diamond, location=location.abovebar, color=#6626ba, size=size.small, text="T1", textcolor=color.white)
+
+// Tier 2 — medium triangles
+plotshape(fire_t2_buy, title="T2 Buy (Bull)", style=shape.triangleup, location=location.belowbar, color=#00e5ff, size=size.normal, text="T2", textcolor=color.white)
+plotshape(fire_t2_sell, title="T2 Sell (Bear)", style=shape.triangledown, location=location.abovebar, color=#ff00e5, size=size.normal, text="T2", textcolor=color.white)
+
+// Tier 3 — large circles (FIX: shape.star does not exist, using shape.circle); Buy yellow -> green (yellow banned, law II V2)
+plotshape(fire_t3_buy, title="T3 SUPER Buy (Bull)", style=shape.circle, location=location.belowbar, color=#64DD17, size=size.large, text="T3", textcolor=color.white)
+plotshape(fire_t3_sell, title="T3 SUPER Sell (Bear)", style=shape.circle, location=location.abovebar, color=#ff4400, size=size.large, text="T3", textcolor=color.white)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HV PROXIMITY PLOTS (v1.1) — REAL plotshapes (CS-1); bare #hex const colors (Style-tab picker,
+// 1 unit each); bull family = location.bottom, bear family = location.top; white letter-codes.
+// ─────────────────────────────────────────────────────────────────────────────
+plotshape(fire_hv500Bull, title="HV 500 Bull", style=shape.circle, location=location.bottom, color=#4CAF50, size=size.tiny, text="500", textcolor=color.white)
+plotshape(fire_hv1000Bull, title="HV 1000 Bull", style=shape.square, location=location.bottom, color=#00BFA5, size=size.small, text="1K", textcolor=color.white)
+plotshape(fire_hv1500Bull, title="HV 1500 Bull", style=shape.diamond, location=location.bottom, color=#00B0FF, size=size.small, text="1.5K", textcolor=color.white)
+plotshape(fire_hv3000Bull, title="HV 3000 Bull", style=shape.triangleup, location=location.bottom, color=#2979FF, size=size.normal, text="3K", textcolor=color.white)
+plotshape(fire_hv4000Bull, title="HV 4000 Bull", style=shape.flag, location=location.bottom, color=#3D5AFE, size=size.normal, text="4K", textcolor=color.white)
+plotshape(fire_hvNagaBull, title="NAGASAKI Bull", style=shape.labelup, location=location.bottom, color=#00E676, size=size.large, text="NAGA", textcolor=color.white)
+plotshape(fire_hv500Bear, title="HV 500 Bear", style=shape.circle, location=location.top, color=#EF5350, size=size.tiny, text="500", textcolor=color.white)
+plotshape(fire_hv1000Bear, title="HV 1000 Bear", style=shape.square, location=location.top, color=#FF1744, size=size.small, text="1K", textcolor=color.white)
+plotshape(fire_hv1500Bear, title="HV 1500 Bear", style=shape.diamond, location=location.top, color=#F50057, size=size.small, text="1.5K", textcolor=color.white)
+plotshape(fire_hv3000Bear, title="HV 3000 Bear", style=shape.triangledown, location=location.top, color=#D81B60, size=size.normal, text="3K", textcolor=color.white)
+plotshape(fire_hv4000Bear, title="HV 4000 Bear", style=shape.flag, location=location.top, color=#C51162, size=size.normal, text="4K", textcolor=color.white)
+plotshape(fire_hvNagaBear, title="NAGASAKI Bear", style=shape.labeldown, location=location.top, color=#FF4081, size=size.large, text="NAGA", textcolor=color.white)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORIGINAL PLOTS (untouched)
+// ─────────────────────────────────────────────────────────────────────────────
+
+if lower_lvl.size() > 0 and barstate.islast
+    f_clear_previous_lines(lower_draw)
+    for i = 0 to lower_lvl.size() - 1
+        l = lower_lvl.get(i)
+        array_vol_lower.push(l.vol)
+    for i = 0 to lower_lvl.size() - 1
+        l   = lower_lvl.get(i)
+        txt = "⮜ " + str.tostring(l.vol / array_vol_lower.sum() * 100, format.percent) + " (" + str.tostring(l.vol, format.volume) + ")"
+        l_1   = line.new(l.indx, l.upper, time, l.upper, color = col1, width = 2, xloc = xloc.bar_time)
+        l_2   = line.new(l.indx, l.lower, time, l.lower, color = col1, width = 2, xloc = xloc.bar_time)
+        l_mid = line.new(l.indx, l.mid,   time, l.mid,   color = mid_l ? col1 : color(na), style = line.style_dashed, xloc = xloc.bar_time)
+        vol_l = label.new(time, l.mid, txt, style = label.style_label_left, color = color(na), textcolor = chart.fg_color, xloc = xloc.bar_time)
+        fill  = linefill.new(l_1, l_2, color.new(col1, 90))
+        draw_ = draw.new(l_1, l_2, l_mid, fill, vol_l)
+        lower_draw.push(draw_)
+
+if upper_lvl.size() > 0 and barstate.islast
+    f_clear_previous_lines(upper_draw)
+    for i = 0 to array.size(upper_lvl) - 1
+        l = array.get(upper_lvl, i)
+        array_vol_upper.push(l.vol) 
+    for i = 0 to array.size(upper_lvl) - 1
+        l   = array.get(upper_lvl, i)
+        txt = "⮜ " + str.tostring(l.vol / array_vol_upper.sum() * 100, format.percent) + " (" + str.tostring(l.vol, format.volume) + ")"
+        l_1   = line.new(l.indx, l.upper, time, l.upper, color = col2, width = 2, xloc = xloc.bar_time)
+        l_2   = line.new(l.indx, l.lower, time, l.lower, color = col2, width = 2, xloc = xloc.bar_time)
+        l_mid = line.new(l.indx, l.mid,   time, l.mid,   color = mid_l ? col2 : color(na), style = line.style_dashed, xloc = xloc.bar_time)
+        vol_l = label.new(time, l.mid, txt, style = label.style_label_left, color = color(na), textcolor = chart.fg_color, xloc = xloc.bar_time)
+        fill  = linefill.new(l_1, l_2, color.new(col2, 90))
+        draw_ = draw.new(l_1, l_2, l_mid, fill, vol_l)
+        upper_draw.push(draw_)
+
