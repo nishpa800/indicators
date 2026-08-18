@@ -1007,12 +1007,12 @@ plotshape(show_Nagasaki   and sigNagasaki   and anyMom,   title="Nagasaki +LONG/
 // =============================================================================
 // PLOTS — SEQUENCES
 // =============================================================================
-plotshape(show_UU   and sig_bull_UU,   title="UU +disp",   location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.lime,   text="UU +disp")
-plotshape(show_UUU  and sig_bull_UUU,  title="UUU +disp",  location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.blue,   text="UUU +disp")
-plotshape(show_UUUU and sig_bull_UUUU, title="UUUU +disp", location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.orange, text="4U +disp")
-plotshape(show_DD   and sig_bear_DD,   title="DD +disp",   location=location.abovebar, style=shape.triangledown, size=size.small, color=color.red,    text="DD +disp")
-plotshape(show_DDD  and sig_bear_DDD,  title="DDD +disp",  location=location.abovebar, style=shape.triangledown, size=size.small, color=color.purple, text="DDD +disp")
-plotshape(show_DDDD and sig_bear_DDDD, title="DDDD +disp", location=location.abovebar, style=shape.triangledown, size=size.small, color=color.maroon, text="4D +disp")
+plotshape(show_UU   and sig_bull_UU,   title="UU Bull +disp",   location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.lime,   text="UU +disp")
+plotshape(show_UUU  and sig_bull_UUU,  title="UUU Bull +disp",  location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.blue,   text="UUU +disp")
+plotshape(show_UUUU and sig_bull_UUUU, title="UUUU Bull +disp", location=location.belowbar, style=shape.triangleup,   size=size.small, color=color.orange, text="4U +disp")
+plotshape(show_DD   and sig_bear_DD,   title="DD Bear +disp",   location=location.abovebar, style=shape.triangledown, size=size.small, color=color.red,    text="DD +disp")
+plotshape(show_DDD  and sig_bear_DDD,  title="DDD Bear +disp",  location=location.abovebar, style=shape.triangledown, size=size.small, color=color.purple, text="DDD +disp")
+plotshape(show_DDDD and sig_bear_DDDD, title="DDDD Bear +disp", location=location.abovebar, style=shape.triangledown, size=size.small, color=color.maroon, text="4D +disp")
 
 // =============================================================================
 // PLOTS — B2B (gated by HV or displacement)
