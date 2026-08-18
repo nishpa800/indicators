@@ -1,5 +1,16 @@
 # VOB Indicator Suite — Changelog
 
+## VOB ASYM HVPROX v1.2 — 2026-08-18 (Volume Order Blocks + Asymmetric Signals + HV Proximity v1.2) — SUPERSEDES v1.1
+- **Operator clarification (same day, minutes after v1.1): "there are no rolling windows, just the number of bars away from T1/T2/T3."** v1.2 = v1.1 with the five HV-lookback INPUT rows removed (HV tiers FIXED as constants 500/1000/1500/3000/4000; Nagasaki = all-time high) and the distance rows relabeled **"HV N — bars from T1/T2/T3"** (defaults 3/5/5/5/5/15, still adjustable). Lane logic, plots, alerts, checkboxes: unchanged bytes apart from the input block and the header text. v1.1 stays on disk as history; **use v1.2**.
+- `versions/VOB_ASYM_HVPROX_v1.2.pine` (TIME, shorttitle `VOB HVP1.2`) + `tick_friendly/VOB_ASYM_HVPROX_TICKFRIENDLY_v1.2.pine` (TICK, `HVP1.2TICK`) — byte-identical below the indicator() line except the shorttitle tag inside the 12 log.info metadata lines. Base = the operator's `vob asymmetric signals.txt` (sha256 `5a1f0ced07dd…`).
+- Operator goal 2026-08-18: **IFF** an HV candle (500/1000/1500/3000/4000-bar high, or Nagasaki) sits within K bars of a T1/T2/T3 fire (either tier), then and only then the VP fires; K = **3/5/5/5/5/15 bars**, adjustable.
+- 12 lanes = {HV 500, HV 1000, HV 1500, HV 3000, HV 4000, NAGASAKI} × {Bull (T1/T2/T3 BUY), Bear (T1/T2/T3 SELL)}; each a sig_/fire_/alf_ chain: real plotshape VP + plot checkbox + 🔔 alert checkbox + alert() (grammar v1.3 plain names) + log.info metadata. Print-highest-tier rule default ON (toggle).
+- HV(N) = `volume >= ta.highest(volume, N)` with N fixed (ties count); NAGASAKI = running all-time max over confirmed candles, strict >; proximity = later-of-the-two candle, distance ≤ K (0 = same candle); everything evaluated on the confirmed bar (non-repainting, same as the base engine).
+- Base edits (behavior of T1/T2/T3 unchanged at defaults): E1 indicator title/shorttitle stamped; E2 tier plot keys side-typed "(Bull)/(Bear)", bare const colors, white text, T3 SUPER Buy yellow→green #64DD17 (yellow banned); E3 math.min clamps on the OB scan-loop offsets; E4 tier lanes get plot + 🔔 alert checkboxes (default ON).
+- Budget: 21/64 TV units (6 base tier + 2 fill-anchor plot() + 1 series-color fill + 12 new, plot colors all bare const); 0 alertcondition; graphic objects = the base's order-block lines/labels only.
+- Base hosted verbatim in `vob/sources/VOB_ASYM_SIGNALS_operator-base_2026-08-18.txt` (sha256 `5a1f0ced07dd…`, T-INDSTUDY C12).
+- Rigor R2: every numeric default is operator-dictated; base carried verbatim (sha-pinned).
+
 ## VOB ASYM HVPROX v1.1 — 2026-08-18 (Volume Order Blocks + Asymmetric Signals + HV Proximity v1.1)
 - **NEW STUDY PAIR (create lane) on the operator's `vob asymmetric signals.txt` base (sha256 `5a1f0ced07dd…`).** `versions/VOB_ASYM_HVPROX_v1.1.pine` (TIME, shorttitle `VOB HVP1.1`) + `tick_friendly/VOB_ASYM_HVPROX_TICKFRIENDLY_v1.1.pine` (TICK, `HVP1.1TICK`) — byte-identical below the indicator() line except the shorttitle tag inside the 12 log.info metadata lines.
 - Operator goal 2026-08-18: HV proximity VPs, adjustable rolling windows + adjustable bar distances; **IFF** an HV candle sits within K bars of a T1/T2/T3 fire (either tier), then and only then the VP fires. Defaults **500/1000/1500/3000/4000/Nagasaki** with **3/5/5/5/5/15 bars**.
