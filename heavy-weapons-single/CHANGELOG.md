@@ -6,7 +6,7 @@
 (tick twin, `HW3.2TF D9`, same wave). Base = the operator's LIVE "HW v3 TF 9" export
 (`sources/HW_v3_TF9_DISP9_operator-live_2026-07-23.txt`, CRLF sha256 16b547d9…, LF-normalized at intake) —
 the DISP-9 lineage (D9 studies + Pent+D), NOT the june7-based v3.1; v3.1's master 4K/NAGA VP gate is
-NOT carried (not requested). Generator: lake `scripts/ind/build_hw_v3_2.py` (one edit list → both twins).
+NOT carried (not requested). Generator: lake `scripts/ind/build_hw_v3_2.py` (one edit list → both twins). Files: `versions/HEAVY_WEAPONS_SINGLE_v3.2.pine` (TIME) + `tick_friendly/HEAVY_WEAPONS_SINGLE_TICKFRIENDLY_v3.2.pine` (TICK) — v3.2 SUPERSEDES v3.1 as the family's current version (v3.1 was built from the june7 base the operator was not running; paste v3.2, never v3.1).
 
 - **ALERT IFF CHECKBOX (the headline law):** an alert line is emitted IFF its lane checkbox is ON.
   Base defect: four alert branches carried NO checkbox term — `HCT BULL`, `HCT BEAR`,
