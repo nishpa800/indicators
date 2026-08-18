@@ -1,0 +1,253 @@
+//@version=5
+// =============================================================================
+// NAGA DISP v1 — Nagasaki / 4K / 3K / 2K / 1K high-volume + DISPLACEMENT on the
+// SAME candle, FIRST-BAR gated.  2026-08-18  (W-INDSTUDY create lane, L-49)
+// TIME-CHART build (twin: naga-disp/tick_friendly/NAGA_DISP_TICKFRIENDLY_v1.pine).
+// -----------------------------------------------------------------------------
+// OPERATOR DICTATION (goal, 2026-08-18, verbatim intent):
+//   "When Nagasaki and a displacement are on the same candle - 4K + displacement
+//    - 3K + displacement - 2K + displacement - 1K + displacement - default first
+//    bar master checkbox is checked ON so IFF it is the first bar, then and only
+//    then will it fire the VP. Displacement default 9 (I can change it). Volume
+//    lookbacks: I can change up or down; the defaults are the numbers dictated."
+// SOURCES (operator files, sha256-pinned; both engines carried VERBATIM):
+//   ~/Desktop/Mathematical Proof Wrapper/studies/50 to 4k with naga SINGLES.txt
+//     sha256 3b950614ae8a1d71c0e74e4a656e13b238cab6e7016ffa85b184ef939164c5b3
+//     -> HV ladder test volume[1] == ta.highest(volume,N)[1] (NRA: prior CLOSED bar,
+//        can never repaint); HEV/Nagasaki = running max over confirmed bars, strict >;
+//        NESTED-tier exclusivity: exactly ONE tier prints per bar (the highest reached).
+//   ~/Desktop/Mathematical Proof Wrapper/studies/displacement times four.txt
+//     sha256 1786f15c3c7699a655c768aade087e0da2f38c5acf38ba0d509d1f3d0a881e77
+//     -> displacement engine: range[1] > stdev(range,len)[1] x sigma  AND  fair-value gap
+//        (bull: low > high[2] and close[1] > open[1]; bear: high < low[2] and
+//        close[1] < open[1]) confirmed on bar[0]; displaced candle = bar[1]; plot
+//        offset -1 lands the marker ON the displaced candle. DISPLACEMENT-REQUIRES-FVG
+//        law (glossary, operator 2026-07-14): both legs, always.
+// -----------------------------------------------------------------------------
+// LANE DEFINITIONS (gate language; C = the MARKED candle = bar[1], the candle that
+// carries the volume AND the displacement; the marker sits ON C via offset -1):
+//   NAGASAKI+DISP BULL : Nagasaki on C (C volume > every prior bar's volume, strict) AND bull displacement on C
+//   4K+DISP BULL       : C is the highest-volume bar of the last 4000 bars AND NOT Nagasaki AND bull displacement on C
+//   3K+DISP BULL       : highest of last 3000 AND NOT highest of last 4000 AND bull displacement on C
+//   2K+DISP BULL       : highest of last 2000 AND NOT highest of last 3000 AND bull displacement on C
+//   1K+DISP BULL       : highest of last 1000 AND NOT highest of last 2000 AND bull displacement on C
+//   BEAR lanes         : identical with bear displacement (bilateral by default).
+//   FIRST BAR MASTER (default ON): every lane's VP AND alert additionally require C to be
+//   the session's FIRST bar (is_new_day = ta.change(time(D)) != 0, tested on bar[1] —
+//   estate-canonical, identical to BEDROCK / FIRST BAR FABLE / SECONDS). OFF: any candle.
+//   Tiers are NESTED and print EXCLUSIVELY (source ladder law): a candle shows its
+//   HIGHEST tier only — a NAGASAKI candle never also prints 4K/3K/2K/1K. Keep the four
+//   lookbacks ascending (1K < 2K < 3K < 4K) or the exclusivity chain loses its meaning.
+//   Bull and bear displacement are mutually exclusive by construction, so at most ONE
+//   marker and ONE alert line can exist per candle, ever.
+// -----------------------------------------------------------------------------
+// OUTPUT BUDGET (TRUE TV unit law 2026-08-12: plotshape with input.color = 2 units,
+//   alertcondition = 1): 10 lanes x 2 = 20 / 64.  ZERO plain plot() lines.  ZERO
+//   alertcondition.  ZERO graphic objects (label/line/box/table): 0 sites (CS-1, L-61).
+// ALERTS: ONE alert() line per candle (0 units) — arm ONE TradingView alert on this
+//   study with condition "Any alert() function call"; it catches every checked lane.
+//   Grammar v1.3: <SIDE>[ G>B<r>x] | [FIRST | ]<LANE>:HV<achieved depth>,D<achieved sigma>
+//   e.g. "BULL | FIRST | 4K+DISP:HV4312,D9.4". Metadata (ticker/TF/close/vol) rides
+//   the log.info lane only (Pine Logs), never the alert line.
+// CHECKBOX LAW: two mirrored groups — VISUAL PLOTS (chart) and ALERTS (inbox); one job each.
+// =============================================================================
+indicator("NAGA DISP v1 (Nagasaki/4K/3K/2K/1K + Displacement, First Bar)", shorttitle="NAGA+DISP1", overlay=true, max_bars_back=5000)
+
+// ── MASTER ─────────────────────────────────────────────────────────────────────
+grpM = "★ MASTER"
+firstBarOnly = input.bool(true, "★ FIRST BAR MASTER — VP + alert fire IFF the marked candle is the session FIRST bar", group=grpM, tooltip="ON (default, operator 2026-08-18): a lane fires its VP — and its alert; chart and alert never disagree — IFF the marked candle (the displaced / high-volume candle, bar[1]) is the FIRST bar of the session. First-bar definition: is_new_day = ta.change of the daily-session time != 0, tested on bar[1] — the same definition BEDROCK / FIRST BAR FABLE / SECONDS use. OFF: every qualifying candle fires, on any bar of the day.")
+
+// ── DISPLACEMENT ENGINE (one engine shared by every lane; source: displacement times four.txt) ──
+grpD = "DISPLACEMENT ENGINE (shared by all lanes)"
+d_type = input.string("Open to Close", "Range Type", options=["Open to Close", "High to Low"], group=grpD, tooltip="Which candle range is tested against the sigma threshold. Source default: Open to Close (body).")
+d_len  = input.int(100, "Std Dev Length", minval=1, group=grpD, tooltip="Rolling stdev window of the range. Source default 100.")
+d_mult = input.float(9.0, "Std Dev Multiplier (sigma) — default 9", minval=0.1, step=0.1, group=grpD, tooltip="DISPLACEMENT = candle range[1] > stdev(range, length)[1] x sigma  AND a fair-value gap confirmed on the next bar (bull: low > high[2] with close[1] > open[1]; bear: high < low[2] with close[1] < open[1]). Default 9 (operator). Any decimal, step 0.1 — 8.9 and 9.0 are genuinely different thresholds (compared directly, no bucketing).")
+
+// ── VOLUME LOOKBACKS (bars) — editable up or down; Nagasaki has no number (all-time high) ──
+grpV = "VOLUME LOOKBACKS (bars) — 1K / 2K / 3K / 4K, editable"
+n1K = input.int(1000, "1K lookback (bars)", minval=1, maxval=5000, group=grpV, tooltip="1K tier: the marked candle carries the highest volume of the last N bars (N default 1000) and is NOT a 2K-tier bar. Change up or down as you like; keep 1K < 2K < 3K < 4K.")
+n2K = input.int(2000, "2K lookback (bars)", minval=1, maxval=5000, group=grpV, tooltip="2K tier: highest volume of the last N bars (default 2000) and NOT a 3K-tier bar.")
+n3K = input.int(3000, "3K lookback (bars)", minval=1, maxval=5000, group=grpV, tooltip="3K tier: highest volume of the last N bars (default 3000) and NOT a 4K-tier bar.")
+n4K = input.int(4000, "4K lookback (bars)", minval=1, maxval=5000, group=grpV, tooltip="4K tier: highest volume of the last N bars (default 4000) and NOT Nagasaki. Nagasaki itself has no lookback: it is the all-time-high volume bar (strictly above every prior bar on the chart) — max_bars_back is 5000, so 5000 is the ceiling for any lookback.")
+
+// ── VISUAL PLOTS (chart markers only) — one checkbox + one color per lane ──────────
+grpP = "VISUAL PLOTS (chart markers only)"
+en_nagaDispBull = input.bool(true, "NAGASAKI+DISP Bull", group=grpP, inline="p1")
+cl_nagaDispBull = input.color(#00E676, "", group=grpP, inline="p1")
+en_hv4kDispBull = input.bool(true, "4K+DISP Bull", group=grpP, inline="p2")
+cl_hv4kDispBull = input.color(#00BFA5, "", group=grpP, inline="p2")
+en_hv3kDispBull = input.bool(true, "3K+DISP Bull", group=grpP, inline="p3")
+cl_hv3kDispBull = input.color(#2979FF, "", group=grpP, inline="p3")
+en_hv2kDispBull = input.bool(true, "2K+DISP Bull", group=grpP, inline="p4")
+cl_hv2kDispBull = input.color(#40C4FF, "", group=grpP, inline="p4")
+en_hv1kDispBull = input.bool(true, "1K+DISP Bull", group=grpP, inline="p5")
+cl_hv1kDispBull = input.color(#B2FF59, "", group=grpP, inline="p5")
+en_nagaDispBear = input.bool(true, "NAGASAKI+DISP Bear", group=grpP, inline="p6")
+cl_nagaDispBear = input.color(#FF1744, "", group=grpP, inline="p6")
+en_hv4kDispBear = input.bool(true, "4K+DISP Bear", group=grpP, inline="p7")
+cl_hv4kDispBear = input.color(#FF6D00, "", group=grpP, inline="p7")
+en_hv3kDispBear = input.bool(true, "3K+DISP Bear", group=grpP, inline="p8")
+cl_hv3kDispBear = input.color(#FF4081, "", group=grpP, inline="p8")
+en_hv2kDispBear = input.bool(true, "2K+DISP Bear", group=grpP, inline="p9")
+cl_hv2kDispBear = input.color(#F50057, "", group=grpP, inline="p9")
+en_hv1kDispBear = input.bool(true, "1K+DISP Bear", group=grpP, inline="p10")
+cl_hv1kDispBear = input.color(#FFAB40, "", group=grpP, inline="p10")
+
+// ── ALERTS (inbox only) — one checkbox per lane; arm ONE alert: Any alert() function call ──
+grpA = "ALERTS (inbox only) — arm ONE alert on this study: Any alert() function call"
+al_nagaDispBull = input.bool(true, "🔔 NAGASAKI+DISP Bull", group=grpA, inline="a1")
+al_hv4kDispBull = input.bool(true, "🔔 4K+DISP Bull", group=grpA, inline="a1")
+al_hv3kDispBull = input.bool(true, "🔔 3K+DISP Bull", group=grpA, inline="a2")
+al_hv2kDispBull = input.bool(true, "🔔 2K+DISP Bull", group=grpA, inline="a2")
+al_hv1kDispBull = input.bool(true, "🔔 1K+DISP Bull", group=grpA, inline="a3")
+al_nagaDispBear = input.bool(true, "🔔 NAGASAKI+DISP Bear", group=grpA, inline="a3")
+al_hv4kDispBear = input.bool(true, "🔔 4K+DISP Bear", group=grpA, inline="a4")
+al_hv3kDispBear = input.bool(true, "🔔 3K+DISP Bear", group=grpA, inline="a4")
+al_hv2kDispBear = input.bool(true, "🔔 2K+DISP Bear", group=grpA, inline="a5")
+al_hv1kDispBear = input.bool(true, "🔔 1K+DISP Bear", group=grpA, inline="a5")
+
+// =============================================================================
+// ENGINES
+// =============================================================================
+bool conf = barstate.isconfirmed
+
+// HV ladder — prior CLOSED bar (source construction; can never repaint once printed)
+bool is1K = volume[1] == ta.highest(volume, n1K)[1]
+bool is2K = volume[1] == ta.highest(volume, n2K)[1]
+bool is3K = volume[1] == ta.highest(volume, n3K)[1]
+bool is4K = volume[1] == ta.highest(volume, n4K)[1]
+
+// Nagasaki (HEV) — all-time high volume: running max over CONFIRMED bars only, strict > (source construction)
+var float maxVolEver = 0.0
+bool isNaga = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    isNaga := true
+
+// EXCLUSIVE tiers (nested ladder law: highest tier reached prints, nothing below it)
+bool tierNaga = isNaga
+bool tier4K = is4K and not isNaga
+bool tier3K = is3K and not is4K
+bool tier2K = is2K and not is3K
+bool tier1K = is1K and not is2K
+
+// Displacement (source construction, verbatim): sigma-exceedance on bar[1] AND FVG confirmed on bar[0]
+float d_rng = d_type == "Open to Close" ? math.abs(open - close) : high - low
+float d_std = ta.stdev(d_rng, d_len)
+float d_thr = d_std * d_mult
+bool  d_prev = d_rng[1] > d_thr[1]
+bool  d_bullFVG = low > high[2] and close[1] > open[1]
+bool  d_bearFVG = high < low[2] and close[1] < open[1]
+bool  dispBull = conf and d_prev and d_bullFVG
+bool  dispBear = conf and d_prev and d_bearFVG
+
+// FIRST-BAR MASTER GATE — reference bar = the marked candle bar[1] (plot offset -1)
+bool is_new_day = ta.change(time("D")) != 0
+bool firstMarked = nz(is_new_day[1])
+bool fbGate = not firstBarOnly or firstMarked
+
+// =============================================================================
+// LANES — sig_ (detection) / fire_ (VP, plot checkbox) / alf_ (alert checkbox); 1:1:1
+// Same-candle law: tier and displacement are BOTH read on bar[1]. Gate applied at the
+// display AND alert layer with the identical term (L-63: chart and alert never disagree).
+// =============================================================================
+bool sig_nagaDispBull = tierNaga and dispBull
+bool sig_hv4kDispBull = tier4K and dispBull
+bool sig_hv3kDispBull = tier3K and dispBull
+bool sig_hv2kDispBull = tier2K and dispBull
+bool sig_hv1kDispBull = tier1K and dispBull
+bool sig_nagaDispBear = tierNaga and dispBear
+bool sig_hv4kDispBear = tier4K and dispBear
+bool sig_hv3kDispBear = tier3K and dispBear
+bool sig_hv2kDispBear = tier2K and dispBear
+bool sig_hv1kDispBear = tier1K and dispBear
+
+bool fire_nagaDispBull = en_nagaDispBull and sig_nagaDispBull and fbGate
+bool fire_hv4kDispBull = en_hv4kDispBull and sig_hv4kDispBull and fbGate
+bool fire_hv3kDispBull = en_hv3kDispBull and sig_hv3kDispBull and fbGate
+bool fire_hv2kDispBull = en_hv2kDispBull and sig_hv2kDispBull and fbGate
+bool fire_hv1kDispBull = en_hv1kDispBull and sig_hv1kDispBull and fbGate
+bool fire_nagaDispBear = en_nagaDispBear and sig_nagaDispBear and fbGate
+bool fire_hv4kDispBear = en_hv4kDispBear and sig_hv4kDispBear and fbGate
+bool fire_hv3kDispBear = en_hv3kDispBear and sig_hv3kDispBear and fbGate
+bool fire_hv2kDispBear = en_hv2kDispBear and sig_hv2kDispBear and fbGate
+bool fire_hv1kDispBear = en_hv1kDispBear and sig_hv1kDispBear and fbGate
+
+bool alf_nagaDispBull = al_nagaDispBull and sig_nagaDispBull and fbGate
+bool alf_hv4kDispBull = al_hv4kDispBull and sig_hv4kDispBull and fbGate
+bool alf_hv3kDispBull = al_hv3kDispBull and sig_hv3kDispBull and fbGate
+bool alf_hv2kDispBull = al_hv2kDispBull and sig_hv2kDispBull and fbGate
+bool alf_hv1kDispBull = al_hv1kDispBull and sig_hv1kDispBull and fbGate
+bool alf_nagaDispBear = al_nagaDispBear and sig_nagaDispBear and fbGate
+bool alf_hv4kDispBear = al_hv4kDispBear and sig_hv4kDispBear and fbGate
+bool alf_hv3kDispBear = al_hv3kDispBear and sig_hv3kDispBear and fbGate
+bool alf_hv2kDispBear = al_hv2kDispBear and sig_hv2kDispBear and fbGate
+bool alf_hv1kDispBear = al_hv1kDispBear and sig_hv1kDispBear and fbGate
+
+// =============================================================================
+// PLOTS — every VP is a REAL plotshape (CS-1, L-61); offset -1 lands ON the marked candle.
+// Visual identity: no two lanes share shape+location; every lane has its own input.color.
+// =============================================================================
+plotshape(fire_nagaDispBull, "NAGASAKI+DISP Bull", shape.diamond, location.belowbar, cl_nagaDispBull, size=size.normal, text="NAGASAKI+DISP BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv4kDispBull, "4K+DISP Bull", shape.circle, location.belowbar, cl_hv4kDispBull, size=size.normal, text="4K+DISP BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv3kDispBull, "3K+DISP Bull", shape.square, location.belowbar, cl_hv3kDispBull, size=size.small, text="3K+DISP BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv2kDispBull, "2K+DISP Bull", shape.triangleup, location.belowbar, cl_hv2kDispBull, size=size.small, text="2K+DISP BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv1kDispBull, "1K+DISP Bull", shape.cross, location.belowbar, cl_hv1kDispBull, size=size.small, text="1K+DISP BULL", textcolor=color.white, offset=-1)
+plotshape(fire_nagaDispBear, "NAGASAKI+DISP Bear", shape.diamond, location.abovebar, cl_nagaDispBear, size=size.normal, text="NAGASAKI+DISP BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv4kDispBear, "4K+DISP Bear", shape.circle, location.abovebar, cl_hv4kDispBear, size=size.normal, text="4K+DISP BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv3kDispBear, "3K+DISP Bear", shape.square, location.abovebar, cl_hv3kDispBear, size=size.small, text="3K+DISP BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv2kDispBear, "2K+DISP Bear", shape.triangledown, location.abovebar, cl_hv2kDispBear, size=size.small, text="2K+DISP BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv1kDispBear, "1K+DISP Bear", shape.cross, location.abovebar, cl_hv1kDispBear, size=size.small, text="1K+DISP BEAR", textcolor=color.white, offset=-1)
+
+// =============================================================================
+// ALERT — ONE line per candle, grammar v1.3 (achieved values, plain lane name, FIRST iff first bar,
+// G>B iff gap > body on the marked candle). Metadata rides log.info only.
+// =============================================================================
+f_add(existing, addition) =>
+    existing == "" ? addition : existing + " + " + addition
+
+f_hvDepth() =>
+    // achieved trailing depth: bars back over which volume[1] is the (weak) maximum —
+    // stops at the first STRICTLY greater prior volume; capped at 4999 (< max_bars_back 5000,
+    // so the offset can never exceed the history buffer).
+    // Called on emission bars only.
+    int d = 1
+    for k = 2 to 4999
+        int kk = math.min(k, 4999)  // explicit clamp: offset can never exceed the history buffer
+        if na(volume[kk]) or volume[kk] > volume[1]
+            break
+        d += 1
+    d
+
+float d_sigmaAch = d_std[1] > 0 ? d_rng[1] / d_std[1] : na
+float gapAbs = math.abs(open[1] - close[2])
+float bodyAbs = math.abs(close[1] - open[1])
+string gbTag = bodyAbs > 0 and gapAbs > bodyAbs ? " G>B" + str.tostring(gapAbs / bodyAbs, "#.0") + "x" : ""
+
+if conf
+    string tok = ""
+    if alf_nagaDispBull or alf_nagaDispBear
+        tok := f_add(tok, "NAGASAKI+DISP")
+    if alf_hv4kDispBull or alf_hv4kDispBear
+        tok := f_add(tok, "4K+DISP")
+    if alf_hv3kDispBull or alf_hv3kDispBear
+        tok := f_add(tok, "3K+DISP")
+    if alf_hv2kDispBull or alf_hv2kDispBear
+        tok := f_add(tok, "2K+DISP")
+    if alf_hv1kDispBull or alf_hv1kDispBear
+        tok := f_add(tok, "1K+DISP")
+    if tok != ""
+        bool sideBull = alf_nagaDispBull or alf_hv4kDispBull or alf_hv3kDispBull or alf_hv2kDispBull or alf_hv1kDispBull
+        int hvDepth = tierNaga ? bar_index : f_hvDepth()
+        string fields = ":HV" + str.tostring(hvDepth) + (na(d_sigmaAch) ? "" : ",D" + str.tostring(d_sigmaAch, "#.0"))
+        string msg = (sideBull ? "BULL" : "BEAR") + gbTag + " | " + (firstMarked ? "FIRST | " : "") + tok + fields
+        alert(msg, alert.freq_once_per_bar_close)
+        log.info("NAGA+DISP1 " + syminfo.ticker + " " + timeframe.period + " | " + msg + " | close=" + str.tostring(close[1]) + " vol=" + str.tostring(volume[1]) + " hvDepth=" + str.tostring(hvDepth) + " sigma=" + str.tostring(d_sigmaAch, "#.00") + " first=" + (firstMarked ? "true" : "false"))
+
+// =============================================================================
+// EXPORTS (for combination / fire-matrix consumers)
+// =============================================================================
+// Tiers (bool, exclusive, bar[1]-anchored): tierNaga, tier4K, tier3K, tier2K, tier1K
+// Displacement (bool, bar[1] displaced, confirmed on bar[0]): dispBull, dispBear
+// Lanes: sig_/fire_/alf_ x {nagaDispBull, hv4kDispBull, hv3kDispBull, hv2kDispBull, hv1kDispBull, nagaDispBear, hv4kDispBear, hv3kDispBear, hv2kDispBear, hv1kDispBear}
+// Gate: firstMarked (bar[1] is the session first bar), fbGate (master-applied)
