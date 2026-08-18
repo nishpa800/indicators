@@ -29,6 +29,7 @@ NOT carried (not requested). Generator: lake `scripts/ind/build_hw_v3_2.py` (one
   Disp σ 9/8/7/9, D9 σ 9.9 (step 0.1), HCT disp σ 9, Info Panel OFF). Census gate:
   `validation/wrappers/study_defaults_gate.py` + `validation/indstudy/hw_v32_defaults_expected.json`
   (98/98, anti 2/2).
+- **A8 side-typing:** sequence plot keys typed — UU/UUU/UUUU titled Bull, DD/DDD/DDDD titled Bear (chart text= unchanged; v3.1 precedent).
 - Info-panel header → "HW SINGLES v3.2 DISP 9"; GATES footer documents P+4K / P+NAGA / N+ANY / iff law.
 - TV plot units: 53/64 (49 plotshapes + 4 dynamic input-color args); 0 alertconditions; 0 plain plot();
   graphic objects: 1 site (`table.new`, the info panel, default OFF; no label/line/box).
