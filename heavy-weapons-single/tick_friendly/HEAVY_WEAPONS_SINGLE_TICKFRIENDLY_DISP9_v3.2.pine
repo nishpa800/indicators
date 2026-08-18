@@ -767,7 +767,7 @@ fn_GDR_bear = close[1] > open[1] and fn_GG_bear
 
 var string fn_bullText = ""
 fn_bullText := ""
-if show_FaunaBull
+if disp_cur_seq
     if   fn_GG_bull and fn_MB_bull and fn_RE_bull and fn_TA_bull
         fn_bullText := "GG+MB+RE+TA"
     else if fn_MB_bull and fn_TA_bull and fn_RE_bull
@@ -831,7 +831,7 @@ if show_FaunaBull
 
 var string fn_bearText = ""
 fn_bearText := ""
-if show_FaunaBear
+if disp_cur_seq
     if   fn_GG_bear and fn_MB_bear and fn_RE_bear and fn_TA_bear
         fn_bearText := "GG+MB+RE+TA"
     else if fn_MB_bear and fn_TA_bear and fn_RE_bear
