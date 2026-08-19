@@ -291,3 +291,4 @@ depth ≥3 with PBJ/RVOL confirmation = consider entry.
 
 ## VOB ASYM + HV·DISP·TIER PROXIMITY v1.1 — 2026-08-19
 - **Operator ruling (conflict row 5, same day):** when the DISPLACED candle is the last of the three events, the VP sits ON the displaced candle. Construction: two constant-offset plotshapes per lane — `…` (offset 0: HV candle / tier fire completed the triple) and `… (disp last)` (offset −1: displacement completed it); same glyph/colour/checkbox. Same-candle dedup: a lane never marks/alerts one candle twice (`sig_<lane>D` suppressed when `sig_<lane>N[1]`). Alert timing/text unchanged. Budget 26×2+3 = 55/64. Supersedes v1 (4118451).
+- (same day) v1.1 lane identifiers renamed sig_/fire_/alf_<lane>_N / _D (1:1:1 gate matcher); logic byte-identical.
