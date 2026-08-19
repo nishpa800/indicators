@@ -61,27 +61,5 @@ Base: the v3 imports (time) / june7-conversion tick-friendly build (tick), sha-p
 - Info-panel header corrected (base said "HW SINGLES v2"); GATES footer documents the master gate.
 - TV plot units: 53/64 (45 base plots + 3 new + 5 dynamic input-color args); 0 alertconditions.
 
----
-
-
-Newest first.
-
----
-
-## v3 tick-friendly — 2026-06-13
-**Files:**
-- `versions/HEAVY_WEAPONS_SINGLE_v3.pine` — as-received (verbatim, = the pasted v3 / repo import).
-- `tick_friendly/HEAVY_WEAPONS_SINGLE_v3_tick_friendly.pine` — **load this on tick charts.**
-- (DR copy: `dateroll/HEAVY_WEAPONS_SINGLE_v3_DR.pine`, shorttitle `HW Single v3 DR`.)
-
-**Two tick-safety fixes (logic otherwise untouched; 45 plots, 0 data-window — gate PASS):**
-1. **RE10023 anchor.** All 3 `tv_ta.relativeVolume(...)` calls used `reg_anchorTimeframe`
-   (`input.timeframe("")` → blank = chart TF → `timeframe.change()` throws on tick bar 0). Now
-   routed through `reg_anchorSafe` (`"D"` on tick, `""` on time = parity).
-2. **`tfSec` guard.** `tfSec = timeframe.in_seconds(timeframe.period)` is na/0/unreliable on tick,
-   which kills the per-TF RVOL threshold table. Guarded via `str.endswith(timeframe.period,"T")`
-   with a 10s fallback.
-
-**Not present (checked):** no `time(timeframe.period, …)` session calls (RE10023 #2), no bar-scan
-"yesterday" loop (RE10008), plot count 45 ≤ 64. Live TradingView compile not performed here —
-status is 🟡 (fixed in code, awaiting your load) in TICK_FRIENDLY_INDEX.md.
+## Heavy Weapons Single v3.3 DISP 9 — 2026-08-19 (operator order; Nagasaki 1:1 parity law; RVOL-ladder ruling)
+- **Nagasaki = canonical one-state HV-law engine** (`maxVolEver`: bar[1] is Nagasaki iff volume[1] > every earlier candle; `sigNagasaki` = its bar[0] view, conf-gated) — v3.2's hw-local running max (`vol/maxVol`, bar-0 seed) removed. **RVOL 1x and GS/MOAB threshold ladders = KC COMBO SR v5.0 master tables** (operator ruling 2026-08-19): 1x at 2m 19→18 · 3m 17→13 · 4m 16→13 · 5m 15→13 · 6m 14→13 · 7m 12→11 · 9m 10→11 · 11m 8.4→9 · 15m 8.4→7.5 · 26m 6.9→6.5 · 30m 6.9→6.0 · 1h 5.9→4.5 · 2h 3.0→4.0 · >3h 1.8→3.5/1.8/1.0 by range; GS/MOAB at 25–50m 10→20 · 2h 8→10 · 1d 8→7.5 · 1w 8→3.5. **Hiroshima / WTC / SAAB tables UNCHANGED** (Hiroshima feeds the hybrid-momentum ladder; not ruled — awaiting operator word). Header EXCEPTIONS (None/None). Everything else byte-identical to v3.2 (main 1f89bb5). hw_alert_iff_gate D=0 re-proved.
