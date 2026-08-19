@@ -60,3 +60,6 @@ Base: the v3 imports (time) / june7-conversion tick-friendly build (tick), sha-p
 - **A13:** shorttitles cut to ≤10 chars: `HW3.1` (time), `HW3.1 TF` (tick).
 - Info-panel header corrected (base said "HW SINGLES v2"); GATES footer documents the master gate.
 - TV plot units: 53/64 (45 base plots + 3 new + 5 dynamic input-color args); 0 alertconditions.
+
+## Heavy Weapons Single v3.3 DISP 9 — 2026-08-19 (operator order; Nagasaki 1:1 parity law; RVOL-ladder ruling)
+- **Nagasaki = canonical one-state HV-law engine** (`maxVolEver`: bar[1] is Nagasaki iff volume[1] > every earlier candle; `sigNagasaki` = its bar[0] view, conf-gated) — v3.2's hw-local running max (`vol/maxVol`, bar-0 seed) removed. **RVOL 1x and GS/MOAB threshold ladders = KC COMBO SR v5.0 master tables** (operator ruling 2026-08-19): 1x at 2m 19→18 · 3m 17→13 · 4m 16→13 · 5m 15→13 · 6m 14→13 · 7m 12→11 · 9m 10→11 · 11m 8.4→9 · 15m 8.4→7.5 · 26m 6.9→6.5 · 30m 6.9→6.0 · 1h 5.9→4.5 · 2h 3.0→4.0 · >3h 1.8→3.5/1.8/1.0 by range; GS/MOAB at 25–50m 10→20 · 2h 8→10 · 1d 8→7.5 · 1w 8→3.5. **Hiroshima / WTC / SAAB tables UNCHANGED** (Hiroshima feeds the hybrid-momentum ladder; not ruled — awaiting operator word). Header EXCEPTIONS (None/None). Everything else byte-identical to v3.2 (main 1f89bb5). hw_alert_iff_gate D=0 re-proved.
