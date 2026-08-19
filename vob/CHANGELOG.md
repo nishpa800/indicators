@@ -565,3 +565,9 @@ depth ≥3 with PBJ/RVOL confirmation = consider entry.
 - v10.6 (parallel WILD wave) carries the same orphan emitter — same fix owed on that line.
 - Reminder shipped with delivery: TV alerts are frozen snapshots — delete the old alert and
   re-create it on v10.7 or the old spam keeps firing.
+
+## VOB ASYM + HV·DISP·TIER PROXIMITY v1 — 2026-08-19
+- **NEW STUDY PAIR (create lane, operator goal 2026-08-19 "another indicator study").** `versions/VOB_ASYM_HDTPROX_v1.pine` (TIME, shorttitle `VOB HDT1`) + `tick_friendly/VOB_ASYM_HDTPROX_TICKFRIENDLY_v1.pine` (TICK, `HDT1 TICK`) — byte-identical below indicator() except the log.info tag. Base = `VOB_ASYM_HVPROX_v1.3.pine` @ d8970ab (T1/T2/T3 engine, cooldown, OB lines, tier markers/alerts, Disp/RVOL readouts UNCHANGED); the v1.3 two-way HV-proximity section is REPLACED by the three-way section (v1.3 stays the two-way study).
+- 10 lanes (HV 1K/2K/3K/4K/NAGASAKI · DISP · TIER × Bull/Bear): fires when the latest HV-tier candle, the latest displaced candle (sigma 9 + FVG, same side) and the latest T1/T2/T3 fire (same side) all lie within **W bars** of each other (W input, default 5 — operator answer 2026-08-19), the moment the last of the three becomes known; marker on that bar; print-highest ON; no first-bar gate; lookbacks 1000/2000/3000/4000 editable, Nagasaki = all-time high.
+- Alert line (0 units) = the v1.3 operator line: `BULL/BEAR, HV#/NAGA, Disp #.#, RVOL #.#` (HV candle values); tier/bars ride log.info.
+- Budget 16 plotshapes × 2 (input.color) + 2 base plot() + 1 fill = 35/64; 0 alertcondition; graphic objects = the base's order-block drawing only.
