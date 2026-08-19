@@ -1,0 +1,393 @@
+//@version=5
+// =============================================================================
+// NAGA DISP v2 — SECTION 1: Nagasaki / 4K / 3K / 2K / 1K + DISPLACEMENT on the SAME
+// candle (1K/2K/3K additionally gated by RVOL 1x / Grand Slam (bull) · RVOL 1x / MOAB (bear));
+// SECTION 2: RUN lanes — N in a row >= floor (the 50-to-4k "500" VP), one of them >= tier,
+// first bar displaced; highest tier prints; rolling re-fire.  2026-08-19  (W-INDSTUDY, L-49)
+// BASE: naga-disp/versions/NAGA_DISP_v1.pine @ origin/main d8970ab, sha256 de158baa9945da65f5be659a3ef3ba220f36ec35b0f22baee0606585dafc2c97 (== operator Desktop file)
+// SOURCES (verbatim engines): high volume hv 50 to 4k.txt (500 VP: volume[1] == ta.highest(volume,500)[1]);
+//   KC_COMBO_SR_v5.0.pine ENGINE RVOL 0.56 (det_RVOL1xB/R, det_GrandSlam, det_MOAB; th_1x / th_gs ladders);
+//   displacement times four.txt (sigma + FVG, offset -1).
+// OPERATOR DICTATION 2026-08-19 (goal + answers): two sections; section-1 1K/2K/3K require
+//   RVOL1X or Grand Slam (bull) / RVOL1X or MOAB (bear); section-2 = 4 in a row >= 500 with one
+//   >= 1K/2K/3K/4K/Nagasaki, displacement 9 on the session first bar, first bar inside the chain,
+//   fires immediately when met, counter restarts (rolling), master ON/OFF same mechanics, highest
+//   tier only; every number editable (N, floor, lookbacks, sigma).
+// OUTPUT BUDGET: 20 plotshapes x 2 (input.color) = 40 / 64. ZERO plot(). ZERO alertcondition. ZERO graphic objects.
+// ALERTS: alert() lines (0 units) — arm ONE alert: Any alert() function call.
+// =============================================================================
+// TICK-CHART build [tick-friendly] (twin: naga-disp/versions/NAGA_DISP_v2.pine).
+// RE10023: timeframe.in_seconds guarded (tick chart -> tfSec 10, the KC/HW tick fallback); no relativeVolume call;
+// first-bar anchor = time(D). Logic BYTE-IDENTICAL to the time build below the indicator() line.
+indicator("NAGA DISP v2 [TICK] (Nagasaki/4K/3K/2K/1K + Displacement + RUN, First Bar)", shorttitle="N+D2 TICK", overlay=true, max_bars_back=5000)
+
+// ── MASTER ─────────────────────────────────────────────────────────────────────
+grpM = "★ MASTER"
+firstBarOnly = input.bool(true, "★ FIRST BAR MASTER — VP + alert fire IFF the marked candle is the session FIRST bar", group=grpM, tooltip="ON (default, operator 2026-08-18): SECTION 1 lanes fire IFF the marked candle (bar[1]) is the FIRST bar of the session (is_new_day = ta.change of the daily-session time != 0, tested on bar[1] — BEDROCK / FIRST BAR FABLE / SECONDS definition). SECTION 2 RUN lanes: the unbroken chain of >=floor candles must CONTAIN the session first bar and that first bar must carry the displacement. OFF: section 1 fires on any candle; section 2's anchor relaxes to ANY displaced candle inside the chain.")
+
+// ── DISPLACEMENT ENGINE (one engine shared by every lane; source: displacement times four.txt) ──
+grpD = "DISPLACEMENT ENGINE (shared by all lanes)"
+d_type = input.string("Open to Close", "Range Type", options=["Open to Close", "High to Low"], group=grpD, tooltip="Which candle range is tested against the sigma threshold. Source default: Open to Close (body).")
+d_len  = input.int(100, "Std Dev Length", minval=1, group=grpD, tooltip="Rolling stdev window of the range. Source default 100.")
+d_mult = input.float(9.0, "Std Dev Multiplier (sigma) — default 9", minval=0.1, step=0.1, group=grpD, tooltip="DISPLACEMENT = candle range[1] > stdev(range, length)[1] x sigma  AND a fair-value gap confirmed on the next bar (bull: low > high[2] with close[1] > open[1]; bear: high < low[2] with close[1] < open[1]). Default 9 (operator). Shared by SECTION 1 and SECTION 2.")
+
+// ── VOLUME LOOKBACKS (bars) — shared by both sections; Nagasaki has no number (all-time high) ──
+grpV = "VOLUME LOOKBACKS (bars) — 1K / 2K / 3K / 4K, editable (shared by both sections)"
+n1K = input.int(1000, "1K lookback (bars)", minval=1, maxval=5000, group=grpV, tooltip="1K tier: the candle carries the highest volume of the last N bars (N default 1000). Keep 1K < 2K < 3K < 4K.")
+n2K = input.int(2000, "2K lookback (bars)", minval=1, maxval=5000, group=grpV)
+n3K = input.int(3000, "3K lookback (bars)", minval=1, maxval=5000, group=grpV)
+n4K = input.int(4000, "4K lookback (bars)", minval=1, maxval=5000, group=grpV, tooltip="4K tier: highest volume of the last N bars (default 4000) and NOT Nagasaki. Nagasaki = all-time-high volume (strictly above every prior bar on the chart) — no number to edit.")
+
+// ── SECTION 2 RUN KNOBS (operator 2026-08-19): N in a row, floor tier ──
+grpR = "SECTION 2 — RUN KNOBS (N in a row >= floor, one of them >= tier, first bar displaced)"
+nRun = input.int(4, "N in a row (consecutive >= floor candles)", minval=1, maxval=50, group=grpR, tooltip="How many consecutive candles must each be a >=floor high-volume candle (default 4). The chain must contain the anchor (first bar, displaced). Fires the moment the N-th candle closes; the counter then restarts and the lane fires again after the next N candles of the same unbroken chain (rolling).")
+nF   = input.int(500, "Floor tier (bars) — the '500' VP", minval=1, maxval=5000, group=grpR, tooltip="The floor test is the 'high volume hv 50 to 4k' study's 500 VP, verbatim: volume[1] == ta.highest(volume, 500)[1] (prior closed bar is the highest of its last 500 — ties count). Editable; default 500.")
+
+// ── RVOL 1x / GRAND SLAM / MOAB ENGINE (KC COMBO SR v5.0, verbatim) — gates SECTION 1's 1K/2K/3K lanes ──
+grpRV = "RVOL 1x / GRAND SLAM / MOAB (gates section-1 1K/2K/3K lanes) — KC COMBO SR v5.0 engine"
+rv_avgLen = input.int(30, "RVOL Avg Length", group=grpRV)
+rv_smaLen = input.int(20, "RVOL SMA Length", group=grpRV)
+
+// ── SECTION 1 — VISUAL PLOTS (same-candle tier + displacement; 1K/2K/3K also need RVOL1x/GS (bull) · RVOL1x/MOAB (bear)) ──
+grpP = "SECTION 1 — VISUAL PLOTS (same-candle HV + DISP; 1K/2K/3K gated by RVOL 1x/GS · RVOL 1x/MOAB)"
+en_nagaDispBull = input.bool(true, "NAGASAKI+DISP Bull", group=grpP, inline="p1")
+cl_nagaDispBull = input.color(#00E676, "", group=grpP, inline="p1")
+en_hv4kDispBull = input.bool(true, "4K+DISP Bull", group=grpP, inline="p2")
+cl_hv4kDispBull = input.color(#00BFA5, "", group=grpP, inline="p2")
+en_hv3kDispBull = input.bool(true, "3K+DISP+RV Bull", group=grpP, inline="p3")
+cl_hv3kDispBull = input.color(#2979FF, "", group=grpP, inline="p3")
+en_hv2kDispBull = input.bool(true, "2K+DISP+RV Bull", group=grpP, inline="p4")
+cl_hv2kDispBull = input.color(#40C4FF, "", group=grpP, inline="p4")
+en_hv1kDispBull = input.bool(true, "1K+DISP+RV Bull", group=grpP, inline="p5")
+cl_hv1kDispBull = input.color(#B2FF59, "", group=grpP, inline="p5")
+en_nagaDispBear = input.bool(true, "NAGASAKI+DISP Bear", group=grpP, inline="p6")
+cl_nagaDispBear = input.color(#FF1744, "", group=grpP, inline="p6")
+en_hv4kDispBear = input.bool(true, "4K+DISP Bear", group=grpP, inline="p7")
+cl_hv4kDispBear = input.color(#FF6D00, "", group=grpP, inline="p7")
+en_hv3kDispBear = input.bool(true, "3K+DISP+RV Bear", group=grpP, inline="p8")
+cl_hv3kDispBear = input.color(#FF4081, "", group=grpP, inline="p8")
+en_hv2kDispBear = input.bool(true, "2K+DISP+RV Bear", group=grpP, inline="p9")
+cl_hv2kDispBear = input.color(#F50057, "", group=grpP, inline="p9")
+en_hv1kDispBear = input.bool(true, "1K+DISP+RV Bear", group=grpP, inline="p10")
+cl_hv1kDispBear = input.color(#FFAB40, "", group=grpP, inline="p10")
+
+// ── SECTION 2 — VISUAL PLOTS (RUN lanes: N in a row >= floor, highest tier in the window prints) ──
+grpP2 = "SECTION 2 — VISUAL PLOTS (RUN: N in a row >= floor + first-bar displacement; highest tier prints)"
+en_nagaRunBull = input.bool(true, "NAGASAKI RUN Bull", group=grpP2, inline="r1")
+cl_nagaRunBull = input.color(#69F0AE, "", group=grpP2, inline="r1")
+en_hv4kRunBull = input.bool(true, "4K RUN Bull", group=grpP2, inline="r2")
+cl_hv4kRunBull = input.color(#1DE9B6, "", group=grpP2, inline="r2")
+en_hv3kRunBull = input.bool(true, "3K RUN Bull", group=grpP2, inline="r3")
+cl_hv3kRunBull = input.color(#448AFF, "", group=grpP2, inline="r3")
+en_hv2kRunBull = input.bool(true, "2K RUN Bull", group=grpP2, inline="r4")
+cl_hv2kRunBull = input.color(#80D8FF, "", group=grpP2, inline="r4")
+en_hv1kRunBull = input.bool(true, "1K RUN Bull", group=grpP2, inline="r5")
+cl_hv1kRunBull = input.color(#CCFF90, "", group=grpP2, inline="r5")
+en_nagaRunBear = input.bool(true, "NAGASAKI RUN Bear", group=grpP2, inline="r6")
+cl_nagaRunBear = input.color(#FF5252, "", group=grpP2, inline="r6")
+en_hv4kRunBear = input.bool(true, "4K RUN Bear", group=grpP2, inline="r7")
+cl_hv4kRunBear = input.color(#FF9E80, "", group=grpP2, inline="r7")
+en_hv3kRunBear = input.bool(true, "3K RUN Bear", group=grpP2, inline="r8")
+cl_hv3kRunBear = input.color(#FF80AB, "", group=grpP2, inline="r8")
+en_hv2kRunBear = input.bool(true, "2K RUN Bear", group=grpP2, inline="r9")
+cl_hv2kRunBear = input.color(#FF4081, "", group=grpP2, inline="r9")
+en_hv1kRunBear = input.bool(true, "1K RUN Bear", group=grpP2, inline="r10")
+cl_hv1kRunBear = input.color(#FFD180, "", group=grpP2, inline="r10")
+
+// ── ALERTS (inbox only) — one checkbox per lane; arm ONE alert: Any alert() function call ──
+grpA = "ALERTS (inbox only) — arm ONE alert on this study: Any alert() function call"
+al_nagaDispBull = input.bool(true, "🔔 NAGASAKI+DISP Bull", group=grpA, inline="a1")
+al_hv4kDispBull = input.bool(true, "🔔 4K+DISP Bull", group=grpA, inline="a1")
+al_hv3kDispBull = input.bool(true, "🔔 3K+DISP+RV Bull", group=grpA, inline="a2")
+al_hv2kDispBull = input.bool(true, "🔔 2K+DISP+RV Bull", group=grpA, inline="a2")
+al_hv1kDispBull = input.bool(true, "🔔 1K+DISP+RV Bull", group=grpA, inline="a3")
+al_nagaDispBear = input.bool(true, "🔔 NAGASAKI+DISP Bear", group=grpA, inline="a3")
+al_hv4kDispBear = input.bool(true, "🔔 4K+DISP Bear", group=grpA, inline="a4")
+al_hv3kDispBear = input.bool(true, "🔔 3K+DISP+RV Bear", group=grpA, inline="a4")
+al_hv2kDispBear = input.bool(true, "🔔 2K+DISP+RV Bear", group=grpA, inline="a5")
+al_hv1kDispBear = input.bool(true, "🔔 1K+DISP+RV Bear", group=grpA, inline="a5")
+al_nagaRunBull = input.bool(true, "🔔 NAGASAKI RUN Bull", group=grpA, inline="a6")
+al_hv4kRunBull = input.bool(true, "🔔 4K RUN Bull", group=grpA, inline="a6")
+al_hv3kRunBull = input.bool(true, "🔔 3K RUN Bull", group=grpA, inline="a7")
+al_hv2kRunBull = input.bool(true, "🔔 2K RUN Bull", group=grpA, inline="a7")
+al_hv1kRunBull = input.bool(true, "🔔 1K RUN Bull", group=grpA, inline="a8")
+al_nagaRunBear = input.bool(true, "🔔 NAGASAKI RUN Bear", group=grpA, inline="a8")
+al_hv4kRunBear = input.bool(true, "🔔 4K RUN Bear", group=grpA, inline="a9")
+al_hv3kRunBear = input.bool(true, "🔔 3K RUN Bear", group=grpA, inline="a9")
+al_hv2kRunBear = input.bool(true, "🔔 2K RUN Bear", group=grpA, inline="a10")
+al_hv1kRunBear = input.bool(true, "🔔 1K RUN Bear", group=grpA, inline="a10")
+
+// =============================================================================
+// ENGINES
+// =============================================================================
+bool conf = barstate.isconfirmed
+
+// HV ladder — prior CLOSED bar (50-to-4k source construction; can never repaint once printed)
+bool is1K = volume[1] == ta.highest(volume, n1K)[1]
+bool is2K = volume[1] == ta.highest(volume, n2K)[1]
+bool is3K = volume[1] == ta.highest(volume, n3K)[1]
+bool is4K = volume[1] == ta.highest(volume, n4K)[1]
+bool isF  = volume[1] == ta.highest(volume, nF)[1]   // the '500' VP (floor), verbatim form
+
+// Nagasaki (HEV) — all-time high volume: running max over CONFIRMED bars only, strict > (source construction)
+var float maxVolEver = 0.0
+bool isNaga = false
+if volume[1] > maxVolEver
+    maxVolEver := volume[1]
+    isNaga := true
+
+// EXCLUSIVE tiers (nested ladder law: highest tier reached prints, nothing below it)
+bool tierNaga = isNaga
+bool tier4K = is4K and not isNaga
+bool tier3K = is3K and not is4K
+bool tier2K = is2K and not is3K
+bool tier1K = is1K and not is2K
+// tier rank of the marked candle C (0 = below 1K, 1 = 1K ... 5 = Nagasaki)
+int tierRank = tierNaga ? 5 : tier4K ? 4 : tier3K ? 3 : tier2K ? 2 : tier1K ? 1 : 0
+
+// Displacement (source construction, verbatim): sigma-exceedance on bar[1] AND FVG confirmed on bar[0]
+float d_rng = d_type == "Open to Close" ? math.abs(open - close) : high - low
+float d_std = ta.stdev(d_rng, d_len)
+float d_thr = d_std * d_mult
+bool  d_prev = d_rng[1] > d_thr[1]
+bool  d_bullFVG = low > high[2] and close[1] > open[1]
+bool  d_bearFVG = high < low[2] and close[1] < open[1]
+bool  dispBull = conf and d_prev and d_bullFVG
+bool  dispBear = conf and d_prev and d_bearFVG
+
+// RVOL 1x / GRAND SLAM / MOAB (KC COMBO SR v5.0 'ENGINE: RVOL 0.56 (Pre-Mythos)', verbatim; read on the marked candle bar[1])
+int   _tfSecRaw = timeframe.in_seconds(timeframe.period)
+bool  _isTickChart = str.endswith(timeframe.period, "T") or na(_tfSecRaw) or _tfSecRaw <= 0
+int   tfSec = _isTickChart ? 10 : _tfSecRaw
+float rv_spike = math.abs(close - open)
+float rv_avgSpike = ta.sma(rv_spike, rv_avgLen)[1]
+float rv_normPrice = rv_spike / nz(rv_avgSpike, 1.0)
+float rv_avgVol = ta.sma(volume, rv_avgLen)[1]
+float rv_normVol = volume / nz(rv_avgVol, 1.0)
+float rv_diff = rv_normPrice - rv_normVol
+float rv_posDiff = rv_diff > 0 ? rv_diff : na
+float rv_smaDiff = ta.sma(rv_posDiff, rv_smaLen)
+bool rv_baseBull = (close > open) and (rv_posDiff > rv_smaDiff)
+bool rv_baseBear = (close < open) and (rv_posDiff > rv_smaDiff)
+f_th_1x(int _s) => _s <= 10 ? 38.0 : _s <= 15 ? 33.0 : _s <= 30 ? 28.0 : _s <= 45 ? 23.0 : _s <= 60 ? 20.0 : _s <= 120 ? 18.0 : _s <= 300 ? 13.0 : _s <= 360 ? 13.0 : _s <= 540 ? 11.0 : _s <= 600 ? 10.0 : _s <= 660 ? 9.0 : _s <= 900 ? 7.5 : _s <= 1560 ? 6.5 : _s <= 2340 ? 6.0 : _s <= 3600 ? 4.5 : _s <= 9000 ? 4.0 : _s <= 11700 ? 3.5 : _s < 259200 ? 1.8 : 1.0
+f_th_gs(int _s) => _s < 60 ? f_th_1x(_s) * 3.0 : _s <= 300 ? 35.0 : _s <= 600 ? 25.0 : _s <= 1500 ? 20.0 : _s <= 3000 ? 20.0 : _s <= 7260 ? 10.0 : _s <= 11700 ? 8.0 : _s <= 86400 ? 7.5 : _s <= 259200 ? 3.5 : 3.0
+float th_1x = f_th_1x(tfSec)
+float th_gs = f_th_gs(tfSec)
+bool det_RVOL1xB = rv_baseBull and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_RVOL1xR = rv_baseBear and rv_normPrice >= th_1x and rv_normPrice < th_gs
+bool det_GrandSlam = rv_baseBull and rv_normPrice >= th_gs
+bool det_MOAB = rv_baseBear and rv_normPrice >= th_gs
+// gate on the MARKED candle C = bar[1]: Bull = RVOL 1x OR Grand Slam · Bear = RVOL 1x OR MOAB
+bool rvGateBull = nz(det_RVOL1xB[1]) or nz(det_GrandSlam[1])
+bool rvGateBear = nz(det_RVOL1xR[1]) or nz(det_MOAB[1])
+
+// FIRST-BAR MASTER GATE — reference bar = the marked candle bar[1] (plot offset -1)
+bool is_new_day = ta.change(time("D")) != 0
+bool firstMarked = nz(is_new_day[1])
+bool fbGate = not firstBarOnly or firstMarked
+
+// =============================================================================
+// SECTION 2 — RUN ENGINE (operator 2026-08-19): chain of consecutive >=floor candles ending at C;
+// the chain must CONTAIN the anchor (master ON: session first bar carrying the displacement;
+// master OFF: any displaced candle); fires when the counter reaches N and the last-N window
+// holds a >=1K candle (highest tier in the window prints); counter restarts after each fire
+// (rolling re-fire on the same unbroken chain); chain break resets everything. State is
+// written on CONFIRMED bars only (var rolls back on the forming bar).
+// =============================================================================
+var int  runChain = 0         // consecutive isF candles ending at C
+var int  runCnt = 0           // isF candles since the last fire (or chain start)
+var bool runAnchorBull = false
+var bool runAnchorBear = false
+var int  runAnchorBar = na
+int  runTierMax = 0
+bool runFireBull = false
+bool runFireBear = false
+int  runAnchorDist = 0
+if conf
+    if isF
+        runChain := runChain + 1
+        runCnt := runCnt + 1
+    else
+        runChain := 0
+        runCnt := 0
+        runAnchorBull := false
+        runAnchorBear := false
+        runAnchorBar := na
+    bool anchorHere = isF and (dispBull or dispBear) and fbGate
+    if anchorHere
+        runAnchorBull := runAnchorBull or dispBull
+        runAnchorBear := runAnchorBear or dispBear
+        runAnchorBar := bar_index - 1
+    if isF and runCnt >= nRun and (runAnchorBull or runAnchorBear)
+        // highest tier inside the last-N window (bars 1..N back from bar[0] = C and its N-1 predecessors)
+        int tmax = 0
+        for k = 0 to nRun - 1
+            int kk = math.min(k, 4999)
+            tmax := math.max(tmax, nz(tierRank[kk]))
+        runTierMax := tmax
+        if tmax >= 1
+            runFireBull := runAnchorBull
+            runFireBear := runAnchorBear
+            runCnt := 0
+            runAnchorDist := na(runAnchorBar) ? 0 : (bar_index - 1) - runAnchorBar
+
+// =============================================================================
+// LANES — sig_ (detection) / fire_ (VP, plot checkbox) / alf_ (alert checkbox); 1:1:1
+// =============================================================================
+// SECTION 1 (same candle; 1K/2K/3K additionally gated by RVOL 1x/GS (bull) · RVOL 1x/MOAB (bear))
+bool sig_nagaDispBull = tierNaga and dispBull
+bool sig_hv4kDispBull = tier4K and dispBull
+bool sig_hv3kDispBull = tier3K and dispBull and rvGateBull
+bool sig_hv2kDispBull = tier2K and dispBull and rvGateBull
+bool sig_hv1kDispBull = tier1K and dispBull and rvGateBull
+bool sig_nagaDispBear = tierNaga and dispBear
+bool sig_hv4kDispBear = tier4K and dispBear
+bool sig_hv3kDispBear = tier3K and dispBear and rvGateBear
+bool sig_hv2kDispBear = tier2K and dispBear and rvGateBear
+bool sig_hv1kDispBear = tier1K and dispBear and rvGateBear
+// SECTION 2 (RUN; highest tier in the window prints; master already inside the anchor)
+bool sig_nagaRunBull = runFireBull and runTierMax == 5
+bool sig_hv4kRunBull = runFireBull and runTierMax == 4
+bool sig_hv3kRunBull = runFireBull and runTierMax == 3
+bool sig_hv2kRunBull = runFireBull and runTierMax == 2
+bool sig_hv1kRunBull = runFireBull and runTierMax == 1
+bool sig_nagaRunBear = runFireBear and runTierMax == 5
+bool sig_hv4kRunBear = runFireBear and runTierMax == 4
+bool sig_hv3kRunBear = runFireBear and runTierMax == 3
+bool sig_hv2kRunBear = runFireBear and runTierMax == 2
+bool sig_hv1kRunBear = runFireBear and runTierMax == 1
+
+bool fire_nagaDispBull = en_nagaDispBull and sig_nagaDispBull and fbGate
+bool fire_hv4kDispBull = en_hv4kDispBull and sig_hv4kDispBull and fbGate
+bool fire_hv3kDispBull = en_hv3kDispBull and sig_hv3kDispBull and fbGate
+bool fire_hv2kDispBull = en_hv2kDispBull and sig_hv2kDispBull and fbGate
+bool fire_hv1kDispBull = en_hv1kDispBull and sig_hv1kDispBull and fbGate
+bool fire_nagaDispBear = en_nagaDispBear and sig_nagaDispBear and fbGate
+bool fire_hv4kDispBear = en_hv4kDispBear and sig_hv4kDispBear and fbGate
+bool fire_hv3kDispBear = en_hv3kDispBear and sig_hv3kDispBear and fbGate
+bool fire_hv2kDispBear = en_hv2kDispBear and sig_hv2kDispBear and fbGate
+bool fire_hv1kDispBear = en_hv1kDispBear and sig_hv1kDispBear and fbGate
+bool fire_nagaRunBull = en_nagaRunBull and sig_nagaRunBull
+bool fire_hv4kRunBull = en_hv4kRunBull and sig_hv4kRunBull
+bool fire_hv3kRunBull = en_hv3kRunBull and sig_hv3kRunBull
+bool fire_hv2kRunBull = en_hv2kRunBull and sig_hv2kRunBull
+bool fire_hv1kRunBull = en_hv1kRunBull and sig_hv1kRunBull
+bool fire_nagaRunBear = en_nagaRunBear and sig_nagaRunBear
+bool fire_hv4kRunBear = en_hv4kRunBear and sig_hv4kRunBear
+bool fire_hv3kRunBear = en_hv3kRunBear and sig_hv3kRunBear
+bool fire_hv2kRunBear = en_hv2kRunBear and sig_hv2kRunBear
+bool fire_hv1kRunBear = en_hv1kRunBear and sig_hv1kRunBear
+
+bool alf_nagaDispBull = al_nagaDispBull and sig_nagaDispBull and fbGate
+bool alf_hv4kDispBull = al_hv4kDispBull and sig_hv4kDispBull and fbGate
+bool alf_hv3kDispBull = al_hv3kDispBull and sig_hv3kDispBull and fbGate
+bool alf_hv2kDispBull = al_hv2kDispBull and sig_hv2kDispBull and fbGate
+bool alf_hv1kDispBull = al_hv1kDispBull and sig_hv1kDispBull and fbGate
+bool alf_nagaDispBear = al_nagaDispBear and sig_nagaDispBear and fbGate
+bool alf_hv4kDispBear = al_hv4kDispBear and sig_hv4kDispBear and fbGate
+bool alf_hv3kDispBear = al_hv3kDispBear and sig_hv3kDispBear and fbGate
+bool alf_hv2kDispBear = al_hv2kDispBear and sig_hv2kDispBear and fbGate
+bool alf_hv1kDispBear = al_hv1kDispBear and sig_hv1kDispBear and fbGate
+bool alf_nagaRunBull = al_nagaRunBull and sig_nagaRunBull
+bool alf_hv4kRunBull = al_hv4kRunBull and sig_hv4kRunBull
+bool alf_hv3kRunBull = al_hv3kRunBull and sig_hv3kRunBull
+bool alf_hv2kRunBull = al_hv2kRunBull and sig_hv2kRunBull
+bool alf_hv1kRunBull = al_hv1kRunBull and sig_hv1kRunBull
+bool alf_nagaRunBear = al_nagaRunBear and sig_nagaRunBear
+bool alf_hv4kRunBear = al_hv4kRunBear and sig_hv4kRunBear
+bool alf_hv3kRunBear = al_hv3kRunBear and sig_hv3kRunBear
+bool alf_hv2kRunBear = al_hv2kRunBear and sig_hv2kRunBear
+bool alf_hv1kRunBear = al_hv1kRunBear and sig_hv1kRunBear
+
+// =============================================================================
+// PLOTS — every VP is a REAL plotshape (CS-1, L-61); offset -1 lands ON the marked candle
+// (section 1: the displaced candle; section 2: the completion candle of the run).
+// Visual identity: section 1 = belowbar/abovebar, section 2 = bottom/top; every lane its own input.color.
+// =============================================================================
+plotshape(fire_nagaDispBull, "NAGASAKI+DISP Bull", shape.diamond, location.belowbar, cl_nagaDispBull, size=size.normal, text="NAGASAKI+DISP BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv4kDispBull, "4K+DISP Bull", shape.circle, location.belowbar, cl_hv4kDispBull, size=size.normal, text="4K+DISP BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv3kDispBull, "3K+DISP+RV Bull", shape.square, location.belowbar, cl_hv3kDispBull, size=size.small, text="3K+DISP+RV BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv2kDispBull, "2K+DISP+RV Bull", shape.triangleup, location.belowbar, cl_hv2kDispBull, size=size.small, text="2K+DISP+RV BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv1kDispBull, "1K+DISP+RV Bull", shape.cross, location.belowbar, cl_hv1kDispBull, size=size.small, text="1K+DISP+RV BULL", textcolor=color.white, offset=-1)
+plotshape(fire_nagaDispBear, "NAGASAKI+DISP Bear", shape.diamond, location.abovebar, cl_nagaDispBear, size=size.normal, text="NAGASAKI+DISP BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv4kDispBear, "4K+DISP Bear", shape.circle, location.abovebar, cl_hv4kDispBear, size=size.normal, text="4K+DISP BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv3kDispBear, "3K+DISP+RV Bear", shape.square, location.abovebar, cl_hv3kDispBear, size=size.small, text="3K+DISP+RV BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv2kDispBear, "2K+DISP+RV Bear", shape.triangledown, location.abovebar, cl_hv2kDispBear, size=size.small, text="2K+DISP+RV BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv1kDispBear, "1K+DISP+RV Bear", shape.cross, location.abovebar, cl_hv1kDispBear, size=size.small, text="1K+DISP+RV BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_nagaRunBull, "NAGASAKI RUN Bull", shape.diamond, location.bottom, cl_nagaRunBull, size=size.normal, text="NAGASAKI RUN BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv4kRunBull, "4K RUN Bull", shape.circle, location.bottom, cl_hv4kRunBull, size=size.normal, text="4K RUN BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv3kRunBull, "3K RUN Bull", shape.square, location.bottom, cl_hv3kRunBull, size=size.small, text="3K RUN BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv2kRunBull, "2K RUN Bull", shape.triangleup, location.bottom, cl_hv2kRunBull, size=size.small, text="2K RUN BULL", textcolor=color.white, offset=-1)
+plotshape(fire_hv1kRunBull, "1K RUN Bull", shape.cross, location.bottom, cl_hv1kRunBull, size=size.small, text="1K RUN BULL", textcolor=color.white, offset=-1)
+plotshape(fire_nagaRunBear, "NAGASAKI RUN Bear", shape.diamond, location.top, cl_nagaRunBear, size=size.normal, text="NAGASAKI RUN BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv4kRunBear, "4K RUN Bear", shape.circle, location.top, cl_hv4kRunBear, size=size.normal, text="4K RUN BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv3kRunBear, "3K RUN Bear", shape.square, location.top, cl_hv3kRunBear, size=size.small, text="3K RUN BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv2kRunBear, "2K RUN Bear", shape.triangledown, location.top, cl_hv2kRunBear, size=size.small, text="2K RUN BEAR", textcolor=color.white, offset=-1)
+plotshape(fire_hv1kRunBear, "1K RUN Bear", shape.cross, location.top, cl_hv1kRunBear, size=size.small, text="1K RUN BEAR", textcolor=color.white, offset=-1)
+
+// =============================================================================
+// ALERT — ONE line per candle per section, grammar v1.3 (achieved values, plain lane name,
+// FIRST iff first bar, G>B iff gap > body on the marked candle). Metadata rides log.info only.
+// =============================================================================
+f_add(existing, addition) =>
+    existing == "" ? addition : existing + " + " + addition
+
+f_hvDepth() =>
+    int d = 1
+    for k = 2 to 4999
+        int kk = math.min(k, 4999)
+        if na(volume[kk]) or volume[kk] > volume[1]
+            break
+        d += 1
+    d
+
+float d_sigmaAch = d_std[1] > 0 ? d_rng[1] / d_std[1] : na
+float gapAbs = math.abs(open[1] - close[2])
+float bodyAbs = math.abs(close[1] - open[1])
+string gbTag = bodyAbs > 0 and gapAbs > bodyAbs ? " G>B" + str.tostring(gapAbs / bodyAbs, "#.0") + "x" : ""
+
+if conf
+    string tok = ""
+    if alf_nagaDispBull or alf_nagaDispBear
+        tok := f_add(tok, "NAGASAKI+DISP")
+    if alf_hv4kDispBull or alf_hv4kDispBear
+        tok := f_add(tok, "4K+DISP")
+    if alf_hv3kDispBull or alf_hv3kDispBear
+        tok := f_add(tok, "3K+DISP+RV")
+    if alf_hv2kDispBull or alf_hv2kDispBear
+        tok := f_add(tok, "2K+DISP+RV")
+    if alf_hv1kDispBull or alf_hv1kDispBear
+        tok := f_add(tok, "1K+DISP+RV")
+    if tok != ""
+        bool sideBull = alf_nagaDispBull or alf_hv4kDispBull or alf_hv3kDispBull or alf_hv2kDispBull or alf_hv1kDispBull
+        int hvDepth = tierNaga ? bar_index : f_hvDepth()
+        string fields = ":HV" + str.tostring(hvDepth) + (na(d_sigmaAch) ? "" : ",D" + str.tostring(d_sigmaAch, "#.0"))
+        string msg = (sideBull ? "BULL" : "BEAR") + gbTag + " | " + (firstMarked ? "FIRST | " : "") + tok + fields
+        alert(msg, alert.freq_once_per_bar_close)
+        log.info("NAGA+DISP2 " + syminfo.ticker + " " + timeframe.period + " | " + msg + " | close=" + str.tostring(close[1]) + " vol=" + str.tostring(volume[1]) + " hvDepth=" + str.tostring(hvDepth) + " sigma=" + str.tostring(d_sigmaAch, "#.00") + " first=" + (firstMarked ? "true" : "false"))
+    // SECTION 2 RUN line: <SIDE> | <TIER> RUN:RUN<n>@FIRST-<bars back to the anchor>
+    string tokR = ""
+    if alf_nagaRunBull or alf_nagaRunBear
+        tokR := "NAGASAKI RUN"
+    if alf_hv4kRunBull or alf_hv4kRunBear
+        tokR := "4K RUN"
+    if alf_hv3kRunBull or alf_hv3kRunBear
+        tokR := "3K RUN"
+    if alf_hv2kRunBull or alf_hv2kRunBear
+        tokR := "2K RUN"
+    if alf_hv1kRunBull or alf_hv1kRunBear
+        tokR := "1K RUN"
+    if tokR != ""
+        bool sideBullR = alf_nagaRunBull or alf_hv4kRunBull or alf_hv3kRunBull or alf_hv2kRunBull or alf_hv1kRunBull
+        string msgR = (sideBullR ? "BULL" : "BEAR") + " | " + tokR + ":RUN" + str.tostring(nRun) + "@" + (firstBarOnly ? "FIRST" : "DISP") + "-" + str.tostring(runAnchorDist)
+        alert(msgR, alert.freq_once_per_bar_close)
+        log.info("NAGA+DISP2 " + syminfo.ticker + " " + timeframe.period + " | " + msgR + " | close=" + str.tostring(close[1]) + " vol=" + str.tostring(volume[1]) + " chain=" + str.tostring(runChain) + " tierMax=" + str.tostring(runTierMax))
+
+// =============================================================================
+// EXPORTS (for combination / fire-matrix consumers)
+// =============================================================================
+// Tiers (bool, exclusive, bar[1]-anchored): tierNaga, tier4K, tier3K, tier2K, tier1K; floor isF; rank tierRank
+// Displacement (bool, bar[1] displaced, confirmed on bar[0]): dispBull, dispBear
+// RVOL gates (bar[1]): rvGateBull (RVOL1x|GS), rvGateBear (RVOL1x|MOAB)
+// RUN state: runChain, runCnt, runAnchorBull/Bear, runTierMax, runFireBull/Bear
+// Gate: firstMarked (bar[1] is the session first bar), fbGate (master-applied)
