@@ -681,43 +681,43 @@ bool alf_hdtNagaBear_D = al_hdtNagaBear and sig_hdtNagaBear_D
 // close, vol ride log.info only. Disp/RVOL = the HV candle's values (read through its offset).
 // ─────────────────────────────────────────────────────────────────────────────
 if conf
-    if alf_hdt1KBullN or alf_hdt1KBullD
+    if alf_hdt1KBull_N or alf_hdt1KBull_D
         string msg_hdt1KBull = f_hdt_msg("BULL", "HV1000", hdt_last1K)
         alert(msg_hdt1KBull, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdt1KBull + " | " + hdt_tierBullName + " hvBar=" + str.tostring(hdt_last1K) + " dispBar=" + str.tostring(hdt_lastDispBull) + " tierBar=" + str.tostring(hdt_lastTierBull) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
-    if alf_hdt2KBullN or alf_hdt2KBullD
+    if alf_hdt2KBull_N or alf_hdt2KBull_D
         string msg_hdt2KBull = f_hdt_msg("BULL", "HV2000", hdt_last2K)
         alert(msg_hdt2KBull, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdt2KBull + " | " + hdt_tierBullName + " hvBar=" + str.tostring(hdt_last2K) + " dispBar=" + str.tostring(hdt_lastDispBull) + " tierBar=" + str.tostring(hdt_lastTierBull) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
-    if alf_hdt3KBullN or alf_hdt3KBullD
+    if alf_hdt3KBull_N or alf_hdt3KBull_D
         string msg_hdt3KBull = f_hdt_msg("BULL", "HV3000", hdt_last3K)
         alert(msg_hdt3KBull, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdt3KBull + " | " + hdt_tierBullName + " hvBar=" + str.tostring(hdt_last3K) + " dispBar=" + str.tostring(hdt_lastDispBull) + " tierBar=" + str.tostring(hdt_lastTierBull) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
-    if alf_hdt4KBullN or alf_hdt4KBullD
+    if alf_hdt4KBull_N or alf_hdt4KBull_D
         string msg_hdt4KBull = f_hdt_msg("BULL", "HV4000", hdt_last4K)
         alert(msg_hdt4KBull, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdt4KBull + " | " + hdt_tierBullName + " hvBar=" + str.tostring(hdt_last4K) + " dispBar=" + str.tostring(hdt_lastDispBull) + " tierBar=" + str.tostring(hdt_lastTierBull) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
-    if alf_hdtNagaBullN or alf_hdtNagaBullD
+    if alf_hdtNagaBull_N or alf_hdtNagaBull_D
         string msg_hdtNagaBull = f_hdt_msg("BULL", "NAGA", hdt_lastNaga)
         alert(msg_hdtNagaBull, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdtNagaBull + " | " + hdt_tierBullName + " hvBar=" + str.tostring(hdt_lastNaga) + " dispBar=" + str.tostring(hdt_lastDispBull) + " tierBar=" + str.tostring(hdt_lastTierBull) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
-    if alf_hdt1KBearN or alf_hdt1KBearD
+    if alf_hdt1KBear_N or alf_hdt1KBear_D
         string msg_hdt1KBear = f_hdt_msg("BEAR", "HV1000", hdt_last1K)
         alert(msg_hdt1KBear, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdt1KBear + " | " + hdt_tierBearName + " hvBar=" + str.tostring(hdt_last1K) + " dispBar=" + str.tostring(hdt_lastDispBear) + " tierBar=" + str.tostring(hdt_lastTierBear) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
-    if alf_hdt2KBearN or alf_hdt2KBearD
+    if alf_hdt2KBear_N or alf_hdt2KBear_D
         string msg_hdt2KBear = f_hdt_msg("BEAR", "HV2000", hdt_last2K)
         alert(msg_hdt2KBear, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdt2KBear + " | " + hdt_tierBearName + " hvBar=" + str.tostring(hdt_last2K) + " dispBar=" + str.tostring(hdt_lastDispBear) + " tierBar=" + str.tostring(hdt_lastTierBear) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
-    if alf_hdt3KBearN or alf_hdt3KBearD
+    if alf_hdt3KBear_N or alf_hdt3KBear_D
         string msg_hdt3KBear = f_hdt_msg("BEAR", "HV3000", hdt_last3K)
         alert(msg_hdt3KBear, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdt3KBear + " | " + hdt_tierBearName + " hvBar=" + str.tostring(hdt_last3K) + " dispBar=" + str.tostring(hdt_lastDispBear) + " tierBar=" + str.tostring(hdt_lastTierBear) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
-    if alf_hdt4KBearN or alf_hdt4KBearD
+    if alf_hdt4KBear_N or alf_hdt4KBear_D
         string msg_hdt4KBear = f_hdt_msg("BEAR", "HV4000", hdt_last4K)
         alert(msg_hdt4KBear, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdt4KBear + " | " + hdt_tierBearName + " hvBar=" + str.tostring(hdt_last4K) + " dispBar=" + str.tostring(hdt_lastDispBear) + " tierBar=" + str.tostring(hdt_lastTierBear) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
-    if alf_hdtNagaBearN or alf_hdtNagaBearD
+    if alf_hdtNagaBear_N or alf_hdtNagaBear_D
         string msg_hdtNagaBear = f_hdt_msg("BEAR", "NAGA", hdt_lastNaga)
         alert(msg_hdtNagaBear, alert.freq_once_per_bar_close)
         log.info("HDT1.1TICK " + syminfo.ticker + " " + timeframe.period + " | " + msg_hdtNagaBear + " | " + hdt_tierBearName + " hvBar=" + str.tostring(hdt_lastNaga) + " dispBar=" + str.tostring(hdt_lastDispBear) + " tierBar=" + str.tostring(hdt_lastTierBear) + " | close=" + str.tostring(close) + " vol=" + str.tostring(volume, format.volume) + " bar=" + str.tostring(bar_index))
@@ -738,26 +738,26 @@ plotshape(fire_t3_sell, title="T3 SUPER Sell (Bear)", style=shape.cross, locatio
 // TWO plots per lane: offset 0 (HV candle / tier fire completed the triple) and offset -1 (the displaced candle
 // completed it — marker ON the displaced candle, operator ruling 2026-08-19 row 5); same colour, same glyph;// at the bottom band, bear lanes at the top band; no two lanes share shape+location; white text.
 // ─────────────────────────────────────────────────────────────────────────────
-plotshape(fire_hdt1KBullN, title="HV 1K·DISP·TIER Bull", style=shape.cross, location=location.bottom, color=cl_hdt1KBull, size=size.small, text="1K·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdt1KBullD, title="HV 1K·DISP·TIER Bull (disp last)", style=shape.cross, location=location.bottom, color=cl_hdt1KBull, size=size.small, text="1K·D·T", textcolor=color.white, offset=-1)
-plotshape(fire_hdt2KBullN, title="HV 2K·DISP·TIER Bull", style=shape.triangleup, location=location.bottom, color=cl_hdt2KBull, size=size.small, text="2K·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdt2KBullD, title="HV 2K·DISP·TIER Bull (disp last)", style=shape.triangleup, location=location.bottom, color=cl_hdt2KBull, size=size.small, text="2K·D·T", textcolor=color.white, offset=-1)
-plotshape(fire_hdt3KBullN, title="HV 3K·DISP·TIER Bull", style=shape.square, location=location.bottom, color=cl_hdt3KBull, size=size.small, text="3K·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdt3KBullD, title="HV 3K·DISP·TIER Bull (disp last)", style=shape.square, location=location.bottom, color=cl_hdt3KBull, size=size.small, text="3K·D·T", textcolor=color.white, offset=-1)
-plotshape(fire_hdt4KBullN, title="HV 4K·DISP·TIER Bull", style=shape.circle, location=location.bottom, color=cl_hdt4KBull, size=size.normal, text="4K·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdt4KBullD, title="HV 4K·DISP·TIER Bull (disp last)", style=shape.circle, location=location.bottom, color=cl_hdt4KBull, size=size.normal, text="4K·D·T", textcolor=color.white, offset=-1)
-plotshape(fire_hdtNagaBullN, title="HV NAGASAKI·DISP·TIER Bull", style=shape.diamond, location=location.bottom, color=cl_hdtNagaBull, size=size.normal, text="NAGA·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdtNagaBullD, title="HV NAGASAKI·DISP·TIER Bull (disp last)", style=shape.diamond, location=location.bottom, color=cl_hdtNagaBull, size=size.normal, text="NAGA·D·T", textcolor=color.white, offset=-1)
-plotshape(fire_hdt1KBearN, title="HV 1K·DISP·TIER Bear", style=shape.cross, location=location.top, color=cl_hdt1KBear, size=size.small, text="1K·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdt1KBearD, title="HV 1K·DISP·TIER Bear (disp last)", style=shape.cross, location=location.top, color=cl_hdt1KBear, size=size.small, text="1K·D·T", textcolor=color.white, offset=-1)
-plotshape(fire_hdt2KBearN, title="HV 2K·DISP·TIER Bear", style=shape.triangledown, location=location.top, color=cl_hdt2KBear, size=size.small, text="2K·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdt2KBearD, title="HV 2K·DISP·TIER Bear (disp last)", style=shape.triangledown, location=location.top, color=cl_hdt2KBear, size=size.small, text="2K·D·T", textcolor=color.white, offset=-1)
-plotshape(fire_hdt3KBearN, title="HV 3K·DISP·TIER Bear", style=shape.square, location=location.top, color=cl_hdt3KBear, size=size.small, text="3K·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdt3KBearD, title="HV 3K·DISP·TIER Bear (disp last)", style=shape.square, location=location.top, color=cl_hdt3KBear, size=size.small, text="3K·D·T", textcolor=color.white, offset=-1)
-plotshape(fire_hdt4KBearN, title="HV 4K·DISP·TIER Bear", style=shape.circle, location=location.top, color=cl_hdt4KBear, size=size.normal, text="4K·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdt4KBearD, title="HV 4K·DISP·TIER Bear (disp last)", style=shape.circle, location=location.top, color=cl_hdt4KBear, size=size.normal, text="4K·D·T", textcolor=color.white, offset=-1)
-plotshape(fire_hdtNagaBearN, title="HV NAGASAKI·DISP·TIER Bear", style=shape.diamond, location=location.top, color=cl_hdtNagaBear, size=size.normal, text="NAGA·D·T", textcolor=color.white, offset=0)
-plotshape(fire_hdtNagaBearD, title="HV NAGASAKI·DISP·TIER Bear (disp last)", style=shape.diamond, location=location.top, color=cl_hdtNagaBear, size=size.normal, text="NAGA·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdt1KBull_N, title="HV 1K·DISP·TIER Bull", style=shape.cross, location=location.bottom, color=cl_hdt1KBull, size=size.small, text="1K·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdt1KBull_D, title="HV 1K·DISP·TIER Bull (disp last)", style=shape.cross, location=location.bottom, color=cl_hdt1KBull, size=size.small, text="1K·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdt2KBull_N, title="HV 2K·DISP·TIER Bull", style=shape.triangleup, location=location.bottom, color=cl_hdt2KBull, size=size.small, text="2K·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdt2KBull_D, title="HV 2K·DISP·TIER Bull (disp last)", style=shape.triangleup, location=location.bottom, color=cl_hdt2KBull, size=size.small, text="2K·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdt3KBull_N, title="HV 3K·DISP·TIER Bull", style=shape.square, location=location.bottom, color=cl_hdt3KBull, size=size.small, text="3K·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdt3KBull_D, title="HV 3K·DISP·TIER Bull (disp last)", style=shape.square, location=location.bottom, color=cl_hdt3KBull, size=size.small, text="3K·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdt4KBull_N, title="HV 4K·DISP·TIER Bull", style=shape.circle, location=location.bottom, color=cl_hdt4KBull, size=size.normal, text="4K·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdt4KBull_D, title="HV 4K·DISP·TIER Bull (disp last)", style=shape.circle, location=location.bottom, color=cl_hdt4KBull, size=size.normal, text="4K·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdtNagaBull_N, title="HV NAGASAKI·DISP·TIER Bull", style=shape.diamond, location=location.bottom, color=cl_hdtNagaBull, size=size.normal, text="NAGA·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdtNagaBull_D, title="HV NAGASAKI·DISP·TIER Bull (disp last)", style=shape.diamond, location=location.bottom, color=cl_hdtNagaBull, size=size.normal, text="NAGA·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdt1KBear_N, title="HV 1K·DISP·TIER Bear", style=shape.cross, location=location.top, color=cl_hdt1KBear, size=size.small, text="1K·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdt1KBear_D, title="HV 1K·DISP·TIER Bear (disp last)", style=shape.cross, location=location.top, color=cl_hdt1KBear, size=size.small, text="1K·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdt2KBear_N, title="HV 2K·DISP·TIER Bear", style=shape.triangledown, location=location.top, color=cl_hdt2KBear, size=size.small, text="2K·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdt2KBear_D, title="HV 2K·DISP·TIER Bear (disp last)", style=shape.triangledown, location=location.top, color=cl_hdt2KBear, size=size.small, text="2K·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdt3KBear_N, title="HV 3K·DISP·TIER Bear", style=shape.square, location=location.top, color=cl_hdt3KBear, size=size.small, text="3K·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdt3KBear_D, title="HV 3K·DISP·TIER Bear (disp last)", style=shape.square, location=location.top, color=cl_hdt3KBear, size=size.small, text="3K·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdt4KBear_N, title="HV 4K·DISP·TIER Bear", style=shape.circle, location=location.top, color=cl_hdt4KBear, size=size.normal, text="4K·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdt4KBear_D, title="HV 4K·DISP·TIER Bear (disp last)", style=shape.circle, location=location.top, color=cl_hdt4KBear, size=size.normal, text="4K·D·T", textcolor=color.white, offset=-1)
+plotshape(fire_hdtNagaBear_N, title="HV NAGASAKI·DISP·TIER Bear", style=shape.diamond, location=location.top, color=cl_hdtNagaBear, size=size.normal, text="NAGA·D·T", textcolor=color.white, offset=0)
+plotshape(fire_hdtNagaBear_D, title="HV NAGASAKI·DISP·TIER Bear (disp last)", style=shape.diamond, location=location.top, color=cl_hdtNagaBear, size=size.normal, text="NAGA·D·T", textcolor=color.white, offset=-1)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ORIGINAL PLOTS (untouched)
