@@ -8,7 +8,7 @@
 // R2) FIXED logical error in Mango Swings visualization. The label placement coordinates were incorrect because they were referenced after the underlying variables (ms_lastLowBar/Price) were updated.
 // R3) IMPLEMENTED dedicated variables (ms_swingBottomEventBar/Price) to store the correct coordinates when the Swing Bottom event is triggered, ensuring accurate visualization placement.
 
-indicator("HUB_1020_1153am", shorttitle="Hub102011a", overlay=true, max_labels_count=500, max_bars_back=5000)
+indicator("HUB_1020_1153am [Tick-Friendly]", shorttitle="Hub102011a TF", overlay=true, max_labels_count=500, max_bars_back=5000)
 
 // --- Utility function to count TRUE conditions over a lookback period.
 f_sum_true(cond, len) =>

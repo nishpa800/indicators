@@ -38,7 +38,7 @@
 //    Long 1/2, Short 1/2
 // =============================================================================
 
-indicator("Heavy Weapons NRA + GZI/FVG + Matrix Combos 2 bodies not 1 NRAFR", shorttitle="RVOL NRAFR x2", overlay=true, max_labels_count=500, max_bars_back=5000)
+indicator("Heavy Weapons NRA + GZI/FVG + Matrix Combos 2 bodies not 1 NRAFR [Tick-Friendly]", shorttitle="RVOL NRAFR x2 TF", overlay=true, max_labels_count=500, max_bars_back=5000)
 
 import TradingView/ta/7 as tv_ta
 
