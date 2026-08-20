@@ -216,3 +216,10 @@
 - `versions/KC_COMBO_SR_v5.2.pine` (KCCSR28 v5.2). +4 dp: FLR.F / 2F.F (bull), ROOF.F / PH.F (bear) = structure atom (rf pocket-pivot + PBJ/PB) + RVOL tier menu (SAAB/1X/GS · KRATOS/1X/MOAB) + ANY R-lane (R1/R2/R3 same side) + FAUNA, all on the same confirmed candle. 28 dp × 2 + 0 plot() + 8 alertcondition = 64/64.
 - Visual-identity fix: PH+A flag/top collided with 2F+A → triangledown/top.
 - LANE NOTE: built 2026-08-14 outside the manifest lane (delivered only via the Desktop page `FABLE v7.2 + KCCSR28.html`); bytes landed on main 2026-08-20 byte-identical to that page's `CE` source (sha256 recorded in INDSTUDY_DEBTS row KC-v5.2-retro-manifest). Serves as the pinned base of v5.3.
+
+## v5.3 — 2026-08-20 (KCC REQUIREMENT: FAUNA + BODY % on ALL 28 VPs; operator order 2026-08-20)
+- `versions/KC_COMBO_SR_v5.3.pine` (KCCSR28v53) + FIRST tick twin `tick_friendly/KC_COMBO_SR_TICKFRIENDLY_v5.3.pine` (KCC28 TICK) — body byte-identical.
+- EVERY one of the 28 VPs now requires same-side FAUNA (sigFAUNABull / sigFAUNABear, in-study FABLE QUAD v1.4 engine, unchanged) AND candle body >= Min Body % of high-low range. New IPSF `kcc_bodyPctMin` (group ★ KCC REQUIREMENT ★), default 75.0, step 1, 0 = body requirement off.
+- Wiring: `kccReqB` / `kccReqR` AND-ed onto each of the 28 VP `sig_` booleans at source (14 bull / 14 bear) ⇒ VP + alertcondition + alert() inherit 1:1:1. The 4 v5.2 F-lanes keep their own FAUNA term (redundant by construction, harmless). Calculation-only lanes (12 MAIN combos, CS1/CS2/M/CC, A/2+/3+) untouched — the ANY SR union is unchanged.
+- Unchanged: all engines, offsets (all 0), colors/shapes, alert grammar (version stamp v5.2→v5.3 only). Units 28×2 + 0 plot() + 8 alertcondition = 64/64.
+- Visual-identity fix inherited from v5.2: 2F.F letter-code textcolor black → white (D_vis 1 → 0). fbf_111 D_111=152 is inherited by design (calculation-only lanes, operator order 2026-08-11), declared in the manifest.
