@@ -223,3 +223,7 @@
 - Wiring: `kccReqB` / `kccReqR` AND-ed onto each of the 28 VP `sig_` booleans at source (14 bull / 14 bear) ⇒ VP + alertcondition + alert() inherit 1:1:1. The 4 v5.2 F-lanes keep their own FAUNA term (redundant by construction, harmless). Calculation-only lanes (12 MAIN combos, CS1/CS2/M/CC, A/2+/3+) untouched — the ANY SR union is unchanged.
 - Unchanged: all engines, offsets (all 0), colors/shapes, alert grammar (version stamp v5.2→v5.3 only). Units 28×2 + 0 plot() + 8 alertcondition = 64/64.
 - Visual-identity fix inherited from v5.2: 2F.F letter-code textcolor black → white (D_vis 1 → 0). fbf_111 D_111=152 is inherited by design (calculation-only lanes, operator order 2026-08-11), declared in the manifest.
+
+## EXT v1.0 — 2026-08-20 (KC COMBO SR EXT — study split; operator order 2026-08-20)
+- `versions/KC_COMBO_SR_EXT_v1.0.pine` (KCCSREXT18) + tick twin `tick_friendly/KC_COMBO_SR_EXT_TICKFRIENDLY_v1.0.pine` (KCEXT TICK). 18 dp: R4/R5 = PB+RS+RC+{RVOL 1X, GRAND SLAM} bull / {RVOL 1X, MOAB} bear (R-lane construction, PB for PBJ); HV500/1K/1.5K/2K/3K/4K/4950 + ANY SR bull+bear. All carry the KCC REQUIREMENT (FAUNA + Min Body %, default 75).
+- Why a split: KCCSR28 v5.3 sits at 64/64; 18 texted dp = +36 units. Same engine base as v5.3 (28 v5.3 lanes calculation-only here). 18×2 + 2 alertcondition = 38/64.
