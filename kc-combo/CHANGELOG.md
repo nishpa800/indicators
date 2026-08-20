@@ -211,3 +211,8 @@
 - CUT (VP+alert removed, ALL calculations kept): 12 MAIN RS+RC combos, CS1.A, CS2.A, M.A, CC.A, A, 2+, 3+ — 52 sig_ lanes intact; ANY SR union unchanged.
 - ANY-SCOPING LAW: every ANY name token is study-scoped "+ANY SR" (never RS). Also shipped v4.7.1 of BULL/BEAR side studies carrying the same rename (53 sites each, zero logic change).
 - Built by deterministic assembler (shared engine base byte-asserted identical; side slices verbatim; double-run byte-identical). pane_label_gate D_cs1=0; graphic objects 0; offsets all 0.
+
+## v5.2 — 2026-08-14 (KCCSR28 — +4 STRUCTURE+R+FAUNA lanes; RETRO-LANDED on main 2026-08-20)
+- `versions/KC_COMBO_SR_v5.2.pine` (KCCSR28 v5.2). +4 dp: FLR.F / 2F.F (bull), ROOF.F / PH.F (bear) = structure atom (rf pocket-pivot + PBJ/PB) + RVOL tier menu (SAAB/1X/GS · KRATOS/1X/MOAB) + ANY R-lane (R1/R2/R3 same side) + FAUNA, all on the same confirmed candle. 28 dp × 2 + 0 plot() + 8 alertcondition = 64/64.
+- Visual-identity fix: PH+A flag/top collided with 2F+A → triangledown/top.
+- LANE NOTE: built 2026-08-14 outside the manifest lane (delivered only via the Desktop page `FABLE v7.2 + KCCSR28.html`); bytes landed on main 2026-08-20 byte-identical to that page's `CE` source (sha256 recorded in INDSTUDY_DEBTS row KC-v5.2-retro-manifest). Serves as the pinned base of v5.3.
